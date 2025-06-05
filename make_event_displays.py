@@ -1,6 +1,11 @@
+import sys
+sys.path.append("CMSPLOTS")  # noqa
 import ROOT
-
+from CMSPLOTS.myFunction import DrawHistos
 from utils.channel_map import build_map_Cer_Sci, build_map_ixy_FERS1, build_map_ixy_DRS
+
+ROOT.gROOT.SetBatch(True)  # Run in batch mode
+
 
 map_Cer_Sci = build_map_Cer_Sci()
 print(map_Cer_Sci)
@@ -10,7 +15,7 @@ map_ixy_FERS1 = build_map_ixy_FERS1()
 print("FERS mapping ", map_ixy_FERS1)
 
 
-def make_event_displays(infilename):
+def make_event_displays(infilename, prefix=""):
     infile = ROOT.TFile(infilename, "READ")
     if not infile or infile.IsZombie():
         raise RuntimeError(f"Failed to open input file: {infile}")
@@ -48,6 +53,11 @@ def make_event_displays(infilename):
             hist2d_Sci.Fill(ix_Sci, iy_Sci, e_Sci)
         hists_eventdisplay.append(hist2d_Cer)
         hists_eventdisplay.append(hist2d_Sci)
+
+        DrawHistos([hist2d_Cer], f"", 0, 4, "iX",
+                   0, 8, "iY", f"{prefix}_event_display_Evt{ievt}_Cer", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=3000.0)
+        DrawHistos([hist2d_Sci], f"", 0, 4, "iX",
+                   0, 8, "iY", f"{prefix}_event_display_Evt{ievt}_Sci", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=9000.0)
     print(f"Events left after filtering: {rdf.Count().GetValue()}")
 
     # Save event display histograms
@@ -69,6 +79,6 @@ if __name__ == "__main__":
         "root/filtered_events_board1_cersci_3.root",
         "root/filtered_events_board1_cersci_4.root",
     ]
-    for input_file in files:
+    for idx, input_file in enumerate(files):
         print(f"Processing file: {input_file}")
-        make_event_displays(input_file)
+        make_event_displays(input_file, prefix=f"{idx}")
