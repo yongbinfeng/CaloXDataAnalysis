@@ -55,9 +55,9 @@ def make_event_displays(infilename, prefix=""):
         hists_eventdisplay.append(hist2d_Sci)
 
         DrawHistos([hist2d_Cer], f"", 0, 4, "iX",
-                   0, 8, "iY", f"{prefix}_event_display_Evt{ievt}_Cer", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=3000.0)
+                   0, 8, "iY", f"{prefix}_event_display_Evt{ievt}_Cer", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=3000.0, doth2=True)
         DrawHistos([hist2d_Sci], f"", 0, 4, "iX",
-                   0, 8, "iY", f"{prefix}_event_display_Evt{ievt}_Sci", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=9000.0)
+                   0, 8, "iY", f"{prefix}_event_display_Evt{ievt}_Sci", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=9000.0, doth2=True)
     print(f"Events left after filtering: {rdf.Count().GetValue()}")
 
     # Save event display histograms

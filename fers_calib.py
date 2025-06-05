@@ -32,7 +32,7 @@ for board in [1]:
         hist = rdf.Histo1D((
             f"hist_board{board}_ch{ch}",
             f"FERS Board {board + 1} - Channel {ch};Energy HG;Counts",
-            300, 0, 9000),
+            3000, 0, 9000),
             f"FERS_Board{board}_energyHG_{ch}",
         )
         hists1d.append(hist)
@@ -43,11 +43,19 @@ for board in [1]:
         hist = rdf.Histo2D((
             f"hist_board{board}_Cer{iCer}_vs_Sci{iSci}",
             f"CER {iCer} vs SCI {iSci};CER Energy HG;SCI Energy HG",
-            300, 0, 9000, 300, 0, 9000),
+            500, 0, 9000, 500, 0, 9000),
+            f"FERS_Board1_energyHG_{iCer}",
+            f"FERS_Board1_energyHG_{iSci}"
+        )
+        hist_zoomed = rdf.Histo2D((
+            f"hist_board{board}_Cer{iCer}_vs_Sci{iSci}_zoom",
+            f"CER {iCer} vs SCI {iSci} (zoomed);CER Energy HG;SCI Energy HG",
+            500, 0, 1000, 1000, 0, 2000),
             f"FERS_Board1_energyHG_{iCer}",
             f"FERS_Board1_energyHG_{iSci}"
         )
         hists2d.append(hist)
+        hists2d.append(hist_zoomed)
 
 # filter some events for displays
 rdfs_temp = []
