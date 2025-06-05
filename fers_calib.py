@@ -1,9 +1,13 @@
 import sys
 import ROOT
-from utils.channel_map import build_map_Cer_Sci
+from utils.channel_map import build_map_Cer_Sci, build_map_ixy_FERS1, build_map_ixy_DRS
 
 map_Cer_Sci = build_map_Cer_Sci()
 print(map_Cer_Sci)
+map_ixy_DRS = build_map_ixy_DRS()
+print("DRS mapping ", map_ixy_DRS)
+map_ixy_FERS1 = build_map_ixy_FERS1()
+print("FERS mapping ", map_ixy_FERS1)
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
@@ -45,6 +49,18 @@ for board in [1]:
         )
         hists2d.append(hist)
 
+# filter some events for displays
+rdfs_temp = []
+for board in [1]:
+    for iCer, iSci in map_Cer_Sci.items():
+        requirement = (
+            f"FERS_Board{board}_energyHG_{iCer} > 1000 && "
+            f"FERS_Board{board}_energyHG_{iSci} > 500"
+        )
+        rdf_temp = rdf.Filter(requirement)
+        rdfs_temp.append(rdf_temp)
+
+
 # Save histograms to an output ROOT file
 outfile = ROOT.TFile("root/fers_all_channels.root", "RECREATE")
 for hist in hists1d:
@@ -52,3 +68,11 @@ for hist in hists1d:
 for hist in hists2d:
     hist.Write()
 outfile.Close()
+
+# save the filtered RDataFrames
+for i, rdf_temp in enumerate(rdfs_temp):
+    if i < 5:
+        print(
+            f"Events left after filtering for board 1, CER {iCer}, SCI {iSci}: {rdf_temp.Count().GetValue()}")
+        rdf_temp.Snapshot(
+            "EventTree", f"root/filtered_events_board1_cersci_{i}.root")
