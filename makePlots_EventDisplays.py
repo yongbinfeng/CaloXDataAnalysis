@@ -4,6 +4,7 @@ import ROOT
 from CMSPLOTS.myFunction import DrawHistos
 from utils.channel_map import build_map_Cer_Sci, build_map_FERS1_ixy, build_map_ixy_DRSVar
 import json
+from results.events import events_interested
 
 ROOT.gROOT.SetBatch(True)  # Run in batch mode
 
@@ -21,7 +22,7 @@ with open("results/drs_noises.json", "r") as json_file:
     drs_noises = json.load(json_file)
 
 
-def make_event_displays(infilename, prefix=""):
+def make_event_displays(infilename):
     infile = ROOT.TFile(infilename, "READ")
     if not infile or infile.IsZombie():
         raise RuntimeError(f"Failed to open input file: {infile}")
@@ -34,7 +35,12 @@ def make_event_displays(infilename, prefix=""):
 
     # print how many events are left after filtering
     for ievt in range(0, rdf.Count().GetValue()):
+        print(f"Processing event {ievt + 1} of {rdf.Count().GetValue()}")
         evtNumber = rdf.Take["unsigned int"]("event_n").GetValue()[ievt]
+        if evtNumber not in events_interested:
+            print(
+                f"Skipping event {evtNumber} as it is not in the interested events list.")
+            continue
         hist2d_Cer = ROOT.TH2F(
             f"event_display_Evt{evtNumber}_Cer",
             f"Event Display {evtNumber};X;Y (Cherenkov)",
@@ -89,16 +95,36 @@ def make_event_displays(infilename, prefix=""):
             hists_pulse_shapes.append(h1_Cer)
             hists_pulse_shapes.append(h1_Sci)
 
-            DrawHistos([h1_Cer, h1_Sci], ["Cer", "Sci"], 0, 1024, "TS",
-                       0, 30, "Amplitude", f"{prefix}_pulse_shape_Evt{evtNumber}_iX{ix_Cer}_iY{iy_Cer}", dology=False, mycolors=[2, 4], drawashist=True)
+            if ievt < 1000000:
+                peak_Cer = h1_Cer.GetMaximumBin()
+                peak_Sci = h1_Sci.GetMaximumBin()
+                deltaTS = peak_Sci - peak_Cer
+
+                extraToDraw = ROOT.TPaveText(0.20, 0.65, 0.60, 0.90, "NDC")
+                extraToDraw.SetTextAlign(11)
+                extraToDraw.SetFillColorAlpha(0, 0)
+                extraToDraw.SetBorderSize(0)
+                extraToDraw.SetTextFont(42)
+                extraToDraw.SetTextSize(0.04)
+                extraToDraw.AddText(
+                    f"Event: {evtNumber}, iX: {ix_Cer}, iY: {iy_Cer}")
+                extraToDraw.AddText(f"Cer Peak: {peak_Cer}")
+                extraToDraw.AddText(f"Sci Peak: {peak_Sci}")
+                extraToDraw.AddText(
+                    f"delta Peak: {deltaTS} ts")
+                extraToDraw.AddText(f"delta T: {deltaTS * 0.2: .2f} ns")
+
+                DrawHistos([h1_Cer, h1_Sci], ["Cer", "Sci"], 0, 1024, "TS",
+                           -5, 30, "Amplitude", f"pulse_shape_Evt{evtNumber}_iX{ix_Cer}_iY{iy_Cer}", dology=False, mycolors=[2, 4], drawashist=True, extraToDraw=extraToDraw)
 
         hists_eventdisplay.append(hist2d_Cer)
         hists_eventdisplay.append(hist2d_Sci)
 
-        DrawHistos([hist2d_Cer], f"", -0.5, 3.5, "iX",
-                   -0.5, 7.5, "iY", f"{prefix}_event_display_Evt{evtNumber}_Cer", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=3000.0, doth2=True)
-        DrawHistos([hist2d_Sci], f"", -0.5, 3.5, "iX",
-                   -0.5, 7.5, "iY", f"{prefix}_event_display_Evt{evtNumber}_Sci", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=9000.0, doth2=True)
+        if ievt < 100000:
+            DrawHistos([hist2d_Cer], f"", -0.5, 3.5, "iX",
+                       -0.5, 7.5, "iY", f"event_display_Evt{evtNumber}_Cer", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=3000.0, doth2=True)
+            DrawHistos([hist2d_Sci], f"", -0.5, 3.5, "iX",
+                       -0.5, 7.5, "iY", f"event_display_Evt{evtNumber}_Sci", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=9000.0, doth2=True)
     print(f"Events left after filtering: {rdf.Count().GetValue()}")
 
     # Save event display histograms
@@ -131,4 +157,4 @@ if __name__ == "__main__":
     ]
     for idx, input_file in enumerate(files):
         print(f"Processing file: {input_file}")
-        make_event_displays(input_file, prefix=f"{idx}")
+        make_event_displays(input_file)
