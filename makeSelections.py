@@ -99,7 +99,7 @@ for hist in hists2d:
     hist.Write()
 outfile.Close()
 
-outfile_DRS = ROOT.TFile("root/fers_all_DRS_variables.root", "RECREATE")
+outfile_DRS = ROOT.TFile("root/drs_all_channels.root", "RECREATE")
 for hist in hists1d_DRS:
     hist.SetDirectory(outfile_DRS)
     hist.Write()

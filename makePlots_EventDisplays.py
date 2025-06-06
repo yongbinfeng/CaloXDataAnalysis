@@ -3,6 +3,7 @@ sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from CMSPLOTS.myFunction import DrawHistos
 from utils.channel_map import build_map_Cer_Sci, build_map_FERS1_ixy, build_map_ixy_DRSVar
+import json
 
 ROOT.gROOT.SetBatch(True)  # Run in batch mode
 
@@ -14,6 +15,10 @@ print("Map of FERS1 channels to (ix, iy):", map_FERS1_ixy)
 map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci = build_map_ixy_DRSVar()
 print("Map of DRS variable names to (ix, iy) (CER):", map_ixy_DRSVar_Cer)
 print("Map of DRS variable names to (ix, iy) (SCI):", map_ixy_DRSVar_Sci)
+
+# read the noise from json file
+with open("results/drs_noises.json", "r") as json_file:
+    drs_noises = json.load(json_file)
 
 
 def make_event_displays(infilename, prefix=""):
@@ -33,12 +38,12 @@ def make_event_displays(infilename, prefix=""):
         hist2d_Cer = ROOT.TH2F(
             f"event_display_Evt{evtNumber}_Cer",
             f"Event Display {evtNumber};X;Y (Cherenkov)",
-            4, 0, 4, 8, 0, 8
+            4, -0.5, 3.5, 8, -0.5, 7.5
         )
         hist2d_Sci = ROOT.TH2F(
             f"event_display_Evt{evtNumber}_Sci",
             f"Event Display {evtNumber};X;Y (Scintillator)",
-            4, 0, 4, 8, 0, 8
+            4, -0.5, 3.5, 8, -0.5, 7.5
         )
         for iCer, iSci in map_Cer_Sci.items():
             # get the energy for CER and SCI
@@ -77,23 +82,23 @@ def make_event_displays(infilename, prefix=""):
                 1024, 0, 1024
             )
             for i in range(len(pulse_shape_Cer)):
-                h1_Cer.Fill(i, pulse_shape_Cer[i])
+                h1_Cer.Fill(i, pulse_shape_Cer[i] - drs_noises[varname_Cer])
             for i in range(len(pulse_shape_Sci)):
-                h1_Sci.Fill(i, pulse_shape_Sci[i])
+                h1_Sci.Fill(i, pulse_shape_Sci[i] - drs_noises[varname_Sci])
 
             hists_pulse_shapes.append(h1_Cer)
             hists_pulse_shapes.append(h1_Sci)
 
             DrawHistos([h1_Cer, h1_Sci], ["Cer", "Sci"], 0, 1024, "TS",
-                       1500, 2000, "Amplitude", f"{prefix}_pulse_shape_Evt{evtNumber}_iX{ix_Cer}_iY{iy_Cer}", dology=False, mycolors=[2, 4], drawashist=True)
+                       0, 30, "Amplitude", f"{prefix}_pulse_shape_Evt{evtNumber}_iX{ix_Cer}_iY{iy_Cer}", dology=False, mycolors=[2, 4], drawashist=True)
 
         hists_eventdisplay.append(hist2d_Cer)
         hists_eventdisplay.append(hist2d_Sci)
 
-        DrawHistos([hist2d_Cer], f"", 0, 4, "iX",
-                   0, 8, "iY", f"{prefix}_event_display_Evt{evtNumber}_Cer", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=3000.0, doth2=True)
-        DrawHistos([hist2d_Sci], f"", 0, 4, "iX",
-                   0, 8, "iY", f"{prefix}_event_display_Evt{evtNumber}_Sci", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=9000.0, doth2=True)
+        DrawHistos([hist2d_Cer], f"", -0.5, 3.5, "iX",
+                   -0.5, 7.5, "iY", f"{prefix}_event_display_Evt{evtNumber}_Cer", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=3000.0, doth2=True)
+        DrawHistos([hist2d_Sci], f"", -0.5, 3.5, "iX",
+                   -0.5, 7.5, "iY", f"{prefix}_event_display_Evt{evtNumber}_Sci", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=9000.0, doth2=True)
     print(f"Events left after filtering: {rdf.Count().GetValue()}")
 
     # Save event display histograms

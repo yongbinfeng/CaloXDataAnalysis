@@ -42,7 +42,7 @@ for board in [1]:
 
 # 1D histograms for DRS variables
 hists1d_DRS = {}
-infile_DRS = ROOT.TFile("root/fers_all_DRS_variables.root", "READ")
+infile_DRS = ROOT.TFile("root/drs_all_channels.root", "READ")
 for (ix, iy), var_cer in map_ixy_DRSVar_Cer.items():
     var_sci = map_ixy_DRSVar_Sci[(ix, iy)]
     hist_cer_name = f"hist_{var_cer}"
