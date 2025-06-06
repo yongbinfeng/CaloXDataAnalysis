@@ -2,11 +2,15 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from myFunction import DrawHistos
-from utils.channel_map import build_map_Cer_Sci
+from utils.channel_map import build_map_Cer_Sci, build_map_ixy_DRSVar
 
-ROOT.gROOT.SetBatch(True)  # Run in batch mode
+print("Start running makePlots_SciCer.py")
+# batch mode
+ROOT.gROOT.SetBatch(True)
 
 map_Cer_Sci = build_map_Cer_Sci()
+print(map_Cer_Sci)
+map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci = build_map_ixy_DRSVar()
 
 # 2D histograms
 infile = ROOT.TFile("root/fers_all_channels.root", "READ")
@@ -35,3 +39,17 @@ for board in [1]:
         hists1d[hist_S_name] = hist_S
         DrawHistos([hist_C, hist_S], ["Cer", "Sci"], 0, 1000, "Energy HG", 1, 1e5, "Counts",
                    f"Energy_Board{board}_Channel{iCer}", dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True)
+
+# 1D histograms for DRS variables
+hists1d_DRS = {}
+infile_DRS = ROOT.TFile("root/fers_all_DRS_variables.root", "READ")
+for (ix, iy), var_cer in map_ixy_DRSVar_Cer.items():
+    var_sci = map_ixy_DRSVar_Sci[(ix, iy)]
+    hist_cer_name = f"hist_{var_cer}"
+    hist_cer = infile_DRS.Get(hist_cer_name)
+    hists1d_DRS[hist_cer_name] = hist_cer
+    hist_sci_name = f"hist_{var_sci}"
+    hist_sci = infile_DRS.Get(hist_sci_name)
+    hists1d_DRS[hist_sci_name] = hist_sci
+    DrawHistos([hist_cer, hist_sci], ["Cer", "Sci"], 1400, 2500, "DRS Output", 1, 1e10, "Counts",
+               f"DRS_Variable_iX{ix}_iY{iy}", dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True)

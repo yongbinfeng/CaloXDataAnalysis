@@ -59,12 +59,24 @@ for board in [1]:
 hists1d_DRS = []
 for var in list(map_ixy_DRSVar_Cer.values()) + list(map_ixy_DRSVar_Sci.values()):
     hist = rdf.Histo1D((
-        f"hist_DRS_{var}",
+        f"hist_{var}",
         f"DRS Variable {var};Counts;Events",
         1500, 1000, 2500),
         var
     )
     hists1d_DRS.append(hist)
+
+hists2d_DRS = []
+for (ix, iy), var_cer in map_ixy_DRSVar_Cer.items():
+    var_sci = map_ixy_DRSVar_Sci[(ix, iy)]
+    hist = rdf.Histo2D((
+        f"hist_DRS_iX{ix}_iY{iy}",
+        f"DRS Variables iX {ix} vs iY {iy};CER {var_cer};SCI {var_sci}",
+        500, 1000, 2500, 500, 1000, 2500),
+        var_cer,
+        var_sci
+    )
+    hists2d_DRS.append(hist)
 
     # filter some events for displays and analysis
 rdfs_temp = []
@@ -91,7 +103,11 @@ outfile_DRS = ROOT.TFile("root/fers_all_DRS_variables.root", "RECREATE")
 for hist in hists1d_DRS:
     hist.SetDirectory(outfile_DRS)
     hist.Write()
+for hist in hists2d_DRS:
+    hist.SetDirectory(outfile_DRS)
+    hist.Write()
 outfile_DRS.Close()
+
 
 # save the filtered RDataFrames
 for i, rdf_temp in enumerate(rdfs_temp):
