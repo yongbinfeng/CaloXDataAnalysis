@@ -1,13 +1,12 @@
 import sys
 import ROOT
-from utils.channel_map import build_map_Cer_Sci, build_map_ixy_FERS1, build_map_ixy_DRS
+from utils.channel_map import build_map_Cer_Sci, build_map_ixy_DRSVar
+
+print("Start running makeSelections.py")
 
 map_Cer_Sci = build_map_Cer_Sci()
 print(map_Cer_Sci)
-map_ixy_DRS = build_map_ixy_DRS()
-print("DRS mapping ", map_ixy_DRS)
-map_ixy_FERS1 = build_map_ixy_FERS1()
-print("FERS mapping ", map_ixy_FERS1)
+map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci = build_map_ixy_DRSVar()
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
@@ -57,7 +56,17 @@ for board in [1]:
         hists2d.append(hist)
         hists2d.append(hist_zoomed)
 
-# filter some events for displays
+hists1d_DRS = []
+for var in list(map_ixy_DRSVar_Cer.values()) + list(map_ixy_DRSVar_Sci.values()):
+    hist = rdf.Histo1D((
+        f"hist_DRS_{var}",
+        f"DRS Variable {var};Counts;Events",
+        1500, 1000, 2500),
+        var
+    )
+    hists1d_DRS.append(hist)
+
+    # filter some events for displays and analysis
 rdfs_temp = []
 for board in [1]:
     for iCer, iSci in map_Cer_Sci.items():
@@ -68,6 +77,7 @@ for board in [1]:
         rdf_temp = rdf.Filter(requirement)
         rdfs_temp.append(rdf_temp)
 
+print("Save histograms and filtered RDataFrames")
 
 # Save histograms to an output ROOT file
 outfile = ROOT.TFile("root/fers_all_channels.root", "RECREATE")
@@ -77,9 +87,15 @@ for hist in hists2d:
     hist.Write()
 outfile.Close()
 
+outfile_DRS = ROOT.TFile("root/fers_all_DRS_variables.root", "RECREATE")
+for hist in hists1d_DRS:
+    hist.SetDirectory(outfile_DRS)
+    hist.Write()
+outfile_DRS.Close()
+
 # save the filtered RDataFrames
 for i, rdf_temp in enumerate(rdfs_temp):
-    if i < 5:
+    if i < 2:
         print(
             f"Events left after filtering for board 1, CER {iCer}, SCI {iSci}: {rdf_temp.Count().GetValue()}")
         rdf_temp.Snapshot(
