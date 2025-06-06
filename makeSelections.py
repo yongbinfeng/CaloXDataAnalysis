@@ -78,16 +78,17 @@ for (ix, iy), var_cer in map_ixy_DRSVar_Cer.items():
     )
     hists2d_DRS.append(hist)
 
-    # filter some events for displays and analysis
-rdfs_temp = []
+# filter some events for displays and analysis
+requirement = ""
+idx = 0
 for board in [1]:
     for iCer, iSci in map_Cer_Sci.items():
-        requirement = (
-            f"FERS_Board{board}_energyHG_{iCer} > 1000 && "
-            f"FERS_Board{board}_energyHG_{iSci} > 500"
-        )
-        rdf_temp = rdf.Filter(requirement)
-        rdfs_temp.append(rdf_temp)
+        if idx != 0:
+            requirement += " || "
+        requirement += f"(FERS_Board{board}_energyHG_{iCer} > 1000 && FERS_Board{board}_energyHG_{iSci} > 500)"
+        idx += 1
+print(f"Filtering events with requirement: {requirement}")
+rdf_filtered = rdf.Filter(requirement)
 
 print("Save histograms and filtered RDataFrames")
 
@@ -110,9 +111,7 @@ outfile_DRS.Close()
 
 
 # save the filtered RDataFrames
-for i, rdf_temp in enumerate(rdfs_temp):
-    if i < 2:
-        print(
-            f"Events left after filtering for board 1, CER {iCer}, SCI {iSci}: {rdf_temp.Count().GetValue()}")
-        rdf_temp.Snapshot(
-            "EventTree", f"root/filtered_events_board1_cersci_{i}.root")
+print(
+    f"Events left after filtering for board 1, CER {iCer}, SCI {iSci}: {rdf_filtered.Count().GetValue()}")
+rdf_filtered.Snapshot(
+    "EventTree", f"root/filtered_events_board1.root")

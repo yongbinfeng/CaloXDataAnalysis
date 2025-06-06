@@ -127,11 +127,7 @@ def make_event_displays(infilename, prefix=""):
 
 if __name__ == "__main__":
     files = [
-        "root/filtered_events_board1_cersci_0.root",
-        # "root/filtered_events_board1_cersci_1.root",
-        # "root/filtered_events_board1_cersci_2.root",
-        # "root/filtered_events_board1_cersci_3.root",
-        # "root/filtered_events_board1_cersci_4.root",
+        "root/filtered_events_board1.root",
     ]
     for idx, input_file in enumerate(files):
         print(f"Processing file: {input_file}")
