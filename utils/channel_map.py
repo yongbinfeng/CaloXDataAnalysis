@@ -50,7 +50,7 @@ def build_map_ixy_DRS():
     return map_ixy_DRS
 
 
-def build_map_ixy_FERS1():
+def build_map_FERS1_ixy():
     """
     Build a map for ixy and FERS channels for board 1.
     """
@@ -62,3 +62,66 @@ def build_map_ixy_FERS1():
         map_ixy_FERS[ifers] = (ix, iy)
 
     return map_ixy_FERS
+
+
+def build_map_DRSVar():
+    """
+    Build a map for DRS channel variables.
+    """
+    map_DRSVar_Cer = {}
+    map_DRSVar_Sci = {}
+    for i in range(0, 64):
+        if i < 32:
+            iboard = 0
+        else:
+            iboard = 2
+        igroup = i // 8
+        if igroup >= 4:
+            igroup -= 4
+        ichan = i % 8
+        isCer = (i % 8) < 4  # first 4 channels are CER
+        varname = f"DRS_Board{iboard}_Group{igroup}_Channel{ichan}"
+        if isCer:
+            map_DRSVar_Cer[i] = varname
+        else:
+            map_DRSVar_Sci[i] = varname
+    return map_DRSVar_Cer, map_DRSVar_Sci
+
+
+def build_map_ixy_DRSVar():
+    """
+    Build a map for DRS channel variables and ixy
+    """
+    map_ixy_DRS = build_map_ixy_DRS()
+    map_DRSVar_Cer, map_DRSVar_Sci = build_map_DRSVar()
+    map_ixy_DRSVar_Cer = {}
+    map_ixy_DRSVar_Sci = {}
+    for i in range(0, 64):
+        ix, iy = map_ixy_DRS[i]
+        if i in map_DRSVar_Cer:
+            varname = map_DRSVar_Cer[i]
+            map_ixy_DRSVar_Cer[(ix, iy)] = varname
+        if i in map_DRSVar_Sci:
+            varname = map_DRSVar_Sci[i]
+            map_ixy_DRSVar_Sci[(ix, iy)] = varname
+    return map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci
+
+
+if __name__ == "__main__":
+    map_Cer_Sci = build_map_Cer_Sci()
+    print("Map of CER to SCI channels in FERS1:")
+    for cer, sci in map_Cer_Sci.items():
+        print(f"CER {cer} -> SCI {sci}")
+
+    map_FERS1_ixy = build_map_FERS1_ixy()
+    print("\nMap of FERS1 channels to (ix, iy):")
+    for ifers, (ix, iy) in map_FERS1_ixy.items():
+        print(f"FERS1 channel {ifers} -> (ix={ix}, iy={iy})")
+
+    map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci = build_map_ixy_DRSVar()
+    print("\nMap of DRS variable names to (ix, iy) (CER):")
+    for (ix, iy), varname in map_ixy_DRSVar_Cer.items():
+        print(f"(ix={ix}, iy={iy}) -> {varname}")
+    print("\nMap of DRS variable names to (ix, iy) (SCI):")
+    for (ix, iy), varname in map_ixy_DRSVar_Sci.items():
+        print(f"(ix={ix}, iy={iy}) -> {varname}")
