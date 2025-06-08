@@ -107,6 +107,32 @@ def build_map_ixy_DRSVar():
     return map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci
 
 
+def get_hodoscope_channels():
+    """
+    Returns a dictionary containing the hodoscope channels.
+    """
+    hodoscope_channels = {}
+    hodoscope_channels["trigger"] = ["DRS_Board1_Group0_Channel0"]
+    hodoscope_channels["TopX"] = [
+        "DRS_Board1_Group0_Channel1",
+        "DRS_Board1_Group0_Channel2",
+    ]
+    hodoscope_channels["TopZ"] = [
+        "DRS_Board1_Group0_Channel3",
+        "DRS_Board1_Group0_Channel4",
+    ]
+    hodoscope_channels["BottomX"] = [
+        "DRS_Board1_Group0_Channel5",
+        "DRS_Board1_Group0_Channel6",
+    ]
+    hodoscope_channels["BottomZ"] = [
+        "DRS_Board1_Group0_Channel7",
+        "DRS_Board1_Group1_Channel0",
+    ]
+
+    return hodoscope_channels
+
+
 if __name__ == "__main__":
     map_Cer_Sci = build_map_Cer_Sci()
     print("Map of CER to SCI channels in FERS1:")
@@ -125,3 +151,8 @@ if __name__ == "__main__":
     print("\nMap of DRS variable names to (ix, iy) (SCI):")
     for (ix, iy), varname in map_ixy_DRSVar_Sci.items():
         print(f"(ix={ix}, iy={iy}) -> {varname}")
+
+    print("\nHodoscope channels:")
+    hodoscope_channels = get_hodoscope_channels()
+    for group, channels in hodoscope_channels.items():
+        print(f"{group}: {channels}")
