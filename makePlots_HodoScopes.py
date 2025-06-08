@@ -11,6 +11,10 @@ ROOT.gROOT.SetBatch(True)  # Run in batch mode
 hodoscope_channels = get_hodoscope_channels()
 
 
+with open("results/hodoscope_noises.json", "r") as json_file:
+    hodo_noises = json.load(json_file)
+
+
 def analyzeHodoPulse(infilename):
     infile = ROOT.TFile(infilename, "READ")
     if not infile or infile.IsZombie():
@@ -42,16 +46,32 @@ def analyzeHodoPulse(infilename):
                     1024, 0, 1024
                 )
                 for i in range(len(pulse_shape)):
-                    h1_hodos[channel].Fill(i, pulse_shape[i])
+                    h1_hodos[channel].Fill(
+                        i, pulse_shape[i] - hodo_noises["hodoscope_" + channel])
                 hs_todraw.append(h1_hodos[channel])
 
             if ievt < 100000:
-                if group == "trigger":
-                    labels = ["Trigger"]
-                else:
+                labels = []
+                extraToDraw = None
+                if group != "trigger":
                     labels = ["Left", "Right"]
+                    peak_left = hs_todraw[0].GetMinimumBin()
+                    peak_right = hs_todraw[1].GetMinimumBin()
+                    deltaTS = peak_right - peak_left
+                    extraToDraw = ROOT.TPaveText(0.20, 0.65, 0.60, 0.90, "NDC")
+                    extraToDraw.SetTextAlign(11)
+                    extraToDraw.SetFillColorAlpha(0, 0)
+                    extraToDraw.SetBorderSize(0)
+                    extraToDraw.SetTextFont(42)
+                    extraToDraw.SetTextSize(0.04)
+                    extraToDraw.AddText(
+                        f"Event: {evtNumber}, {group}")
+                    extraToDraw.AddText(f"Left Peak: {peak_left}")
+                    extraToDraw.AddText(f"Right Peak: {peak_right}")
+                    extraToDraw.AddText(
+                        f"delta Peak: {deltaTS} ts")
                 DrawHistos(hs_todraw, labels, 0, 1024, "TS",
-                           -200, 3000, "Amplitude", f"pulse_shape_Hodoscopes_Evt{evtNumber}_{group}", dology=False, mycolors=[2, 4], drawashist=True)
+                           -2500, 1999, "Amplitude", f"pulse_shape_Hodoscopes_Evt{evtNumber}_{group}", dology=False, mycolors=[2, 4], drawashist=True, extraToDraw=extraToDraw)
     print(f"Events left after filtering: {rdf.Count().GetValue()}")
 
 

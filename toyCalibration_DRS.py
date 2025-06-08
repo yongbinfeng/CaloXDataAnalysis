@@ -1,5 +1,5 @@
 import ROOT
-from utils.channel_map import build_map_Cer_Sci, build_map_ixy_DRSVar
+from utils.channel_map import build_map_Cer_Sci, build_map_ixy_DRSVar, get_hodoscope_channels
 import json
 
 print("Start running toyCalibration_DRS.py")
@@ -9,6 +9,7 @@ ROOT.gROOT.SetBatch(True)
 map_Cer_Sci = build_map_Cer_Sci()
 print(map_Cer_Sci)
 map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci = build_map_ixy_DRSVar()
+hodoscope_channels = get_hodoscope_channels()
 
 
 def FindPeakPosition(hist):
@@ -36,3 +37,21 @@ for hist_name in infile.GetListOfKeys():
 
 with open("results/drs_noises.json", "w") as json_file:
     json.dump(noises_map, json_file)
+
+infile_name = "root/hodoscope_all_channels.root"
+infile = ROOT.TFile(infile_name, "READ")
+noises_map = {}
+for hist_name in infile.GetListOfKeys():
+    # filter out 2d histograms
+    hist_name = hist_name.GetName()
+    if not hist_name.startswith("hist_hodoscope_DRS"):
+        continue
+    hist = infile.Get(hist_name)
+
+    noise = FindPeakPosition(hist)
+    print(f"Hodoscope Noise for {hist_name}: {noise}")
+    branch_name = hist_name.replace("hist_", "")
+    noises_map[branch_name] = noise
+with open("results/hodoscope_noises.json", "w") as json_file:
+    json.dump(noises_map, json_file)
+print("Finished running toyCalibration_DRS.py")

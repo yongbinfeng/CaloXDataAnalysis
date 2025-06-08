@@ -1,12 +1,13 @@
 import sys
 import ROOT
-from utils.channel_map import build_map_Cer_Sci, build_map_ixy_DRSVar
+from utils.channel_map import build_map_Cer_Sci, build_map_ixy_DRSVar, get_hodoscope_channels
 
 print("Start running makeSelections.py")
 
 map_Cer_Sci = build_map_Cer_Sci()
 print(map_Cer_Sci)
 map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci = build_map_ixy_DRSVar()
+hodoscope_channels = get_hodoscope_channels()
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
@@ -78,6 +79,17 @@ for (ix, iy), var_cer in map_ixy_DRSVar_Cer.items():
     )
     hists2d_DRS.append(hist)
 
+hists1d_hodos = []
+for group, channels in hodoscope_channels.items():
+    for channel in channels:
+        hist = rdf.Histo1D((
+            f"hist_hodoscope_{channel}",
+            f"Hodoscope {group} - Channel {channel};Amplitude;Counts",
+            3000, 0, 3000),
+            channel
+        )
+        hists1d_hodos.append(hist)
+
 # filter some events for displays and analysis
 requirement = ""
 idx = 0
@@ -108,6 +120,12 @@ for hist in hists2d_DRS:
     hist.SetDirectory(outfile_DRS)
     hist.Write()
 outfile_DRS.Close()
+
+outfile_hodos = ROOT.TFile("root/hodoscope_all_channels.root", "RECREATE")
+for hist in hists1d_hodos:
+    hist.SetDirectory(outfile_hodos)
+    hist.Write()
+outfile_hodos.Close()
 
 
 # save the filtered RDataFrames
