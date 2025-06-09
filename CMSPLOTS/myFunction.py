@@ -547,7 +547,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         canvas.SetLogz()
 
     if npads == 1:
-        canvas.SetRightMargin(0.15)
+        canvas.SetLeftMargin(0.15)
         canvas.SetBottomMargin(0.13)
         canvas.SetTopMargin(0.06)
 
