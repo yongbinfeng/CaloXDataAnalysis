@@ -149,12 +149,26 @@ def get_hodoscope_channels():
         "DRS_Board1_Group0_Channel5",
         "DRS_Board1_Group0_Channel6",
     ]
+    # bottom z seems to have flipped left and right
     hodoscope_channels["BottomZ"] = [
-        "DRS_Board1_Group0_Channel7",
         "DRS_Board1_Group1_Channel0",
+        "DRS_Board1_Group0_Channel7",
     ]
 
     return hodoscope_channels
+
+
+def hodoTS2iX(ts):
+    """
+    Convert hodoscope timestamp difference between right and left (right - left) 
+    to iX coordinate.
+    """
+    # hodoscope slice
+    ihodo = int((ts + 200.0) / 400 * 11.0) + 1
+    ihodo = 12 - ihodo  # flip
+    iXmin = (ihodo - 8) * 4 - 4
+    iXmax = (ihodo - 8) * 4 - 1
+    return iXmin, iXmax
 
 
 if __name__ == "__main__":

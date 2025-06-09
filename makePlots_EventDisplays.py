@@ -2,7 +2,7 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from CMSPLOTS.myFunction import DrawHistos
-from utils.channel_map import build_map_Cer_Sci, build_map_FERS1_ixy, build_map_ixy_DRSVar, build_map_FERSs_ixy
+from utils.channel_map import build_map_Cer_Sci, build_map_FERS1_ixy, build_map_ixy_DRSVar, build_map_FERSs_ixy, get_hodoscope_channels, hodoTS2iX
 import json
 from results.events import events_interested
 
@@ -18,6 +18,12 @@ print("Map of FERS channels to (ix, iy):", map_FERSs_ixy)
 map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci = build_map_ixy_DRSVar()
 print("Map of DRS variable names to (ix, iy) (CER):", map_ixy_DRSVar_Cer)
 print("Map of DRS variable names to (ix, iy) (SCI):", map_ixy_DRSVar_Sci)
+
+
+hodoscope_channels = get_hodoscope_channels()
+
+with open("results/hodoscope_noises.json", "r") as json_file:
+    hodo_noises = json.load(json_file)
 
 # read the noise from json file
 with open("results/drs_noises.json", "r") as json_file:
@@ -45,7 +51,7 @@ def make_event_displays(infilename, onlyFERS1=True):
 
     # print how many events are left after filtering
     for ievt in range(0, rdf.Count().GetValue()):
-        # if ievt > 20:
+        # if ievt > 100:
         #    break
         print(f"Processing event {ievt + 1} of {rdf.Count().GetValue()}")
         evtNumber = rdf.Take["unsigned int"]("event_n").GetValue()[ievt]
@@ -134,11 +140,57 @@ def make_event_displays(infilename, onlyFERS1=True):
         hists_eventdisplay.append(hist2d_Cer)
         hists_eventdisplay.append(hist2d_Sci)
 
+        # analyze hodoscope channels
+        h1_hodos = {}
+        for group, channels in hodoscope_channels.items():
+            if group != "TopX" and group != "BottomX":
+                continue
+            print(f"Analyzing hodoscope group: {group}")
+            hs_todraw = []
+            for channel in channels:
+                pulse_shape = rdf.Take["ROOT::VecOps::RVec<float>"](
+                    channel).GetValue()[ievt]
+                h1 = ROOT.TH1F(
+                    f"pulse_shape_{channel}_Evt{evtNumber}",
+                    f"Pulse Shape {channel};Time;Amplitude",
+                    1024, 0, 1024
+                )
+                print("make pulse shape for channel:", channel)
+                for i in range(len(pulse_shape)):
+                    h1.Fill(
+                        i, pulse_shape[i] - hodo_noises["hodoscope_" + channel])
+                hs_todraw.append(h1)
+            h1_hodos[group] = hs_todraw
+
+        peak_TopX_left = h1_hodos['TopX'][0].GetMinimumBin()
+        peak_TopX_right = h1_hodos['TopX'][1].GetMinimumBin()
+        deltaTS_TopX = peak_TopX_right - peak_TopX_left
+        peak_BottomX_left = h1_hodos['BottomX'][0].GetMinimumBin()
+        peak_BottomX_right = h1_hodos['BottomX'][1].GetMinimumBin()
+        deltaTS_BottomX = peak_BottomX_right - peak_BottomX_left
+
+        extraToDraw = ROOT.TPaveText(0.01, 0.55, 0.12, 0.90, "NDC")
+        extraToDraw.SetTextAlign(11)
+        extraToDraw.SetFillColorAlpha(0, 0)
+        extraToDraw.SetBorderSize(0)
+        extraToDraw.SetTextFont(42)
+        extraToDraw.SetTextSize(0.04)
+        extraToDraw.AddText(
+            f"Event: {evtNumber}")
+        # extraToDraw.AddText(f"TopX Left Peak: {peak_TopX_left}")
+        # extraToDraw.AddText(f"TopX Right Peak: {peak_TopX_right}")
+        # extraToDraw.AddText(f"BottomX Left Peak: {peak_BottomX_left}")
+        # extraToDraw.AddText(f"BottomX Right Peak: {peak_BottomX_right}")
+        extraToDraw.AddText(f"TopX Diff: {deltaTS_TopX}")
+        extraToDraw.AddText(f"BottomX Diff: {deltaTS_BottomX}")
+        extraToDraw.AddText(f"Top iX: {hodoTS2iX(deltaTS_TopX)}")
+        extraToDraw.AddText(f"Bottom iX: {hodoTS2iX(deltaTS_BottomX)}")
+
         if ievt < 100000:
             DrawHistos([hist2d_Cer], f"", ix_min, 3.5, "iX",
-                       iy_min, 7.5, "iY", f"event_display_Evt{evtNumber}_Cer", dology=False, drawoptions=["COLZ,text"], zmin=50.0, zmax=3000.0, doth2=True, W_ref=W_ref)
+                       iy_min, 7.5, "iY", f"event_display_Evt{evtNumber}_Cer", dology=False, drawoptions=["COLZ,text"], zmin=50.0, zmax=3000.0, doth2=True, W_ref=W_ref, extraToDraw=extraToDraw)
             DrawHistos([hist2d_Sci], f"", ix_min, 3.5, "iX",
-                       iy_min, 7.5, "iY", f"event_display_Evt{evtNumber}_Sci", dology=False, drawoptions=["COLZ,text"], zmin=50.0, zmax=8000.0, doth2=True, W_ref=W_ref)
+                       iy_min, 7.5, "iY", f"event_display_Evt{evtNumber}_Sci", dology=False, drawoptions=["COLZ,text"], zmin=50.0, zmax=8000.0, doth2=True, W_ref=W_ref, extraToDraw=extraToDraw)
     print(f"Events left after filtering: {rdf.Count().GetValue()}")
 
     # Save event display histograms
