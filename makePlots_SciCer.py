@@ -29,7 +29,7 @@ for board in [1]:
 
 # 1D histograms
 hists1d = {}
-for board in [1]:
+for board in [1, 2, 3, 4, 5]:
     for iCer, iSci in map_Cer_Sci.items():
         hist_C_name = f"hist_board{board}_ch{iCer}"
         hist_C = infile.Get(hist_C_name)
@@ -37,8 +37,20 @@ for board in [1]:
         hist_S_name = f"hist_board{board}_ch{iSci}"
         hist_S = infile.Get(hist_S_name)
         hists1d[hist_S_name] = hist_S
+
+        extraToDraw = ROOT.TPaveText(0.20, 0.75, 0.60, 0.90, "NDC")
+        extraToDraw.SetTextAlign(11)
+        extraToDraw.SetFillColorAlpha(0, 0)
+        extraToDraw.SetBorderSize(0)
+        extraToDraw.SetTextFont(42)
+        extraToDraw.SetTextSize(0.04)
+        extraToDraw.AddText(
+            f"Board: {board}")
+        extraToDraw.AddText(f"Cer Channel: {iCer}")
+        extraToDraw.AddText(f"Sci Channel: {iSci}")
+
         DrawHistos([hist_C, hist_S], ["Cer", "Sci"], 0, 1000, "Energy HG", 1, 1e5, "Counts",
-                   f"Energy_Board{board}_Channel{iCer}", dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True)
+                   f"Energy_Board{board}_Channel{iCer}", dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, extraToDraw=extraToDraw)
 
 # 1D histograms for DRS variables
 hists1d_DRS = {}

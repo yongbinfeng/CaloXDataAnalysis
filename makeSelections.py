@@ -1,6 +1,6 @@
 import sys
 import ROOT
-from utils.channel_map import build_map_Cer_Sci, build_map_ixy_DRSVar, get_hodoscope_channels
+from utils.channel_map import build_map_Cer_Sci, build_map_ixy_DRSVar, get_hodoscope_channels, build_map_FERSs_ixy
 
 print("Start running makeSelections.py")
 
@@ -8,6 +8,7 @@ map_Cer_Sci = build_map_Cer_Sci()
 print(map_Cer_Sci)
 map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci = build_map_ixy_DRSVar()
 hodoscope_channels = get_hodoscope_channels()
+map_ixy_FERSs = build_map_FERSs_ixy()
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
@@ -27,7 +28,7 @@ for board in range(0, 6):
 
 
 hists1d = []
-for board in [1]:
+for board in [1, 2, 3, 4, 5]:
     for ch in range(0, 64):
         hist = rdf.Histo1D((
             f"hist_board{board}_ch{ch}",

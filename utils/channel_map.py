@@ -64,6 +64,30 @@ def build_map_FERS1_ixy():
     return map_ixy_FERS
 
 
+def build_map_FERSs_ixy():
+    """
+    Build a map for ixy and FERS channels for both boards.
+    """
+    map_ixy_FERS1 = build_map_FERS1_ixy()
+    map_ixy_FERS2 = {}
+    map_ixy_FERS3 = {}
+    map_ixy_FERS4 = {}
+    map_ixy_FERS5 = {}
+    for ifers, (ix, iy) in map_ixy_FERS1.items():
+        map_ixy_FERS2[ifers] = (ix-4, iy)
+        map_ixy_FERS3[ifers] = (ix-8, iy-4)
+        map_ixy_FERS4[ifers] = (ix-12, iy)
+        map_ixy_FERS5[ifers] = (ix-16, iy)
+
+    map_ixy_FERSs = {}
+    map_ixy_FERSs["Board1"] = map_ixy_FERS1
+    map_ixy_FERSs["Board2"] = map_ixy_FERS2
+    map_ixy_FERSs["Board3"] = map_ixy_FERS3
+    map_ixy_FERSs["Board4"] = map_ixy_FERS4
+    map_ixy_FERSs["Board5"] = map_ixy_FERS5
+    return map_ixy_FERSs
+
+
 def build_map_DRSVar():
     """
     Build a map for DRS channel variables.

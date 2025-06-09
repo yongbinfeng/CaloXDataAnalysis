@@ -2,7 +2,7 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from CMSPLOTS.myFunction import DrawHistos
-from utils.channel_map import build_map_Cer_Sci, build_map_FERS1_ixy, build_map_ixy_DRSVar
+from utils.channel_map import build_map_Cer_Sci, build_map_FERS1_ixy, build_map_ixy_DRSVar, build_map_FERSs_ixy
 import json
 from results.events import events_interested
 
@@ -13,6 +13,8 @@ map_Cer_Sci = build_map_Cer_Sci()
 print("Map of CER to SCI channels in FERS1:", map_Cer_Sci)
 map_FERS1_ixy = build_map_FERS1_ixy()
 print("Map of FERS1 channels to (ix, iy):", map_FERS1_ixy)
+map_FERSs_ixy = build_map_FERSs_ixy()
+print("Map of FERS channels to (ix, iy):", map_FERSs_ixy)
 map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci = build_map_ixy_DRSVar()
 print("Map of DRS variable names to (ix, iy) (CER):", map_ixy_DRSVar_Cer)
 print("Map of DRS variable names to (ix, iy) (SCI):", map_ixy_DRSVar_Sci)
@@ -21,8 +23,11 @@ print("Map of DRS variable names to (ix, iy) (SCI):", map_ixy_DRSVar_Sci)
 with open("results/drs_noises.json", "r") as json_file:
     drs_noises = json.load(json_file)
 
+with open("results/fers_noises.json", "r") as json_file:
+    fers_noises = json.load(json_file)
 
-def make_event_displays(infilename):
+
+def make_event_displays(infilename, onlyFERS1=True):
     infile = ROOT.TFile(infilename, "READ")
     if not infile or infile.IsZombie():
         raise RuntimeError(f"Failed to open input file: {infile}")
@@ -33,8 +38,15 @@ def make_event_displays(infilename):
     hists_eventdisplay = []
     hists_pulse_shapes = []
 
+    boards = [1] if onlyFERS1 else [1, 2, 3, 4, 5]
+    ix_min = -0.5 if onlyFERS1 else -16.5
+    iy_min = -0.5 if onlyFERS1 else -4.5
+    W_ref = 800 if onlyFERS1 else 1400
+
     # print how many events are left after filtering
     for ievt in range(0, rdf.Count().GetValue()):
+        # if ievt > 20:
+        #    break
         print(f"Processing event {ievt + 1} of {rdf.Count().GetValue()}")
         evtNumber = rdf.Take["unsigned int"]("event_n").GetValue()[ievt]
         if evtNumber not in events_interested:
@@ -44,46 +56,48 @@ def make_event_displays(infilename):
         hist2d_Cer = ROOT.TH2F(
             f"event_display_Evt{evtNumber}_Cer",
             f"Event Display {evtNumber};X;Y (Cherenkov)",
-            4, -0.5, 3.5, 8, -0.5, 7.5
+            int(3.5 - ix_min), ix_min, 3.5, int(7.5 - iy_min), iy_min, 7.5
         )
         hist2d_Sci = ROOT.TH2F(
             f"event_display_Evt{evtNumber}_Sci",
             f"Event Display {evtNumber};X;Y (Scintillator)",
-            4, -0.5, 3.5, 8, -0.5, 7.5
+            int(3.5 - ix_min), ix_min, 3.5, int(7.5 - iy_min), iy_min, 7.5
         )
         for iCer, iSci in map_Cer_Sci.items():
             # get the energy for CER and SCI
-            e_Cer = rdf.Take["unsigned short"](
-                f"FERS_Board1_energyHG_{iCer}").GetValue()[ievt]
-            e_Sci = rdf.Take["unsigned short"](
-                f"FERS_Board1_energyHG_{iSci}").GetValue()[ievt]
+            for board in boards:
+                e_Cer = rdf.Take["unsigned short"](
+                    f"FERS_Board{board}_energyHG_{iCer}").GetValue()[ievt]
+                e_Sci = rdf.Take["unsigned short"](
+                    f"FERS_Board{board}_energyHG_{iSci}").GetValue()[ievt]
 
-            # get the ixy for CER and SCI
-            ix_Cer, iy_Cer = map_FERS1_ixy[iCer]
-            ix_Sci, iy_Sci = map_FERS1_ixy[iSci]
-            # they should be exactly the same
-            assert ix_Cer == ix_Sci, f"ix mismatch: {ix_Cer} != {ix_Sci}"
-            assert iy_Cer == iy_Sci, f"iy mismatch: {iy_Cer} != {iy_Sci}"
+                # get the ixy for CER and SCI
+                ix_Cer_FERS, iy_Cer_FERS = map_FERSs_ixy[f"Board{board}"][iCer]
+                ix_Sci_FERS, iy_Sci_FERS = map_FERSs_ixy[f"Board{board}"][iSci]
 
-            # fill the histograms
-            hist2d_Cer.Fill(ix_Cer, iy_Cer, e_Cer)
-            hist2d_Sci.Fill(ix_Sci, iy_Sci, e_Sci)
+                # fill the histograms
+                hist2d_Cer.Fill(ix_Cer_FERS, iy_Cer_FERS, int(e_Cer -
+                                fers_noises[f"board{board}_ch{iCer}"]))
+                hist2d_Sci.Fill(ix_Sci_FERS, iy_Sci_FERS, int(e_Sci -
+                                fers_noises[f"board{board}_ch{iSci}"]))
 
             # print the DRS variable names and their pulse shapes
-            varname_Cer = map_ixy_DRSVar_Cer[(ix_Cer, iy_Cer)]
-            varname_Sci = map_ixy_DRSVar_Sci[(ix_Sci, iy_Sci)]
+            ix_Cer_FERS1, iy_Cer_FERS1 = map_FERS1_ixy[iCer]
+            ix_Sci_FERS1, iy_Sci_FERS1 = map_FERS1_ixy[iSci]
+            varname_Cer = map_ixy_DRSVar_Cer[(ix_Cer_FERS1, iy_Cer_FERS1)]
+            varname_Sci = map_ixy_DRSVar_Sci[(ix_Sci_FERS1, iy_Sci_FERS1)]
             pulse_shape_Cer = rdf.Take["ROOT::VecOps::RVec<float>"](
                 f"{varname_Cer}").GetValue()[ievt]
             pulse_shape_Sci = rdf.Take["ROOT::VecOps::RVec<float>"](
                 f"{varname_Sci}").GetValue()[ievt]
 
             h1_Cer = ROOT.TH1F(
-                f"pulse_shape_Cer_Evt{evtNumber}_iX{ix_Cer}_iY{iy_Cer}",
+                f"pulse_shape_Cer_Evt{evtNumber}_iX{ix_Cer_FERS1}_iY{iy_Cer_FERS1}",
                 f"Pulse Shape {varname_Cer} (CER);Time;Amplitude",
                 1024, 0, 1024
             )
             h1_Sci = ROOT.TH1F(
-                f"pulse_shape_Sci_Evt{evtNumber}_iX{ix_Sci}_iY{iy_Sci}",
+                f"pulse_shape_Sci_Evt{evtNumber}_iX{ix_Sci_FERS1}_iY{iy_Sci_FERS1}",
                 f"Pulse Shape {varname_Sci} (SCI);Time;Amplitude",
                 1024, 0, 1024
             )
@@ -107,7 +121,7 @@ def make_event_displays(infilename):
                 extraToDraw.SetTextFont(42)
                 extraToDraw.SetTextSize(0.04)
                 extraToDraw.AddText(
-                    f"Event: {evtNumber}, iX: {ix_Cer}, iY: {iy_Cer}")
+                    f"Event: {evtNumber}, iX: {ix_Cer_FERS1}, iY: {iy_Cer_FERS1}")
                 extraToDraw.AddText(f"Cer Peak: {peak_Cer}")
                 extraToDraw.AddText(f"Sci Peak: {peak_Sci}")
                 extraToDraw.AddText(
@@ -115,16 +129,16 @@ def make_event_displays(infilename):
                 extraToDraw.AddText(f"delta T: {deltaTS * 0.2: .2f} ns")
 
                 DrawHistos([h1_Cer, h1_Sci], ["Cer", "Sci"], 0, 1024, "TS",
-                           -5, 30, "Amplitude", f"pulse_shape_Evt{evtNumber}_iX{ix_Cer}_iY{iy_Cer}", dology=False, mycolors=[2, 4], drawashist=True, extraToDraw=extraToDraw)
+                           -5, 30, "Amplitude", f"pulse_shape_Evt{evtNumber}_iX{ix_Cer_FERS1}_iY{iy_Cer_FERS1}", dology=False, mycolors=[2, 4], drawashist=True, extraToDraw=extraToDraw)
 
         hists_eventdisplay.append(hist2d_Cer)
         hists_eventdisplay.append(hist2d_Sci)
 
         if ievt < 100000:
-            DrawHistos([hist2d_Cer], f"", -0.5, 3.5, "iX",
-                       -0.5, 7.5, "iY", f"event_display_Evt{evtNumber}_Cer", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=3000.0, doth2=True)
-            DrawHistos([hist2d_Sci], f"", -0.5, 3.5, "iX",
-                       -0.5, 7.5, "iY", f"event_display_Evt{evtNumber}_Sci", dology=False, drawoptions=["COLZ,text"], zmin=200.0, zmax=9000.0, doth2=True)
+            DrawHistos([hist2d_Cer], f"", ix_min, 3.5, "iX",
+                       iy_min, 7.5, "iY", f"event_display_Evt{evtNumber}_Cer", dology=False, drawoptions=["COLZ,text"], zmin=50.0, zmax=3000.0, doth2=True, W_ref=W_ref)
+            DrawHistos([hist2d_Sci], f"", ix_min, 3.5, "iX",
+                       iy_min, 7.5, "iY", f"event_display_Evt{evtNumber}_Sci", dology=False, drawoptions=["COLZ,text"], zmin=50.0, zmax=8000.0, doth2=True, W_ref=W_ref)
     print(f"Events left after filtering: {rdf.Count().GetValue()}")
 
     # Save event display histograms
@@ -157,4 +171,4 @@ if __name__ == "__main__":
     ]
     for idx, input_file in enumerate(files):
         print(f"Processing file: {input_file}")
-        make_event_displays(input_file)
+        make_event_displays(input_file, onlyFERS1=False)

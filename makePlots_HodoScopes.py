@@ -117,8 +117,8 @@ def analyzeHodoPulse(infilename):
     for ievt in range(0, rdf.Count().GetValue()):
         print(f"Processing event {ievt + 1} of {rdf.Count().GetValue()}")
         evtNumber = rdf.Take["unsigned int"]("event_n").GetValue()[ievt]
-        if ievt > 10:
-            break
+        # if ievt > 10:
+        #    break
         if evtNumber not in events_interested:
             print(
                 f"Skipping event {evtNumber} as it is not in the interested events list.")
@@ -166,10 +166,10 @@ def analyzeHodoPulse(infilename):
 
 
 if __name__ == "__main__":
-    # input_file = "root/filtered_events_board1.root"
-    # print(f"Processing file: {input_file}")
-    # analyzeHodoPulse(input_file)
-
-    input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run316_250517140056_converted.root"
+    input_file = "root/filtered_events_board1.root"
     print(f"Processing file: {input_file}")
-    analyzePeak(input_file)
+    analyzeHodoPulse(input_file)
+
+    # input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run316_250517140056_converted.root"
+    # print(f"Processing file: {input_file}")
+    # analyzePeak(input_file)

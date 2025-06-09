@@ -479,7 +479,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     ROOT.gStyle.SetErrorX(0.5)
 
     ROOT.gStyle.SetPalette(1)
-    ROOT.gStyle.SetPaintTextFormat(".3f")
+    ROOT.gStyle.SetPaintTextFormat(".0f")
 
     # change the CMS_lumi variables (see CMS_lumi.py)
     # used with iPeriod = 0, e.g. for simulation-only plots (default is an empty string)
@@ -523,7 +523,10 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         canvas.SetTicks(1, 1)
         padsize1 = 1.0
         if doth2:
-            canvas.SetRightMargin(0.18)
+            if W_ref < 1000:
+                canvas.SetRightMargin(0.18)
+            else:
+                canvas.SetRightMargin(0.10)
         padsize2 = 0.
         padsize3 = 0.
         canvas.cd()
@@ -544,7 +547,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         canvas.SetLogz()
 
     if npads == 1:
-        canvas.SetLeftMargin(0.15)
+        canvas.SetRightMargin(0.15)
         canvas.SetBottomMargin(0.13)
         canvas.SetTopMargin(0.06)
 
