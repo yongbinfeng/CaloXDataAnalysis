@@ -44,6 +44,7 @@ def analyzePeak(infilename):
 
     rdfs_filtered = []
     maps_mean = {}
+    map_means_normalized = {}
     for group, channels in hodoscope_channels.items():
         if group != "trigger":
             rdf_filtered = rdf.Filter(
@@ -102,25 +103,37 @@ def analyzePeak(infilename):
             )
 
             means = []
+            means_normalized = []
             for channel in channels:
                 for i in range(0, 1024):
-                    mean = rdf_filtered.Define(f"{channel}_subtracted_norm_{i}", f"{channel}_subtracted_norm[{i}]").Mean(
+                    mean_normalized = rdf_filtered.Define(f"{channel}_subtracted_norm_{i}", f"{channel}_subtracted_norm[{i}]").Mean(
                         f"{channel}_subtracted_norm_{i}")
+                    mean = rdf_filtered.Define(f"{channel}_subtracted_{i}", f"{channel}_subtracted[{i}]").Mean(
+                        f"{channel}_subtracted_{i}")
                     means.append(mean)
+                    means_normalized.append(mean_normalized)
+
                 maps_mean[channel] = means
+                map_means_normalized[channel] = means_normalized
 
     print("Average channel normalized pulse shapes calculated.")
 
     # save the means to TH1F histograms
     histos1D_means = {}
+    histos1D_means_normalized = {}
     for channel, means in maps_mean.items():
         histo = ROOT.TH1F(
             f"{channel}_means", f"Means of {channel};Time Slice;Mean Value", 1024, 0, 1024)
+        histo_normalized = ROOT.TH1F(
+            f"{channel}_means_normalized", f"Means of {channel} normalized;Time Slice;Mean Value", 1024, 0, 1024)
         for i, mean in enumerate(means):
             print(
                 f"Channel {channel}, Time Slice {i}, Mean Value: {mean.GetValue()}")
             histo.SetBinContent(i + 1, mean.GetValue())
+        for i, mean_normalized in enumerate(map_means_normalized[channel]):
+            histo_normalized.SetBinContent(i + 1, mean_normalized.GetValue())
         histos1D_means[channel] = histo
+        histos1D_means_normalized[channel] = histo_normalized
 
     print("Writing histograms to output file...")
     ofile = ROOT.TFile("root/hodoscope_peaks.root", "RECREATE")
@@ -145,6 +158,10 @@ def analyzePeak(infilename):
     for group, hist in histos1D_means.items():
         histos1D_means[group].SetDirectory(ofile)
         histos1D_means[group].Write()
+
+    for group, hist in histos1D_means_normalized.items():
+        histos1D_means_normalized[group].SetDirectory(ofile)
+        histos1D_means_normalized[group].Write()
 
     ofile.Close()
 
