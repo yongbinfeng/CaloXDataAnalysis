@@ -26,6 +26,7 @@ def analyzePeak(infilename):
     rdf = ROOT.RDataFrame("EventTree", infile)
 
     histos1D_diff = {}
+    histos1D_sum = {}
     histos1D_left = {}
     histos1D_right = {}
     histos2D_left_vs_right = {}
@@ -42,20 +43,35 @@ def analyzePeak(infilename):
                              f"ROOT::VecOps::Min({channel}_subtracted)")
 
     rdfs_filtered = []
+    maps_mean = {}
     for group, channels in hodoscope_channels.items():
         if group != "trigger":
             rdf_filtered = rdf.Filter(
                 f"({channels[0]}_peak_value < -100.0 ) && ({channels[1]}_peak_value < -100.0 )"
             )
+
+            for channel in channels:
+                # normalize the pulse shape
+                rdf_filtered = rdf_filtered.Define(f"{channel}_subtracted_sum",
+                                                   f"ROOT::VecOps::Sum({channel}_subtracted) + 1e-6")
+                rdf_filtered = rdf_filtered.Define(f"{channel}_subtracted_norm",
+                                                   f"{channel}_subtracted / {channel}_subtracted_sum")
             # calculate the difference between left and right peaks
             rdf_filtered = rdf_filtered.Define(f"{group}_delta_peak",
                                                f"(int){channels[1]}_peak_position - (int){channels[0]}_peak_position")
+            rdf_filtered = rdf_filtered.Define(f"{group}_sum_peak",
+                                               f"(int){channels[0]}_peak_position + (int){channels[1]}_peak_position")
             rdfs_filtered.append((group, rdf_filtered))
 
             histos1D_diff[group] = rdf_filtered.Histo1D(
                 (f"{group}_delta_peak",
                  f"Delta Peak {group};Peak Position Difference;Counts", 2048, -1024, 1024),
                 f"{group}_delta_peak"
+            )
+            histos1D_sum[group] = rdf_filtered.Histo1D(
+                (f"{group}_sum_peak",
+                 f"Sum Peak {group};Peak Position Sum;Counts", 2048, 0, 2048),
+                f"{group}_sum_peak"
             )
             histos1D_left[group] = rdf_filtered.Histo1D(
                 (f"{group}_left_peak",
@@ -85,6 +101,27 @@ def analyzePeak(infilename):
                 f"{channels[1]}_peak_value"
             )
 
+            means = []
+            for channel in channels:
+                for i in range(0, 1024):
+                    mean = rdf_filtered.Define(f"{channel}_subtracted_norm_{i}", f"{channel}_subtracted_norm[{i}]").Mean(
+                        f"{channel}_subtracted_norm_{i}")
+                    means.append(mean)
+                maps_mean[channel] = means
+
+    print("Average channel normalized pulse shapes calculated.")
+
+    # save the means to TH1F histograms
+    histos1D_means = {}
+    for channel, means in maps_mean.items():
+        histo = ROOT.TH1F(
+            f"{channel}_means", f"Means of {channel};Time Slice;Mean Value", 1024, 0, 1024)
+        for i, mean in enumerate(means):
+            print(
+                f"Channel {channel}, Time Slice {i}, Mean Value: {mean.GetValue()}")
+            histo.SetBinContent(i + 1, mean.GetValue())
+        histos1D_means[channel] = histo
+
     print("Writing histograms to output file...")
     ofile = ROOT.TFile("root/hodoscope_peaks.root", "RECREATE")
     if not ofile or ofile.IsZombie():
@@ -92,6 +129,8 @@ def analyzePeak(infilename):
     for group, hist in histos1D_diff.items():
         hist.SetDirectory(ofile)
         hist.Write()
+        histos1D_sum[group].SetDirectory(ofile)
+        histos1D_sum[group].Write()
         histos1D_left[group].SetDirectory(ofile)
         histos1D_left[group].Write()
         histos1D_right[group].SetDirectory(ofile)
@@ -102,6 +141,11 @@ def analyzePeak(infilename):
         histos1D_left_peak[group].Write()
         histos1D_right_peak[group].SetDirectory(ofile)
         histos1D_right_peak[group].Write()
+
+    for group, hist in histos1D_means.items():
+        histos1D_means[group].SetDirectory(ofile)
+        histos1D_means[group].Write()
+
     ofile.Close()
 
 
@@ -166,10 +210,10 @@ def analyzeHodoPulse(infilename):
 
 
 if __name__ == "__main__":
-    input_file = "root/filtered_events_board1.root"
-    print(f"Processing file: {input_file}")
-    analyzeHodoPulse(input_file)
-
-    # input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run316_250517140056_converted.root"
+    # input_file = "root/filtered_events_board1.root"
     # print(f"Processing file: {input_file}")
-    # analyzePeak(input_file)
+    # analyzeHodoPulse(input_file)
+
+    input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run316_250517140056_converted.root"
+    print(f"Processing file: {input_file}")
+    analyzePeak(input_file)
