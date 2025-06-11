@@ -98,7 +98,7 @@ def build_map_FERSs_ixy(run=316):
         map_ixy_FERS9 = {}
         map_ixy_FERS10 = {}
         map_ixy_FERS11 = {}
-        map_ixy_FERS12 = {}
+        # map_ixy_FERS12 = {}
 
         for ifers, (ix, iy) in map_ixy_FERS_withDRS.items():
             map_ixy_FERS0[ifers] = (ix-12, iy + 6)
@@ -111,7 +111,7 @@ def build_map_FERSs_ixy(run=316):
             map_ixy_FERS9[ifers] = (ix-4, iy + 2)
             map_ixy_FERS10[ifers] = (ix,   iy)
             map_ixy_FERS11[ifers] = (ix+4, iy + 2)
-            map_ixy_FERS12[ifers] = (ix+8, iy + 2)
+            # map_ixy_FERS12[ifers] = (ix+8, iy + 2)
 
         map_ixy_FERSs = {}
         map_ixy_FERSs["Board0"] = map_ixy_FERS0
@@ -124,7 +124,52 @@ def build_map_FERSs_ixy(run=316):
         map_ixy_FERSs["Board9"] = map_ixy_FERS9
         map_ixy_FERSs["Board10"] = map_ixy_FERS10
         map_ixy_FERSs["Board11"] = map_ixy_FERS11
-        map_ixy_FERSs["Board12"] = map_ixy_FERS12
+        # map_ixy_FERSs["Board12"] = map_ixy_FERS12
+    elif run == 583:
+        map_ixy_FERS0 = {}
+        map_ixy_FERS1 = {}
+        map_ixy_FERS2 = {}
+        map_ixy_FERS3 = {}
+        map_ixy_FERS4 = {}
+        map_ixy_FERS5 = {}
+        map_ixy_FERS8 = {}
+        map_ixy_FERS9 = {}
+        map_ixy_FERS10 = {}
+        map_ixy_FERS11 = {}
+        map_ixy_FERS12 = {}
+
+        for ifers, (ix, iy) in map_ixy_FERS_withDRS.items():
+            map_ixy_FERS0[ifers] = (ix-12, iy + 6)
+            map_ixy_FERS1[ifers] = (ix-8, iy + 10)
+            map_ixy_FERS2[ifers] = (ix-4, iy + 10)
+            map_ixy_FERS3[ifers] = (ix,   iy + 12)
+            map_ixy_FERS4[ifers] = (ix+4, iy + 10)
+            map_ixy_FERS8[ifers] = (ix-8, iy + 2)
+            map_ixy_FERS9[ifers] = (ix-4, iy + 2)
+            map_ixy_FERS10[ifers] = (ix,   iy)
+            map_ixy_FERS11[ifers] = (ix+4, iy + 2)
+            map_ixy_FERS12[ifers] = (ix+8, iy + 2)
+
+        ix_base_center = 0
+        iy_base_center = 11.75
+        for ifers in map_ixy_FERS_withDRS.keys():
+            ix = ix_base_center + (ifers % 2)
+            iy = iy_base_center - (ifers // 4) * 0.25
+            map_ixy_FERS5[ifers] = (ix, iy)
+
+        map_ixy_FERSs = {}
+        map_ixy_FERSs["Board0"] = map_ixy_FERS0
+        map_ixy_FERSs["Board1"] = map_ixy_FERS1
+        map_ixy_FERSs["Board2"] = map_ixy_FERS2
+        map_ixy_FERSs["Board3"] = map_ixy_FERS3
+        map_ixy_FERSs["Board4"] = map_ixy_FERS4
+        map_ixy_FERSs["Board5"] = map_ixy_FERS5
+        map_ixy_FERSs["Board8"] = map_ixy_FERS8
+        map_ixy_FERSs["Board9"] = map_ixy_FERS9
+        map_ixy_FERSs["Board10"] = map_ixy_FERS10
+        map_ixy_FERSs["Board11"] = map_ixy_FERS11
+        # map_ixy_FERSs["Board12"] = map_ixy_FERS12
+
     else:
         raise ValueError(
             f"Unsupported run number {run} for FERS channel mapping.")
@@ -239,7 +284,7 @@ if __name__ == "__main__":
         print(f"{group}: {channels}")
 
     print("\nbuild_map_FERSs_ixy:")
-    map_FERSs_ixy = build_map_FERSs_ixy(run=571)
+    map_FERSs_ixy = build_map_FERSs_ixy(run=583)
     for board, mapping in map_FERSs_ixy.items():
         print(f"{board}:")
         for ifers, (ix, iy) in mapping.items():
