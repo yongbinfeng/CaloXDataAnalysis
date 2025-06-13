@@ -40,7 +40,7 @@ def makeEventDisplays(infilename):
 
     # print how many events are left after filtering
     for ievt in range(0, rdf.Count().GetValue()):
-        if ievt > 2:
+        if ievt > 20:
             break
         print(f"Processing event {ievt + 1} of {rdf.Count().GetValue()}")
         evtNumber = rdf.Take["unsigned int"]("event_n").GetValue()[ievt]
@@ -82,8 +82,8 @@ def makeEventDisplays(infilename):
                 var_Sci = chan_Sci.GetHGChannelName()
                 e_Cer = rdf.Take["unsigned short"](var_Cer).GetValue()[ievt]
                 e_Sci = rdf.Take["unsigned short"](var_Sci).GetValue()[ievt]
-                print(
-                    f"Event {evtNumber}, Tower ({iTowerX}, {iTowerY}): Cerenkov: {e_Cer}, Scintillator: {e_Sci}")
+                # print(
+                #    f"Event {evtNumber}, Tower ({iTowerX}, {iTowerY}): Cerenkov: {e_Cer}, Scintillator: {e_Sci}")
 
                 if FERSBoard.Is3mm():
                     iX, iY = hist2d_Cer_3mm.GetXaxis().FindBin(iTowerX), \
@@ -139,7 +139,6 @@ def makeEventDisplays(infilename):
                     chan = DRSBoard.GetChannelByTower(
                         iTowerX, iTowerY, isCer=(var == "Cer"))
                     varname = chan.GetChannelName()
-                    print("varname ", varname)
                     pulse_shape = rdf.Take["ROOT::VecOps::RVec<float>"](
                         varname).GetValue()[ievt]
 
@@ -182,7 +181,7 @@ def makeEventDisplays(infilename):
 
     print(f"Events left after filtering: {rdf.Count().GetValue()}")
 
-    generate_html(plots_eventdisplay, outdir_eventdisplay, plots_per_row=1,
+    generate_html(plots_eventdisplay, outdir_eventdisplay, plots_per_row=2,
                   output_html=f"html/event_display/viewer.html")
     generate_html(plots_pulse_shapes, outdir_pulse_shapes,
                   output_html=f"html/pulse_shapes/viewer.html")
