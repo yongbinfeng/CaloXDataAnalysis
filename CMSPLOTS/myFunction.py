@@ -954,7 +954,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     if savepdf:
         # print("save plot to %s.pdf" % outputname)
         # canvas.Print("%s.C"%outputname)
-        canvas.Print("%s.pdf" % outputname)
-        # canvas.Print("%s.png" % outputname)
+        # canvas.Print("%s.pdf" % outputname)
+        canvas.Print("%s.png" % outputname)
         # canvas.Print("%s.root" % outputname)
     return hratios if showratio else None

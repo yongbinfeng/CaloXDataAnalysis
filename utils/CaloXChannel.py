@@ -28,27 +28,14 @@ class CaloXChannel(object):
         )
 
     def isCer(self):
-        """
-        Check if the channel is a CER channel.
-        """
         return self.isCer
 
     def isSci(self):
-        """
-        Check if the channel is a SCI channel.
-        """
         return not self.isCer
 
 
 class FERSChannel(CaloXChannel):
-    """
-    A class to represent a FERS channel, inheriting from CaloXChannel.
-    """
-
     def __init__(self, iTowerX: int, iTowerY: int, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, boardNo: int):
-        """
-        Initialize a FERS channel with CaloXChannel and FERS-specific attributes.
-        """
         super().__init__(iTowerX, iTowerY, iBoardX, iBoardY, isCer)
         self.channelNo = channelNo  # FERS channel number
         self.boardNo = boardNo  # FERS board number
@@ -68,16 +55,15 @@ class FERSChannel(CaloXChannel):
             self.isCer, self.channelNo, self.boardNo
         )
 
+    def GetHGChannelName(self):
+        return f"FERS_Board{self.boardNo}_energyHG_{self.channelNo}"
+
+    def GetLGChannelName(self):
+        return f"FERS_Board{self.boardNo}_energyLG_{self.channelNo}"
+
 
 class DRSChannel(CaloXChannel):
-    """
-    A class to represent a DRS channel, inheriting from CaloXChannel.
-    """
-
     def __init__(self, iTowerX: int, iTowerY: int, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, groupNo: int, boardNo: int):
-        """
-        Initialize a DRS channel with specific attributes.
-        """
         super().__init__(iTowerX, iTowerY, iBoardX, iBoardY, isCer)
         self.channelNo = channelNo
         self.groupNo = groupNo
@@ -99,6 +85,9 @@ class DRSChannel(CaloXChannel):
             self.isCer, self.channelNo, self.groupNo, self.boardNo
         )
 
+    def GetChannelName(self):
+        return f"DRS_Board{self.boardNo}_Group{self.groupNo}_Channel{self.channelNo}"
+
 
 class Board(object):
     """
@@ -108,6 +97,8 @@ class Board(object):
     def __init__(self, boardNo):
         self.boardNo = boardNo  # Board number
         self.channels = []  # List of channels on the board
+        # channels are organized as 2D list of CaloXChannel objects
+        # by (iBoardX, iBoardY)
 
     def __str__(self):
         s = f"Board Number: {self.boardNo}\n"
@@ -116,35 +107,94 @@ class Board(object):
                 s += str(channel) + "\n"
         return s.strip()
 
+    def __iter__(self):
+        for row in self.channels:
+            for channel in row:
+                yield channel
+
     def __getitem__(self, idx):
         """
         Allow index access to the board's channels.
         Usage: board[x, y] returns the channel at (x, y).
         """
-        if isinstance(idx, tuple) and len(idx) == 2:
-            x, y = idx
-            try:
-                return self.channels[x][y]
-            except IndexError:
-                if len(self.channels) == 0 or len(self.channels[0]) == 0:
-                    raise IndexError("Board has no channels defined.")
-                else:
-                    raise IndexError(
-                        f"Channel not found, Range is (0-{len(self.channels)-1}, 0-{len(self.channels[0])-1})")
-        else:
-            raise IndexError("Index must be a tuple of (x, y)")
+        try:
+            if isinstance(idx, tuple) and len(idx) == 2:
+                iBoardX, iBoardY = idx
+                return self.channels[iBoardX][iBoardY]
+            else:
+                return self.channels[idx]
+        except IndexError:
+            if len(self.channels) == 0 or len(self.channels[0]) == 0:
+                raise IndexError("Board has no channels defined.")
+            else:
+                raise IndexError(
+                    f"Channel not found, Range is (0-{len(self.channels)-1}, 0-{len(self.channels[0])-1})")
+
+    def GetChannelByTower(self, iTowerX, iTowerY, isCer=False):
+        """
+        Get a channel by its tower coordinates (iTowerX, iTowerY).
+        Returns the first matching channel or None if not found.
+        """
+        for row in self.channels:
+            for channel in row:
+                if channel.iTowerX == iTowerX and channel.iTowerY == iTowerY and channel.isCer == isCer:
+                    return channel
+        print(
+            f"\033[91m Warning: Channel not found for tower ({iTowerX}, {iTowerY}) on board {self.boardNo}.\033[0m")
+        return None
 
     def GetCerChannels(self):
         """
         Get all CER channels on the board.
         """
-        return [channel for channel in self.channels if channel.isCer]
+        cerchannels = []
+        for row in self.channels:
+            for channel in row:
+                if channel.isCer:
+                    cerchannels.append(channel)
+        return cerchannels
 
     def GetSciChannels(self):
         """
         Get all SCI channels on the board.
         """
-        return [channel for channel in self.channels if not channel.isCer]
+        scichannels = []
+        for row in self.channels:
+            for channel in row:
+                if not channel.isCer:
+                    scichannels.append(channel)
+        return scichannels
+
+    def GetListOfTowers(self):
+        """
+        Get a list of unique towers on the board.
+        Returns a list of tuples (iTowerX, iTowerY).
+        """
+        towers = set()
+        for row in self.channels:
+            for channel in row:
+                towers.add((channel.iTowerX, channel.iTowerY))
+        return list(towers)
+
+    def MapCerToSci(self):
+        """
+        Map CER channels to SCI channels.
+        Returns a dictionary mapping CER channels to SCI channels.
+        """
+        cer_channels = self.GetCerChannels()
+        sci_channels = self.GetSciChannels()
+        mapping = {}
+        for cer_channel in cer_channels:
+            for sci_channel in sci_channels:
+                if cer_channel.iTowerX == sci_channel.iTowerX and \
+                   cer_channel.iTowerY == sci_channel.iTowerY:
+                    mapping[cer_channel] = sci_channel
+                    break
+        assert len(mapping) == len(cer_channels), \
+            "Mapping failed: not all CER channels have a corresponding SCI channel."
+        assert len(set(mapping.values())) == len(mapping), \
+            "Mapping failed: some SCI channels are mapped to multiple CER channels."
+        return mapping
 
 
 class FERSBoard(Board):
@@ -295,9 +345,13 @@ def buildDRSBase(boardNo=0):
         for iy in range(0, 8):
             channelNo = drs_map[ix, iy]
             isCer = (iy % 2 == 0)
+            # DRS channels are grouped in groups of 8
+            # groupNo is the group number (0-3)
+            # chanNo is the channel number within the group (0-7)
             groupNo = (channelNo // 8)
+            chanNo = (channelNo % 8)
             channel = DRSChannel(ix, -int(iy/2), ix, iy, isCer,
-                                 channelNo, groupNo, boardNo)
+                                 chanNo, groupNo, boardNo)
             channels_DRS_one_row.append(channel)
         channels_DRS.append(channels_DRS_one_row)
     return channels_DRS
@@ -316,3 +370,5 @@ if __name__ == "__main__":
     print("\nBuilding DRS board:")
     drs_board = DRSBoard(boardNo=1)
     print(drs_board)
+
+    print("\nDRS Board List of Towers: ", drs_board.GetListOfTowers())

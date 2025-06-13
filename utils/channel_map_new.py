@@ -106,7 +106,7 @@ def buildFERSBoards(run=316):
     return FERSBoards
 
 
-def buildDRSMap(run=316):
+def buildDRSBoards(run=316):
     """
     Build a map for ixy and DRS channels.
     """
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     # Example usage
     run_number = 316
     fers_boards = buildFERSBoards(run=run_number)
-    drs_boards = buildDRSMap(run=run_number)
+    drs_boards = buildDRSBoards(run=run_number)
 
     print("FERS Boards:")
     for board_name, board in fers_boards.items():
