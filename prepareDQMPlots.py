@@ -1,6 +1,6 @@
 import os
 import ROOT
-from utils.channel_map_new import buildDRSBoards, buildFERSBoards
+from utils.channel_map import buildDRSBoards, buildFERSBoards
 from utils.utils import number2string, getDataFile
 import time
 

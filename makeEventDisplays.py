@@ -3,7 +3,7 @@ sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from CMSPLOTS.myFunction import DrawHistos
 import os
-from utils.channel_map_new import buildDRSBoards, buildFERSBoards
+from utils.channel_map import buildDRSBoards, buildFERSBoards
 from utils.utils import number2string, getDataFile
 from utils.html_generator import generate_html
 import time
@@ -40,7 +40,7 @@ def makeEventDisplays(infilename):
 
     # print how many events are left after filtering
     for ievt in range(0, rdf.Count().GetValue()):
-        if ievt > 20:
+        if ievt > 30:
             break
         print(f"Processing event {ievt + 1} of {rdf.Count().GetValue()}")
         evtNumber = rdf.Take["unsigned int"]("event_n").GetValue()[ievt]
@@ -172,7 +172,7 @@ def makeEventDisplays(infilename):
 
                     outdir_pulse_shapes = f"{outdir}/pulse_shapes/"
                     DrawHistos(hists_pulse_shapes[-2:], ["Cer", "Sci"], 0, 1024, "TS",
-                               1000, 2500, "Amplitude",
+                               1400, 2200, "Amplitude",
                                f"pulse_shape_Evt{evtNumber}_iTowerX{sTowerX}_iTowerY{sTowerY}",
                                dology=False, mycolors=[2, 4], drawashist=True, extraToDraw=extraToDraw,
                                outdir=outdir_pulse_shapes)

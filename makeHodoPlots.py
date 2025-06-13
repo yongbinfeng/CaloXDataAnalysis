@@ -4,17 +4,22 @@ import ROOT
 from CMSPLOTS.myFunction import DrawHistos
 import json
 from results.events import events_interested
-from utils.channel_map import get_hodoscope_channels
+from utils.channel_map import buildHodoChannels
+from utils.html_generator import generate_html
 
 ROOT.gROOT.SetBatch(True)  # Run in batch mode
 # multithread
 ROOT.ROOT.EnableImplicitMT(10)
 
-hodoscope_channels = get_hodoscope_channels()
+runNumber = 583
+
+hodoscope_channels = buildHodoChannels(run=runNumber)
 
 
 with open("results/hodoscope_noises.json", "r") as json_file:
     hodo_noises = json.load(json_file)
+
+outdir = f"plots/Run{runNumber}/Hodoscope/"
 
 
 def analyzePeak(infilename):
@@ -174,16 +179,18 @@ def analyzeHodoPulse(infilename):
     # Create an RDataFrame from the EventTree
     rdf = ROOT.RDataFrame("EventTree", infile)
 
+    plots_toDraw = []
+
     # print how many events are left after filtering
     for ievt in range(0, rdf.Count().GetValue()):
         print(f"Processing event {ievt + 1} of {rdf.Count().GetValue()}")
         evtNumber = rdf.Take["unsigned int"]("event_n").GetValue()[ievt]
-        # if ievt > 10:
-        #    break
-        if evtNumber not in events_interested:
-            print(
-                f"Skipping event {evtNumber} as it is not in the interested events list.")
-            continue
+        if ievt > 30:
+            break
+        # if evtNumber not in events_interested:
+        #    print(
+        #        f"Skipping event {evtNumber} as it is not in the interested events list.")
+        #    continue
         # dump the pulse shapes for hodoscope channels
         h1_hodos = {}
         for group, channels in hodoscope_channels.items():
@@ -221,9 +228,16 @@ def analyzeHodoPulse(infilename):
                     extraToDraw.AddText(f"Right Peak: {peak_right}")
                     extraToDraw.AddText(
                         f"delta Peak: {deltaTS} ts")
+                output_name = f"pulse_shape_Hodoscopes_Evt{evtNumber}_{group}"
                 DrawHistos(hs_todraw, labels, 0, 1024, "TS",
-                           -2500, 1999, "Amplitude", f"pulse_shape_Hodoscopes_Evt{evtNumber}_{group}", dology=False, mycolors=[2, 4], drawashist=True, extraToDraw=extraToDraw)
+                           -2500, 1999, "Amplitude", output_name,
+                           dology=False, mycolors=[2, 4], drawashist=True, extraToDraw=extraToDraw,
+                           outdir=outdir)
+                plots_toDraw.append(
+                    f"{output_name}.png")
     print(f"Events left after filtering: {rdf.Count().GetValue()}")
+    generate_html(plots_toDraw, outdir, plots_per_row=5,
+                  output_html="html/Hodoscopes/viewer.html")
 
 
 if __name__ == "__main__":
@@ -231,6 +245,8 @@ if __name__ == "__main__":
     # print(f"Processing file: {input_file}")
     # analyzeHodoPulse(input_file)
 
-    input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run316_250517140056_converted.root"
-    print(f"Processing file: {input_file}")
-    analyzePeak(input_file)
+    # input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run316_250517140056_converted.root"
+    inputfile_name = f"root/Run{runNumber}/filtered.root"
+    print(f"Processing file: {inputfile_name}")
+    analyzeHodoPulse(inputfile_name)
+    # analyzePeak(inputfile_name)

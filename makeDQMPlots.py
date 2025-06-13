@@ -2,7 +2,7 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from myFunction import DrawHistos
-from utils.channel_map_new import buildDRSBoards, buildFERSBoards
+from utils.channel_map import buildDRSBoards, buildFERSBoards
 from utils.utils import number2string
 from utils.html_generator import generate_html
 

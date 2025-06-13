@@ -1,225 +1,128 @@
-# map of fers channel to drs channel
-A5202_map_tmp: list[int] = [4, 2, 3, 1, 8, 6, 7, 5,
-                            11, 9, 12, 10, 15, 13, 16, 14,
-                            20, 18, 19, 17, 24, 22, 23, 21,
-                            27, 25, 28, 26, 31, 29, 32, 30,
-                            36, 34, 35, 33, 40, 38, 39, 37,
-                            43, 41, 44, 42, 47, 45, 48, 46,
-                            52, 50, 51, 49, 56, 54, 55, 53,
-                            59, 57, 60, 58, 63, 61, 64, 62]
-A5202_map = []
-for i in range(0, 64):
-    A5202_map.append(A5202_map_tmp[i] - 1)  # convert to zero-based index
+import numpy as np
+from utils.CaloXChannel import FERSBoard, DRSBoard
 
 
-def build_map_Cer_Sci():
-    """
-    Build a map for CER and SCI channels in FERS board 1
-    """
-    map_Cer_Sci = {}
-    for iCer in [0, 1, 2, 3,
-                 8, 9, 10, 11,
-                 16, 17, 18, 19,
-                 24, 25, 26, 27,
-                 32, 33, 34, 35,
-                 40, 41, 42, 43,
-                 48, 49, 50, 51,
-                 56, 57, 58, 59]:
-        iSci = iCer + 4
-
-        index_Cer = A5202_map.index(iCer)
-        index_Sci = A5202_map.index(iSci)
-        map_Cer_Sci[index_Cer] = index_Sci
-    return map_Cer_Sci
-
-
-def build_map_ixy_DRS():
-    """
-    Build a map for ixy and DRS channels.
-    """
-    map_ixy_DRS = {}
-    for i in range(0, 64):
-        iy = i // 8
-        ix = i % 8
-        if ix >= 4:
-            ix -= 4
-        # mirror, flip
-        ix = 3 - ix
-        iy = 7 - iy
-        map_ixy_DRS[i] = (ix, iy)
-    return map_ixy_DRS
-
-
-def build_map_FERS1_ixy():
-    """
-    Build a map for ixy and FERS channels for board 1.
-    """
-    map_ixy_DRS = build_map_ixy_DRS()
-    map_ixy_FERS = {}
-    for ifers in range(0, 64):
-        idrs = A5202_map[ifers]
-        ix, iy = map_ixy_DRS[idrs]
-        map_ixy_FERS[ifers] = (ix, iy)
-
-    return map_ixy_FERS
-
-
-def build_map_FERSs_ixy(run=316):
+def buildFERSBoards(run=316):
     """
     Build a map for ixy and FERS channels for both boards.
     """
-    map_ixy_FERS_withDRS = build_map_FERS1_ixy()
-    map_ixy_FERSs = {}
+    base_FERSBoard_6mm = FERSBoard(boardNo=-1, is6mm=True)
+    base_FERSBoard_3mm = FERSBoard(boardNo=-1, is6mm=False)
+    FERSBoards = {}
     if run == 316:
-        map_ixy_FERS2 = {}
-        map_ixy_FERS3 = {}
-        map_ixy_FERS4 = {}
-        map_ixy_FERS5 = {}
-        for ifers, (ix, iy) in map_ixy_FERS_withDRS.items():
-            map_ixy_FERS2[ifers] = (ix-4, iy)
-            map_ixy_FERS3[ifers] = (ix-8, iy-4)
-            map_ixy_FERS4[ifers] = (ix-12, iy)
-            map_ixy_FERS5[ifers] = (ix-16, iy)
+        # 5 FERS board in 316
+        FERSBoards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
+        FERSBoards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
+        FERSBoards["Board3"] = base_FERSBoard_6mm.copy(boardNo=3)
+        FERSBoards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
+        FERSBoards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
+        for tower_ix in range(0, 4):
+            for tower_iy in range(0, 16):
+                FERSBoards["Board2"][tower_ix, tower_iy].iTowerX -= 4
+                FERSBoards["Board3"][tower_ix, tower_iy].iTowerX -= 8
+                FERSBoards["Board3"][tower_ix, tower_iy].iTowerY -= 4
+                FERSBoards["Board4"][tower_ix, tower_iy].iTowerX -= 12
+                FERSBoards["Board5"][tower_ix, tower_iy].iTowerX -= 16
 
-        map_ixy_FERSs = {}
-        map_ixy_FERSs["Board1"] = map_ixy_FERS_withDRS
-        map_ixy_FERSs["Board2"] = map_ixy_FERS2
-        map_ixy_FERSs["Board3"] = map_ixy_FERS3
-        map_ixy_FERSs["Board4"] = map_ixy_FERS4
-        map_ixy_FERSs["Board5"] = map_ixy_FERS5
     elif run == 571:
-        map_ixy_FERS0 = {}
-        map_ixy_FERS1 = {}
-        map_ixy_FERS2 = {}
-        map_ixy_FERS3 = {}
-        map_ixy_FERS4 = {}
-        map_ixy_FERS5 = {}
-        map_ixy_FERS8 = {}
-        map_ixy_FERS9 = {}
-        map_ixy_FERS10 = {}
-        map_ixy_FERS11 = {}
-        # map_ixy_FERS12 = {}
+        FERSBoards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
+        FERSBoards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
+        FERSBoards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
+        FERSBoards["Board3"] = base_FERSBoard_6mm.copy(boardNo=3)
+        FERSBoards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
+        FERSBoards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
+        FERSBoards["Board8"] = base_FERSBoard_6mm.copy(boardNo=8)
+        FERSBoards["Board9"] = base_FERSBoard_6mm.copy(boardNo=9)
+        FERSBoards["Board10"] = base_FERSBoard_6mm.copy(boardNo=10)
+        FERSBoards["Board11"] = base_FERSBoard_6mm.copy(boardNo=11)
+        # FERSBoards["Board12"] = base_FERSBoard_3mm
 
-        for ifers, (ix, iy) in map_ixy_FERS_withDRS.items():
-            map_ixy_FERS0[ifers] = (ix-12, iy + 6)
-            map_ixy_FERS1[ifers] = (ix-8, iy + 10)
-            map_ixy_FERS2[ifers] = (ix-4, iy + 10)
-            map_ixy_FERS3[ifers] = (ix,   iy + 12)
-            map_ixy_FERS4[ifers] = (ix+4, iy + 10)
-            map_ixy_FERS5[ifers] = (ix+8, iy + 10)
-            map_ixy_FERS8[ifers] = (ix-8, iy + 2)
-            map_ixy_FERS9[ifers] = (ix-4, iy + 2)
-            map_ixy_FERS10[ifers] = (ix,   iy)
-            map_ixy_FERS11[ifers] = (ix+4, iy + 2)
-            # map_ixy_FERS12[ifers] = (ix+8, iy + 2)
+        for tower_ix in range(0, 4):
+            for tower_iy in range(0, 16):
+                FERSBoards["Board0"][tower_ix, tower_iy].iTowerX -= 12
+                FERSBoards["Board0"][tower_ix, tower_iy].iTowerY += 6
+                FERSBoards["Board1"][tower_ix, tower_iy].iTowerX -= 8
+                FERSBoards["Board1"][tower_ix, tower_iy].iTowerY += 10
+                FERSBoards["Board2"][tower_ix, tower_iy].iTowerX -= 4
+                FERSBoards["Board2"][tower_ix, tower_iy].iTowerY += 10
+                FERSBoards["Board3"][tower_ix, tower_iy].iTowerX += 0
+                FERSBoards["Board3"][tower_ix, tower_iy].iTowerY += 12
+                FERSBoards["Board4"][tower_ix, tower_iy].iTowerX += 4
+                FERSBoards["Board4"][tower_ix, tower_iy].iTowerY += 10
+                FERSBoards["Board5"][tower_ix, tower_iy].iTowerX += 8
+                FERSBoards["Board5"][tower_ix, tower_iy].iTowerY += 10
+                FERSBoards["Board8"][tower_ix, tower_iy].iTowerX -= 8
+                FERSBoards["Board8"][tower_ix, tower_iy].iTowerY += 2
+                FERSBoards["Board9"][tower_ix, tower_iy].iTowerX -= 4
+                FERSBoards["Board9"][tower_ix, tower_iy].iTowerY += 2
+                FERSBoards["Board10"][tower_ix, tower_iy].iTowerX += 0
+                FERSBoards["Board10"][tower_ix, tower_iy].iTowerY += 0
+                FERSBoards["Board11"][tower_ix, tower_iy].iTowerX += 4
+                FERSBoards["Board11"][tower_ix, tower_iy].iTowerY += 2
+                # FERSBoards["Board12"][tower_ix, tower_iy].iTowerX += 8
+                # FERSBoards["Board12"][tower_ix, tower_iy].iTowerY += 2
 
-        map_ixy_FERSs = {}
-        map_ixy_FERSs["Board0"] = map_ixy_FERS0
-        map_ixy_FERSs["Board1"] = map_ixy_FERS1
-        map_ixy_FERSs["Board2"] = map_ixy_FERS2
-        map_ixy_FERSs["Board3"] = map_ixy_FERS3
-        map_ixy_FERSs["Board4"] = map_ixy_FERS4
-        map_ixy_FERSs["Board5"] = map_ixy_FERS5
-        map_ixy_FERSs["Board8"] = map_ixy_FERS8
-        map_ixy_FERSs["Board9"] = map_ixy_FERS9
-        map_ixy_FERSs["Board10"] = map_ixy_FERS10
-        map_ixy_FERSs["Board11"] = map_ixy_FERS11
-        # map_ixy_FERSs["Board12"] = map_ixy_FERS12
     elif run == 583:
-        map_ixy_FERS0 = {}
-        map_ixy_FERS1 = {}
-        map_ixy_FERS2 = {}
-        map_ixy_FERS3 = {}
-        map_ixy_FERS4 = {}
-        map_ixy_FERS5 = {}
-        map_ixy_FERS8 = {}
-        map_ixy_FERS9 = {}
-        map_ixy_FERS10 = {}
-        map_ixy_FERS11 = {}
-        map_ixy_FERS12 = {}
+        FERSBoards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
+        FERSBoards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
+        FERSBoards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
+        FERSBoards["Board3"] = base_FERSBoard_6mm.copy(boardNo=3)
+        FERSBoards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
+        FERSBoards["Board8"] = base_FERSBoard_6mm.copy(boardNo=8)
+        FERSBoards["Board9"] = base_FERSBoard_6mm.copy(boardNo=9)
+        FERSBoards["Board10"] = base_FERSBoard_6mm.copy(boardNo=10)
+        FERSBoards["Board11"] = base_FERSBoard_6mm.copy(boardNo=11)
+        # FERSBoards["Board12"] = base_FERSBoard_3mm.copy(boardNo=12)
 
-        for ifers, (ix, iy) in map_ixy_FERS_withDRS.items():
-            map_ixy_FERS0[ifers] = (ix-12, iy + 6)
-            map_ixy_FERS1[ifers] = (ix-8, iy + 10)
-            map_ixy_FERS2[ifers] = (ix-4, iy + 10)
-            map_ixy_FERS3[ifers] = (ix,   iy + 12)
-            map_ixy_FERS4[ifers] = (ix+4, iy + 10)
-            map_ixy_FERS8[ifers] = (ix-8, iy + 2)
-            map_ixy_FERS9[ifers] = (ix-4, iy + 2)
-            map_ixy_FERS10[ifers] = (ix,   iy)
-            map_ixy_FERS11[ifers] = (ix+4, iy + 2)
-            map_ixy_FERS12[ifers] = (ix+8, iy + 2)
+        FERSBoards["Board5"] = base_FERSBoard_3mm.copy(boardNo=5)
 
-        ix_base_center = 0
-        iy_base_center = 11.75
-        for ifers in map_ixy_FERS_withDRS.keys():
-            ix = ix_base_center + (ifers % 2)
-            iy = iy_base_center - (ifers // 4) * 0.25
-            map_ixy_FERS5[ifers] = (ix, iy)
+        for tower_ix in range(0, 4):
+            for tower_iy in range(0, 16):
+                FERSBoards["Board0"][tower_ix, tower_iy].iTowerX -= 12
+                FERSBoards["Board0"][tower_ix, tower_iy].iTowerY += 6
+                FERSBoards["Board1"][tower_ix, tower_iy].iTowerX -= 8
+                FERSBoards["Board1"][tower_ix, tower_iy].iTowerY += 10
+                FERSBoards["Board2"][tower_ix, tower_iy].iTowerX -= 4
+                FERSBoards["Board2"][tower_ix, tower_iy].iTowerY += 10
+                FERSBoards["Board3"][tower_ix, tower_iy].iTowerX += 0
+                FERSBoards["Board3"][tower_ix, tower_iy].iTowerY += 12
+                FERSBoards["Board4"][tower_ix, tower_iy].iTowerX += 4
+                FERSBoards["Board4"][tower_ix, tower_iy].iTowerY += 10
+                FERSBoards["Board8"][tower_ix, tower_iy].iTowerX -= 8
+                FERSBoards["Board8"][tower_ix, tower_iy].iTowerY += 2
+                FERSBoards["Board9"][tower_ix, tower_iy].iTowerX -= 4
+                FERSBoards["Board9"][tower_ix, tower_iy].iTowerY += 2
+                FERSBoards["Board10"][tower_ix, tower_iy].iTowerX += 0
+                FERSBoards["Board10"][tower_ix, tower_iy].iTowerY += 0
+                FERSBoards["Board11"][tower_ix, tower_iy].iTowerX += 4
+                FERSBoards["Board11"][tower_ix, tower_iy].iTowerY += 2
+                # FERSBoards["Board12"][tower_ix, tower_iy].iTowerX += 8
+                # FERSBoards["Board12"][tower_ix, tower_iy].iTowerY += 2
 
-        map_ixy_FERSs = {}
-        map_ixy_FERSs["Board0"] = map_ixy_FERS0
-        map_ixy_FERSs["Board1"] = map_ixy_FERS1
-        map_ixy_FERSs["Board2"] = map_ixy_FERS2
-        map_ixy_FERSs["Board3"] = map_ixy_FERS3
-        map_ixy_FERSs["Board4"] = map_ixy_FERS4
-        map_ixy_FERSs["Board5"] = map_ixy_FERS5
-        map_ixy_FERSs["Board8"] = map_ixy_FERS8
-        map_ixy_FERSs["Board9"] = map_ixy_FERS9
-        map_ixy_FERSs["Board10"] = map_ixy_FERS10
-        map_ixy_FERSs["Board11"] = map_ixy_FERS11
-        # map_ixy_FERSs["Board12"] = map_ixy_FERS12
-
+                FERSBoards["Board5"][tower_ix, tower_iy].iTowerX += 0
+                FERSBoards["Board5"][tower_ix, tower_iy].iTowerY += 4.25
     else:
-        raise ValueError(
-            f"Unsupported run number {run} for FERS channel mapping.")
-    return map_ixy_FERSs
+        raise ValueError(f"Unsupported run number {run} for FERS boards.")
+    return FERSBoards
 
 
-def build_map_DRSVar():
+def buildDRSBoards(run=316):
     """
-    Build a map for DRS channel variables.
+    Build a map for ixy and DRS channels.
     """
-    map_DRSVar_Cer = {}
-    map_DRSVar_Sci = {}
-    for i in range(0, 64):
-        if i < 32:
-            iboard = 0
-        else:
-            iboard = 2
-        igroup = i // 8
-        if igroup >= 4:
-            igroup -= 4
-        ichan = i % 8
-        isCer = (i % 8) < 4  # first 4 channels are CER
-        varname = f"DRS_Board{iboard}_Group{igroup}_Channel{ichan}"
-        if isCer:
-            map_DRSVar_Cer[i] = varname
-        else:
-            map_DRSVar_Sci[i] = varname
-    return map_DRSVar_Cer, map_DRSVar_Sci
+    base_DRSBoard = DRSBoard(boardNo=-1)
+    DRSBoards = {}
+    # 2 DRS boards in 316
+    DRSBoards["Board0"] = base_DRSBoard.copy(boardNo=0)
+    DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
+    for tower_ix in range(0, 4):
+        for tower_iy in range(0, 8):
+            DRSBoards["Board2"][tower_ix, tower_iy].iTowerX -= 0
+            DRSBoards["Board2"][tower_ix, tower_iy].iTowerY -= 4
+    return DRSBoards
 
 
-def build_map_ixy_DRSVar():
-    """
-    Build a map for DRS channel variables and ixy
-    """
-    map_ixy_DRS = build_map_ixy_DRS()
-    map_DRSVar_Cer, map_DRSVar_Sci = build_map_DRSVar()
-    map_ixy_DRSVar_Cer = {}
-    map_ixy_DRSVar_Sci = {}
-    for i in range(0, 64):
-        ix, iy = map_ixy_DRS[i]
-        if i in map_DRSVar_Cer:
-            varname = map_DRSVar_Cer[i]
-            map_ixy_DRSVar_Cer[(ix, iy)] = varname
-        if i in map_DRSVar_Sci:
-            varname = map_DRSVar_Sci[i]
-            map_ixy_DRSVar_Sci[(ix, iy)] = varname
-    return map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci
-
-
-def get_hodoscope_channels():
+def buildHodoChannels(run=316):
     """
     Returns a dictionary containing the hodoscope channels.
     """
@@ -237,55 +140,36 @@ def get_hodoscope_channels():
         "DRS_Board1_Group0_Channel5",
         "DRS_Board1_Group0_Channel6",
     ]
-    # bottom z seems to have flipped left and right
-    hodoscope_channels["BottomZ"] = [
-        "DRS_Board1_Group1_Channel0",
-        "DRS_Board1_Group0_Channel7",
-    ]
+    if run < 583:
+        # bottom z seems to have flipped left and right
+        hodoscope_channels["BottomZ"] = [
+            "DRS_Board1_Group1_Channel0",
+            "DRS_Board1_Group0_Channel7",
+        ]
+    elif run >= 583:
+        hodoscope_channels["BottomZ"] = [
+            "DRS_Board1_Group0_Channel7",
+            "DRS_Board1_Group1_Channel0",
+        ]
 
     return hodoscope_channels
 
 
-def hodoTS2iX(ts):
-    """
-    Convert hodoscope timestamp difference between right and left (right - left) 
-    to iX coordinate.
-    """
-    # hodoscope slice
-    ihodo = int((ts + 200.0) / 400 * 11.0) + 1
-    ihodo = 12 - ihodo  # flip
-    iXmin = (ihodo - 8) * 4 - 4
-    iXmax = (ihodo - 8) * 4 - 1
-    return iXmin, iXmax
-
-
 if __name__ == "__main__":
-    map_Cer_Sci = build_map_Cer_Sci()
-    print("Map of CER to SCI channels in FERS1:")
-    for cer, sci in map_Cer_Sci.items():
-        print(f"CER {cer} -> SCI {sci}")
+    # Example usage
+    run_number = 316
+    fers_boards = buildFERSBoards(run=run_number)
+    drs_boards = buildDRSBoards(run=run_number)
 
-    map_FERS1_ixy = build_map_FERS1_ixy()
-    print("\nMap of FERS1 channels to (ix, iy):")
-    for ifers, (ix, iy) in map_FERS1_ixy.items():
-        print(f"FERS1 channel {ifers} -> (ix={ix}, iy={iy})")
+    print("FERS Boards:")
+    for board_name, board in fers_boards.items():
+        print(f"{board_name}: {board}")
 
-    map_ixy_DRSVar_Cer, map_ixy_DRSVar_Sci = build_map_ixy_DRSVar()
-    print("\nMap of DRS variable names to (ix, iy) (CER):")
-    for (ix, iy), varname in map_ixy_DRSVar_Cer.items():
-        print(f"(ix={ix}, iy={iy}) -> {varname}")
-    print("\nMap of DRS variable names to (ix, iy) (SCI):")
-    for (ix, iy), varname in map_ixy_DRSVar_Sci.items():
-        print(f"(ix={ix}, iy={iy}) -> {varname}")
+    print("\nDRS Boards:")
+    for board_name, board in drs_boards.items():
+        print(f"{board_name}: {board}")
 
-    print("\nHodoscope channels:")
-    hodoscope_channels = get_hodoscope_channels()
-    for group, channels in hodoscope_channels.items():
-        print(f"{group}: {channels}")
-
-    print("\nbuild_map_FERSs_ixy:")
-    map_FERSs_ixy = build_map_FERSs_ixy(run=583)
-    for board, mapping in map_FERSs_ixy.items():
-        print(f"{board}:")
-        for ifers, (ix, iy) in mapping.items():
-            print(f"  FERS channel {ifers} -> (ix={ix}, iy={iy})")
+    print("\nHodoscope Channels:")
+    hodo_channels = buildHodoChannels(run=run_number)
+    for hodo_type, channels in hodo_channels.items():
+        print(f"{hodo_type}: {channels}")
