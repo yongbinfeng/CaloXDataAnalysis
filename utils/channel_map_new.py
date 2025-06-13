@@ -100,7 +100,7 @@ def buildFERSBoards(run=316):
                 # FERSBoards["Board12"][tower_ix, tower_iy].iTowerY += 2
 
                 FERSBoards["Board5"][tower_ix, tower_iy].iTowerX += 0
-                FERSBoards["Board5"][tower_ix, tower_iy].iTowerY += 11.75
+                FERSBoards["Board5"][tower_ix, tower_iy].iTowerY += 4.25
     else:
         raise ValueError(f"Unsupported run number {run} for FERS boards.")
     return FERSBoards
