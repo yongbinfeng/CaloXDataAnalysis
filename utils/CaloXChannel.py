@@ -239,6 +239,12 @@ class FERSBoard(Board):
                 channel.boardNo = boardNo
         return new_board
 
+    def Is6mm(self):
+        return self.is6mm
+
+    def Is3mm(self):
+        return not self.Is6mm()
+
 
 class DRSBoard(Board):
     """
