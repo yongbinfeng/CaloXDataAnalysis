@@ -1,3 +1,4 @@
+import sys
 import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards
@@ -18,6 +19,11 @@ suffix = f"run{runNumber}"
 infile = ROOT.TFile(ifile, "READ")
 rdf = ROOT.RDataFrame("EventTree", infile)
 
+# Get total number of entries
+n_entries = rdf.Count().GetValue()
+nEvents = int(n_entries)
+print(f"Total number of events: {nEvents} in run {runNumber}")
+
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)
 
@@ -33,6 +39,16 @@ for _, FERSBoard in FERSBoards.items():
         rdf = rdf.Define(
             f"FERS_Board{boardNo}_energyLG_{channel.channelNo}",
             f"FERS_Board{boardNo}_energyLG[{channel.channelNo}]"
+        )
+
+# get the mean of DRS outputs per channel
+for _, DRSBoard in DRSBoards.items():
+    boardNo = DRSBoard.boardNo
+    for channel in DRSBoard:
+        varname = channel.GetChannelName()
+        rdf = rdf.Define(
+            f"{varname}_mean",
+            f"ROOT::VecOps::Mean({varname})"
         )
 
 
@@ -57,6 +73,27 @@ def makeFERS1DPlots():
                 hists1d_FERS.append(hist)
 
     return hists1d_FERS
+
+
+def trackFERSPlots():
+    hists2d_FERS_vs_Event = []
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+            for var in ["Cer", "Sci"]:
+                # Get the channel for CER or SCI
+                chan = FERSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                hist = rdf.Histo2D((
+                    f"hist_FERS_Board{boardNo}_{var}_vs_Event_{sTowerX}_{sTowerY}",
+                    f"FERS Board {boardNo} - Event vs {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};Event;{var} Energy HG",
+                    int(nEvents/100), 0, nEvents, 500, 0, 9000),
+                    "event_n", chan.GetHGChannelName()
+                )
+                hists2d_FERS_vs_Event.append(hist)
+    return hists2d_FERS_vs_Event
 
 
 def makeFERS2DPlots():
@@ -123,6 +160,8 @@ def makeDRS1DPlots():
                 chan = DRSBoard.GetChannelByTower(
                     iTowerX, iTowerY, isCer=(var == "Cer"))
 
+                if chan is None:
+                    continue
                 hist = rdf.Histo1D((
                     f"hist_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
                     f"DRS Board {boardNo} - {var} iTowerX {sTowerX} iTowerY {sTowerY};{var} Variable;Counts",
@@ -133,26 +172,27 @@ def makeDRS1DPlots():
     return hists1d_DRS
 
 
-def makeDRS2DPlots():
-    hists2d_DRS = []
+def trackDRSPlots():
+    hists2d_DRS_vs_Event = []
     for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
         for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
             sTowerX = number2string(iTowerX)
             sTowerY = number2string(iTowerY)
-            chan_Cer = DRSBoard.GetChannelByTower(
-                iTowerX, iTowerY, isCer=True)
-            chan_Sci = DRSBoard.GetChannelByTower(
-                iTowerX, iTowerY, isCer=False)
-
-            hist = rdf.Histo2D((
-                f"hist_DRS_Board{boardNo}_Cer_vs_Sci_{sTowerX}_{sTowerY}",
-                f"CER {chan_Cer.channelNo} vs SCI {chan_Sci.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};CER Variable;SCI Variable",
-                500, 1000, 2500, 500, 1000, 2500),
-                chan_Cer.GetChannelName(),
-                chan_Sci.GetChannelName()
-            )
-            hists2d_DRS.append(hist)
-    return hists2d_DRS
+            for var in ["Cer", "Sci"]:
+                # Get the channel for CER or SCI
+                chan = DRSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                if chan is None:
+                    continue
+                hist = rdf.Histo2D((
+                    f"hist_DRS_Board{boardNo}_{var}_vs_Event_{sTowerX}_{sTowerY}",
+                    f"DRS Board {boardNo} Mean - Event vs {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};Event;{var} Variable",
+                    int(nEvents/100), 0, nEvents, 1500, 1000, 2500),
+                    "event_n", chan.GetChannelName() + "_mean"
+                )
+                hists2d_DRS_vs_Event.append(hist)
+    return hists2d_DRS_vs_Event
 
 
 if __name__ == "__main__":
@@ -160,8 +200,10 @@ if __name__ == "__main__":
 
     hists1d_FERS = makeFERS1DPlots()
     hists2d_FERS = makeFERS2DPlots()
+    hists2d_FERS_vs_Event = trackFERSPlots()
+
     hists1d_DRS = makeDRS1DPlots()
-    hists2d_DRS = makeDRS2DPlots()
+    hists2d_DRS_vs_Event = trackDRSPlots()
 
     print("Save histograms")
 
@@ -178,14 +220,20 @@ if __name__ == "__main__":
     for hist in hists2d_FERS:
         hist.Write()
     outfile.Close()
+    outfile = ROOT.TFile(
+        f"{rootdir}/fers_all_channels_2D_vs_event.root", "RECREATE")
+    for hist in hists2d_FERS_vs_Event:
+        hist.Write()
+    outfile.Close()
     #
     outfile_DRS = ROOT.TFile(f"{rootdir}/drs_all_channels_1D.root", "RECREATE")
     for hist in hists1d_DRS:
         hist.SetDirectory(outfile_DRS)
         hist.Write()
     outfile_DRS.Close()
-    outfile_DRS = ROOT.TFile(f"{rootdir}/drs_all_channels_2D.root", "RECREATE")
-    for hist in hists2d_DRS:
+    outfile_DRS = ROOT.TFile(
+        f"{rootdir}/drs_all_channels_2D_vs_event.root", "RECREATE")
+    for hist in hists2d_DRS_vs_Event:
         hist.SetDirectory(outfile_DRS)
         hist.Write()
     outfile_DRS.Close()
