@@ -128,7 +128,7 @@ class Board(object):
                 raise IndexError("Board has no channels defined.")
             else:
                 raise IndexError(
-                    f"Channel not found, Range is (0-{len(self.channels)-1}, 0-{len(self.channels[0])-1})")
+                    f"Channel not found for {idx}, Range is (0-{len(self.channels)-1}, 0-{len(self.channels[0])-1})")
 
     def GetChannelByTower(self, iTowerX, iTowerY, isCer=False):
         """
@@ -140,7 +140,7 @@ class Board(object):
                 if channel.iTowerX == iTowerX and channel.iTowerY == iTowerY and channel.isCer == isCer:
                     return channel
         print(
-            f"\033[91m Warning: Channel not found for tower ({iTowerX}, {iTowerY}) on board {self.boardNo}.\033[0m")
+            f"\033[91m Warning: Channel not found for tower ({iTowerX}, {iTowerY}) on board {self.boardNo} for {'CER' if isCer else 'SCI'} channel.\033[0m")
         return None
 
     def GetCerChannels(self):
@@ -164,6 +164,9 @@ class Board(object):
                 if not channel.isCer:
                     scichannels.append(channel)
         return scichannels
+
+    def GetListOfChannels(self):
+        return [channel for row in self.channels for channel in row]
 
     def GetListOfTowers(self):
         """
@@ -356,6 +359,9 @@ def buildDRSBase(boardNo=0):
             # chanNo is the channel number within the group (0-7)
             groupNo = (channelNo // 8)
             chanNo = (channelNo % 8)
+            if groupNo == 3 and chanNo == 7:
+                # skip the last channel, it is used for trigger counter
+                continue
             channel = DRSChannel(ix, -int(iy/2), ix, iy, isCer,
                                  chanNo, groupNo, boardNo)
             channels_DRS_one_row.append(channel)

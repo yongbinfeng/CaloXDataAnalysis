@@ -4,8 +4,14 @@ import array
 print("Job start running")
 
 # Input and output configuration
-input_file = "/lustre/research/hep/HGDream/run316_250517140056.root"
-output_file = "/lustre/research/hep/HGDream/run316_250517140056_converted.root"
+# input_file = "/lustre/research/hep/HGDream/run316_250517140056.root"
+input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run571_250607165307.root"
+input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run0583_250609182256.root"
+input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run0662_250613153948.root"
+# output_file = "/lustre/research/hep/HGDream/run316_250517140056_converted.root"
+output_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run571_250607165307_converted.root"
+output_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run0583_250609182256_converted.root"
+output_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run0662_250613153948_converted.root"
 tree_name = "EventTree"
 
 # Open input file and tree
