@@ -27,6 +27,15 @@ class CaloXChannel(object):
             self.isCer
         )
 
+    def __eq__(self, other):
+        if not isinstance(other, CaloXChannel):
+            return NotImplemented
+        return (self.iTowerX == other.iTowerX and
+                self.iTowerY == other.iTowerY and
+                self.iBoardX == other.iBoardX and
+                self.iBoardY == other.iBoardY and
+                self.isCer == other.isCer)
+
     def isCer(self):
         return self.isCer
 
@@ -288,6 +297,31 @@ class DRSBoard(Board):
             for channel in row:
                 channel.boardNo = boardNo
         return new_board
+
+    def GetChannelByGroupChannel(self, groupNo, chanNo):
+        """
+        Get a channel by group number and channel number.
+        Returns the first matching channel or None if not found.
+        """
+        for row in self.channels:
+            for channel in row:
+                if channel.groupNo == groupNo and channel.channelNo == chanNo:
+                    return channel
+        print(
+            f"\033[91mWarning: Channel Group{groupNo} Channel{chanNo} not found on board {self.boardNo}.\033[0m")
+        return None
+
+    def RemoveChannelByGroupChannel(self, groupNo, chanNo):
+        """
+        Remove a channel from the board by group number and channel number.
+        """
+        for row in self.channels:
+            for channel in row:
+                if channel.groupNo == groupNo and channel.channelNo == chanNo:
+                    row.remove(channel)
+                    return
+        print(
+            f"\033[91mWarning: Channel Group{groupNo} Channel{chanNo} not found on board {self.boardNo}.\033[0m")
 
 
 # physical channels to the readout channel names

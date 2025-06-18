@@ -1,0 +1,173 @@
+import sys
+import os
+import ROOT
+from utils.channel_map import buildDRSBoards, buildFERSBoards
+from utils.utils import number2string, getDataFile
+import time
+import json
+sys.path.append("CMSPLOTS")  # noqa
+from myFunction import DrawHistos
+from utils.html_generator import generate_html
+
+runNumber = 583
+
+# multi-threading support
+ROOT.gROOT.SetBatch(True)  # Disable interactive mode
+ROOT.ROOT.EnableImplicitMT(5)
+
+suffix = f"run{runNumber}"
+
+DRSBoards = buildDRSBoards(run=runNumber)
+FERSBoards = buildFERSBoards(run=runNumber)
+
+
+def prepareFERSDRSPlots():
+    ifile = getDataFile(runNumber)
+    infile = ROOT.TFile(ifile, "READ")
+    rdf = ROOT.RDataFrame("EventTree", infile)
+    # read the noise from json file
+    with open("results/drs_noises.json", "r") as json_file:
+        drs_noises = json.load(json_file)
+
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        for channel in FERSBoard:
+            rdf = rdf.Define(
+                f"FERS_Board{boardNo}_energyHG_{channel.channelNo}",
+                f"FERS_Board{boardNo}_energyHG[{channel.channelNo}]")
+            rdf = rdf.Define(
+                f"FERS_Board{boardNo}_energyLG_{channel.channelNo}",
+                f"FERS_Board{boardNo}_energyLG[{channel.channelNo}]"
+            )
+
+    # get the mean of DRS outputs per channel
+    ROOT.gInterpreter.Declare("""
+    ROOT::VecOps::RVec<float> clipToZero(const ROOT::VecOps::RVec<float>& vec) {
+        ROOT::VecOps::RVec<float> out;
+        for (float v : vec) {
+            out.push_back(std::max(v, 0.0f));
+        }
+        return out;
+    }
+    """)
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for channel in DRSBoard:
+            varname = channel.GetChannelName()
+            rdf = rdf.Define(
+                f"{varname}_subtracted",
+                f"{varname} - {drs_noises[varname]}"
+            )
+            rdf = rdf.Define(f"{varname}_positive",
+                             f"clipToZero({varname}_subtracted)")
+            rdf = rdf.Define(
+                f"{varname}_sum",
+                f"ROOT::VecOps::Sum({varname}_positive)"
+            )
+
+    # correlate  FERS and DRS outputs
+    h2s_FERS_VS_DRS = []
+    FERSBoard = FERSBoards["Board10"]  # hard code this
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+
+            for var in ["Cer", "Sci"]:
+                chan_DRS = DRSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                if chan_DRS is None:
+                    print(
+                        f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
+                    continue
+                chan_FERS = FERSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                if chan_FERS is None:
+                    print(
+                        f"Warning: FERS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
+                    continue
+
+                h2_FERS_VS_DRS = rdf.Histo2D((
+                    f"hist_FERS_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
+                    f"FERS vs DRS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}",
+                    100, 0, 5e2, 100, 300.0, 3e3
+                ),
+                    f"{chan_DRS.GetChannelName()}_sum",
+                    chan_FERS.GetHGChannelName()
+                )
+                h2s_FERS_VS_DRS.append(h2_FERS_VS_DRS)
+
+    # Save the histograms to a ROOT file
+    rootdir = f"root/Run{runNumber}"
+    output_file = ROOT.TFile(os.path.join(
+        rootdir, f"checkFERSDRS_{suffix}.root"), "RECREATE")
+    for h2 in h2s_FERS_VS_DRS:
+        h2.Write()
+    output_file.Close()
+    print(f"Histograms saved to {output_file.GetName()}")
+
+
+def makeFERSDRSPlots():
+    inputfile_name = os.path.join(
+        f"root/Run{runNumber}", f"checkFERSDRS_{suffix}.root")
+    input_file = ROOT.TFile(inputfile_name, "READ")
+    if not input_file or input_file.IsZombie():
+        print(f"Error: Could not open file {inputfile_name}")
+        return
+    print(f"Opened file {inputfile_name} successfully")
+
+    plots = []
+    outdir_plots = f"plots/Run{runNumber}/checkFERSDRS"
+
+    # correlate  FERS and DRS outputs
+    FERSBoard = FERSBoards["Board10"]  # hard code this
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+
+            for var in ["Cer", "Sci"]:
+                chan_DRS = DRSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                if chan_DRS is None:
+                    print(
+                        f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
+                    continue
+                chan_FERS = FERSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                if chan_FERS is None:
+                    print(
+                        f"Warning: FERS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
+                    continue
+
+                h2_name = f"hist_FERS_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
+                hist = input_file.Get(h2_name)
+                if not hist:
+                    print(f"Warning: Histogram {h2_name} not found in file")
+                    continue
+
+                output_name = f"FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_vs_Event"
+                DrawHistos([hist], "", 0, 5e2, "DRS Integral", 300, 3e3, f"FERS Output",
+                           output_name,
+                           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
+                           outdir=outdir_plots)
+                plots.append(output_name + ".png")
+
+    generate_html(plots, outdir_plots,
+                  output_html=f"html/checkFERSDRS/view.html")
+
+
+# snapshot DRSBoards and FERSBoards
+# variables = [f"{varname}_subtracted" for _, DRSBoard in DRSBoards.items()
+#             for channel in DRSBoard for varname in [channel.GetChannelName()]]
+# rdf.Snapshot("DRSBoards", os.path.join(
+#    rootdir, f"DRSBoards_{suffix}.root"), variables)
+
+if __name__ == "__main__":
+    start_time = time.time()
+    prepareFERSDRSPlots()
+    makeFERSDRSPlots()
+    end_time = time.time()
+    print(f"Total execution time: {end_time - start_time:.2f} seconds")

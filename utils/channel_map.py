@@ -118,10 +118,24 @@ def buildDRSBoards(run=316):
     # 2 DRS boards in 316
     DRSBoards["Board0"] = base_DRSBoard.copy(boardNo=0)
     DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
-    channels = DRSBoards["Board2"].GetListOfChannels()
+    DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 5)
+    DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 6)
+    channel = DRSBoards["Board2"].GetChannelByGroupChannel(3, 4)
+    channel.iTowerX = 0
+    channel.iTowerY = -7
+    channel.isCer = True
+    print("channel group ", channel.groupNo, " channel no ", channel.channelNo)
+
+    channels = DRSBoards["Board0"].GetListOfChannels()
     for channel in channels:
         channel.iTowerX -= 0
         channel.iTowerY -= 4
+        if channel.isCer:
+            channel.iTowerY += 1
+            channel.isCer = False
+        else:
+            channel.isCer = True
+    DRSBoards["Board0"].RemoveChannelByGroupChannel(0, 7)
     return DRSBoards
 
 
