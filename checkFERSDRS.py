@@ -65,9 +65,41 @@ def prepareFERSDRSPlots():
             )
             rdf = rdf.Define(f"{varname}_positive",
                              f"clipToZero({varname}_subtracted)")
+            # rdf = rdf.Define(
+            #    f"{varname}_sum",
+            #    f"ROOT::VecOps::Sum({varname}_subtracted)"
+            # )
+
+    ROOT.gInterpreter.Declare("""
+    #include "ROOT/RVec.hxx"
+    #include <algorithm>
+    
+    float compute_median(ROOT::RVec<float> vec) {
+        if (vec.empty()) return -9999;
+        std::sort(vec.begin(), vec.end());
+        size_t n = vec.size();
+        if (n % 2 == 0)
+            return 0.5 * (vec[n / 2 - 1] + vec[n / 2]);
+        else
+            return vec[n / 2];
+    }
+    """)
+    # get the mean of DRS outputs per channel
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for channel in DRSBoard:
+            varname = channel.GetChannelName()
+            rdf = rdf.Define(
+                f"{varname}_median",
+                f"compute_median({varname})"
+            )
+            rdf = rdf.Define(
+                f"{varname}_subtractMedian",
+                f"{varname} - {varname}_median"
+            )
             rdf = rdf.Define(
                 f"{varname}_sum",
-                f"ROOT::VecOps::Sum({varname}_subtracted)"
+                f"ROOT::VecOps::Sum({varname}_subtractMedian)"
             )
 
     # correlate  FERS and DRS outputs
@@ -128,6 +160,18 @@ def prepareFERSDRSPlots():
         h2.Write()
     output_file.Close()
     print(f"Histograms saved to {output_file.GetName()}")
+
+    # snapshot DRS and FERS board 10
+    variables = [f"{varname}_subtracted" for _, DRSBoard in DRSBoards.items()
+                 for channel in DRSBoard for varname in [channel.GetChannelName()]]
+    variables += [f"{varname}" for _, DRSBoard in DRSBoards.items()
+                  for channel in DRSBoard for varname in [channel.GetChannelName()]]
+    variables += [f"FERS_Board{FERSBoard.boardNo}_energyHG_{channel.channelNo}"
+                  for channel in FERSBoard]
+    variables += [f"FERS_Board{FERSBoard.boardNo}_energyLG_{channel.channelNo}"
+                  for channel in FERSBoard]
+    rdf.Snapshot("DRSBoards", os.path.join(
+        rootdir, f"DRSBoards_{suffix}.root"), variables)
 
 
 def makeFERSDRSPlots():

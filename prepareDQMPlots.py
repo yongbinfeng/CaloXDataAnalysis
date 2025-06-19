@@ -78,6 +78,34 @@ ROOT::RVec<int> FillIndices(size_t n) {
 # Create an array of indices for DRS outputs
 rdf = rdf.Define("TS", "FillIndices(1024)")
 
+ROOT.gInterpreter.Declare("""
+#include "ROOT/RVec.hxx"
+#include <algorithm>
+
+float compute_median(ROOT::RVec<float> vec) {
+    if (vec.empty()) return -9999;
+    std::sort(vec.begin(), vec.end());
+    size_t n = vec.size();
+    if (n % 2 == 0)
+        return 0.5 * (vec[n / 2 - 1] + vec[n / 2]);
+    else
+        return vec[n / 2];
+}
+""")
+# get the mean of DRS outputs per channel
+for _, DRSBoard in DRSBoards.items():
+    boardNo = DRSBoard.boardNo
+    for channel in DRSBoard:
+        varname = channel.GetChannelName()
+        rdf = rdf.Define(
+            f"{varname}_median",
+            f"compute_median({varname})"
+        )
+        rdf = rdf.Define(
+            f"{varname}_subtractMedian",
+            f"{varname} - {varname}_median"
+        )
+
 
 def makeFERS1DPlots():
     hists1d_FERS = []
@@ -222,7 +250,14 @@ def makeDRS2DPlots():
                     1024, 0, 1024, 200, mean_value - 100, mean_value + 100),
                     "TS", chan.GetChannelName()
                 )
+                hist_subtractMedian = rdf.Histo2D((
+                    f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}_subtractMedian",
+                    f"DRS Board {boardNo} - {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY} (subtract median);TS;{var} Variable",
+                    1024, 0, 1024, 400, -100, 300),
+                    "TS", channelName + "_subtractMedian"
+                )
                 hists2d_DRS_vs_TS.append(hist)
+                hists2d_DRS_vs_TS.append(hist_subtractMedian)
     return hists2d_DRS_vs_TS
 
 

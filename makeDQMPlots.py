@@ -102,7 +102,7 @@ for _, FERSBoard in FERSBoards.items():
             output_name = f"FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_hg_vs_lg"
             DrawHistos([hist], f"", 0, 9000, "HG", 0, 1500, "LG",
                        output_name,
-                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True, extraToDraw=extraToDraw,
+                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True, extraToDraw=extraToDraw,
                        outdir=outdir_plots)
             plots.append(output_name + ".png")
 generate_html(plots, outdir_plots, plots_per_row=4,
@@ -146,7 +146,7 @@ for _, FERSBoard in FERSBoards.items():
             output_name = f"FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_vs_Event"
             DrawHistos([hist], "", 0, nEvents, "Event", 1, 1e5, f"{var} Energy HG",
                        output_name,
-                       dology=True, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
+                       dology=True, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                        extraToDraw=extraToDraw,
                        outdir=outdir_plots)
             plots.append(output_name + ".png")
@@ -240,12 +240,56 @@ for _, DRSBoard in DRSBoards.items():
             output_name = f"DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}"
             DrawHistos([hist], "", 0, 1024, "Time Slice", value_mean - 50, value_mean + 50, f"{var} DRS Output",
                        output_name,
-                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
+                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                        extraToDraw=extraToDraw,
                        outdir=outdir_plots)
             plots.append(output_name + ".png")
 generate_html(plots, outdir_plots, plots_per_row=2,
               output_html=f"html/Run{runNumber}/DRS_vs_TS/viewer.html")
+
+
+# DRS vs TS subtract baseline
+plots = []
+outdir_plots = outdir + "/DRS_vs_TS"
+infile_name = f"{rootdir}/drs_all_channels_2D.root"
+infile = ROOT.TFile(infile_name, "READ")
+for _, DRSBoard in DRSBoards.items():
+    boardNo = DRSBoard.boardNo
+    for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+        sTowerX = number2string(iTowerX)
+        sTowerY = number2string(iTowerY)
+        for var in ["Cer", "Sci"]:
+            chan = DRSBoard.GetChannelByTower(
+                iTowerX, iTowerY, isCer=(var == "Cer"))
+            hist_name = f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}_subtractMedian"
+            hist = infile.Get(hist_name)
+
+            if not hist:
+                print(
+                    f"Warning: Histogram {hist_name} not found in {infile_name}")
+                continue
+
+            extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
+            extraToDraw.SetTextAlign(11)
+            extraToDraw.SetFillColorAlpha(0, 0)
+            extraToDraw.SetBorderSize(0)
+            extraToDraw.SetTextFont(42)
+            extraToDraw.SetTextSize(0.04)
+            extraToDraw.AddText(f"Board: {DRSBoard.boardNo}")
+            extraToDraw.AddText(f"iTowerX: {iTowerX}")
+            extraToDraw.AddText(f"iTowerY: {iTowerY}")
+            extraToDraw.AddText(f"{var} Group: {chan.groupNo}")
+            extraToDraw.AddText(f"{var} Channel: {chan.channelNo}")
+
+            output_name = f"DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}_subtractMedian"
+            DrawHistos([hist], "", 0, 1024, "Time Slice", -20, 100, f"{var} DRS Output",
+                       output_name,
+                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+                       extraToDraw=extraToDraw,
+                       outdir=outdir_plots)
+            plots.append(output_name + ".png")
+generate_html(plots, outdir_plots, plots_per_row=2,
+              output_html=f"html/Run{runNumber}/DRS_vs_TS_subtractMedian/viewer.html")
 
 # DRS mean vs event
 plots = []
@@ -285,7 +329,7 @@ for _, DRSBoard in DRSBoards.items():
             output_name = f"DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_vs_Event"
             DrawHistos([hist], "", 0, nEvents, "Event", 1400, 2300, f"{var} Mean",
                        output_name,
-                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
+                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                        extraToDraw=extraToDraw,
                        outdir=outdir_plots)
             plots.append(output_name + ".png")
@@ -314,7 +358,7 @@ for chan_name in trigger_channels:
     output_name = f"Trigger_{chan_name}"
     DrawHistos([hist], "", 0, 1024, "Time Slice", 1500, 2200, "Counts",
                output_name,
-               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
+               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                extraToDraw=extraToDraw,
                outdir=outdir_plots)
     plots.append(output_name + ".png")
