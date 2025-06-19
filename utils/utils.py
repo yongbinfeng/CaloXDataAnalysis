@@ -17,3 +17,14 @@ def getDataFile(runNumber):
         return data[runNum]
     else:
         raise ValueError(f"Run number {runNum} not found in datafiles.json")
+
+
+def getBranchStats(rdf, branches):
+    stats = {
+        br: {
+            "mean": rdf.Mean(br),
+            "min": rdf.Min(br),
+            "max": rdf.Max(br)
+        } for br in branches
+    }
+    return stats

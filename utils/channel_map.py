@@ -139,6 +139,14 @@ def buildDRSBoards(run=316):
     return DRSBoards
 
 
+def buildTriggerChannels(run=316):
+    trigger_channels = []
+    trigger_channels.append("DRS_Board0_Group3_Channel7")
+    trigger_channels.append("DRS_Board2_Group3_Channel7")
+    trigger_channels.append("DRS_Board1_Group0_Channel0")
+    return trigger_channels
+
+
 def buildHodoChannels(run=316):
     """
     Returns a dictionary containing the hodoscope channels.

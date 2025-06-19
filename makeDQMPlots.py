@@ -2,9 +2,10 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from myFunction import DrawHistos
-from utils.channel_map import buildDRSBoards, buildFERSBoards
+from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTriggerChannels
 from utils.utils import number2string
 from utils.html_generator import generate_html
+from utils.validateMap import DrawFERSBoards, DrawDRSBoards
 
 print("Start running script")
 ROOT.gROOT.SetBatch(True)
@@ -13,6 +14,11 @@ runNumber = 662
 
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)
+TriggerChannels = buildTriggerChannels(run=runNumber)
+
+# validate DRS and FERS boards
+DrawFERSBoards(run=runNumber)
+DrawDRSBoards(run=runNumber)
 
 
 # 1D FERS histograms
@@ -285,3 +291,32 @@ for _, DRSBoard in DRSBoards.items():
             plots.append(output_name + ".png")
 generate_html(plots, outdir_plots, plots_per_row=4,
               output_html=f"html/Run{runNumber}/DRS_vs_Event/viewer.html")
+
+# trigger
+plots = []
+infile_name = f"{rootdir}/trigger_channels.root"
+infile = ROOT.TFile(infile_name, "READ")
+outdir_plots = outdir + "/Trigger"
+trigger_channels = buildTriggerChannels(run=runNumber)
+for chan_name in trigger_channels:
+    hist_name = f"hist_{chan_name}"
+    hist = infile.Get(hist_name)
+    if not hist:
+        print(f"Warning: Histogram {hist_name} not found in {infile_name}")
+        continue
+    extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
+    extraToDraw.SetTextAlign(11)
+    extraToDraw.SetFillColorAlpha(0, 0)
+    extraToDraw.SetBorderSize(0)
+    extraToDraw.SetTextFont(42)
+    extraToDraw.SetTextSize(0.04)
+    extraToDraw.AddText(f"{chan_name}")
+    output_name = f"Trigger_{chan_name}"
+    DrawHistos([hist], "", 0, 1024, "Time Slice", 1500, 2200, "Counts",
+               output_name,
+               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
+               extraToDraw=extraToDraw,
+               outdir=outdir_plots)
+    plots.append(output_name + ".png")
+generate_html(plots, outdir_plots, plots_per_row=1,
+              output_html=f"html/Run{runNumber}/Trigger/viewer.html")

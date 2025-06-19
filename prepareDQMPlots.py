@@ -1,8 +1,9 @@
+import re
 import sys
 import os
 import ROOT
-from utils.channel_map import buildDRSBoards, buildFERSBoards
-from utils.utils import number2string, getDataFile
+from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTriggerChannels
+from utils.utils import number2string, getDataFile, getBranchStats
 import time
 
 print("Start running prepareDQMPlots.py")
@@ -10,7 +11,7 @@ print("Start running prepareDQMPlots.py")
 runNumber = 662
 
 # multi-threading support
-ROOT.ROOT.EnableImplicitMT(5)
+ROOT.ROOT.EnableImplicitMT(10)
 
 # Open the input ROOT file
 ifile = getDataFile(runNumber)
@@ -40,6 +41,22 @@ for _, FERSBoard in FERSBoards.items():
             f"FERS_Board{boardNo}_energyLG_{channel.channelNo}",
             f"FERS_Board{boardNo}_energyLG[{channel.channelNo}]"
         )
+
+# Get the list of all branch names
+branches = [str(b) for b in rdf.GetColumnNames()]
+pattern = re.compile(r"DRS.*Group.*Channel.*")
+drs_branches = [b for b in branches if pattern.search(b)]
+stats = getBranchStats(rdf, drs_branches)
+print("DRS branches statistics:")
+for br, res in stats.items():
+    print(f"{br}: mean = {res['mean'].GetValue():.4f}, "
+          f"min = {res['min'].GetValue():.4f}, "
+          f"max = {res['max'].GetValue():.4f}")
+    stats[br] = {
+        "mean": res['mean'].GetValue(),
+        "min": res['min'].GetValue(),
+        "max": res['max'].GetValue()
+    }
 
 # get the mean of DRS outputs per channel
 for _, DRSBoard in DRSBoards.items():
@@ -172,11 +189,13 @@ def makeDRS1DPlots():
 
                 if chan is None:
                     continue
+                channelName = chan.GetChannelName()
+                value_mean = stats[channelName]['mean']
                 hist = rdf.Histo1D((
                     f"hist_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
                     f"DRS Board {boardNo} - {var} iTowerX {sTowerX} iTowerY {sTowerY};{var} Variable;Counts",
-                    1500, 1000, 2500),
-                    chan.GetChannelName()
+                    200, value_mean - 100, value_mean + 100),
+                    channelName
                 )
                 hists1d_DRS.append(hist)
     return hists1d_DRS
@@ -195,10 +214,12 @@ def makeDRS2DPlots():
                     iTowerX, iTowerY, isCer=(var == "Cer"))
                 if chan is None:
                     continue
+                channelName = chan.GetChannelName()
+                mean_value = stats[channelName]['mean']
                 hist = rdf.Histo2D((
                     f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}",
                     f"DRS Board {boardNo} - {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};TS;{var} Variable",
-                    1024, 0, 1024, 1500, 1000, 2500),
+                    1024, 0, 1024, 200, mean_value - 100, mean_value + 100),
                     "TS", chan.GetChannelName()
                 )
                 hists2d_DRS_vs_TS.append(hist)
@@ -218,14 +239,34 @@ def trackDRSPlots():
                     iTowerX, iTowerY, isCer=(var == "Cer"))
                 if chan is None:
                     continue
+                channelName = chan.GetChannelName()
+                mean_value = stats[channelName]['mean']
                 hist = rdf.Histo2D((
                     f"hist_DRS_Board{boardNo}_{var}_vs_Event_{sTowerX}_{sTowerY}",
                     f"DRS Board {boardNo} Mean - Event vs {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};Event;{var} Variable",
-                    int(nEvents/100), 0, nEvents, 1500, 1000, 2500),
-                    "event_n", chan.GetChannelName() + "_mean"
+                    int(nEvents/100), 0, nEvents, 200, mean_value - 100, mean_value + 100),
+                    "event_n", channelName + "_mean"
                 )
                 hists2d_DRS_vs_Event.append(hist)
     return hists2d_DRS_vs_Event
+
+
+def compareTriggerChannels():
+    """
+    Compare trigger channels with DRS channels.
+    """
+    trigger_channels = buildTriggerChannels(run=runNumber)
+    hists_trigger = []
+    for chan_name in trigger_channels:
+        hist = rdf.Histo2D((
+            f"hist_{chan_name}",
+            f"{chan_name};TS;DRS values",
+            1024, 0, 1024,
+            100, 1400, 2400),
+            "TS", chan_name
+        )
+        hists_trigger.append(hist)
+    return hists_trigger
 
 
 if __name__ == "__main__":
@@ -238,6 +279,8 @@ if __name__ == "__main__":
     hists1d_DRS = makeDRS1DPlots()
     hists2d_DRS_vs_TS = makeDRS2DPlots()
     hists2d_DRS_vs_Event = trackDRSPlots()
+
+    hists2d_trigger = compareTriggerChannels()
 
     print("Save histograms")
 
@@ -276,6 +319,13 @@ if __name__ == "__main__":
         hist.SetDirectory(outfile_DRS)
         hist.Write()
     outfile_DRS.Close()
+
+    outfile_trigger = ROOT.TFile(
+        f"{rootdir}/trigger_channels.root", "RECREATE")
+    for hist in hists2d_trigger:
+        hist.SetDirectory(outfile_trigger)
+        hist.Write()
+    outfile_trigger.Close()
 
     time_taken = time.time() - start_time
     print(f"Finished running script in {time_taken:.2f} seconds")

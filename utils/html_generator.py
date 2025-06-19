@@ -36,6 +36,16 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
       margin-bottom: 10px;
     }}
 
+    .top-link {{
+      margin-bottom: 15px;
+    }}
+
+    .top-link a {{
+      font-size: 16px;
+      text-decoration: none;
+      color: #0066cc;
+    }}
+
     .path-info {{
       font-size: 14px;
       color: #444;
@@ -93,6 +103,10 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
   </style>
 </head>
 <body>
+
+  <div class="top-link">
+    <a href="../">⬆️ Go Up One Directory</a>
+  </div>
 
   <h1>PNG Plot Viewer</h1>
 
