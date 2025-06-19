@@ -14,7 +14,7 @@ runNumber = 662
 
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)
-TriggerChannels = buildTriggerChannels(run=runNumber)
+trigger_channels = buildTriggerChannels(run=runNumber)
 
 # validate DRS and FERS boards
 DrawFERSBoards(run=runNumber)
@@ -341,7 +341,6 @@ plots = []
 infile_name = f"{rootdir}/trigger_channels.root"
 infile = ROOT.TFile(infile_name, "READ")
 outdir_plots = outdir + "/Trigger"
-trigger_channels = buildTriggerChannels(run=runNumber)
 for chan_name in trigger_channels:
     hist_name = f"hist_{chan_name}"
     hist = infile.Get(hist_name)
@@ -362,5 +361,23 @@ for chan_name in trigger_channels:
                extraToDraw=extraToDraw,
                outdir=outdir_plots)
     plots.append(output_name + ".png")
+
+    hist_subtractMedian = infile.Get(f"{hist_name}_subtractMedian")
+    if hist_subtractMedian:
+        extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
+        extraToDraw.SetTextAlign(11)
+        extraToDraw.SetFillColorAlpha(0, 0)
+        extraToDraw.SetBorderSize(0)
+        extraToDraw.SetTextFont(42)
+        extraToDraw.SetTextSize(0.04)
+        extraToDraw.AddText(f"{chan_name} (subtract median)")
+        output_name = f"Trigger_{chan_name}_subtractMedian"
+        DrawHistos([hist_subtractMedian], "", 0, 1024, "Time Slice", -700, 300, "Counts",
+                   output_name,
+                   dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+                   extraToDraw=extraToDraw,
+                   outdir=outdir_plots)
+        plots.append(output_name + ".png")
+
 generate_html(plots, outdir_plots, plots_per_row=1,
               output_html=f"html/Run{runNumber}/Trigger/viewer.html")

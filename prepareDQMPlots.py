@@ -93,18 +93,15 @@ float compute_median(ROOT::RVec<float> vec) {
 }
 """)
 # get the mean of DRS outputs per channel
-for _, DRSBoard in DRSBoards.items():
-    boardNo = DRSBoard.boardNo
-    for channel in DRSBoard:
-        varname = channel.GetChannelName()
-        rdf = rdf.Define(
-            f"{varname}_median",
-            f"compute_median({varname})"
-        )
-        rdf = rdf.Define(
-            f"{varname}_subtractMedian",
-            f"{varname} - {varname}_median"
-        )
+for varname in drs_branches:
+    rdf = rdf.Define(
+        f"{varname}_median",
+        f"compute_median({varname})"
+    )
+    rdf = rdf.Define(
+        f"{varname}_subtractMedian",
+        f"{varname} - {varname}_median"
+    )
 
 
 def makeFERS1DPlots():
@@ -300,7 +297,15 @@ def compareTriggerChannels():
             100, 1400, 2400),
             "TS", chan_name
         )
+        hist_subtractMedian = rdf.Histo2D((
+            f"hist_{chan_name}_subtractMedian",
+            f"{chan_name} (subtract median);TS;DRS values",
+            1024, 0, 1024,
+            400, -700, 100),
+            "TS", chan_name + "_subtractMedian"
+        )
         hists_trigger.append(hist)
+        hists_trigger.append(hist_subtractMedian)
     return hists_trigger
 
 

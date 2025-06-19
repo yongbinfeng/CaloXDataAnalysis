@@ -50,7 +50,7 @@ def prepareFERSDRSPlots():
     ROOT::VecOps::RVec<float> clipToZero(const ROOT::VecOps::RVec<float>& vec) {
         ROOT::VecOps::RVec<float> out;
         for (float v : vec) {
-            out.push_back(std::max(v, 0.0f));
+            out.push_back(std::max(v, 5.0f));
         }
         return out;
     }
@@ -98,8 +98,12 @@ def prepareFERSDRSPlots():
                 f"{varname} - {varname}_median"
             )
             rdf = rdf.Define(
+                f"{varname}_subtractMedian_positive",
+                f"clipToZero({varname}_subtractMedian)"
+            )
+            rdf = rdf.Define(
                 f"{varname}_sum",
-                f"ROOT::VecOps::Sum({varname}_subtractMedian)"
+                f"ROOT::VecOps::Sum({varname}_subtractMedian_positive) - 1024*5.0"
             )
 
     # correlate  FERS and DRS outputs
