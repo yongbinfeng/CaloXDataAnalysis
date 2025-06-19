@@ -3,6 +3,7 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
 from utils.channel_map import buildFERSBoards, buildDRSBoards
+from utils.html_generator import generate_html
 
 ROOT.gROOT.SetBatch(True)  # Disable interactive mode
 
@@ -91,6 +92,13 @@ def DrawFERSBoards(run=316):
                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["text0", "text0"] + ["same"] * len(bboxes),
                outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=bboxes + [extraToDraw_Sci])
 
+    generate_html(
+        [output_name + "_Cer.png", output_name + "_Sci.png"],
+        output_dir,
+        2,
+        output_html=f"html/Run{run}/ChannelMaps/FERSBoards/view.html"
+    )
+
 
 def DrawDRSBoards(run=316):
     """
@@ -152,10 +160,17 @@ def DrawDRSBoards(run=316):
                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["text1"] + ["same"] * len(bboxes),
                outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=bboxes + [extraToDraw_Sci], nTextDigits=1)
 
+    generate_html(
+        [output_name + "_Cer.png", output_name + "_Sci.png"],
+        output_dir,
+        2,
+        output_html=f"html/Run{run}/ChannelMaps/DRSBoards/view.html"
+    )
+
 
 if __name__ == "__main__":
     # Example usage
-    run_number = 583
+    run_number = 662
     DrawFERSBoards(run=run_number)
     DrawDRSBoards(run=run_number)
 

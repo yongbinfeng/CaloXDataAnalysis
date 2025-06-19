@@ -9,7 +9,7 @@ from utils.html_generator import generate_html
 print("Start running script")
 ROOT.gROOT.SetBatch(True)
 
-runNumber = 583
+runNumber = 662
 
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)
@@ -62,7 +62,8 @@ for _, FERSBoard in FERSBoards.items():
 
         plots.append(output_name + ".png")
 
-generate_html(plots, outdir_plots, output_html=f"html/FERS_1D/viewer.html")
+generate_html(plots, outdir_plots,
+              output_html=f"html/Run{runNumber}/FERS_1D/viewer.html")
 
 # 2D FERS histograms, hg vs lg
 plots = []
@@ -99,7 +100,7 @@ for _, FERSBoard in FERSBoards.items():
                        outdir=outdir_plots)
             plots.append(output_name + ".png")
 generate_html(plots, outdir_plots, plots_per_row=4,
-              output_html=f"html/FERS_2D/viewer.html")
+              output_html=f"html/Run{runNumber}/FERS_2D/viewer.html")
 
 # FERS output vs event
 plots = []
@@ -144,7 +145,7 @@ for _, FERSBoard in FERSBoards.items():
                        outdir=outdir_plots)
             plots.append(output_name + ".png")
 generate_html(plots, outdir_plots, plots_per_row=4,
-              output_html=f"html/FERS_vs_Event/viewer.html")
+              output_html=f"html/Run{runNumber}/FERS_vs_Event/viewer.html")
 
 
 # 1D histograms for DRS variables
@@ -192,7 +193,8 @@ for _, DRSBoard in DRSBoards.items():
                    outdir=outdir_plots)
         plots.append(output_name + ".png")
 
-generate_html(plots, outdir_plots, output_html=f"html/DRS_1D/viewer.html")
+generate_html(plots, outdir_plots,
+              output_html=f"html/Run{runNumber}/DRS_1D/viewer.html")
 
 # DRS mean vs event
 plots = []
@@ -237,4 +239,4 @@ for _, DRSBoard in DRSBoards.items():
                        outdir=outdir_plots)
             plots.append(output_name + ".png")
 generate_html(plots, outdir_plots, plots_per_row=4,
-              output_html=f"html/DRS_vs_Event/viewer.html")
+              output_html=f"html/Run{runNumber}/DRS_vs_Event/viewer.html")

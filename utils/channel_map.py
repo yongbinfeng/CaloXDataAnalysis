@@ -63,7 +63,7 @@ def buildFERSBoards(run=316):
                 # FERSBoards["Board12"][iBoardX, iBoardY].iTowerX += 8
                 # FERSBoards["Board12"][iBoardX, iBoardY].iTowerY += 2
 
-    elif run == 583:
+    elif run >= 583:
         # include 3mm FERS board in 583
         FERSBoards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
         FERSBoards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
