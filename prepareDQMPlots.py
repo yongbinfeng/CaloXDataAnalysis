@@ -51,6 +51,16 @@ for _, DRSBoard in DRSBoards.items():
             f"ROOT::VecOps::Mean({varname})"
         )
 
+ROOT.gInterpreter.Declare("""
+ROOT::RVec<int> FillIndices(size_t n) {
+    ROOT::RVec<int> out(n);
+    for (size_t i = 0; i < n; ++i) out[i] = i;
+    return out;
+}
+""")
+# Create an array of indices for DRS outputs
+rdf = rdf.Define("TS", "FillIndices(1024)")
+
 
 def makeFERS1DPlots():
     hists1d_FERS = []
@@ -67,7 +77,7 @@ def makeFERS1DPlots():
                 hist = rdf.Histo1D((
                     f"hist_FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
                     f"FERS Board {boardNo} - {var} iTowerX {sTowerX} iTowerY {sTowerY};{var} Energy HG;Counts",
-                    3000, 0, 9000),
+                    300, 0, 9000),
                     chan.GetHGChannelName()
                 )
                 hists1d_FERS.append(hist)
@@ -89,7 +99,7 @@ def trackFERSPlots():
                 hist = rdf.Histo2D((
                     f"hist_FERS_Board{boardNo}_{var}_vs_Event_{sTowerX}_{sTowerY}",
                     f"FERS Board {boardNo} - Event vs {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};Event;{var} Energy HG",
-                    int(nEvents/100), 0, nEvents, 500, 0, 9000),
+                    100, 0, nEvents, 300, 0, 9000),
                     "event_n", chan.GetHGChannelName()
                 )
                 hists2d_FERS_vs_Event.append(hist)
@@ -114,14 +124,14 @@ def makeFERS2DPlots():
             hist = rdf.Histo2D((
                 f"hist_FERS_Board{boardNo}_Cer_vs_Sci_{sTowerX}_{sTowerY}",
                 f"CER {iCer} vs SCI {iSci} in iTowerX {sTowerX} iTowerY {sTowerY};CER Energy HG;SCI Energy HG",
-                500, 0, 9000, 500, 0, 9000),
+                300, 0, 9000, 300, 0, 9000),
                 chan_Cer.GetHGChannelName(),
                 chan_Sci.GetHGChannelName()
             )
             hist_zoomed = rdf.Histo2D((
                 f"hist_FERS_Board{boardNo}_Cer_vs_Sci_{sTowerX}_{sTowerY}_zoom",
                 f"CER {iCer} vs SCI {iSci} in iTowerX {sTowerX} iTowerY {sTowerY} (zoomed);CER Energy HG;SCI Energy HG",
-                500, 0, 1000, 1000, 0, 2000),
+                300, 0, 1000, 200, 0, 2000),
                 chan_Cer.GetHGChannelName(),
                 chan_Sci.GetHGChannelName()
             )
@@ -132,7 +142,7 @@ def makeFERS2DPlots():
             hist_sci_hg_vs_lg = rdf.Histo2D((
                 f"hist_FERS_Board{boardNo}_Sci_{sTowerX}_{sTowerY}_hg_vs_lg",
                 f"SCI {iSci} HG vs LG;SCI Energy HG;SCI Energy LG",
-                500, 0, 9000, 500, 0, 3000),
+                300, 0, 9000, 300, 0, 3000),
                 chan_Sci.GetHGChannelName(),
                 chan_Sci.GetLGChannelName()
             )
@@ -140,7 +150,7 @@ def makeFERS2DPlots():
             hist_cer_hg_vs_lg = rdf.Histo2D((
                 f"hist_FERS_Board{boardNo}_Cer_{sTowerX}_{sTowerY}_hg_vs_lg",
                 f"CER {iCer} HG vs LG;CER Energy HG;CER Energy LG",
-                500, 0, 9000, 500, 0, 3000),
+                300, 0, 9000, 300, 0, 3000),
                 chan_Cer.GetHGChannelName(),
                 chan_Cer.GetLGChannelName()
             )
@@ -170,6 +180,29 @@ def makeDRS1DPlots():
                 )
                 hists1d_DRS.append(hist)
     return hists1d_DRS
+
+
+def makeDRS2DPlots():
+    hists2d_DRS_vs_TS = []
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+
+            for var in ["Cer", "Sci"]:
+                chan = DRSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                if chan is None:
+                    continue
+                hist = rdf.Histo2D((
+                    f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}",
+                    f"DRS Board {boardNo} - {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};TS;{var} Variable",
+                    1024, 0, 1024, 1500, 1000, 2500),
+                    "TS", chan.GetChannelName()
+                )
+                hists2d_DRS_vs_TS.append(hist)
+    return hists2d_DRS_vs_TS
 
 
 def trackDRSPlots():
@@ -203,6 +236,7 @@ if __name__ == "__main__":
     hists2d_FERS_vs_Event = trackFERSPlots()
 
     hists1d_DRS = makeDRS1DPlots()
+    hists2d_DRS_vs_TS = makeDRS2DPlots()
     hists2d_DRS_vs_Event = trackDRSPlots()
 
     print("Save histograms")
@@ -228,6 +262,11 @@ if __name__ == "__main__":
     #
     outfile_DRS = ROOT.TFile(f"{rootdir}/drs_all_channels_1D.root", "RECREATE")
     for hist in hists1d_DRS:
+        hist.SetDirectory(outfile_DRS)
+        hist.Write()
+    outfile_DRS.Close()
+    outfile_DRS = ROOT.TFile(f"{rootdir}/drs_all_channels_2D.root", "RECREATE")
+    for hist in hists2d_DRS_vs_TS:
         hist.SetDirectory(outfile_DRS)
         hist.Write()
     outfile_DRS.Close()
