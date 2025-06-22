@@ -50,7 +50,7 @@ def prepareFERSDRSPlots():
     ROOT::VecOps::RVec<float> clipToZero(const ROOT::VecOps::RVec<float>& vec) {
         ROOT::VecOps::RVec<float> out;
         for (float v : vec) {
-            out.push_back(std::max(v, 5.0f));
+            out.push_back(std::max(v, 0.0f));
         }
         return out;
     }
@@ -84,6 +84,12 @@ def prepareFERSDRSPlots():
             return vec[n / 2];
     }
     """)
+    ROOT.gInterpreter.Declare("""
+float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
+    if (i >= v.size() || j > v.size() || i >= j) return 0.0;
+    return std::accumulate(v.begin() + i, v.begin() + j, 0.0f);
+}
+""")
     # get the mean of DRS outputs per channel
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
@@ -103,7 +109,7 @@ def prepareFERSDRSPlots():
             )
             rdf = rdf.Define(
                 f"{varname}_sum",
-                f"ROOT::VecOps::Sum({varname}_subtractMedian_positive) - 1024*5.0"
+                f"SumRange({varname}_subtractMedian, 70, 350)"
             )
 
     # correlate  FERS and DRS outputs
