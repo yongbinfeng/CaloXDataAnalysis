@@ -7,10 +7,10 @@ from utils.html_generator import generate_html
 
 ROOT.gROOT.SetBatch(True)  # Disable interactive mode
 
-xmax = 15.5
-xmin = -12.5
-ymax = 12.5
-ymin = -7.5
+xmax = 14
+xmin = -14
+ymax = 10
+ymin = -10
 W_ref = 1000
 H_ref = 1100
 
@@ -170,8 +170,9 @@ def DrawDRSBoards(run=316):
 
 if __name__ == "__main__":
     # Example usage
+    for run in [316, 571, 662, 685]:
+        DrawFERSBoards(run=run)
     run_number = 662
-    DrawFERSBoards(run=run_number)
     DrawDRSBoards(run=run_number)
 
     print("Mapping plots generated for FERS and DRS boards.")

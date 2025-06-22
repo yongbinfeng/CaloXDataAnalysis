@@ -16,13 +16,13 @@ def buildFERSBoards(run=316):
         FERSBoards["Board3"] = base_FERSBoard_6mm.copy(boardNo=3)
         FERSBoards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
         FERSBoards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
-        for iBoardX in range(0, 4):
-            for iBoardY in range(0, 16):
-                FERSBoards["Board2"][iBoardX, iBoardY].iTowerX -= 4
-                FERSBoards["Board3"][iBoardX, iBoardY].iTowerX -= 8
-                FERSBoards["Board3"][iBoardX, iBoardY].iTowerY -= 4
-                FERSBoards["Board4"][iBoardX, iBoardY].iTowerX -= 12
-                FERSBoards["Board5"][iBoardX, iBoardY].iTowerX -= 16
+
+        # positions
+        FERSBoards["Board1"].MoveTo(6.5, -0.5)
+        FERSBoards["Board2"].MoveTo(2.5, -0.5)
+        FERSBoards["Board3"].MoveTo(-1.5, -2.5)
+        FERSBoards["Board4"].MoveTo(-5.5, -0.5)
+        FERSBoards["Board5"].MoveTo(-9.5, -0.5)
 
     elif run == 571:
         # 10 FERS boards in 571
@@ -36,34 +36,21 @@ def buildFERSBoards(run=316):
         FERSBoards["Board9"] = base_FERSBoard_6mm.copy(boardNo=9)
         FERSBoards["Board10"] = base_FERSBoard_6mm.copy(boardNo=10)
         FERSBoards["Board11"] = base_FERSBoard_6mm.copy(boardNo=11)
-        # FERSBoards["Board12"] = base_FERSBoard_3mm
+        # FERSBoards["Board12"] = base_FERSBoard_6mm.copy(boardNo=12)
 
-        for iBoardX in range(0, 4):
-            for iBoardY in range(0, 16):
-                FERSBoards["Board0"][iBoardX, iBoardY].iTowerX -= 12
-                FERSBoards["Board0"][iBoardX, iBoardY].iTowerY += 6
-                FERSBoards["Board1"][iBoardX, iBoardY].iTowerX -= 8
-                FERSBoards["Board1"][iBoardX, iBoardY].iTowerY += 10
-                FERSBoards["Board2"][iBoardX, iBoardY].iTowerX -= 4
-                FERSBoards["Board2"][iBoardX, iBoardY].iTowerY += 10
-                FERSBoards["Board3"][iBoardX, iBoardY].iTowerX += 0
-                FERSBoards["Board3"][iBoardX, iBoardY].iTowerY += 12
-                FERSBoards["Board4"][iBoardX, iBoardY].iTowerX += 4
-                FERSBoards["Board4"][iBoardX, iBoardY].iTowerY += 10
-                FERSBoards["Board5"][iBoardX, iBoardY].iTowerX += 8
-                FERSBoards["Board5"][iBoardX, iBoardY].iTowerY += 10
-                FERSBoards["Board8"][iBoardX, iBoardY].iTowerX -= 8
-                FERSBoards["Board8"][iBoardX, iBoardY].iTowerY += 2
-                FERSBoards["Board9"][iBoardX, iBoardY].iTowerX -= 4
-                FERSBoards["Board9"][iBoardX, iBoardY].iTowerY += 2
-                FERSBoards["Board10"][iBoardX, iBoardY].iTowerX += 0
-                FERSBoards["Board10"][iBoardX, iBoardY].iTowerY += 0
-                FERSBoards["Board11"][iBoardX, iBoardY].iTowerX += 4
-                FERSBoards["Board11"][iBoardX, iBoardY].iTowerY += 2
-                # FERSBoards["Board12"][iBoardX, iBoardY].iTowerX += 8
-                # FERSBoards["Board12"][iBoardX, iBoardY].iTowerY += 2
+        FERSBoards["Board0"].MoveTo(-13.5, 3.5)
+        FERSBoards["Board1"].MoveTo(-9.5, 7.5)
+        FERSBoards["Board2"].MoveTo(-5.5, 7.5)
+        FERSBoards["Board3"].MoveTo(-1.5, 9.5)
+        FERSBoards["Board4"].MoveTo(2.5, 7.5)
+        FERSBoards["Board5"].MoveTo(6.5, 7.5)
+        FERSBoards["Board8"].MoveTo(-9.5, -0.5)
+        FERSBoards["Board9"].MoveTo(-5.5, -0.5)
+        FERSBoards["Board10"].MoveTo(-1.5, -2.5)
+        FERSBoards["Board11"].MoveTo(2.5, -0.5)
+        # FERSBoards["Board12"].MoveTo(6.5, -0.5)
 
-    elif run >= 583:
+    elif run >= 583 and run < 685:
         # include 3mm FERS board in 583
         FERSBoards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
         FERSBoards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
@@ -78,31 +65,39 @@ def buildFERSBoards(run=316):
 
         FERSBoards["Board5"] = base_FERSBoard_3mm.copy(boardNo=5)
 
-        for iBoardX in range(0, 4):
-            for iBoardY in range(0, 16):
-                FERSBoards["Board0"][iBoardX, iBoardY].iTowerX -= 12
-                FERSBoards["Board0"][iBoardX, iBoardY].iTowerY += 6
-                FERSBoards["Board1"][iBoardX, iBoardY].iTowerX -= 8
-                FERSBoards["Board1"][iBoardX, iBoardY].iTowerY += 10
-                FERSBoards["Board2"][iBoardX, iBoardY].iTowerX -= 4
-                FERSBoards["Board2"][iBoardX, iBoardY].iTowerY += 10
-                FERSBoards["Board3"][iBoardX, iBoardY].iTowerX += 0
-                FERSBoards["Board3"][iBoardX, iBoardY].iTowerY += 12
-                FERSBoards["Board4"][iBoardX, iBoardY].iTowerX += 4
-                FERSBoards["Board4"][iBoardX, iBoardY].iTowerY += 10
-                FERSBoards["Board8"][iBoardX, iBoardY].iTowerX -= 8
-                FERSBoards["Board8"][iBoardX, iBoardY].iTowerY += 2
-                FERSBoards["Board9"][iBoardX, iBoardY].iTowerX -= 4
-                FERSBoards["Board9"][iBoardX, iBoardY].iTowerY += 2
-                FERSBoards["Board10"][iBoardX, iBoardY].iTowerX += 0
-                FERSBoards["Board10"][iBoardX, iBoardY].iTowerY += 0
-                FERSBoards["Board11"][iBoardX, iBoardY].iTowerX += 4
-                FERSBoards["Board11"][iBoardX, iBoardY].iTowerY += 2
-                # FERSBoards["Board12"][iBoardX, iBoardY].iTowerX += 8
-                # FERSBoards["Board12"][iBoardX, iBoardY].iTowerY += 2
+        FERSBoards["Board0"].MoveTo(-13.5, 3.5)
+        FERSBoards["Board1"].MoveTo(-9.5, 7.5)
+        FERSBoards["Board2"].MoveTo(-5.5, 7.5)
+        FERSBoards["Board3"].MoveTo(-1.5, 9.5)
+        FERSBoards["Board4"].MoveTo(2.5, 7.5)
+        FERSBoards["Board8"].MoveTo(-9.5, -0.5)
+        FERSBoards["Board9"].MoveTo(-5.5, -0.5)
+        FERSBoards["Board10"].MoveTo(-1.5, -2.5)
+        FERSBoards["Board11"].MoveTo(2.5, -0.5)
+        # FERSBoards["Board12"].MoveTo(6.5, -0.5)
+        FERSBoards["Board5"].MoveTo(-1.5, 1.875)
 
-                FERSBoards["Board5"][iBoardX, iBoardY].iTowerX += 0
-                FERSBoards["Board5"][iBoardX, iBoardY].iTowerY += 4.375
+    elif run >= 685:
+        FERSBoards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
+        FERSBoards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
+        FERSBoards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
+        FERSBoards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
+        FERSBoards["Board6"] = base_FERSBoard_6mm.copy(boardNo=6)
+        FERSBoards["Board7"] = base_FERSBoard_6mm.copy(boardNo=7)
+
+        FERSBoards["Board3"] = base_FERSBoard_3mm.copy(boardNo=3)
+        FERSBoards["Board4"] = base_FERSBoard_3mm.copy(boardNo=4)
+
+        FERSBoards["Board0"].MoveTo(-5.5, 7.5)
+        FERSBoards["Board1"].MoveTo(-1.5, 9.5)
+        FERSBoards["Board2"].MoveTo(2.5, 7.5)
+        FERSBoards["Board5"].MoveTo(-5.5, -0.5)
+        FERSBoards["Board6"].MoveTo(-1.5, -2.5)
+        FERSBoards["Board7"].MoveTo(2.5, -0.5)
+
+        FERSBoards["Board3"].MoveTo(-1.5, 1.875)
+        FERSBoards["Board4"].MoveTo(0.5, 1.875)
+
     else:
         raise ValueError(f"Unsupported run number {run} for FERS boards.")
     return FERSBoards

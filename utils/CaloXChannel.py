@@ -6,7 +6,7 @@ class CaloXChannel(object):
     A class to represent a channel in the FERS system.
     """
 
-    def __init__(self, iTowerX: int, iTowerY: int, iBoardX: int, iBoardY: int, isCer: bool):
+    def __init__(self, iTowerX: float, iTowerY: float, iBoardX: int, iBoardY: int, isCer: bool):
         self.iTowerX = iTowerX
         self.iTowerY = iTowerY
         self.iBoardX = iBoardX
@@ -44,7 +44,7 @@ class CaloXChannel(object):
 
 
 class FERSChannel(CaloXChannel):
-    def __init__(self, iTowerX: int, iTowerY: int, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, boardNo: int):
+    def __init__(self, iTowerX: float, iTowerY: float, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, boardNo: int):
         super().__init__(iTowerX, iTowerY, iBoardX, iBoardY, isCer)
         self.channelNo = channelNo  # FERS channel number
         self.boardNo = boardNo  # FERS board number
@@ -72,7 +72,7 @@ class FERSChannel(CaloXChannel):
 
 
 class DRSChannel(CaloXChannel):
-    def __init__(self, iTowerX: int, iTowerY: int, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, groupNo: int, boardNo: int):
+    def __init__(self, iTowerX: float, iTowerY: float, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, groupNo: int, boardNo: int):
         super().__init__(iTowerX, iTowerY, iBoardX, iBoardY, isCer)
         self.channelNo = channelNo
         self.groupNo = groupNo
@@ -207,6 +207,24 @@ class Board(object):
         assert len(set(mapping.values())) == len(mapping), \
             "Mapping failed: some SCI channels are mapped to multiple CER channels."
         return mapping
+
+    def ShiftChannels(self, iShiftX, iShiftY):
+        """
+        Shift the channels on the board by (iShiftX, iShiftY).
+        """
+        for row in self.channels:
+            for channel in row:
+                channel.iTowerX += iShiftX
+                channel.iTowerY += iShiftY
+
+    def MoveTo(self, iTowerX, iTowerY):
+        """
+        Move the channels on the board to a new position.
+        (iBoardX=0, iBoardY=0) from the original to (iTowerX, iTowerY).
+        """
+        shiftX = iTowerX - self.channels[0][0].iTowerX
+        shiftY = iTowerY - self.channels[0][0].iTowerY
+        self.ShiftChannels(shiftX, shiftY)
 
 
 class FERSBoard(Board):
