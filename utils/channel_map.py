@@ -143,6 +143,11 @@ def buildDRSBoards(run=316):
         # remove channels that are not used
         DRSBoards["Board1"].MoveTo(-1.5, 9.5)
         DRSBoards["Board2"].MoveTo(-1.5, -6.5)
+        # no more cables..
+        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 4)
+        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 5)
+        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 6)
+        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 7)
     else:
         raise ValueError(f"Unsupported run number {run} for DRS boards.")
     return DRSBoards

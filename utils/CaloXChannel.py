@@ -148,8 +148,8 @@ class Board(object):
             for channel in row:
                 if channel.iTowerX == iTowerX and channel.iTowerY == iTowerY and channel.isCer == isCer:
                     return channel
-        print(
-            f"\033[91m Warning: Channel not found for tower ({iTowerX}, {iTowerY}) on board {self.boardNo} for {'CER' if isCer else 'SCI'} channel.\033[0m")
+        # print(
+        #    f"\033[91m Warning: Channel not found for tower ({iTowerX}, {iTowerY}) on board {self.boardNo} for {'CER' if isCer else 'SCI'} channel.\033[0m")
         return None
 
     def GetCerChannels(self):

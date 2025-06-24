@@ -10,7 +10,7 @@ from utils.validateMap import DrawFERSBoards, DrawDRSBoards
 print("Start running script")
 ROOT.gROOT.SetBatch(True)
 
-runNumber = 692
+runNumber = 685
 
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)

@@ -8,7 +8,7 @@ import time
 
 print("Start running prepareDQMPlots.py")
 
-runNumber = 692
+runNumber = 685
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
