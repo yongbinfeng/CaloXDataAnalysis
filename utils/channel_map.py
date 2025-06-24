@@ -111,30 +111,47 @@ def buildDRSBoards(run=316):
     base_DRSBoard = DRSBoard(boardNo=-1)
     DRSBoards = {}
     if run < 685:
-        # 2 DRS boards in 316
-        DRSBoards["Board0"] = base_DRSBoard.copy(boardNo=0)
         DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 5)
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 6)
+        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 7)
+        DRSBoards["Board2"].MoveTo(-1.5, -2.5)
         channel = DRSBoards["Board2"].GetChannelByGroupChannel(3, 4)
-        channel.iTowerX = 0
-        channel.iTowerY = -7
-        channel.isCer = True
+        channel.iTowerX = 1.5
+        channel.iTowerY = -9.5
+        channel.isCer = False
 
+        DRSBoards["Board0"] = base_DRSBoard.copy(boardNo=0)
+        DRSBoards["Board0"].MoveTo(-1.5, -6.5)
         channels = DRSBoards["Board0"].GetListOfChannels()
         for channel in channels:
-            channel.iTowerX -= 0
-            channel.iTowerY -= 4
             if channel.isCer:
                 channel.iTowerY += 1
                 channel.isCer = False
             else:
                 channel.isCer = True
-        DRSBoards["Board0"].RemoveChannelByGroupChannel(1, 7)
+        prechannel_towerX = -999
+        prechannel_towerY = -999
+        prechannel_isCer = 0
+        for group in [3, 2]:
+            for channel in [7, 6, 5, 4, 3, 2, 1, 0]:
+                channel = DRSBoards["Board0"].GetChannelByGroupChannel(
+                    group, channel)
+                temp_channel = channel.__copy__()
+                channel.iTowerX = prechannel_towerX
+                channel.iTowerY = prechannel_towerY
+                channel.isCer = prechannel_isCer
+
+                prechannel_towerX = temp_channel.iTowerX
+                prechannel_towerY = temp_channel.iTowerY
+                prechannel_isCer = temp_channel.isCer
+        channel = DRSBoards["Board0"].GetChannelByGroupChannel(1, 7)
+        channel.iTowerX = prechannel_towerX
+        channel.iTowerY = prechannel_towerY
+        channel.isCer = prechannel_isCer
         DRSBoards["Board0"].RemoveChannelByGroupChannel(3, 7)
-        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 7)
+
     elif run >= 685:
-        # 3 DRS boards in 685
         DRSBoards["Board1"] = base_DRSBoard.copy(boardNo=1)
         DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
 

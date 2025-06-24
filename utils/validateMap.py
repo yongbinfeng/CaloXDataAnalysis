@@ -112,11 +112,19 @@ def DrawDRSBoards(run=316):
         towery_min = 99
         towery_max = -99
         for channel_Sci in DRSBoard.GetSciChannels():
+            sci_encoded = channel_Sci.boardNo * 100 + \
+                channel_Sci.groupNo * 10 + channel_Sci.channelNo
+            if sci_encoded == 0:
+                sci_encoded = 0.001
             h2_DRS_Sci.Fill(channel_Sci.iTowerX, channel_Sci.iTowerY,
-                            float(f"{channel_Sci.groupNo}.{channel_Sci.channelNo}"))
+                            sci_encoded)
         for channel_Cer in DRSBoard.GetCerChannels():
-            h2_DRS_Cer.Fill(channel_Cer.iTowerX, channel_Cer.iTowerY,
-                            float(f"{channel_Cer.groupNo}.{channel_Cer.channelNo}"))
+            cer_encoded = channel_Cer.boardNo * 100 + \
+                channel_Cer.groupNo * 10 + channel_Cer.channelNo
+            if cer_encoded == 0:
+                cer_encoded = 0.001
+            h2_DRS_Cer.Fill(channel_Cer.iTowerX,
+                            channel_Cer.iTowerY, cer_encoded)
             towerx_min = min(towerx_min, channel_Cer.iTowerX)
             towerx_max = max(towerx_max, channel_Cer.iTowerX)
             towery_min = min(towery_min, channel_Cer.iTowerY)
@@ -129,12 +137,14 @@ def DrawDRSBoards(run=316):
 
     output_dir = f"plots/Run{run}/ChannelMaps/"
     output_name = f"DRS_Boards_Run{run}"
+    h2_DRS_Cer.SetMarkerSize(0.60)
+    h2_DRS_Sci.SetMarkerSize(0.60)
     DrawHistos([h2_DRS_Cer], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["text1"] + ["same"] * len(bboxes),
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=bboxes, nTextDigits=1, extraText="Cer", runNumber=run)
+               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["text1,colz"],
+               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=run, zmax=300, zmin=0, ncolors=2)
     DrawHistos([h2_DRS_Sci], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["text1"] + ["same"] * len(bboxes),
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=bboxes, nTextDigits=1, extraText="Sci", runNumber=run)
+               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["text1,colz"],
+               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=run, zmax=300, zmin=0, ncolors=2)
 
     generate_html(
         [output_name + "_Cer.png", output_name + "_Sci.png"],
@@ -146,7 +156,7 @@ def DrawDRSBoards(run=316):
 
 if __name__ == "__main__":
     # Example usage
-    for run in [316, 571, 662, 685]:
+    for run in [316, 571, 624, 662, 685]:
         DrawFERSBoards(run=run)
         DrawDRSBoards(run=run)
 

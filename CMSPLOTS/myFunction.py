@@ -451,7 +451,7 @@ def TH2ToTH1s(h2, projY=False, label="X"):
     return hs, labels
 
 
-def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outputname, dology=True, showratio=False, dologx=False, lheader=None, donormalize=False, binomialratio=False, yrmax=2.0, yrmin=0.0, yrlabel=None, MCOnly=False, leftlegend=False, mycolors=None, legendPos=None, legendNCols=1, linestyles=None, markerstyles=None, showpull=False, doNewman=False, doPearson=False, ignoreHistError=False, ypullmin=-3.99, ypullmax=3.99, drawashist=False, padsize=(2, 0.9, 1.1), setGridx=False, setGridy=False, drawoptions=None, legendoptions=None, ratiooptions=None, dologz=False, doth2=False, ratiobase=0, redrawihist=-1, extraText=None, noCMS=False, noLumi=False, nMaxDigits=None, nTextDigits=0, addOverflow=False, addUnderflow=False, plotdiff=False, hratiopanel=None, doratios=None, hpulls=None, W_ref=600, H_ref=600, is5TeV=False, outdir="plots", savepdf=True, zmin=0, zmax=2, extralabels=None, extralheader=None, extraToDraw=None, exlegoffset=0.08, runNumber=None):
+def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outputname, dology=True, showratio=False, dologx=False, lheader=None, donormalize=False, binomialratio=False, yrmax=2.0, yrmin=0.0, yrlabel=None, MCOnly=False, leftlegend=False, mycolors=None, legendPos=None, legendNCols=1, linestyles=None, markerstyles=None, showpull=False, doNewman=False, doPearson=False, ignoreHistError=False, ypullmin=-3.99, ypullmax=3.99, drawashist=False, padsize=(2, 0.9, 1.1), setGridx=False, setGridy=False, drawoptions=None, legendoptions=None, ratiooptions=None, dologz=False, doth2=False, ratiobase=0, redrawihist=-1, extraText=None, noCMS=False, noLumi=False, nMaxDigits=None, nTextDigits=0, addOverflow=False, addUnderflow=False, plotdiff=False, hratiopanel=None, doratios=None, hpulls=None, W_ref=600, H_ref=600, is5TeV=False, outdir="plots", savepdf=True, zmin=0, zmax=2, extralabels=None, extralheader=None, extraToDraw=None, exlegoffset=0.08, runNumber=None, ncolors=None):
     """
     draw histograms with the CMS tdr style
     """
@@ -478,7 +478,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     # not sure why need this...
     ROOT.gStyle.SetErrorX(0.5)
 
-    ROOT.gStyle.SetPalette(1)
+    # ROOT.gStyle.SetPalette(1)
     ROOT.gStyle.SetPaintTextFormat(f".{nTextDigits}f")
 
     # change the CMS_lumi variables (see CMS_lumi.py)
@@ -608,6 +608,24 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         if zmin != None and zmax != None:
             # print(f"configuring z range to {zmin}, {zmax}")
             h1.GetZaxis().SetRangeUser(zmin, zmax)
+
+    # if doth2 and ncolors != None:
+    #    # Set exactly 3 contour levels
+    #    ROOT.gStyle.SetNumberContours(ncolors)
+
+    #    # Choose ncolors distinct colors
+    #    colors = [
+    #        ROOT.kRed+1, ROOT.kBlue+1, ROOT.kGreen+2, ROOT.kMagenta+1,
+    #        ROOT.kCyan+2, ROOT.kOrange+1, ROOT.kYellow+2, ROOT.kViolet+1, ROOT.kAzure+1,
+    #        ROOT.kSpring+3, ROOT.kTeal+2, ROOT.kPink+2, ROOT.kGray+1, ROOT.kOrange+7
+    #    ]
+    #    colors = colors[:ncolors]  # limit to ncolors
+    #    color_array = ROOT.std.vector[int]()
+    #    for c in colors:
+    #        color_array.push_back(c)
+
+    #    ROOT.gStyle.SetPalette(ncolors, color_array.data(), 0.01)
+    ROOT.gStyle.SetPalette(1)  # reset to default palette
 
     # print "xmin : %f xmax : %f"%(xmin, xmax)
 

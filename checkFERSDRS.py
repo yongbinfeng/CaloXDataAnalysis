@@ -4,13 +4,10 @@ import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards
 from utils.utils import number2string, getDataFile, getBranchStats
 import time
-import json
-import re
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
 from utils.html_generator import generate_html
-
-runNumber = 685
+from runNumber import runNumber
 
 # multi-threading support
 ROOT.gROOT.SetBatch(True)  # Disable interactive mode
@@ -33,7 +30,6 @@ def prepareFERSDRSPlots():
     ifile = getDataFile(runNumber)
     infile = ROOT.TFile(ifile, "READ")
     rdf = ROOT.RDataFrame("EventTree", infile)
-    # read the noise from json file
 
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
@@ -111,7 +107,6 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
     # correlate  FERS and DRS outputs
     h2s_FERS_VS_DRS = []
     h2s_FERSLG_VS_DRS = []
-    # FERSBoard = FERSBoards["Board10"]  # hard code this
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
         for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
@@ -130,11 +125,7 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
                     chan_FERS = FERSBoard.GetChannelByTower(
                         iTowerX, iTowerY, isCer=(var == "Cer"))
                     if chan_FERS is not None:
-                        print(
-                            f"Found FERS Channel in Board{fersNo} for Tower({sTowerX}, {sTowerY}), {var}")
                         break
-                # chan_FERS = FERSBoard.GetChannelByTower(
-                #    iTowerX, iTowerY, isCer=(var == "Cer"))
                 if chan_FERS is None:
                     print(
                         f"Warning: FERS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
@@ -228,7 +219,6 @@ def makeFERSDRSPlots():
     outdir_plots = f"plots/Run{runNumber}/checkFERSDRS"
 
     # correlate  FERS and DRS outputs
-    # FERSBoard = FERSBoards["Board10"]  # hard code this
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
         for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
@@ -247,19 +237,11 @@ def makeFERSDRSPlots():
                     chan_FERS = FERSBoard.GetChannelByTower(
                         iTowerX, iTowerY, isCer=(var == "Cer"))
                     if chan_FERS is not None:
-                        print(
-                            f"Found FERS Channel in Board{fersNo} for Tower({sTowerX}, {sTowerY}), {var}")
                         break
                 if chan_FERS is None:
                     print(
                         f"Warning: FERS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
                     continue
-                # chan_FERS = FERSBoard.GetChannelByTower(
-                #    iTowerX, iTowerY, isCer=(var == "Cer"))
-                # if chan_FERS is None:
-                #    print(
-                #        f"Warning: FERS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
-                #    continue
 
                 h2_name = f"hist_FERS_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
                 hist = input_file.Get(h2_name)
@@ -271,7 +253,7 @@ def makeFERSDRSPlots():
                 DrawHistos([hist], "", DRS_min, DRS_max, "DRS Integral", FERS_min, FERS_max, f"FERS Output",
                            output_name,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
-                           outdir=outdir_plots)
+                           outdir=outdir_plots, extraText=var, runNumber=runNumber)
                 plots.append(output_name + ".png")
 
                 h2_LG_name = f"hist_FERSLG_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
@@ -284,7 +266,7 @@ def makeFERSDRSPlots():
                 DrawHistos([hist_LG], "", DRS_min, DRS_LG_max, "DRS Integral", FERS_min, FERS_LG_max, f"FERS Output",
                            output_name_LG,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
-                           outdir=outdir_plots)
+                           outdir=outdir_plots, extraText=var, runNumber=runNumber)
                 plots.append(output_name_LG + ".png")
 
     for _, DRSBoard in DRSBoards.items():
@@ -300,7 +282,7 @@ def makeFERSDRSPlots():
             DrawHistos([hist_sum], "", DRS_min, DRS_max, "DRS Integral", FERS_min, FERS_max, f"FERS Output",
                        output_name,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
-                       outdir=outdir_plots)
+                       outdir=outdir_plots, extraText=var, runNumber=runNumber)
             plots.append(output_name + ".png")
 
             h2sum_LG_name = f"hist_FERSLG_VS_DRS_Board{boardNo}_{var}_sum"
@@ -313,7 +295,7 @@ def makeFERSDRSPlots():
             DrawHistos([hist_sum_LG], "", DRS_min, DRS_LG_max, "DRS Integral", FERS_min, FERS_LG_max, f"FERS Output",
                        output_name_LG,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
-                       outdir=outdir_plots)
+                       outdir=outdir_plots, extraText=var, runNumber=runNumber)
             plots.append(output_name_LG + ".png")
 
     generate_html(plots, outdir_plots,

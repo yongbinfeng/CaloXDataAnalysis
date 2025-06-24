@@ -6,11 +6,10 @@ from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTriggerChann
 from utils.utils import number2string
 from utils.html_generator import generate_html
 from utils.validateMap import DrawFERSBoards, DrawDRSBoards
+from runNumber import runNumber
 
 print("Start running script")
 ROOT.gROOT.SetBatch(True)
-
-runNumber = 685
 
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)

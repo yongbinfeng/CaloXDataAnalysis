@@ -4,11 +4,10 @@ import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTriggerChannels
 from utils.utils import number2string, getDataFile, getBranchStats
+from runNumber import runNumber
 import time
 
 print("Start running prepareDQMPlots.py")
-
-runNumber = 685
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
