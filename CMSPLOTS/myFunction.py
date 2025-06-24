@@ -451,7 +451,7 @@ def TH2ToTH1s(h2, projY=False, label="X"):
     return hs, labels
 
 
-def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outputname, dology=True, showratio=False, dologx=False, lheader=None, donormalize=False, binomialratio=False, yrmax=2.0, yrmin=0.0, yrlabel=None, MCOnly=False, leftlegend=False, mycolors=None, legendPos=None, legendNCols=1, linestyles=None, markerstyles=None, showpull=False, doNewman=False, doPearson=False, ignoreHistError=False, ypullmin=-3.99, ypullmax=3.99, drawashist=False, padsize=(2, 0.9, 1.1), setGridx=False, setGridy=False, drawoptions=None, legendoptions=None, ratiooptions=None, dologz=False, doth2=False, ratiobase=0, redrawihist=-1, extraText=None, noCMS=False, noLumi=False, nMaxDigits=None, nTextDigits=0, addOverflow=False, addUnderflow=False, plotdiff=False, hratiopanel=None, doratios=None, hpulls=None, W_ref=600, H_ref=600, is5TeV=False, outdir="plots", savepdf=True, zmin=0, zmax=2, extralabels=None, extralheader=None, extraToDraw=None, exlegoffset=0.08):
+def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outputname, dology=True, showratio=False, dologx=False, lheader=None, donormalize=False, binomialratio=False, yrmax=2.0, yrmin=0.0, yrlabel=None, MCOnly=False, leftlegend=False, mycolors=None, legendPos=None, legendNCols=1, linestyles=None, markerstyles=None, showpull=False, doNewman=False, doPearson=False, ignoreHistError=False, ypullmin=-3.99, ypullmax=3.99, drawashist=False, padsize=(2, 0.9, 1.1), setGridx=False, setGridy=False, drawoptions=None, legendoptions=None, ratiooptions=None, dologz=False, doth2=False, ratiobase=0, redrawihist=-1, extraText=None, noCMS=False, noLumi=False, nMaxDigits=None, nTextDigits=0, addOverflow=False, addUnderflow=False, plotdiff=False, hratiopanel=None, doratios=None, hpulls=None, W_ref=600, H_ref=600, is5TeV=False, outdir="plots", savepdf=True, zmin=0, zmax=2, extralabels=None, extralheader=None, extraToDraw=None, exlegoffset=0.08, runNumber=None):
     """
     draw histograms with the CMS tdr style
     """
@@ -487,10 +487,13 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     CMS_lumi.relPosX = 0.25
     # CMS_lumi.extraText = "Internal"
     CMS_lumi.extraText = ""
-    if MCOnly:
-        CMS_lumi.extraText = "Simulation"
-    if isinstance(extraText, str):
+    if extraText:
         CMS_lumi.extraText = extraText
+    elif MCOnly:
+        CMS_lumi.extraText = "Simulation"
+
+    if runNumber is not None:
+        CMS_lumi.lumi_13TeV = f"Cosmic Run {runNumber}"
 
     if nMaxDigits:
         # print(f"set the maximum number of digits {nMaxDigits}")
@@ -615,7 +618,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     h1.GetYaxis().SetLabelSize(0.045/(padsize1+padsize3))
     h1.GetXaxis().SetTitleSize(0.050/(padsize1+padsize3))
     h1.GetXaxis().SetLabelSize(0.045/(padsize1+padsize3))
-    h1.GetYaxis().SetTitleOffset(1.35*(padsize1+padsize3)*(600.0/W))
+    h1.GetYaxis().SetTitleOffset(1.6*(padsize1+padsize3)*(600.0/W))
     h1.GetXaxis().SetTitleOffset(1.1*(padsize1+padsize3))
 
     if showratio or showpull:

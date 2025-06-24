@@ -71,26 +71,14 @@ def DrawFERSBoards(run=316):
         bbox.SetFillColorAlpha(colors[len(bboxes)], 0.1)
         bboxes.append(bbox)
 
-    extraToDraw = ROOT.TPaveText(0.01, 0.78, 0.12, 0.88, "NDC")
-    extraToDraw.SetTextAlign(11)
-    extraToDraw.SetFillColorAlpha(0, 0)
-    extraToDraw.SetBorderSize(0)
-    extraToDraw.SetTextFont(42)
-    extraToDraw.SetTextSize(0.04)
-    extraToDraw.AddText(f"Run: {run}")
-    extraToDraw_Cer = extraToDraw.Clone("extraToDraw_2")
-    extraToDraw_Cer.AddText("Cerenkov")
-    extraToDraw_Sci = extraToDraw.Clone("extraToDraw_3")
-    extraToDraw_Sci.AddText("Scintillator")
-
-    output_dir = f"plots/ChannelMaps/"
+    output_dir = f"plots/Run{run}/ChannelMaps/"
     output_name = f"FERS_Boards_Run{run}"
     DrawHistos([h2_Cer, h2_Cer_3mm], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["text0", "text0"] + ["same"] * len(bboxes),
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=bboxes + [extraToDraw_Cer])
+               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=bboxes, extraText="Cer", runNumber=run)
     DrawHistos([h2_Sci, h2_Sci_3mm], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["text0", "text0"] + ["same"] * len(bboxes),
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=bboxes + [extraToDraw_Sci])
+               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=bboxes, extraText="Sci", runNumber=run)
 
     generate_html(
         [output_name + "_Cer.png", output_name + "_Sci.png"],
@@ -139,26 +127,14 @@ def DrawDRSBoards(run=316):
         bbox.SetFillColorAlpha(colors[len(bboxes)], 0.1)
         bboxes.append(bbox)
 
-    extraToDraw = ROOT.TPaveText(0.01, 0.78, 0.12, 0.88, "NDC")
-    extraToDraw.SetTextAlign(11)
-    extraToDraw.SetFillColorAlpha(0, 0)
-    extraToDraw.SetBorderSize(0)
-    extraToDraw.SetTextFont(42)
-    extraToDraw.SetTextSize(0.04)
-    extraToDraw.AddText(f"Run: {run}")
-    extraToDraw_Cer = extraToDraw.Clone("extraToDraw_2")
-    extraToDraw_Cer.AddText("Cerenkov")
-    extraToDraw_Sci = extraToDraw.Clone("extraToDraw_3")
-    extraToDraw_Sci.AddText("Scintillator")
-
-    output_dir = f"plots/ChannelMaps/"
+    output_dir = f"plots/Run{run}/ChannelMaps/"
     output_name = f"DRS_Boards_Run{run}"
     DrawHistos([h2_DRS_Cer], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["text1"] + ["same"] * len(bboxes),
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=bboxes + [extraToDraw_Cer], nTextDigits=1)
+               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=bboxes, nTextDigits=1, extraText="Cer", runNumber=run)
     DrawHistos([h2_DRS_Sci], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["text1"] + ["same"] * len(bboxes),
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=bboxes + [extraToDraw_Sci], nTextDigits=1)
+               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=bboxes, nTextDigits=1, extraText="Sci", runNumber=run)
 
     generate_html(
         [output_name + "_Cer.png", output_name + "_Sci.png"],

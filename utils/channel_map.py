@@ -120,8 +120,6 @@ def buildDRSBoards(run=316):
         channel.iTowerX = 0
         channel.iTowerY = -7
         channel.isCer = True
-        print("channel group ", channel.groupNo,
-              " channel no ", channel.channelNo)
 
         channels = DRSBoards["Board0"].GetListOfChannels()
         for channel in channels:
