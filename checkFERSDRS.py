@@ -23,8 +23,10 @@ FERSBoards = buildFERSBoards(run=runNumber)
 
 FERS_min = 100
 FERS_max = 9e3
+FERS_LG_max = 2e3
 DRS_min = -100
 DRS_max = 1e3
+DRS_LG_max = 2e3
 
 
 def prepareFERSDRSPlots():
@@ -151,7 +153,7 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
                 h2_FERSLG_VS_DRS = rdf.Histo2D((
                     f"hist_FERSLG_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
                     f"FERS LG vs DRS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}",
-                    100, DRS_min, 2*DRS_max, 100, FERS_min, FERS_max
+                    100, DRS_min, DRS_LG_max, 100, FERS_min, FERS_LG_max
                 ),
                     f"{chan_DRS.GetChannelName()}_sum",
                     chan_FERS.GetLGChannelName()
@@ -177,7 +179,7 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
             h2sum_LG = ROOT.TH2F(
                 f"hist_FERSLG_VS_DRS_Board{boardNo}_{var}_sum",
                 f"FERS LG vs DRS energy correlation for Board{boardNo}, {var}",
-                100, DRS_min, 2*DRS_max, 100, FERS_min, FERS_max
+                100, DRS_min, DRS_LG_max, 100, FERS_min, FERS_LG_max
             )
             for h2 in h2s_FERSLG_VS_DRS:
                 if f"Board{boardNo}_{var}" in h2.GetName():
@@ -279,7 +281,7 @@ def makeFERSDRSPlots():
                     continue
 
                 output_name_LG = f"FERSLG_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_vs_Event"
-                DrawHistos([hist_LG], "", DRS_min, 2*DRS_max, "DRS Integral", FERS_min, FERS_max, f"FERS Output",
+                DrawHistos([hist_LG], "", DRS_min, DRS_LG_max, "DRS Integral", FERS_min, FERS_LG_max, f"FERS Output",
                            output_name_LG,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
                            outdir=outdir_plots)
@@ -308,7 +310,7 @@ def makeFERSDRSPlots():
                 continue
 
             output_name_LG = f"FERSLG_VS_DRS_Board{boardNo}_{var}_sum_vs_Event"
-            DrawHistos([hist_sum_LG], "", DRS_min, 2*DRS_max, "DRS Integral", FERS_min, FERS_max, f"FERS Output",
+            DrawHistos([hist_sum_LG], "", DRS_min, DRS_LG_max, "DRS Integral", FERS_min, FERS_LG_max, f"FERS Output",
                        output_name_LG,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
                        outdir=outdir_plots)
