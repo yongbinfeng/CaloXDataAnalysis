@@ -8,7 +8,7 @@ import time
 
 print("Start running prepareDQMPlots.py")
 
-runNumber = 662
+runNumber = 692
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
@@ -119,7 +119,7 @@ def makeFERS1DPlots():
                 hist = rdf.Histo1D((
                     f"hist_FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
                     f"FERS Board {boardNo} - {var} iTowerX {sTowerX} iTowerY {sTowerY};{var} Energy HG;Counts",
-                    300, 0, 9000),
+                    1000, 0, 9000),
                     chan.GetHGChannelName()
                 )
                 hists1d_FERS.append(hist)
@@ -141,7 +141,7 @@ def trackFERSPlots():
                 hist = rdf.Histo2D((
                     f"hist_FERS_Board{boardNo}_{var}_vs_Event_{sTowerX}_{sTowerY}",
                     f"FERS Board {boardNo} - Event vs {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};Event;{var} Energy HG",
-                    100, 0, nEvents, 300, 0, 9000),
+                    100, 0, nEvents, 1000, 0, 9000),
                     "event_n", chan.GetHGChannelName()
                 )
                 hists2d_FERS_vs_Event.append(hist)
@@ -313,12 +313,12 @@ if __name__ == "__main__":
     start_time = time.time()
 
     hists1d_FERS = makeFERS1DPlots()
-    hists2d_FERS = makeFERS2DPlots()
-    hists2d_FERS_vs_Event = trackFERSPlots()
+    # hists2d_FERS = makeFERS2DPlots()
+    # hists2d_FERS_vs_Event = trackFERSPlots()
 
     hists1d_DRS = makeDRS1DPlots()
     hists2d_DRS_vs_TS = makeDRS2DPlots()
-    hists2d_DRS_vs_Event = trackDRSPlots()
+    # hists2d_DRS_vs_Event = trackDRSPlots()
 
     hists2d_trigger = compareTriggerChannels()
 
@@ -333,15 +333,15 @@ if __name__ == "__main__":
     for hist in hists1d_FERS:
         hist.Write()
     outfile.Close()
-    outfile = ROOT.TFile(f"{rootdir}/fers_all_channels_2D.root", "RECREATE")
-    for hist in hists2d_FERS:
-        hist.Write()
-    outfile.Close()
-    outfile = ROOT.TFile(
-        f"{rootdir}/fers_all_channels_2D_vs_event.root", "RECREATE")
-    for hist in hists2d_FERS_vs_Event:
-        hist.Write()
-    outfile.Close()
+    # outfile = ROOT.TFile(f"{rootdir}/fers_all_channels_2D.root", "RECREATE")
+    # for hist in hists2d_FERS:
+    #    hist.Write()
+    # outfile.Close()
+    # outfile = ROOT.TFile(
+    #    f"{rootdir}/fers_all_channels_2D_vs_event.root", "RECREATE")
+    # for hist in hists2d_FERS_vs_Event:
+    #    hist.Write()
+    # outfile.Close()
     #
     outfile_DRS = ROOT.TFile(f"{rootdir}/drs_all_channels_1D.root", "RECREATE")
     for hist in hists1d_DRS:
@@ -353,12 +353,12 @@ if __name__ == "__main__":
         hist.SetDirectory(outfile_DRS)
         hist.Write()
     outfile_DRS.Close()
-    outfile_DRS = ROOT.TFile(
-        f"{rootdir}/drs_all_channels_2D_vs_event.root", "RECREATE")
-    for hist in hists2d_DRS_vs_Event:
-        hist.SetDirectory(outfile_DRS)
-        hist.Write()
-    outfile_DRS.Close()
+    # outfile_DRS = ROOT.TFile(
+    #    f"{rootdir}/drs_all_channels_2D_vs_event.root", "RECREATE")
+    # for hist in hists2d_DRS_vs_Event:
+    #    hist.SetDirectory(outfile_DRS)
+    #    hist.Write()
+    # outfile_DRS.Close()
 
     outfile_trigger = ROOT.TFile(
         f"{rootdir}/trigger_channels.root", "RECREATE")

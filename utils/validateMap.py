@@ -172,7 +172,6 @@ if __name__ == "__main__":
     # Example usage
     for run in [316, 571, 662, 685]:
         DrawFERSBoards(run=run)
-    run_number = 662
-    DrawDRSBoards(run=run_number)
+        DrawDRSBoards(run=run)
 
     print("Mapping plots generated for FERS and DRS boards.")

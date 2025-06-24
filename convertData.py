@@ -8,10 +8,16 @@ print("Job start running")
 input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run571_250607165307.root"
 input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run0583_250609182256.root"
 input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run0662_250613153948.root"
+input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run685_250620175531.root"
+input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run0688_250621102752.root"
+input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run0692_250622180759.root"
 # output_file = "/lustre/research/hep/HGDream/run316_250517140056_converted.root"
 output_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run571_250607165307_converted.root"
 output_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run0583_250609182256_converted.root"
 output_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run0662_250613153948_converted.root"
+output_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run685_250620175531_converted.root"
+output_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run688_250621102752_converted.root"
+output_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run692_250622180759_converted.root"
 tree_name = "EventTree"
 
 # Open input file and tree

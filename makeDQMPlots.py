@@ -10,7 +10,7 @@ from utils.validateMap import DrawFERSBoards, DrawDRSBoards
 print("Start running script")
 ROOT.gROOT.SetBatch(True)
 
-runNumber = 662
+runNumber = 692
 
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)
@@ -72,86 +72,88 @@ generate_html(plots, outdir_plots,
               output_html=f"html/Run{runNumber}/FERS_1D/viewer.html")
 
 # 2D FERS histograms, hg vs lg
-plots = []
-outdir_plots = outdir + "/FERS_2D"
-infile_name = f"{rootdir}/fers_all_channels_2D.root"
-infile = ROOT.TFile(infile_name, "READ")
-for _, FERSBoard in FERSBoards.items():
-    boardNo = FERSBoard.boardNo
-    for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
-        sTowerX = number2string(iTowerX)
-        sTowerY = number2string(iTowerY)
-        for var in ["Cer", "Sci"]:
-            chan = FERSBoard.GetChannelByTower(
-                iTowerX, iTowerY, isCer=(var == "Cer"))
-            hist_name = f"hist_FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_hg_vs_lg"
-            hist = infile.Get(hist_name)
+if 0:
+    plots = []
+    outdir_plots = outdir + "/FERS_2D"
+    infile_name = f"{rootdir}/fers_all_channels_2D.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+            for var in ["Cer", "Sci"]:
+                chan = FERSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                hist_name = f"hist_FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_hg_vs_lg"
+                hist = infile.Get(hist_name)
 
-            extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
-            extraToDraw.SetTextAlign(11)
-            extraToDraw.SetFillColorAlpha(0, 0)
-            extraToDraw.SetBorderSize(0)
-            extraToDraw.SetTextFont(42)
-            extraToDraw.SetTextSize(0.04)
-            extraToDraw.AddText(
-                f"Board: {FERSBoard.boardNo}")
-            extraToDraw.AddText(f"Tower X: {iTowerX}")
-            extraToDraw.AddText(f"Tower Y: {iTowerY}")
-            extraToDraw.AddText(f"{var} Channel: {chan.channelNo}")
+                extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
+                extraToDraw.SetTextAlign(11)
+                extraToDraw.SetFillColorAlpha(0, 0)
+                extraToDraw.SetBorderSize(0)
+                extraToDraw.SetTextFont(42)
+                extraToDraw.SetTextSize(0.04)
+                extraToDraw.AddText(
+                    f"Board: {FERSBoard.boardNo}")
+                extraToDraw.AddText(f"Tower X: {iTowerX}")
+                extraToDraw.AddText(f"Tower Y: {iTowerY}")
+                extraToDraw.AddText(f"{var} Channel: {chan.channelNo}")
 
-            output_name = f"FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_hg_vs_lg"
-            DrawHistos([hist], f"", 0, 9000, "HG", 0, 1500, "LG",
-                       output_name,
-                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True, extraToDraw=extraToDraw,
-                       outdir=outdir_plots)
-            plots.append(output_name + ".png")
-generate_html(plots, outdir_plots, plots_per_row=4,
-              output_html=f"html/Run{runNumber}/FERS_2D/viewer.html")
+                output_name = f"FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_hg_vs_lg"
+                DrawHistos([hist], f"", 0, 9000, "HG", 0, 1500, "LG",
+                           output_name,
+                           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True, extraToDraw=extraToDraw,
+                           outdir=outdir_plots)
+                plots.append(output_name + ".png")
+    generate_html(plots, outdir_plots, plots_per_row=4,
+                  output_html=f"html/Run{runNumber}/FERS_2D/viewer.html")
 
 # FERS output vs event
-plots = []
-outdir_plots = outdir + "/FERS_vs_Event"
-infile_name = f"{rootdir}/fers_all_channels_2D_vs_event.root"
-infile = ROOT.TFile(infile_name, "READ")
-for _, FERSBoard in FERSBoards.items():
-    boardNo = FERSBoard.boardNo
-    for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
-        sTowerX = number2string(iTowerX)
-        sTowerY = number2string(iTowerY)
-        for var in ["Cer", "Sci"]:
-            chan = FERSBoard.GetChannelByTower(
-                iTowerX, iTowerY, isCer=(var == "Cer"))
-            hist_name = f"hist_FERS_Board{boardNo}_{var}_vs_Event_{sTowerX}_{sTowerY}"
-            hist = infile.Get(hist_name)
+if 0:
+    plots = []
+    outdir_plots = outdir + "/FERS_vs_Event"
+    infile_name = f"{rootdir}/fers_all_channels_2D_vs_event.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+            for var in ["Cer", "Sci"]:
+                chan = FERSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                hist_name = f"hist_FERS_Board{boardNo}_{var}_vs_Event_{sTowerX}_{sTowerY}"
+                hist = infile.Get(hist_name)
 
-            if not hist:
-                print(
-                    f"Warning: Histogram {hist_name} not found in {infile_name}")
-                continue
+                if not hist:
+                    print(
+                        f"Warning: Histogram {hist_name} not found in {infile_name}")
+                    continue
 
-            extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
-            extraToDraw.SetTextAlign(11)
-            extraToDraw.SetFillColorAlpha(0, 0)
-            extraToDraw.SetBorderSize(0)
-            extraToDraw.SetTextFont(42)
-            extraToDraw.SetTextSize(0.04)
-            extraToDraw.AddText(
-                f"Board: {FERSBoard.boardNo}")
-            extraToDraw.AddText(f"Tower X: {iTowerX}")
-            extraToDraw.AddText(f"Tower Y: {iTowerY}")
-            extraToDraw.AddText(f"{var} Channel: {chan.channelNo}")
+                extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
+                extraToDraw.SetTextAlign(11)
+                extraToDraw.SetFillColorAlpha(0, 0)
+                extraToDraw.SetBorderSize(0)
+                extraToDraw.SetTextFont(42)
+                extraToDraw.SetTextSize(0.04)
+                extraToDraw.AddText(
+                    f"Board: {FERSBoard.boardNo}")
+                extraToDraw.AddText(f"Tower X: {iTowerX}")
+                extraToDraw.AddText(f"Tower Y: {iTowerY}")
+                extraToDraw.AddText(f"{var} Channel: {chan.channelNo}")
 
-            nEvents = hist.GetXaxis().GetXmax()
+                nEvents = hist.GetXaxis().GetXmax()
 
-            output_name = f"FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_vs_Event"
-            DrawHistos([hist], "", 0, nEvents, "Event", 1, 1e5, f"{var} Energy HG",
-                       output_name,
-                       dology=True, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
-                       extraToDraw=extraToDraw,
-                       outdir=outdir_plots)
-            plots.append(output_name + ".png")
-generate_html(plots, outdir_plots, plots_per_row=4,
-              output_html=f"html/Run{runNumber}/FERS_vs_Event/viewer.html")
+                output_name = f"FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_vs_Event"
+                DrawHistos([hist], "", 0, nEvents, "Event", 1, 1e5, f"{var} Energy HG",
+                           output_name,
+                           dology=True, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+                           extraToDraw=extraToDraw,
+                           outdir=outdir_plots)
+                plots.append(output_name + ".png")
+    generate_html(plots, outdir_plots, plots_per_row=4,
+                  output_html=f"html/Run{runNumber}/FERS_vs_Event/viewer.html")
 
 
 # 1D histograms for DRS variables
@@ -292,49 +294,50 @@ generate_html(plots, outdir_plots, plots_per_row=2,
               output_html=f"html/Run{runNumber}/DRS_vs_TS_subtractMedian/viewer.html")
 
 # DRS mean vs event
-plots = []
-infile_name = f"{rootdir}/drs_all_channels_2D_vs_event.root"
-infile = ROOT.TFile(infile_name, "READ")
-outdir_plots = outdir + "/DRS_vs_Event"
-for _, DRSBoard in DRSBoards.items():
-    boardNo = DRSBoard.boardNo
-    for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
-        sTowerX = number2string(iTowerX)
-        sTowerY = number2string(iTowerY)
-        for var in ["Cer", "Sci"]:
-            chan = DRSBoard.GetChannelByTower(
-                iTowerX, iTowerY, isCer=(var == "Cer"))
-            hist_name = f"hist_DRS_Board{boardNo}_{var}_vs_Event_{sTowerX}_{sTowerY}"
-            hist = infile.Get(hist_name)
+if 0:
+    plots = []
+    infile_name = f"{rootdir}/drs_all_channels_2D_vs_event.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    outdir_plots = outdir + "/DRS_vs_Event"
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+            for var in ["Cer", "Sci"]:
+                chan = DRSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                hist_name = f"hist_DRS_Board{boardNo}_{var}_vs_Event_{sTowerX}_{sTowerY}"
+                hist = infile.Get(hist_name)
 
-            if not hist:
-                print(
-                    f"Warning: Histogram {hist_name} not found in {infile_name}")
-                continue
+                if not hist:
+                    print(
+                        f"Warning: Histogram {hist_name} not found in {infile_name}")
+                    continue
 
-            extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
-            extraToDraw.SetTextAlign(11)
-            extraToDraw.SetFillColorAlpha(0, 0)
-            extraToDraw.SetBorderSize(0)
-            extraToDraw.SetTextFont(42)
-            extraToDraw.SetTextSize(0.04)
-            extraToDraw.AddText(f"Board: {DRSBoard.boardNo}")
-            extraToDraw.AddText(f"iTowerX: {iTowerX}")
-            extraToDraw.AddText(f"iTowerY: {iTowerY}")
-            extraToDraw.AddText(f"{var} Group: {chan.groupNo}")
-            extraToDraw.AddText(f"{var} Channel: {chan.channelNo}")
+                extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
+                extraToDraw.SetTextAlign(11)
+                extraToDraw.SetFillColorAlpha(0, 0)
+                extraToDraw.SetBorderSize(0)
+                extraToDraw.SetTextFont(42)
+                extraToDraw.SetTextSize(0.04)
+                extraToDraw.AddText(f"Board: {DRSBoard.boardNo}")
+                extraToDraw.AddText(f"iTowerX: {iTowerX}")
+                extraToDraw.AddText(f"iTowerY: {iTowerY}")
+                extraToDraw.AddText(f"{var} Group: {chan.groupNo}")
+                extraToDraw.AddText(f"{var} Channel: {chan.channelNo}")
 
-            nEvents = hist.GetXaxis().GetXmax()
+                nEvents = hist.GetXaxis().GetXmax()
 
-            output_name = f"DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_vs_Event"
-            DrawHistos([hist], "", 0, nEvents, "Event", 1400, 2300, f"{var} Mean",
-                       output_name,
-                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
-                       extraToDraw=extraToDraw,
-                       outdir=outdir_plots)
-            plots.append(output_name + ".png")
-generate_html(plots, outdir_plots, plots_per_row=4,
-              output_html=f"html/Run{runNumber}/DRS_vs_Event/viewer.html")
+                output_name = f"DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_vs_Event"
+                DrawHistos([hist], "", 0, nEvents, "Event", 1400, 2300, f"{var} Mean",
+                           output_name,
+                           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+                           extraToDraw=extraToDraw,
+                           outdir=outdir_plots)
+                plots.append(output_name + ".png")
+    generate_html(plots, outdir_plots, plots_per_row=4,
+                  output_html=f"html/Run{runNumber}/DRS_vs_Event/viewer.html")
 
 # trigger
 plots = []
@@ -379,5 +382,5 @@ for chan_name in trigger_channels:
                    outdir=outdir_plots)
         plots.append(output_name + ".png")
 
-generate_html(plots, outdir_plots, plots_per_row=1,
+generate_html(plots, outdir_plots, plots_per_row=2,
               output_html=f"html/Run{runNumber}/Trigger/viewer.html")

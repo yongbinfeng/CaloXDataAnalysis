@@ -411,9 +411,9 @@ def buildDRSBase(boardNo=0):
             # chanNo is the channel number within the group (0-7)
             groupNo = (channelNo // 8)
             chanNo = (channelNo % 8)
-            if groupNo == 3 and chanNo == 7:
-                # skip the last channel, it is used for trigger counter
-                continue
+            # if groupNo == 3 and chanNo == 7:
+            #    # skip the last channel, it is used for trigger counter
+            #    continue
             channel = DRSChannel(ix, -int(iy/2), ix, iy, isCer,
                                  chanNo, groupNo, boardNo)
             channels_DRS_one_row.append(channel)

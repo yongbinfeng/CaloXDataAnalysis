@@ -81,22 +81,22 @@ def buildFERSBoards(run=316):
         FERSBoards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
         FERSBoards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
         FERSBoards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
+        FERSBoards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
         FERSBoards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
         FERSBoards["Board6"] = base_FERSBoard_6mm.copy(boardNo=6)
-        FERSBoards["Board7"] = base_FERSBoard_6mm.copy(boardNo=7)
 
         FERSBoards["Board3"] = base_FERSBoard_3mm.copy(boardNo=3)
-        FERSBoards["Board4"] = base_FERSBoard_3mm.copy(boardNo=4)
+        FERSBoards["Board7"] = base_FERSBoard_3mm.copy(boardNo=7)
 
         FERSBoards["Board0"].MoveTo(-5.5, 7.5)
         FERSBoards["Board1"].MoveTo(-1.5, 9.5)
         FERSBoards["Board2"].MoveTo(2.5, 7.5)
-        FERSBoards["Board5"].MoveTo(-5.5, -0.5)
-        FERSBoards["Board6"].MoveTo(-1.5, -2.5)
-        FERSBoards["Board7"].MoveTo(2.5, -0.5)
+        FERSBoards["Board4"].MoveTo(-5.5, -0.5)
+        FERSBoards["Board5"].MoveTo(-1.5, -2.5)
+        FERSBoards["Board6"].MoveTo(2.5, -0.5)
 
         FERSBoards["Board3"].MoveTo(-1.5, 1.875)
-        FERSBoards["Board4"].MoveTo(0.5, 1.875)
+        FERSBoards["Board7"].MoveTo(0.5, 1.875)
 
     else:
         raise ValueError(f"Unsupported run number {run} for FERS boards.")
@@ -110,27 +110,41 @@ def buildDRSBoards(run=316):
     """
     base_DRSBoard = DRSBoard(boardNo=-1)
     DRSBoards = {}
-    # 2 DRS boards in 316
-    DRSBoards["Board0"] = base_DRSBoard.copy(boardNo=0)
-    DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
-    DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 5)
-    DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 6)
-    channel = DRSBoards["Board2"].GetChannelByGroupChannel(3, 4)
-    channel.iTowerX = 0
-    channel.iTowerY = -7
-    channel.isCer = True
-    print("channel group ", channel.groupNo, " channel no ", channel.channelNo)
+    if run < 685:
+        # 2 DRS boards in 316
+        DRSBoards["Board0"] = base_DRSBoard.copy(boardNo=0)
+        DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
+        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 5)
+        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 6)
+        channel = DRSBoards["Board2"].GetChannelByGroupChannel(3, 4)
+        channel.iTowerX = 0
+        channel.iTowerY = -7
+        channel.isCer = True
+        print("channel group ", channel.groupNo,
+              " channel no ", channel.channelNo)
 
-    channels = DRSBoards["Board0"].GetListOfChannels()
-    for channel in channels:
-        channel.iTowerX -= 0
-        channel.iTowerY -= 4
-        if channel.isCer:
-            channel.iTowerY += 1
-            channel.isCer = False
-        else:
-            channel.isCer = True
-    DRSBoards["Board0"].RemoveChannelByGroupChannel(0, 7)
+        channels = DRSBoards["Board0"].GetListOfChannels()
+        for channel in channels:
+            channel.iTowerX -= 0
+            channel.iTowerY -= 4
+            if channel.isCer:
+                channel.iTowerY += 1
+                channel.isCer = False
+            else:
+                channel.isCer = True
+        DRSBoards["Board0"].RemoveChannelByGroupChannel(1, 7)
+        DRSBoards["Board0"].RemoveChannelByGroupChannel(3, 7)
+        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 7)
+    elif run >= 685:
+        # 3 DRS boards in 685
+        DRSBoards["Board1"] = base_DRSBoard.copy(boardNo=1)
+        DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
+
+        # remove channels that are not used
+        DRSBoards["Board1"].MoveTo(-1.5, 9.5)
+        DRSBoards["Board2"].MoveTo(-1.5, -6.5)
+    else:
+        raise ValueError(f"Unsupported run number {run} for DRS boards.")
     return DRSBoards
 
 
