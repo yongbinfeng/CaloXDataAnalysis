@@ -249,7 +249,7 @@ def makeFERSDRSPlots():
                     print(f"Warning: Histogram {h2_name} not found in file")
                     continue
 
-                output_name = f"FERS_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_vs_Event"
+                output_name = f"FERS_VS_DRS_{var}_{sTowerX}_{sTowerY}_vs_Event"
                 DrawHistos([hist], "", DRS_min, DRS_max, "DRS Integral", FERS_min, FERS_max, f"FERS Output",
                            output_name,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
@@ -262,7 +262,7 @@ def makeFERSDRSPlots():
                     print(f"Warning: Histogram {h2_LG_name} not found in file")
                     continue
 
-                output_name_LG = f"FERSLG_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_vs_Event"
+                output_name_LG = f"FERSLG_VS_DRS_{var}_{sTowerX}_{sTowerY}_vs_Event"
                 DrawHistos([hist_LG], "", DRS_min, DRS_LG_max, "DRS Integral", FERS_min, FERS_LG_max, f"FERS Output",
                            output_name_LG,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,

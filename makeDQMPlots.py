@@ -228,7 +228,7 @@ def makeDRS2DPlots(doSubtractMedian=False):
                     iTowerX, iTowerY, isCer=(var == "Cer"))
                 hist_name = f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}{suffix}"
                 hist = infile.Get(hist_name)
-                output_name = f"DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}{suffix}"
+                output_name = f"DRS_{var}_vs_TS_{sTowerX}_{sTowerY}{suffix}"
                 plots.append(output_name + ".png")
 
                 if not hist:
