@@ -1,14 +1,13 @@
 import os
 import ROOT
-from utils.channel_map_new import buildDRSBoards, buildFERSBoards
+from utils.channel_map import buildDRSBoards, buildFERSBoards
 from utils.utils import number2string, getDataFile
+from runNumber import runNumber
 import time
 
 start_time = time.time()
 
 print("Start running prepareDQMPlots.py")
-
-runNumber = 583
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(5)
@@ -41,7 +40,8 @@ for _, FERSBoard in FERSBoards.items():
 
 requirements = ""
 for _, FERSBoard in FERSBoards.items():
-    if FERSBoard.Is6mm():
+    boardNo = FERSBoard.boardNo
+    if boardNo not in [1, 5]:
         continue
     # require on the 3mm boards
     for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
@@ -52,7 +52,7 @@ for _, FERSBoard in FERSBoards.items():
         var_Sci = chan_Sci.GetHGChannelName()
         var_Cer = chan_Cer.GetHGChannelName()
 
-        requirements += f"({var_Sci} > 1000 && {var_Cer} > 1000) || "
+        requirements += f"({var_Sci} > 2000 && {var_Cer} > 1000) || "
 
 # remove the last ' || '
 requirements = requirements[:-4]

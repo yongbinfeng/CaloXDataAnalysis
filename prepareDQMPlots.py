@@ -3,7 +3,7 @@ import sys
 import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTriggerChannels
-from utils.utils import number2string, getDataFile, getBranchStats
+from utils.utils import number2string, getDataFile, processDRSBoards
 from runNumber import runNumber
 import time
 
@@ -41,66 +41,7 @@ for _, FERSBoard in FERSBoards.items():
             f"FERS_Board{boardNo}_energyLG[{channel.channelNo}]"
         )
 
-# Get the list of all branch names
-branches = [str(b) for b in rdf.GetColumnNames()]
-pattern = re.compile(r"DRS.*Group.*Channel.*")
-drs_branches = [b for b in branches if pattern.search(b)]
-stats = getBranchStats(rdf, drs_branches)
-print("DRS branches statistics:")
-for br, res in stats.items():
-    print(f"{br}: mean = {res['mean'].GetValue():.4f}, "
-          f"min = {res['min'].GetValue():.4f}, "
-          f"max = {res['max'].GetValue():.4f}")
-    stats[br] = {
-        "mean": res['mean'].GetValue(),
-        "min": res['min'].GetValue(),
-        "max": res['max'].GetValue()
-    }
-
-# get the mean of DRS outputs per channel
-for _, DRSBoard in DRSBoards.items():
-    boardNo = DRSBoard.boardNo
-    for channel in DRSBoard:
-        varname = channel.GetChannelName()
-        rdf = rdf.Define(
-            f"{varname}_mean",
-            f"ROOT::VecOps::Mean({varname})"
-        )
-
-ROOT.gInterpreter.Declare("""
-ROOT::RVec<int> FillIndices(size_t n) {
-    ROOT::RVec<int> out(n);
-    for (size_t i = 0; i < n; ++i) out[i] = i;
-    return out;
-}
-""")
-# Create an array of indices for DRS outputs
-rdf = rdf.Define("TS", "FillIndices(1024)")
-
-ROOT.gInterpreter.Declare("""
-#include "ROOT/RVec.hxx"
-#include <algorithm>
-
-float compute_median(ROOT::RVec<float> vec) {
-    if (vec.empty()) return -9999;
-    std::sort(vec.begin(), vec.end());
-    size_t n = vec.size();
-    if (n % 2 == 0)
-        return 0.5 * (vec[n / 2 - 1] + vec[n / 2]);
-    else
-        return vec[n / 2];
-}
-""")
-# get the mean of DRS outputs per channel
-for varname in drs_branches:
-    rdf = rdf.Define(
-        f"{varname}_median",
-        f"compute_median({varname})"
-    )
-    rdf = rdf.Define(
-        f"{varname}_subtractMedian",
-        f"{varname} - {varname}_median"
-    )
+rdf = processDRSBoards(rdf, DRSBoards)
 
 
 def makeFERS1DPlots():
@@ -239,20 +180,20 @@ def makeDRS2DPlots():
                 if chan is None:
                     continue
                 channelName = chan.GetChannelName()
-                mean_value = stats[channelName]['mean']
-                hist = rdf.Histo2D((
-                    f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}",
-                    f"DRS Board {boardNo} - {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};TS;{var} Variable",
-                    1024, 0, 1024, 200, mean_value - 100, mean_value + 100),
-                    "TS", chan.GetChannelName()
-                )
+                # mean_value = stats[channelName]['mean']
+                # hist = rdf.Histo2D((
+                #    f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}",
+                #    f"DRS Board {boardNo} - {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};TS;{var} Variable",
+                #    1024, 0, 1024, 200, mean_value - 100, mean_value + 100),
+                #    "TS", chan.GetChannelName()
+                # )
                 hist_subtractMedian = rdf.Histo2D((
                     f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}_subtractMedian",
                     f"DRS Board {boardNo} - {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY} (subtract median);TS;{var} Variable",
                     1024, 0, 1024, 400, -100, 300),
                     "TS", channelName + "_subtractMedian"
                 )
-                hists2d_DRS_vs_TS.append(hist)
+                # hists2d_DRS_vs_TS.append(hist)
                 hists2d_DRS_vs_TS.append(hist_subtractMedian)
     return hists2d_DRS_vs_TS
 
@@ -314,7 +255,7 @@ if __name__ == "__main__":
     # hists2d_FERS = makeFERS2DPlots()
     # hists2d_FERS_vs_Event = trackFERSPlots()
 
-    hists1d_DRS = makeDRS1DPlots()
+    # hists1d_DRS = makeDRS1DPlots()
     hists2d_DRS_vs_TS = makeDRS2DPlots()
     # hists2d_DRS_vs_Event = trackDRSPlots()
 
@@ -342,11 +283,11 @@ if __name__ == "__main__":
     #    hist.Write()
     # outfile.Close()
     #
-    outfile_DRS = ROOT.TFile(f"{rootdir}/drs_all_channels_1D.root", "RECREATE")
-    for hist in hists1d_DRS:
-        hist.SetDirectory(outfile_DRS)
-        hist.Write()
-    outfile_DRS.Close()
+    # outfile_DRS = ROOT.TFile(f"{rootdir}/drs_all_channels_1D.root", "RECREATE")
+    # for hist in hists1d_DRS:
+    #    hist.SetDirectory(outfile_DRS)
+    #    hist.Write()
+    # outfile_DRS.Close()
     outfile_DRS = ROOT.TFile(f"{rootdir}/drs_all_channels_2D.root", "RECREATE")
     for hist in hists2d_DRS_vs_TS:
         hist.SetDirectory(outfile_DRS)
