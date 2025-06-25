@@ -608,30 +608,32 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         if zmin != None and zmax != None:
             # print(f"configuring z range to {zmin}, {zmax}")
             h1.GetZaxis().SetRangeUser(zmin, zmax)
+            for h in myhistos:
+                h.GetZaxis().SetRangeUser(zmin, zmax)
 
-    # if doth2 and ncolors != None:
-    #    # Set exactly 3 contour levels
-    #    ROOT.gStyle.SetNumberContours(ncolors)
+    if doth2 and ncolors != None:
+        colors = [
+            ROOT.kRed+1, ROOT.kBlue+1, ROOT.kGreen+2, ROOT.kMagenta+1,
+            ROOT.kCyan+2, ROOT.kOrange+1, ROOT.kYellow+2, ROOT.kViolet+1, ROOT.kAzure+1,
+            ROOT.kSpring+3, ROOT.kTeal+2, ROOT.kPink+2, ROOT.kGray+1, ROOT.kOrange+7,
+            ROOT.kRed-7, ROOT.kBlue-7, ROOT.kGreen-7, ROOT.kMagenta-7,
+        ]
+        colors = colors[:ncolors]  # limit to ncolors
+        color_array = ROOT.std.vector[int]()
+        for c in colors:
+            color_array.push_back(c)
 
-    #    # Choose ncolors distinct colors
-    #    colors = [
-    #        ROOT.kRed+1, ROOT.kBlue+1, ROOT.kGreen+2, ROOT.kMagenta+1,
-    #        ROOT.kCyan+2, ROOT.kOrange+1, ROOT.kYellow+2, ROOT.kViolet+1, ROOT.kAzure+1,
-    #        ROOT.kSpring+3, ROOT.kTeal+2, ROOT.kPink+2, ROOT.kGray+1, ROOT.kOrange+7
-    #    ]
-    #    colors = colors[:ncolors]  # limit to ncolors
-    #    color_array = ROOT.std.vector[int]()
-    #    for c in colors:
-    #        color_array.push_back(c)
-
-    #    ROOT.gStyle.SetPalette(ncolors, color_array.data(), 0.01)
-    ROOT.gStyle.SetPalette(1)  # reset to default palette
+        ROOT.gStyle.SetPalette(ncolors, color_array.data())
+        ROOT.gStyle.SetNumberContours(len(colors))  # Ensure sharp transitions
+    else:
+        ROOT.gStyle.SetPalette(1)  # reset to default palette
+        ROOT.gStyle.SetNumberContours(20)  # default number of contours
 
     # print "xmin : %f xmax : %f"%(xmin, xmax)
 
     h1.GetXaxis().SetNdivisions(6, 5, 0)
     h1.GetYaxis().SetNdivisions(6, 5, 0)
-    h1.GetYaxis().SetTitle("%s" % ylabel)
+    h1.GetYaxis().SetTitle(ylabel)
     h1.GetYaxis().SetTitleSize(0.050/(padsize1+padsize3))
     h1.GetYaxis().SetLabelSize(0.045/(padsize1+padsize3))
     h1.GetXaxis().SetTitleSize(0.050/(padsize1+padsize3))
@@ -642,7 +644,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     if showratio or showpull:
         h1.GetXaxis().SetLabelSize(0)
     else:
-        h1.GetXaxis().SetTitle("%s" % xlabel)
+        h1.GetXaxis().SetTitle(xlabel)
 
     h1.Draw()
 
