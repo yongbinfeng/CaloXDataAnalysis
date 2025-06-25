@@ -306,13 +306,20 @@ def trackDRSPlots():
 
 
 # trigger
-def makeTriggerPlots():
+def makeTriggerPlots(doSubtractMedian=False):
+    suffix = ""
+    ymin = 500
+    ymax = 2500
+    if doSubtractMedian:
+        suffix = "_subtractMedian"
+        ymin = -1500
+        ymax = 500
     plots = []
     infile_name = f"{rootdir}/trigger_channels.root"
     infile = ROOT.TFile(infile_name, "READ")
     outdir_plots = outdir + "/Trigger"
     for chan_name in trigger_channels:
-        hist_name = f"hist_{chan_name}"
+        hist_name = f"hist_{chan_name}{suffix}"
         hist = infile.Get(hist_name)
         if not hist:
             print(f"Warning: Histogram {hist_name} not found in {infile_name}")
@@ -324,33 +331,16 @@ def makeTriggerPlots():
         extraToDraw.SetTextFont(42)
         extraToDraw.SetTextSize(0.04)
         extraToDraw.AddText(f"{chan_name}")
-        output_name = f"Trigger_{chan_name}"
-        DrawHistos([hist], "", 0, 1024, "Time Slice", 1500, 2200, "Counts",
+        output_name = f"Trigger_{chan_name}{suffix}"
+        DrawHistos([hist], "", 0, 1024, "Time Slice", ymin, ymax, "Counts",
                    output_name,
                    dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                    extraToDraw=extraToDraw,
                    outdir=outdir_plots)
         plots.append(output_name + ".png")
 
-        hist_subtractMedian = infile.Get(f"{hist_name}_subtractMedian")
-        if hist_subtractMedian:
-            extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
-            extraToDraw.SetTextAlign(11)
-            extraToDraw.SetFillColorAlpha(0, 0)
-            extraToDraw.SetBorderSize(0)
-            extraToDraw.SetTextFont(42)
-            extraToDraw.SetTextSize(0.04)
-            extraToDraw.AddText(f"{chan_name} (subtract median)")
-            output_name = f"Trigger_{chan_name}_subtractMedian"
-            DrawHistos([hist_subtractMedian], "", 0, 1024, "Time Slice", -700, 300, "Counts",
-                       output_name,
-                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
-                       extraToDraw=extraToDraw,
-                       outdir=outdir_plots)
-            plots.append(output_name + ".png")
-
     generate_html(plots, outdir_plots, plots_per_row=2,
-                  output_html=f"html/Run{runNumber}/Trigger/viewer.html")
+                  output_html=f"html/Run{runNumber}/Trigger{suffix}/viewer.html")
 
 
 if __name__ == "__main__":
@@ -360,7 +350,10 @@ if __name__ == "__main__":
     DrawDRSBoards(run=runNumber)
 
     makeFERS1DPlots()
-    makeDRS2DPlots()
+    # makeDRS2DPlots()
     makeDRS2DPlots(doSubtractMedian=True)
+
+    # makeTriggerPlots()
+    makeTriggerPlots(doSubtractMedian=True)
 
     print("All plots generated successfully.")

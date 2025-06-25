@@ -282,25 +282,24 @@ def trackDRSPlots():
     return hists2d_DRS_vs_Event
 
 
-def compareTriggerChannels():
+def compareDRSChannels(channels_to_compare):
     """
     Compare trigger channels with DRS channels.
     """
-    trigger_channels = buildTriggerChannels(run=runNumber)
     hists_trigger = []
-    for chan_name in trigger_channels:
+    for chan_name in channels_to_compare:
         hist = rdf.Histo2D((
             f"hist_{chan_name}",
             f"{chan_name};TS;DRS values",
             1024, 0, 1024,
-            100, 1400, 2400),
+            200, 500, 2500),
             "TS", chan_name
         )
         hist_subtractMedian = rdf.Histo2D((
             f"hist_{chan_name}_subtractMedian",
             f"{chan_name} (subtract median);TS;DRS values",
             1024, 0, 1024,
-            400, -700, 100),
+            200, -1500, 500),
             "TS", chan_name + "_subtractMedian"
         )
         hists_trigger.append(hist)
@@ -319,7 +318,8 @@ if __name__ == "__main__":
     hists2d_DRS_vs_TS = makeDRS2DPlots()
     # hists2d_DRS_vs_Event = trackDRSPlots()
 
-    hists2d_trigger = compareTriggerChannels()
+    trigger_channels = buildTriggerChannels(run=runNumber)
+    hists2d_trigger = compareDRSChannels(trigger_channels)
 
     print("Save histograms")
 

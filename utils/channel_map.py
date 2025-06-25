@@ -169,10 +169,28 @@ def buildDRSBoards(run=316):
 
 
 def buildTriggerChannels(run=316):
+    """
+    Returns a list of time reference channels.
+    """
     trigger_channels = []
-    trigger_channels.append("DRS_Board0_Group3_Channel7")
-    trigger_channels.append("DRS_Board2_Group3_Channel7")
-    trigger_channels.append("DRS_Board1_Group0_Channel0")
+    if run < 583:
+        trigger_channels.append("DRS_Board0_Group3_Channel7")
+        trigger_channels.append("DRS_Board2_Group3_Channel7")
+        trigger_channels.append("DRS_Board1_Group0_Channel0")
+    elif run >= 685:
+        trigger_channels.append("DRS_Board1_Group0_Channel8")
+        trigger_channels.append("DRS_Board1_Group1_Channel8")
+        trigger_channels.append("DRS_Board1_Group2_Channel8")
+        trigger_channels.append("DRS_Board1_Group3_Channel8")
+        trigger_channels.append("DRS_Board2_Group0_Channel8")
+        trigger_channels.append("DRS_Board2_Group1_Channel8")
+        trigger_channels.append("DRS_Board2_Group2_Channel8")
+        trigger_channels.append("DRS_Board2_Group3_Channel8")
+        trigger_channels.append("DRS_Board0_Group0_Channel8")
+    else:
+        raise ValueError(
+            f"Unsupported run number {run} for time reference channels.")
+
     return trigger_channels
 
 
