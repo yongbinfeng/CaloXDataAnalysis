@@ -173,7 +173,7 @@ def buildTriggerChannels(run=316):
     Returns a list of time reference channels.
     """
     trigger_channels = []
-    if run < 583:
+    if run < 685:
         trigger_channels.append("DRS_Board0_Group3_Channel7")
         trigger_channels.append("DRS_Board2_Group3_Channel7")
         trigger_channels.append("DRS_Board1_Group0_Channel0")
@@ -194,12 +194,30 @@ def buildTriggerChannels(run=316):
     return trigger_channels
 
 
+def buildHodoTriggerChannels(run=316):
+    """
+    Returns a list of hodoscope trigger channels.
+    """
+    hodo_trigger_channels = []
+    if run < 685:
+        hodo_trigger_channels.append("DRS_Board1_Group2_Channel0")
+        hodo_trigger_channels.append("DRS_Board1_Group2_Channel1")
+    elif run >= 685:
+        hodo_trigger_channels.append("DRS_Board0_Group2_Channel0")
+        hodo_trigger_channels.append("DRS_Board0_Group2_Channel1")
+    else:
+        raise ValueError(
+            f"Unsupported run number {run} for hodoscope trigger channels.")
+
+    return hodo_trigger_channels
+
+
 def buildHodoChannels(run=316):
     """
     Returns a dictionary containing the hodoscope channels.
     """
     hodoscope_channels = {}
-    hodoscope_channels["trigger"] = ["DRS_Board1_Group0_Channel0"]
+    # hodoscope_channels["trigger"] = ["DRS_Board1_Group0_Channel0"]
     hodoscope_channels["TopX"] = [
         "DRS_Board1_Group0_Channel1",
         "DRS_Board1_Group0_Channel2",

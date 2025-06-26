@@ -1,8 +1,8 @@
 import sys
 import os
 import ROOT
-from utils.channel_map import buildDRSBoards, buildFERSBoards
-from utils.utils import number2string, getDataFile, getBranchStats
+from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTriggerChannels, buildHodoTriggerChannels
+from utils.utils import number2string, getDataFile, processDRSBoards
 import time
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
@@ -17,6 +17,8 @@ suffix = f"run{runNumber}"
 
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)
+trigger_channels = buildTriggerChannels(run=runNumber)
+hodo_trigger_channels = buildHodoTriggerChannels(run=runNumber)
 
 FERS_min = 100
 FERS_max = 9e3
@@ -26,10 +28,32 @@ DRS_max = 1e3
 DRS_LG_max = 2e3
 
 
+def findTrigFireTime(rdf, channels):
+    ROOT.gInterpreter.Declare("""
+    size_t findTrigFireTime(const ROOT::VecOps::RVec<float>& vec, float val_min) {
+        for (size_t i = 0; i < vec.size(); ++i) {
+            if (vec[i] < val_min / 2.0) {
+                return i;  // return the index of the first value below the threshold
+            }
+        }
+        return -1;  // return -1 if no value is below the threshold
+    }
+    """)
+    for channel in channels:
+        rdf = rdf.Define("TrigMin_" + channel,
+                         f"ROOT::VecOps::Min({channel}_subtractMedian)")
+        # find the half minimum TS
+        rdf = rdf.Define("TrigHalfMin_" + channel,
+                         f"findTrigFireTime({channel}_subtractMedian, TrigMin_{channel})")
+    return rdf
+
+
 def prepareFERSDRSPlots():
     ifile = getDataFile(runNumber)
     infile = ROOT.TFile(ifile, "READ")
-    rdf = ROOT.RDataFrame("EventTree", infile)
+    rdf_temp = ROOT.RDataFrame("EventTree", infile)
+
+    rdf = rdf_temp.Filter("event_n > 1")  # filter out the two events
 
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
@@ -42,29 +66,17 @@ def prepareFERSDRSPlots():
                 f"FERS_Board{boardNo}_energyLG[{channel.channelNo}]"
             )
 
+    rdf = processDRSBoards(rdf, DRSBoards)
+
     # get the mean of DRS outputs per channel
     ROOT.gInterpreter.Declare("""
     ROOT::VecOps::RVec<float> clipToZero(const ROOT::VecOps::RVec<float>& vec) {
         ROOT::VecOps::RVec<float> out;
         for (float v : vec) {
-            if (v < 5.0f) v = 0.0f;  // clip to zero if below threshold
+            if (fabs(v) < 3.0f) v = 0.0f;  // clip to zero if below threshold
             out.push_back(v);
         }
         return out;
-    }
-    """)
-    ROOT.gInterpreter.Declare("""
-    #include "ROOT/RVec.hxx"
-    #include <algorithm>
-    
-    float compute_median(ROOT::RVec<float> vec) {
-        if (vec.empty()) return -9999;
-        std::sort(vec.begin(), vec.end());
-        size_t n = vec.size();
-        if (n % 2 == 0)
-            return 0.5 * (vec[n / 2 - 1] + vec[n / 2]);
-        else
-            return vec[n / 2];
     }
     """)
     ROOT.gInterpreter.Declare("""
@@ -88,25 +100,26 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
         for channel in DRSBoard:
             varname = channel.GetChannelName()
             rdf = rdf.Define(
-                f"{varname}_median",
-                f"compute_median({varname})"
-            )
-            rdf = rdf.Define(
-                f"{varname}_subtractMedian",
-                f"{varname} - {varname}_median"
-            )
-            rdf = rdf.Define(
                 f"{varname}_subtractMedian_positive",
                 f"clipToZero({varname}_subtractMedian)"
             )
             rdf = rdf.Define(
                 f"{varname}_sum",
-                f"SumRange({varname}_subtractMedian_positive, 0, 200)"
+                f"SumRange({varname}_subtractMedian_positive, 0, 400)"
             )
+
+    rdf = findTrigFireTime(rdf, trigger_channels + hodo_trigger_channels)
+
+    rdf = rdf.Define(
+        "passTime", f"TrigHalfMin_{hodo_trigger_channels[0]} > 200 && TrigMin_{hodo_trigger_channels[1]} < -200")
+    # rdf = rdf.Define("passTime", "1.0")
 
     # correlate  FERS and DRS outputs
     h2s_FERS_VS_DRS = []
     h2s_FERSLG_VS_DRS = []
+    h2s_DRSOverFERS_VS_HodoUp = []
+    h2s_DRSOverFERSLG_VS_HodoUp = []
+    vars_ratio = []
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
         for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
@@ -121,7 +134,7 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
                         f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
                     continue
                 chan_FERS = None
-                for fersNo, FERSBoard in FERSBoards.items():
+                for _, FERSBoard in FERSBoards.items():
                     chan_FERS = FERSBoard.GetChannelByTower(
                         iTowerX, iTowerY, isCer=(var == "Cer"))
                     if chan_FERS is not None:
@@ -137,7 +150,8 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
                     100, DRS_min, DRS_max, 100, FERS_min, FERS_max
                 ),
                     f"{chan_DRS.GetChannelName()}_sum",
-                    chan_FERS.GetHGChannelName()
+                    chan_FERS.GetHGChannelName(),
+                    "passTime"
                 )
                 h2s_FERS_VS_DRS.append(h2_FERS_VS_DRS)
 
@@ -147,13 +161,55 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
                     100, DRS_min, DRS_LG_max, 100, FERS_min, FERS_LG_max
                 ),
                     f"{chan_DRS.GetChannelName()}_sum",
-                    chan_FERS.GetLGChannelName()
+                    chan_FERS.GetLGChannelName(),
+                    "passTime"
                 )
                 h2s_FERSLG_VS_DRS.append(h2_FERSLG_VS_DRS)
+
+                rdf = rdf.Define(f"DRSOverFERS_{var}_{sTowerX}_{sTowerY}",
+                                 f"std::min(0.19f, {chan_DRS.GetChannelName()}_sum / {chan_FERS.GetHGChannelName()})")
+                rdf = rdf.Define(f"DRSOverFERSLG_{var}_{sTowerX}_{sTowerY}",
+                                 f"std::min(0.19f, {chan_DRS.GetChannelName()}_sum / {chan_FERS.GetLGChannelName()})")
+
+                vars_ratio.append(f"DRSOverFERS_{var}_{sTowerX}_{sTowerY}")
+                vars_ratio.append(f"DRSOverFERSLG_{var}_{sTowerX}_{sTowerY}")
+
+                h2_DRSOverFERS_VS_HodoUp = rdf.Histo2D((
+                    f"hist_DRSOverFERS_VS_HodoUp_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
+                    f"DRS over FERS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var} vs Hodo Up",
+                    100, 0, 0.2, 1025, -1, 1024
+                ),
+                    f"DRSOverFERS_{var}_{sTowerX}_{sTowerY}",
+                    f"TrigHalfMin_{hodo_trigger_channels[0]}",
+                    "passTime"  # only include events where Hodo Up trigger is passed
+                )
+                h2_DRSOverFERSLG_VS_HodoUp = rdf.Histo2D((
+                    f"hist_DRSOverFERSLG_VS_HodoUp_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
+                    f"DRS LG over FERS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var} vs Hodo Up",
+                    100, 0, 0.2, 1025, -1, 1024
+                ),
+                    f"DRSOverFERSLG_{var}_{sTowerX}_{sTowerY}",
+                    f"TrigHalfMin_{hodo_trigger_channels[0]}",
+                    "passTime"  # only include events where Hodo Up trigger is passed
+                )
+                h2s_DRSOverFERS_VS_HodoUp.append(h2_DRSOverFERS_VS_HodoUp)
+                h2s_DRSOverFERSLG_VS_HodoUp.append(h2_DRSOverFERSLG_VS_HodoUp)
+
+    # trigger fire time
+    hists_trig_fire_time = []
+    for channel in trigger_channels + hodo_trigger_channels:
+        h_trig_fire_time = rdf.Histo1D((
+            f"hist_TrigFireTime_{channel}",
+            f"Trigger fire time for {channel}",
+            1025, -1, 1024
+        ), f"TrigHalfMin_{channel}")
+        hists_trig_fire_time.append(h_trig_fire_time)
 
     # sum of FERS and DRS outputs
     h2s_FERS_VS_DRS_sum = []
     h2s_FERSLG_VS_DRS_sum = []
+    h2s_DRSOverFERS_VS_HodoUp_sum = []
+    h2s_DRSOverFERSLG_VS_HodoUp_sum = []
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
         for var in ["Cer", "Sci"]:
@@ -177,6 +233,26 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
                     h2sum_LG.Add(h2.GetValue())
             h2s_FERSLG_VS_DRS_sum.append(h2sum_LG)
 
+            h2sum_DRSOverFERS = ROOT.TH2F(
+                f"hist_DRSOverFERS_VS_HodoUp_{var}_sum",
+                f"DRS over FERS energy correlation for Board{boardNo}, {var}",
+                100, 0, 0.2, 1025, -1, 1024
+            )
+            for h2 in h2s_DRSOverFERS_VS_HodoUp:
+                if f"Board{boardNo}_{var}" in h2.GetName():
+                    h2sum_DRSOverFERS.Add(h2.GetValue())
+            h2s_DRSOverFERS_VS_HodoUp_sum.append(h2sum_DRSOverFERS)
+
+            h2sum_DRSOverFERSLG = ROOT.TH2F(
+                f"hist_DRSOverFERSLG_VS_HodoUp_{var}_sum",
+                f"DRS LG over FERS energy correlation for Board{boardNo}, {var}",
+                100, 0, 0.2, 1025, -1, 1024
+            )
+            for h2 in h2s_DRSOverFERSLG_VS_HodoUp:
+                if f"Board{boardNo}_{var}" in h2.GetName():
+                    h2sum_DRSOverFERSLG.Add(h2.GetValue())
+            h2s_DRSOverFERSLG_VS_HodoUp_sum.append(h2sum_DRSOverFERSLG)
+
             # Save the histograms to a ROOT file
     rootdir = f"root/Run{runNumber}"
     output_file = ROOT.TFile(os.path.join(
@@ -189,21 +265,44 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
         h2.Write()
     for h2 in h2s_FERSLG_VS_DRS_sum:
         h2.Write()
+    for h2 in h2s_DRSOverFERS_VS_HodoUp:
+        h2.Write()
+    for h2 in h2s_DRSOverFERSLG_VS_HodoUp:
+        h2.Write()
+    for h2 in h2s_DRSOverFERS_VS_HodoUp_sum:
+        h2.Write()
+    for h2 in h2s_DRSOverFERSLG_VS_HodoUp_sum:
+        h2.Write()
     output_file.Close()
     print(f"Histograms saved to {output_file.GetName()}")
 
+    output_file = ROOT.TFile(os.path.join(
+        rootdir, f"checkFERSDRS_trigFireTime_{suffix}.root"), "RECREATE")
+    for h in hists_trig_fire_time:
+        h.Write()
+    output_file.Close()
+    print(f"Trigger fire time histograms saved to {output_file.GetName()}")
+
     # snapshot DRS and FERS board 10
-    variables = ["event_n"]
-    variables += [f"{varname}_subtractMedian_positive" for _, DRSBoard in DRSBoards.items()
-                  for channel in DRSBoard for varname in [channel.GetChannelName()]]
-    variables += [f"{varname}" for _, DRSBoard in DRSBoards.items()
-                  for channel in DRSBoard for varname in [channel.GetChannelName()]]
-    variables += [f"FERS_Board{FERSBoard.boardNo}_energyHG_{channel.channelNo}"
-                  for channel in FERSBoard]
-    variables += [f"FERS_Board{FERSBoard.boardNo}_energyLG_{channel.channelNo}"
-                  for channel in FERSBoard]
-    rdf.Snapshot("DRSBoards", os.path.join(
-        rootdir, f"DRSBoards_{suffix}.root"), variables)
+    if 0:
+        variables = ["event_n"]
+        variables += [f"{varname}_subtractMedian_positive" for _, DRSBoard in DRSBoards.items()
+                      for channel in DRSBoard for varname in [channel.GetChannelName()]]
+        variables += [f"{varname}_sum" for _, DRSBoard in DRSBoards.items()
+                      for channel in DRSBoard for varname in [channel.GetChannelName()]]
+        variables += [f"{varname}" for _, DRSBoard in DRSBoards.items()
+                      for channel in DRSBoard for varname in [channel.GetChannelName()]]
+        variables += [f"FERS_Board{FERSBoard.boardNo}_energyHG_{channel.channelNo}"
+                      for channel in FERSBoard]
+        variables += [f"FERS_Board{FERSBoard.boardNo}_energyLG_{channel.channelNo}"
+                      for channel in FERSBoard]
+        variables += [f"TrigMin_{channel}" for channel in trigger_channels +
+                      hodo_trigger_channels]
+        variables += [
+            f"TrigHalfMin_{channel}" for channel in trigger_channels + hodo_trigger_channels]
+        variables += vars_ratio
+        rdf.Snapshot("DRSBoards", os.path.join(
+            rootdir, f"DRSBoards_{suffix}.root"), variables)
 
 
 def makeFERSDRSPlots():
@@ -269,6 +368,31 @@ def makeFERSDRSPlots():
                            outdir=outdir_plots, extraText=var, runNumber=runNumber)
                 plots.append(output_name_LG + ".png")
 
+                h2_name = f"hist_DRSOverFERS_VS_HodoUp_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
+                hist = input_file.Get(h2_name)
+                if not hist:
+                    print(f"Warning: Histogram {h2_name} not found in file")
+                    continue
+                output_name = f"DRSOverFERS_{var}_{sTowerX}_{sTowerY}_vs_HodoUp"
+                DrawHistos([hist], "", 0, 0.2, "DRS / FERS",
+                           -1, 1025, "Hodo Up Trigger Fire Time (TS)",
+                           output_name,
+                           dology=False, drawoptions="COLZ", doth2=True, zmin=0, zmax=2e3, dologz=True,
+                           outdir=outdir_plots, extraText=var, runNumber=runNumber)
+                plots.append(output_name + ".png")
+                h2_LG_name = f"hist_DRSOverFERSLG_VS_HodoUp_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
+                hist_LG = input_file.Get(h2_LG_name)
+                if not hist_LG:
+                    print(f"Warning: Histogram {h2_LG_name} not found in file")
+                    continue
+                output_name_LG = f"DRSOverFERSLG_{var}_{sTowerX}_{sTowerY}_vs_HodoUp"
+                DrawHistos([hist_LG], "", 0, 0.2, "DRS / FERS LG ",
+                           -1, 1025, "Hodo Up Trigger Fire Time (TS)",
+                           output_name_LG,
+                           dology=False, drawoptions="COLZ", doth2=True, zmin=0, zmax=2e3, dologz=True,
+                           outdir=outdir_plots, extraText=var, runNumber=runNumber)
+                plots.append(output_name_LG + ".png")
+
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
         for var in ["Cer", "Sci"]:
@@ -298,8 +422,76 @@ def makeFERSDRSPlots():
                        outdir=outdir_plots, extraText=var, runNumber=runNumber)
             plots.append(output_name_LG + ".png")
 
+            h2sum_DRSOverFERS_name = f"hist_DRSOverFERS_VS_HodoUp_{var}_sum"
+            hist_DRSOverFERS_sum = input_file.Get(h2sum_DRSOverFERS_name)
+            if not hist_DRSOverFERS_sum:
+                print(
+                    f"Warning: Histogram {h2sum_DRSOverFERS_name} not found in file")
+                continue
+            output_name = f"DRSOverFERS_Board{boardNo}_{var}_sum_vs_HodoUp"
+            DrawHistos([hist_DRSOverFERS_sum], "", 0, 0.2, "DRS / FERS",
+                       -1, 1025, "Hodo Up Trigger Fire Time (TS)",
+                       output_name,
+                       dology=False, drawoptions="COLZ", doth2=True, zmin=0, zmax=2e3, dologz=True,
+                       outdir=outdir_plots, extraText=var, runNumber=runNumber)
+            plots.append(output_name + ".png")
+
+            h2sum_DRSOverFERSLG_name = f"hist_DRSOverFERSLG_VS_HodoUp_{var}_sum"
+            hist_DRSOverFERSLG_sum = input_file.Get(h2sum_DRSOverFERSLG_name)
+            if not hist_DRSOverFERSLG_sum:
+                print(
+                    f"Warning: Histogram {h2sum_DRSOverFERSLG_name} not found in file")
+                continue
+            output_name_LG = f"DRSOverFERSLG_Board{boardNo}_{var}_sum_vs_HodoUp"
+            DrawHistos([hist_DRSOverFERSLG_sum], "", 0, 0.2, "DRS / FERS LG ",
+                       -1, 1025, "Hodo Up Trigger Fire Time (TS)",
+                       output_name_LG,
+                       dology=False, drawoptions="COLZ", doth2=True, zmin=0, zmax=2e3, dologz=True,
+                       outdir=outdir_plots, extraText=var, runNumber=runNumber)
+            plots.append(output_name_LG + ".png")
     generate_html(plots, outdir_plots,
                   output_html=f"html/Run{runNumber}/checkFERSDRS/view.html")
+
+    # trigger fire time plots
+    inputfile_name = os.path.join(
+        f"root/Run{runNumber}", f"checkFERSDRS_trigFireTime_{suffix}.root")
+    input_file = ROOT.TFile(inputfile_name, "READ")
+    if not input_file or input_file.IsZombie():
+        print(f"Error: Could not open file {inputfile_name}")
+        return
+    print(f"Opened file {inputfile_name} successfully")
+    plots_trig_fire_time = []
+    outdir_trig_fire_time = f"plots/Run{runNumber}/checkFERSDRS/trigFireTime"
+    for channel in trigger_channels:
+        hist_name = f"hist_TrigFireTime_{channel}"
+        hist = input_file.Get(hist_name)
+        if not hist:
+            print(f"Warning: Histogram {hist_name} not found in file")
+            continue
+
+        output_name = f"TrigFireTime_{channel}_vs_Event"
+        DrawHistos([hist], "", -1, 1024, "Trigger Fire Time (TS)", 0, 0.04, "Count",
+                   output_name,
+                   dology=False,
+                   outdir=outdir_trig_fire_time, runNumber=runNumber, mycolors=[1], donormalize=True)
+        plots_trig_fire_time.append(output_name + ".png")
+    if len(hodo_trigger_channels) == 2:
+        hist_up_name = f"hist_TrigFireTime_{hodo_trigger_channels[0]}"
+        hist_up = input_file.Get(hist_up_name)
+        hist_down_name = f"hist_TrigFireTime_{hodo_trigger_channels[1]}"
+        hist_down = input_file.Get(hist_down_name)
+        if not hist_up or not hist_down:
+            print(
+                f"Warning: Histogram {hist_up_name} or {hist_down_name} not found in file")
+        else:
+            output_name = f"HodoTrigger_{hodo_trigger_channels[0]}_{hodo_trigger_channels[1]}_vs_Event"
+            DrawHistos([hist_up, hist_down], "", -1, 1024, "Trigger Fire Time (TS)", 0, 0.04, "Count",
+                       output_name,
+                       dology=False,
+                       outdir=outdir_trig_fire_time, runNumber=runNumber, mycolors=[1, 2], donormalize=True)
+            plots_trig_fire_time.append(output_name + ".png")
+    generate_html(plots_trig_fire_time, outdir_trig_fire_time,
+                  output_html=f"html/Run{runNumber}/checkFERSDRS/trigFireTime.html")
 
 
 # snapshot DRSBoards and FERSBoards
