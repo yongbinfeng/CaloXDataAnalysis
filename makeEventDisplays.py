@@ -1,92 +1,126 @@
+#!/usr/bin/env python3
+
 import sys
+import os
+import time
+
+# ensure CMSPLOTS is on the path
 sys.path.append("CMSPLOTS")  # noqa
+
 import ROOT
 from CMSPLOTS.myFunction import DrawHistos
 from utils.channel_map import buildDRSBoards, buildFERSBoards
-from utils.utils import number2string, getDataFile, processDRSBoards
+from utils.utils import number2string, getDataFile
 from utils.html_generator import generate_html
-from runNumber import runNumber
-import time
-
 
 ROOT.gROOT.SetBatch(True)  # Run in batch mode
 
+runNumber = 624
 outdir = f"plots/Run{runNumber}/"
 
-xmax = 14
-xmin = -14
-ymax = 10
-ymin = -10
-W_ref = 1000
-H_ref = 1100
 
+def makeEventDisplays(infilename, random_per_block=None, block_size=100,
+                      nth_interval=None):
+    """Generate event and pulse-shape displays.
 
-def makeEventDisplays(infilename):
+    Parameters
+    ----------
+    infilename : str
+        Input ROOT file containing the event tree.
+    random_per_block : int or None, optional
+        Number of random events to include in every ``block_size`` events.
+    block_size : int, optional
+        Block size used for ``random_per_block``.
+    nth_interval : int or None, optional
+        Additionally include every ``nth_interval``-th event.
+    """
     start_time = time.time()
     infile = ROOT.TFile(infilename, "READ")
     if not infile or infile.IsZombie():
         raise RuntimeError(f"Failed to open input file: {infile}")
 
-    # Create an RDataFrame from the EventTree
-    rdf = ROOT.RDataFrame("EventTree", infile)
+    # Grab the TTree instead of RDataFrame
+    tree = infile.Get("EventTree")
+    if not tree:
+        raise RuntimeError("Failed to get EventTree from file")
 
     DRSBoards = buildDRSBoards(run=runNumber)
     FERSBoards = buildFERSBoards(run=runNumber)
 
-    rdf = processDRSBoards(rdf, DRSBoards)
-
     hists_eventdisplay = []
-    hists_pulse_shapes = {}
+    hists_pulse_shapes = []
     plots_eventdisplay = []
     plots_pulse_shapes = []
 
-    # print how many events are left after filtering
-    for ievt in range(0, rdf.Count().GetValue()):
-        if ievt > 20:
-            break
-        print(f"Processing event {ievt + 1} of {rdf.Count().GetValue()}")
-        evtNumber = rdf.Take["unsigned int"]("event_n").GetValue()[ievt]
-        # if evtNumber not in events_interested:
-        #    print(
-        #        f"Skipping event {evtNumber} as it is not in the interested events list.")
-        #    continue
+    W_ref = 1000
+    iTowerX_max = 5.5
+    iTowerX_min = -12.5
+    iTowerY_max = 10.5
+    iTowerY_min = -9.5
+
+    nevents = tree.GetEntries()
+
+    indices = set()
+    if nth_interval and nth_interval > 0:
+        indices.update(range(0, nevents, nth_interval))
+    if random_per_block and block_size and random_per_block > 0:
+        import random
+        for start in range(0, nevents, block_size):
+            end = min(start + block_size, nevents)
+            count = min(random_per_block, end - start)
+            indices.update(random.sample(range(start, end), count))
+    if not indices:
+        nproc = min(nevents, 100)
+        indices.update(range(nproc))
+
+    for ievt in sorted(indices):
+        print(f"Processing event {ievt + 1} of {nevents}")
+        tree.GetEntry(ievt)
+        evtNumber = int(tree.event_n)
+
+        # Build your 2D histograms
         hist2d_Cer = ROOT.TH2F(
             f"event_display_Evt{evtNumber}_Cer",
             f"Event Display {evtNumber};X;Y (Cherenkov)",
-            int(xmax - xmin), xmin, xmax,
-            int(ymax - ymin), ymin, ymax
+            int(iTowerX_max - iTowerX_min), iTowerX_min, iTowerX_max,
+            int(iTowerY_max - iTowerY_min), iTowerY_min, iTowerY_max
         )
         hist2d_Sci = ROOT.TH2F(
             f"event_display_Evt{evtNumber}_Sci",
             f"Event Display {evtNumber};X;Y (Scintillator)",
-            int(xmax - xmin), xmin, xmax,
-            int(ymax - ymin), ymin, ymax
+            int(iTowerX_max - iTowerX_min), iTowerX_min, iTowerX_max,
+            int(iTowerY_max - iTowerY_min), iTowerY_min, iTowerY_max
         )
         hist2d_Cer_3mm = ROOT.TH2F(
             f"event_display_Evt{evtNumber}_Cer_3mm",
             f"Event Display {evtNumber};X;Y (Cherenkov)",
-            int(xmax - xmin), xmin, xmax,
-            int(ymax - ymin) * 4, ymin, ymax
+            int(iTowerX_max - iTowerX_min), iTowerX_min, iTowerX_max,
+            (int(iTowerY_max - iTowerY_min))*4, iTowerY_min, iTowerY_max
         )
         hist2d_Sci_3mm = ROOT.TH2F(
             f"event_display_Evt{evtNumber}_Sci_3mm",
             f"Event Display {evtNumber};X;Y (Scintillator)",
-            int(xmax - xmin), xmin, xmax,
-            int(ymax - ymin) * 4, ymin, ymax
+            int(iTowerX_max - iTowerX_min), iTowerX_min, iTowerX_max,
+            (int(iTowerY_max - iTowerY_min))*4, iTowerY_min, iTowerY_max
         )
+
+        # Fill them by reading each branch directly from the tree
+                # --- REPLACE your old FERS loop with this ---
         for _, FERSBoard in FERSBoards.items():
             for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
-                chan_Cer = FERSBoard.GetChannelByTower(
-                    iTowerX, iTowerY, isCer=True)
-                chan_Sci = FERSBoard.GetChannelByTower(
-                    iTowerX, iTowerY, isCer=False)
-                var_Cer = chan_Cer.GetHGChannelName()
-                var_Sci = chan_Sci.GetHGChannelName()
-                e_Cer = rdf.Take["unsigned short"](var_Cer).GetValue()[ievt]
-                e_Sci = rdf.Take["unsigned short"](var_Sci).GetValue()[ievt]
-                # print(
-                #    f"Event {evtNumber}, Tower ({iTowerX}, {iTowerY}): Cerenkov: {e_Cer}, Scintillator: {e_Sci}")
+                # get the two channels (Cer & Sci) for this tower
+                cer_chan = FERSBoard.GetChannelByTower(iTowerX, iTowerY, isCer=True)
+                sci_chan = FERSBoard.GetChannelByTower(iTowerX, iTowerY, isCer=False)
 
+                # these vectors live in a single branch per board:
+                branch_name = f"FERS_Board{cer_chan.boardNo}_energyHG"
+                energies = getattr(tree, branch_name)
+
+                # index into the vector by channelNo
+                e_Cer = energies[cer_chan.channelNo]
+                e_Sci = energies[sci_chan.channelNo]
+
+                # now fill your 2D histos
                 if FERSBoard.Is3mm():
                     hist2d_Cer_3mm.Fill(iTowerX, iTowerY, int(e_Cer))
                     hist2d_Sci_3mm.Fill(iTowerX, iTowerY, int(e_Sci))
@@ -94,117 +128,123 @@ def makeEventDisplays(infilename):
                     hist2d_Cer.Fill(iTowerX, iTowerY, int(e_Cer))
                     hist2d_Sci.Fill(iTowerX, iTowerY, int(e_Sci))
 
+
+        # Prepare the TPaveText overlays
         extraToDraw = ROOT.TPaveText(0.01, 0.73, 0.12, 0.88, "NDC")
         extraToDraw.SetTextAlign(11)
         extraToDraw.SetFillColorAlpha(0, 0)
         extraToDraw.SetBorderSize(0)
         extraToDraw.SetTextFont(42)
         extraToDraw.SetTextSize(0.04)
-        extraToDraw.AddText(
-            f"Event: {evtNumber}")
+        extraToDraw.AddText(f"Run: {runNumber}")
+        extraToDraw.AddText(f"Event: {evtNumber}")
 
-        hist2d_Cer.SetMarkerSize(0.55)
-        hist2d_Sci.SetMarkerSize(0.55)
-        hist2d_Cer_3mm.SetMarkerSize(0.55)
-        hist2d_Sci_3mm.SetMarkerSize(0.55)
+        extraToDraw_Cer = extraToDraw.Clone("extraToDraw_2")
+        extraToDraw_Cer.AddText("Cerenkov")
+        extraToDraw_Sci = extraToDraw.Clone("extraToDraw_3")
+        extraToDraw_Sci.AddText("Scintillator")
 
-        if ievt < 100000:
-            outdir_eventdisplay = f"{outdir}/event_display/"
-            DrawHistos([hist2d_Cer, hist2d_Cer_3mm], f"", xmin, xmax, "iX",
-                       ymin, ymax, "iY", f"event_display_Evt{evtNumber}_Cer",
-                       dology=False, drawoptions=["COL,text", "COL,text"],
-                       zmin=0.0, zmax=3000.0, doth2=True, W_ref=W_ref, H_ref=H_ref, extraToDraw=extraToDraw, extraText="Cer", runNumber=runNumber,
-                       outdir=outdir_eventdisplay)
-            DrawHistos([hist2d_Sci, hist2d_Sci_3mm], f"", xmin, xmax, "iX",
-                       ymin, ymax, "iY", f"event_display_Evt{evtNumber}_Sci",
-                       dology=False, drawoptions=["COL,text", "COL,text"],
-                       zmin=0.0, zmax=8000.0, doth2=True, W_ref=W_ref, extraToDraw=extraToDraw, H_ref=H_ref, extraText="Sci", runNumber=runNumber,
-                       outdir=outdir_eventdisplay)
-            plots_eventdisplay.append(
-                f"event_display_Evt{evtNumber}_Cer.png")
-            plots_eventdisplay.append(
-                f"event_display_Evt{evtNumber}_Sci.png")
+        # Draw and save event displays
+        outdir_eventdisplay = f"{outdir}/event_display/"
+        DrawHistos(
+            [hist2d_Cer, hist2d_Cer_3mm], "", iTowerX_min, iTowerX_max, "iX",
+            iTowerY_min, iTowerY_max, "iY", f"event_display_Evt{evtNumber}_Cer",
+            dology=False, drawoptions=["COLZ,text", "COLZ,text"],
+            zmin=50.0, zmax=3000.0, doth2=True, W_ref=W_ref,
+            extraToDraw=extraToDraw_Cer, outdir=outdir_eventdisplay
+        )
+        DrawHistos(
+            [hist2d_Sci, hist2d_Sci_3mm], "", iTowerX_min, iTowerX_max, "iX",
+            iTowerY_min, iTowerY_max, "iY", f"event_display_Evt{evtNumber}_Sci",
+            dology=False, drawoptions=["COLZ,text", "COLZ,text"],
+            zmin=50.0, zmax=8000.0, doth2=True, W_ref=W_ref,
+            extraToDraw=extraToDraw_Sci, outdir=outdir_eventdisplay
+        )
+        plots_eventdisplay += [
+            f"event_display_Evt{evtNumber}_Cer.png",
+            f"event_display_Evt{evtNumber}_Sci.png"
+        ]
 
-        # make pulses from DRS
+        # Now build pulse shapes from DRS boards
         for _, DRSBoard in DRSBoards.items():
+            boardNo = DRSBoard.boardNo
             for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
                 sTowerX = number2string(iTowerX)
                 sTowerY = number2string(iTowerY)
 
-                if (sTowerX, sTowerY) not in hists_pulse_shapes:
-                    hists_pulse_shapes[(sTowerX, sTowerY)] = {}
-                    hists_pulse_shapes[(sTowerX, sTowerY)]['Cer'] = None
-                    hists_pulse_shapes[(sTowerX, sTowerY)]['Sci'] = None
-
                 for var in ["Cer", "Sci"]:
                     chan = DRSBoard.GetChannelByTower(
-                        iTowerX, iTowerY, isCer=(var == "Cer"))
+                        iTowerX, iTowerY, isCer=(var == "Cer")
+                    )
                     if chan is None:
+                        print(f"Warning: Channel not found for tower ({iTowerX}, {iTowerY}) "
+                              f"on board {boardNo} for {var} channel.")
                         continue
-                    varname = chan.GetChannelName() + "_subtractMedian"
-                    pulse_shape = rdf.Take["ROOT::VecOps::RVec<float>"](
-                        varname).GetValue()[ievt]
+
+                    varname = chan.GetChannelName()
+                    pulse_shape = getattr(tree, varname)
 
                     h1 = ROOT.TH1F(
-                        f"pulse_shape_Evt{evtNumber}_{var}_{sTowerX}_{sTowerY}",
-                        f"Pulse Shape {var} (Tower {sTowerX}, {sTowerY});Time;Amplitude",
+                        f"pulse_shape_Evt{evtNumber}_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
+                        f"Pulse Shape {var} (Board {boardNo}, Tower {sTowerX}, {sTowerY});Time;Amplitude",
                         1024, 0, 1024
                     )
                     for i in range(len(pulse_shape)):
                         h1.Fill(i, pulse_shape[i])
-                    hists_pulse_shapes[sTowerX, sTowerY][var] = h1
+                    hists_pulse_shapes.append(h1)
 
-        for (sTowerX, sTowerY) in hists_pulse_shapes:
-            hist_pulse_shape_cer = hists_pulse_shapes[sTowerX, sTowerY]['Cer']
-            hist_pulse_shape_sci = hists_pulse_shapes[sTowerX, sTowerY]['Sci']
-
-            extraToDraw = ROOT.TPaveText(0.20, 0.65, 0.60, 0.90, "NDC")
-            extraToDraw.SetTextAlign(11)
-            extraToDraw.SetFillColorAlpha(0, 0)
-            extraToDraw.SetBorderSize(0)
-            extraToDraw.SetTextFont(42)
-            extraToDraw.SetTextSize(0.04)
-            extraToDraw.AddText(
-                f"Event: {evtNumber}, iTowerX: {iTowerX}, iTowerY: {iTowerY}")
-
-            to_draws = []
-            labels = []
-            colors = []
-            if hist_pulse_shape_cer:
-                peak_Cer = hist_pulse_shape_cer.GetMaximumBin()
-                extraToDraw.AddText(f"Cer Peak: {peak_Cer}")
-                to_draws.append(hist_pulse_shape_cer)
-                labels.append("Cer")
-                colors.append(2)  # Red color for Cer
-            if hist_pulse_shape_sci:
-                peak_Sci = hist_pulse_shape_sci.GetMaximumBin()
-                extraToDraw.AddText(f"Sci Peak: {peak_Sci}")
-                to_draws.append(hist_pulse_shape_sci)
-                labels.append("Sci")
-                colors.append(4)  # Blue color for Sci
-            if hist_pulse_shape_cer and hist_pulse_shape_sci:
+                # annotate and save
+                peak_Cer = hists_pulse_shapes[-2].GetMaximumBin()
+                peak_Sci = hists_pulse_shapes[-1].GetMaximumBin()
                 deltaTS = peak_Sci - peak_Cer
-                extraToDraw.AddText(
-                    f"delta Peak: {deltaTS} ts")
-                extraToDraw.AddText(f"delta T: {deltaTS * 0.2: .2f} ns")
 
-            outdir_pulse_shapes = f"{outdir}/pulse_shapes/"
-            DrawHistos(to_draws, labels, 0, 1024, "TS",
-                       -5, 30, "Amplitude",
-                       f"pulse_shape_Evt{evtNumber}_iTowerX{sTowerX}_iTowerY{sTowerY}",
-                       dology=False, mycolors=colors, drawashist=True, extraToDraw=extraToDraw,
-                       outdir=outdir_pulse_shapes, runNumber=runNumber)
-            plots_pulse_shapes.append(
-                f"pulse_shape_Evt{evtNumber}_iTowerX{sTowerX}_iTowerY{sTowerY}.png")
+                extraToDraw2 = ROOT.TPaveText(0.20, 0.65, 0.60, 0.90, "NDC")
+                extraToDraw2.SetTextAlign(11)
+                extraToDraw2.SetFillColorAlpha(0, 0)
+                extraToDraw2.SetBorderSize(0)
+                extraToDraw2.SetTextFont(42)
+                extraToDraw2.SetTextSize(0.04)
+                extraToDraw2.AddText(f"Event: {evtNumber}, iTowerX: {iTowerX}, iTowerY: {iTowerY}")
+                extraToDraw2.AddText(f"Cer Peak: {peak_Cer}")
+                extraToDraw2.AddText(f"Sci Peak: {peak_Sci}")
+                extraToDraw2.AddText(f"delta Peak: {deltaTS} ts")
+                extraToDraw2.AddText(f"delta T: {deltaTS * 0.2: .2f} ns")
 
-    print(f"Events left after filtering: {rdf.Count().GetValue()}")
+                outdir_pulse_shapes = f"{outdir}/pulse_shapes/"
+                DrawHistos(
+                    hists_pulse_shapes[-2:], ["Cer", "Sci"], 0, 1024, "TS",
+                    1400, 2200, "Amplitude",
+                    f"pulse_shape_Evt{evtNumber}_iTowerX{sTowerX}_iTowerY{sTowerY}",
+                    dology=False, mycolors=[2, 4], drawashist=True,
+                    extraToDraw=extraToDraw2, outdir=outdir_pulse_shapes
+                )
+                plots_pulse_shapes.append(
+                    f"pulse_shape_Evt{evtNumber}_iTowerX{sTowerX}_iTowerY{sTowerY}.png"
+                )
 
-    generate_html(plots_eventdisplay, outdir_eventdisplay, plots_per_row=2,
-                  output_html=f"html/Run{runNumber}/event_display/viewer.html")
-    generate_html(plots_pulse_shapes, outdir_pulse_shapes,
-                  output_html=f"html/Run{runNumber}/pulse_shapes/viewer.html")
+    print(f"Events left after filtering: {nevents}")
 
-    # Save event display histograms
+    # Generate HTML viewers
+    generate_html(
+        plots_eventdisplay,
+        outdir_eventdisplay,
+        plots_per_row=2,
+        output_html="html/event_display/viewer.html",
+        random_per_block=random_per_block,
+        block_size=block_size,
+        nth_interval=nth_interval,
+        group_size=2,
+    )
+    generate_html(
+        plots_pulse_shapes,
+        outdir_pulse_shapes,
+        output_html="html/pulse_shapes/viewer.html",
+        random_per_block=random_per_block,
+        block_size=block_size,
+        nth_interval=nth_interval,
+    )
+
+    # Save histograms out to ROOT files
     ofilename = infilename.replace(".root", "_event_display.root")
     ofile = ROOT.TFile(ofilename, "RECREATE")
     print(f"Saving event display histograms to {ofilename}")
@@ -213,21 +253,38 @@ def makeEventDisplays(infilename):
         hist.Write()
     ofile.Close()
 
-    # Save pulse shape histograms
-    ofilename_pulse_shapes = infilename.replace(".root", "_pulse_shapes.root")
-    ofile = ROOT.TFile(ofilename_pulse_shapes, "RECREATE")
-    print(f"Saving pulse shape histograms to {ofilename_pulse_shapes}")
-    for hists in hists_pulse_shapes.values():
-        for hist in hists.values():
-            if hist is not None:
-                hist.SetDirectory(ofile)
-                hist.Write()
-    ofile.Close()
+    ofilename_ps = infilename.replace(".root", "_pulse_shapes.root")
+    ofile_ps = ROOT.TFile(ofilename_ps, "RECREATE")
+    print(f"Saving pulse shape histograms to {ofilename_ps}")
+    for hist in hists_pulse_shapes:
+        hist.SetDirectory(ofile_ps)
+        hist.Write()
+    ofile_ps.Close()
 
     print(f"Processing completed in {time.time() - start_time:.2f} seconds.")
 
 
 if __name__ == "__main__":
-    input_file = f"root/Run{runNumber}/filtered.root"
-    print(f"Processing file: {input_file}")
-    makeEventDisplays(input_file)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate event displays")
+    parser.add_argument("input_file", help="Input ROOT file")
+    parser.add_argument("--random-per-block", type=int, default=None,
+                        dest="random_per_block",
+                        help="Number of random events to display per block")
+    parser.add_argument("--block-size", type=int, default=100,
+                        dest="block_size",
+                        help="Block size used for random sampling")
+    parser.add_argument("--nth-interval", type=int, default=None,
+                        dest="nth_interval",
+                        help="Additionally display every nth event")
+
+    args = parser.parse_args()
+
+    print(f"Processing file: {args.input_file}")
+    makeEventDisplays(
+        args.input_file,
+        random_per_block=args.random_per_block,
+        block_size=args.block_size,
+        nth_interval=args.nth_interval,
+    )
