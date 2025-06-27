@@ -1,5 +1,3 @@
-import re
-import sys
 import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTriggerChannels
