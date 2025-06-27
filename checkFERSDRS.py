@@ -109,6 +109,8 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
             )
 
     rdf = findTrigFireTime(rdf, trigger_channels + hodo_trigger_channels)
+    rdf = rdf.Define("TriggerHodo_deltaT",
+                     f"TrigHalfMin_{hodo_trigger_channels[1]} - TrigHalfMin_{hodo_trigger_channels[0]}")
 
     rdf = rdf.Define(
         "passTime", f"TrigHalfMin_{hodo_trigger_channels[0]} > 200 && TrigMin_{hodo_trigger_channels[1]} < -200")
@@ -204,6 +206,12 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
             1025, -1, 1024
         ), f"TrigHalfMin_{channel}")
         hists_trig_fire_time.append(h_trig_fire_time)
+    h_trig_fire_deltaT = rdf.Histo1D((
+        "hist_TrigFireTime_deltaT",
+        "Hodo trigger delta T",
+        200, -100, 100
+    ), "TriggerHodo_deltaT")
+    hists_trig_fire_time.append(h_trig_fire_deltaT)
 
     # sum of FERS and DRS outputs
     h2s_FERS_VS_DRS_sum = []
@@ -475,21 +483,30 @@ def makeFERSDRSPlots():
                    dology=False,
                    outdir=outdir_trig_fire_time, runNumber=runNumber, mycolors=[1], donormalize=True)
         plots_trig_fire_time.append(output_name + ".png")
-    if len(hodo_trigger_channels) == 2:
-        hist_up_name = f"hist_TrigFireTime_{hodo_trigger_channels[0]}"
-        hist_up = input_file.Get(hist_up_name)
-        hist_down_name = f"hist_TrigFireTime_{hodo_trigger_channels[1]}"
-        hist_down = input_file.Get(hist_down_name)
-        if not hist_up or not hist_down:
-            print(
-                f"Warning: Histogram {hist_up_name} or {hist_down_name} not found in file")
-        else:
-            output_name = f"HodoTrigger_{hodo_trigger_channels[0]}_{hodo_trigger_channels[1]}_vs_Event"
-            DrawHistos([hist_up, hist_down], "", -1, 1024, "Trigger Fire Time (TS)", 0, 0.04, "Count",
-                       output_name,
-                       dology=False,
-                       outdir=outdir_trig_fire_time, runNumber=runNumber, mycolors=[1, 2], donormalize=True)
-            plots_trig_fire_time.append(output_name + ".png")
+
+    # trigger fire time for hodo up and down
+    hist_up_name = f"hist_TrigFireTime_{hodo_trigger_channels[0]}"
+    hist_up = input_file.Get(hist_up_name)
+    hist_down_name = f"hist_TrigFireTime_{hodo_trigger_channels[1]}"
+    hist_down = input_file.Get(hist_down_name)
+    output_name = f"HodoTrigger_{hodo_trigger_channels[0]}_{hodo_trigger_channels[1]}_vs_Event"
+    DrawHistos([hist_up, hist_down], "", -1, 1024, "Trigger Fire Time (TS)", 0, 0.04, "Count",
+               output_name,
+               dology=False,
+               outdir=outdir_trig_fire_time, runNumber=runNumber, mycolors=[1, 2], donormalize=True)
+    plots_trig_fire_time.append(output_name + ".png")
+
+    # trigger fire time for hodo delta T
+    hist_deltaT = input_file.Get("hist_TrigFireTime_deltaT")
+    if not hist_deltaT:
+        print(f"Warning: Histogram hist_TrigFireTime_deltaT not found in file")
+    else:
+        output_name_deltaT = "HodoTrigger_deltaT_vs_Event"
+        DrawHistos([hist_deltaT], "", -50, 100, "Hodo Trigger Delta T (TS)", 0, 0.04, "Count",
+                   output_name_deltaT,
+                   dology=False,
+                   outdir=outdir_trig_fire_time, runNumber=runNumber, mycolors=[1], donormalize=True)
+        plots_trig_fire_time.append(output_name_deltaT + ".png")
     generate_html(plots_trig_fire_time, outdir_trig_fire_time,
                   output_html=f"html/Run{runNumber}/checkFERSDRS/trigFireTime.html")
 
