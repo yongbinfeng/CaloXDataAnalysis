@@ -360,7 +360,7 @@ def makeFERSDRSPlots():
                 DrawHistos([hist], "", DRS_min, DRS_max, "DRS Integral", FERS_min, FERS_max, f"FERS Output",
                            output_name,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
-                           outdir=outdir_plots, extraText=var, runNumber=runNumber)
+                           outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
                 plots.append(output_name + ".png")
 
                 h2_LG_name = f"hist_FERSLG_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
@@ -373,7 +373,7 @@ def makeFERSDRSPlots():
                 DrawHistos([hist_LG], "", DRS_min, DRS_LG_max, "DRS Integral", FERS_min, FERS_LG_max, f"FERS Output",
                            output_name_LG,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
-                           outdir=outdir_plots, extraText=var, runNumber=runNumber)
+                           outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
                 plots.append(output_name_LG + ".png")
 
                 h2_name = f"hist_DRSOverFERS_VS_HodoUp_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
@@ -386,7 +386,7 @@ def makeFERSDRSPlots():
                            -1, 1025, "Hodo Up Trigger Fire Time (TS)",
                            output_name,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=0, zmax=2e3, dologz=True,
-                           outdir=outdir_plots, extraText=var, runNumber=runNumber)
+                           outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
                 plots.append(output_name + ".png")
                 h2_LG_name = f"hist_DRSOverFERSLG_VS_HodoUp_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
                 hist_LG = input_file.Get(h2_LG_name)
@@ -398,7 +398,7 @@ def makeFERSDRSPlots():
                            -1, 1025, "Hodo Up Trigger Fire Time (TS)",
                            output_name_LG,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=0, zmax=2e3, dologz=True,
-                           outdir=outdir_plots, extraText=var, runNumber=runNumber)
+                           outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
                 plots.append(output_name_LG + ".png")
 
     for _, DRSBoard in DRSBoards.items():
@@ -414,7 +414,7 @@ def makeFERSDRSPlots():
             DrawHistos([hist_sum], "", DRS_min, DRS_max, "DRS Integral", FERS_min, FERS_max, f"FERS Output",
                        output_name,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
-                       outdir=outdir_plots, extraText=var, runNumber=runNumber)
+                       outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
             plots.append(output_name + ".png")
 
             h2sum_LG_name = f"hist_FERSLG_VS_DRS_Board{boardNo}_{var}_sum"
@@ -427,7 +427,7 @@ def makeFERSDRSPlots():
             DrawHistos([hist_sum_LG], "", DRS_min, DRS_LG_max, "DRS Integral", FERS_min, FERS_LG_max, f"FERS Output",
                        output_name_LG,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=2e3, dologz=True,
-                       outdir=outdir_plots, extraText=var, runNumber=runNumber)
+                       outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
             plots.append(output_name_LG + ".png")
 
             h2sum_DRSOverFERS_name = f"hist_DRSOverFERS_VS_HodoUp_{var}_sum"
@@ -441,7 +441,7 @@ def makeFERSDRSPlots():
                        -1, 1025, "Hodo Up Trigger Fire Time (TS)",
                        output_name,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=0, zmax=2e3, dologz=True,
-                       outdir=outdir_plots, extraText=var, runNumber=runNumber)
+                       outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
             plots.append(output_name + ".png")
 
             h2sum_DRSOverFERSLG_name = f"hist_DRSOverFERSLG_VS_HodoUp_{var}_sum"
@@ -455,7 +455,7 @@ def makeFERSDRSPlots():
                        -1, 1025, "Hodo Up Trigger Fire Time (TS)",
                        output_name_LG,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=0, zmax=2e3, dologz=True,
-                       outdir=outdir_plots, extraText=var, runNumber=runNumber)
+                       outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
             plots.append(output_name_LG + ".png")
     generate_html(plots, outdir_plots,
                   output_html=f"html/Run{runNumber}/checkFERSDRS/view.html")

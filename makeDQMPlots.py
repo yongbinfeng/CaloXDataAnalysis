@@ -101,7 +101,7 @@ def makeFERS2DPlots():
                 DrawHistos([hist], f"", 0, 9000, "HG", 0, 1500, "LG",
                            output_name,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True, extraToDraw=extraToDraw,
-                           outdir=outdir_plots)
+                           outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
                 plots.append(output_name + ".png")
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=f"html/Run{runNumber}/FERS_2D/viewer.html")
@@ -148,7 +148,7 @@ def trackFERSPlots():
                            output_name,
                            dology=True, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                            extraToDraw=extraToDraw,
-                           outdir=outdir_plots)
+                           outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
                 plots.append(output_name + ".png")
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=f"html/Run{runNumber}/FERS_vs_Event/viewer.html")
@@ -253,7 +253,7 @@ def makeDRS2DPlots(doSubtractMedian=False):
                            output_name,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                            extraToDraw=extraToDraw,
-                           outdir=outdir_plots, extraText=var, runNumber=runNumber)
+                           outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=f"html/Run{runNumber}/DRS_vs_TS{suffix}/viewer.html")
 
@@ -299,7 +299,7 @@ def trackDRSPlots():
                            output_name,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                            extraToDraw=extraToDraw,
-                           outdir=outdir_plots)
+                           outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
                 plots.append(output_name + ".png")
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=f"html/Run{runNumber}/DRS_vs_Event/viewer.html")
@@ -336,7 +336,7 @@ def makeTriggerPlots(doSubtractMedian=False):
                    output_name,
                    dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                    extraToDraw=extraToDraw,
-                   outdir=outdir_plots)
+                   outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
         plots.append(output_name + ".png")
 
     generate_html(plots, outdir_plots, plots_per_row=2,

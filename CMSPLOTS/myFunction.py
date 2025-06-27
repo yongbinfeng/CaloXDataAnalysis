@@ -225,41 +225,54 @@ def THStack2TH1(hstack, postfix=""):
     return h1
 
 
-def AddOverflowsTH1(h1, dolastbin=True):
+def AddOverflowsTH1(h1, doxmax=True, xmin=None, xmax=None):
     assert isinstance(h1, ROOT.TH1), "input must be a ROOT.TH1"
     nbins = h1.GetNbinsX()
-    if dolastbin:
-        # merge overflow bin to the last bin
-        h1.SetBinContent(nbins, h1.GetBinContent(
-            nbins)+h1.GetBinContent(nbins+1))
-        # treat the uncertainties as uncorrelated
-        h1.SetBinError(nbins, ROOT.TMath.Sqrt(
-            (h1.GetBinError(nbins))**2 + (h1.GetBinError(nbins+1))**2))
-        # clean the old bins
-        h1.SetBinContent(nbins + 1, 0)
-        h1.SetBinError(nbins + 1, 0)
+    bin_xmin = 1
+    if xmin is not None:
+        bin_xmin = max(bin_xmin, h1.GetXaxis().FindBin(xmin))
+        # might need to deal with the case where xmin is in the middle of a bin
+        # ROOT can not show half a bin (?), so in this case bin_xmin will not show up
+    bin_xmax = nbins
+    if xmax is not None:
+        bin_xmax = h1.GetXaxis().FindBin(xmax) - 1
+    if doxmax:
+        # clean everything in [bin_xmax + 1, nbins + 2)
+        val = h1.GetBinContent(bin_xmax)
+        err2 = h1.GetBinError(bin_xmax)**2
+        for ibin in range(bin_xmax + 1, nbins + 2):
+            val += h1.GetBinContent(ibin)
+            # treat the uncertainties as uncorrelated
+            err2 += h1.GetBinError(ibin)**2
+            h1.SetBinContent(ibin, 0)
+            h1.SetBinError(ibin, 0)
+        h1.SetBinContent(bin_xmax, val)
+        h1.SetBinError(bin_xmax, ROOT.TMath.Sqrt(err2))
     else:
-        h1.SetBinContent(1, h1.GetBinContent(0)+h1.GetBinContent(1))
-        # treat the uncertainties as uncorrelated
-        h1.SetBinError(1, ROOT.TMath.Sqrt(
-            (h1.GetBinError(1))**2 + (h1.GetBinError(0))**2))
-        # clean the old bins
-        h1.SetBinContent(0, 0)
-        h1.SetBinError(0, 0)
+        # clean everything in [0, bin_xmin)
+        val = h1.GetBinContent(bin_xmin)
+        err2 = h1.GetBinError(bin_xmin)**2
+        for ibin in range(0, bin_xmin):
+            val += h1.GetBinContent(ibin)
+            # treat the uncertainties as uncorrelated
+            err2 += h1.GetBinError(ibin)**2
+            h1.SetBinContent(ibin, 0)
+            h1.SetBinError(ibin, 0)
+        h1.SetBinContent(bin_xmin, val)
+        h1.SetBinError(bin_xmin, ROOT.TMath.Sqrt(err2))
 
 
-def AddOverflows(hinput, dolastbin=True):
+def AddOverflows(hinput, doxmax=True, xmin=None, xmax=None):
     '''
     move the over/under flow bin to the last/first bin
     '''
     if isinstance(hinput, ROOT.TH1):
-        AddOverflowsTH1(hinput, dolastbin)
-
-    if isinstance(hinput, ROOT.THStack):
+        AddOverflowsTH1(hinput, doxmax, xmin, xmax)
+    elif isinstance(hinput, ROOT.THStack):
         # do the AddOverflowsTH1 for all the histograms in THStack
         hlist = list(hinput.GetHists())
-        list(map(AddOverflowsTH1, hlist, [dolastbin]*len(hlist)))
-
+        for h in hlist:
+            AddOverflowsTH1(h, doxmax, xmin, xmax)
     else:
         print("input must be a ROOT.TH1 or ROOT.THStack for Over/Underflows")
 
@@ -288,6 +301,70 @@ def IncludeOverflow2D(h2, doUnderflow=False):
         h2 = CombineOneBin2D(h2, 1, nbinsY, 0, nbinsY+1)
         h2 = CombineOneBin2D(h2, nbinsX, 1, nbinsX+1, 0)
     return h2
+
+
+def absorb_overflow_into_edges(h2, xmin2, xmax2, ymin2, ymax2):
+    """Move all out-of-range bin content (including ROOT underflow/overflow bins)
+    into nearest edge bins inside the given (xmin2, xmax2), (ymin2, ymax2) range.
+    Adjusts axis display range to fully include visible bins.
+    """
+    xaxis = h2.GetXaxis()
+    yaxis = h2.GetYaxis()
+    nbinsX = xaxis.GetNbins()
+    nbinsY = yaxis.GetNbins()
+
+    bin_width_x = (xaxis.GetXmax() - xaxis.GetXmin()) / nbinsX
+    bin_width_y = (yaxis.GetXmax() - yaxis.GetXmin()) / nbinsY
+
+    # Determine which bins are visible
+    visible_bins_x = [i for i in range(1, nbinsX+1)
+                      if xmin2 <= xaxis.GetBinCenter(i) <= xmax2]
+    visible_bins_y = [j for j in range(1, nbinsY+1)
+                      if ymin2 <= yaxis.GetBinCenter(j) <= ymax2]
+
+    if not visible_bins_x or not visible_bins_y:
+        print("No visible bins in specified range.")
+        return
+
+    first_x_bin = visible_bins_x[0]
+    last_x_bin = visible_bins_x[-1]
+    first_y_bin = visible_bins_y[0]
+    last_y_bin = visible_bins_y[-1]
+
+    # Loop over all bins, including under/overflow
+    for i in range(0, nbinsX + 2):
+        if 1 <= i <= nbinsX:
+            x = xaxis.GetBinCenter(i)
+        else:
+            x = xaxis.GetBinLowEdge(
+                1) - bin_width_x if i == 0 else xaxis.GetBinUpEdge(nbinsX) + bin_width_x
+
+        for j in range(0, nbinsY + 2):
+            if 1 <= j <= nbinsY:
+                y = yaxis.GetBinCenter(j)
+            else:
+                y = yaxis.GetBinLowEdge(
+                    1) - bin_width_y if j == 0 else yaxis.GetBinUpEdge(nbinsY) + bin_width_y
+
+            if xmin2 <= x <= xmax2 and ymin2 <= y <= ymax2:
+                continue  # keep in place
+
+            val = h2.GetBinContent(i, j)
+            if val == 0:
+                continue
+
+            # Redirect to nearest visible edge
+            target_i = (
+                first_x_bin if x < xmin2 else
+                last_x_bin if x > xmax2 else i
+            )
+            target_j = (
+                first_y_bin if y < ymin2 else
+                last_y_bin if y > ymax2 else j
+            )
+
+            h2.AddBinContent(target_i, target_j, val)
+            h2.SetBinContent(i, j, 0)
 
 
 def Ratio2Diff(hratio, inpercent=True):
@@ -715,12 +792,19 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
 
     ileg = 0
     for idx in range(0, len(myhistos_clone)):
-        if addOverflow:
-            # include overflow bin
-            AddOverflows(myhistos_clone[idx])
-        if addUnderflow:
-            # include underflow bin
-            AddOverflows(myhistos_clone[idx], dolastbin=False)
+        if not doth2:
+            if addOverflow:
+                # include overflow bin
+                AddOverflows(myhistos_clone[idx])
+            if addUnderflow:
+                # include underflow bin
+                AddOverflows(myhistos_clone[idx], doxmax=False)
+        else:
+            # include overflow and underflow bins for 2D histograms
+            if addOverflow:
+                # IncludeOverflow2D(myhistos_clone[idx], doUnderflow=addUnderflow)
+                absorb_overflow_into_edges(
+                    myhistos_clone[idx], xmin, xmax, ymin, ymax)
         if idx < len(mycolors):
             myhistos_clone[idx].SetLineColor(mycolors[idx])
             myhistos_clone[idx].SetMarkerColor(mycolors[idx])
