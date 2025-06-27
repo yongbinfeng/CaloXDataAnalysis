@@ -217,7 +217,6 @@ def buildHodoPosChannels(run=316):
     Returns a dictionary containing the hodoscope channels for the position measurements
     """
     hodoscope_channels = {}
-    # hodoscope_channels["trigger"] = ["DRS_Board1_Group0_Channel0"]
     hodoscope_channels["TopX"] = [
         "DRS_Board1_Group0_Channel1",
         "DRS_Board1_Group0_Channel2",

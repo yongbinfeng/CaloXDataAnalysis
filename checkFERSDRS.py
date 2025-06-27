@@ -66,7 +66,7 @@ def prepareFERSDRSPlots():
                 f"FERS_Board{boardNo}_energyLG[{channel.channelNo}]"
             )
 
-    rdf = processDRSBoards(rdf, DRSBoards)
+    rdf = processDRSBoards(rdf)
 
     # get the mean of DRS outputs per channel
     ROOT.gInterpreter.Declare("""

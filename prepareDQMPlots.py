@@ -39,7 +39,7 @@ for _, FERSBoard in FERSBoards.items():
             f"FERS_Board{boardNo}_energyLG[{channel.channelNo}]"
         )
 
-rdf = processDRSBoards(rdf, DRSBoards)
+rdf = processDRSBoards(rdf)
 
 
 def makeFERS1DPlots():
@@ -263,7 +263,6 @@ if __name__ == "__main__":
     hodo_pos_channels = buildHodoPosChannels(run=runNumber)
     channels = [channel for channels in hodo_pos_channels.values()
                 for channel in channels]
-    print("channels:", channels)
     hists2d_hodo_pos = compareDRSChannels(channels)
 
     print("Save histograms")

@@ -2,33 +2,24 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from CMSPLOTS.myFunction import DrawHistos
-import json
-from results.events import events_interested
-from utils.channel_map import buildHodoChannels
+from utils.channel_map import buildHodoPosChannels
 from utils.html_generator import generate_html
+from runNumber import runNumber
+from utils.utils import processDRSBoards, getDataFile
 
 ROOT.gROOT.SetBatch(True)  # Run in batch mode
 # multithread
 ROOT.ROOT.EnableImplicitMT(10)
 
-runNumber = 583
-
-hodoscope_channels = buildHodoChannels(run=runNumber)
+hodo_pos_channels = buildHodoPosChannels(run=runNumber)
 
 
-with open("results/hodoscope_noises.json", "r") as json_file:
-    hodo_noises = json.load(json_file)
-
-outdir = f"plots/Run{runNumber}/Hodoscope/"
-
-
-def analyzePeak(infilename):
-    infile = ROOT.TFile(infilename, "READ")
-    if not infile or infile.IsZombie():
-        raise RuntimeError(f"Failed to open input file: {infile}")
-
-    # Create an RDataFrame from the EventTree
+def analyzePeak():
+    ifile = getDataFile(runNumber)
+    infile = ROOT.TFile(ifile, "READ")
     rdf = ROOT.RDataFrame("EventTree", infile)
+
+    rdf = processDRSBoards(rdf)
 
     histos1D_diff = {}
     histos1D_sum = {}
@@ -37,89 +28,87 @@ def analyzePeak(infilename):
     histos2D_left_vs_right = {}
     histos1D_left_peak = {}
     histos1D_right_peak = {}
-    for group, channels in hodoscope_channels.items():
+
+    for group, channels in hodo_pos_channels.items():
         for channel in channels:
-            rdf = rdf.Define(f"{channel}_subtracted",
-                             f"{channel} - {hodo_noises['hodoscope_' + channel]}")
             # find the minimum index of the pulse shape
             rdf = rdf.Define(f"{channel}_peak_position",
-                             f"ROOT::VecOps::ArgMin({channel}_subtracted)")
+                             f"ROOT::VecOps::ArgMin({channel}_subtractMedian)")
             rdf = rdf.Define(f"{channel}_peak_value",
-                             f"ROOT::VecOps::Min({channel}_subtracted)")
+                             f"ROOT::VecOps::Min({channel}_subtractMedian)")
 
     rdfs_filtered = []
     maps_mean = {}
     map_means_normalized = {}
-    for group, channels in hodoscope_channels.items():
-        if group != "trigger":
-            rdf_filtered = rdf.Filter(
-                f"({channels[0]}_peak_value < -100.0 ) && ({channels[1]}_peak_value < -100.0 )"
-            )
+    for group, channels in hodo_pos_channels.items():
+        rdf_filtered = rdf.Filter(
+            f"({channels[0]}_peak_value < -100.0 ) && ({channels[1]}_peak_value < -100.0 )"
+        )
 
-            for channel in channels:
-                # normalize the pulse shape
-                rdf_filtered = rdf_filtered.Define(f"{channel}_subtracted_sum",
-                                                   f"ROOT::VecOps::Sum({channel}_subtracted) + 1e-6")
-                rdf_filtered = rdf_filtered.Define(f"{channel}_subtracted_norm",
-                                                   f"{channel}_subtracted / {channel}_subtracted_sum")
-            # calculate the difference between left and right peaks
-            rdf_filtered = rdf_filtered.Define(f"{group}_delta_peak",
-                                               f"(int){channels[1]}_peak_position - (int){channels[0]}_peak_position")
-            rdf_filtered = rdf_filtered.Define(f"{group}_sum_peak",
-                                               f"(int){channels[0]}_peak_position + (int){channels[1]}_peak_position")
-            rdfs_filtered.append((group, rdf_filtered))
+        for channel in channels:
+            # normalize the pulse shape
+            rdf_filtered = rdf_filtered.Define(f"{channel}_subtracted_sum",
+                                               f"ROOT::VecOps::Sum({channel}_subtractMedian) + 1e-6")
+            rdf_filtered = rdf_filtered.Define(f"{channel}_subtracted_norm",
+                                               f"{channel}_subtractMedian / {channel}_subtracted_sum")
+        # calculate the difference between left and right peaks
+        rdf_filtered = rdf_filtered.Define(f"{group}_delta_peak",
+                                           f"(int){channels[1]}_peak_position - (int){channels[0]}_peak_position")
+        rdf_filtered = rdf_filtered.Define(f"{group}_sum_peak",
+                                           f"(int){channels[0]}_peak_position + (int){channels[1]}_peak_position")
+        rdfs_filtered.append((group, rdf_filtered))
 
-            histos1D_diff[group] = rdf_filtered.Histo1D(
-                (f"{group}_delta_peak",
-                 f"Delta Peak {group};Peak Position Difference;Counts", 2048, -1024, 1024),
-                f"{group}_delta_peak"
-            )
-            histos1D_sum[group] = rdf_filtered.Histo1D(
-                (f"{group}_sum_peak",
-                 f"Sum Peak {group};Peak Position Sum;Counts", 2048, 0, 2048),
-                f"{group}_sum_peak"
-            )
-            histos1D_left[group] = rdf_filtered.Histo1D(
-                (f"{group}_left_peak",
-                 f"Left Peak {group};Peak Position;Counts", 1024, 0, 1024),
-                f"{channels[0]}_peak_position"
-            )
-            histos1D_right[group] = rdf_filtered.Histo1D(
-                (f"{group}_right_peak",
-                 f"Right Peak {group};Peak Position;Counts", 1024, 0, 1024),
-                f"{channels[1]}_peak_position"
-            )
-            histos2D_left_vs_right[group] = rdf_filtered.Histo2D(
-                (f"{group}_left_peak_vs_right_peak",
-                 f"Left vs Right Peak {group};Left Peak Position;Right Peak Position;Counts",
-                 1024, 0, 1024, 1024, 0, 1024),
-                f"{channels[0]}_peak_position",
-                f"{channels[1]}_peak_position"
-            )
-            histos1D_left_peak[group] = rdf_filtered.Histo1D(
-                (f"{group}_left_peak_value",
-                 f"Left Peak Value {group};Peak Value;Counts", 2048, -2500, 1999),
-                f"{channels[0]}_peak_value"
-            )
-            histos1D_right_peak[group] = rdf_filtered.Histo1D(
-                (f"{group}_right_peak_value",
-                 f"Right Peak Value {group};Peak Value;Counts", 2048, -2500, 1999),
-                f"{channels[1]}_peak_value"
-            )
+        histos1D_diff[group] = rdf_filtered.Histo1D(
+            (f"{group}_delta_peak",
+             f"Delta Peak {group};Peak Position Difference;Counts", 2048, -1024, 1024),
+            f"{group}_delta_peak"
+        )
+        histos1D_sum[group] = rdf_filtered.Histo1D(
+            (f"{group}_sum_peak",
+             f"Sum Peak {group};Peak Position Sum;Counts", 2048, 0, 2048),
+            f"{group}_sum_peak"
+        )
+        histos1D_left[group] = rdf_filtered.Histo1D(
+            (f"{group}_left_peak",
+             f"Left Peak {group};Peak Position;Counts", 1024, 0, 1024),
+            f"{channels[0]}_peak_position"
+        )
+        histos1D_right[group] = rdf_filtered.Histo1D(
+            (f"{group}_right_peak",
+             f"Right Peak {group};Peak Position;Counts", 1024, 0, 1024),
+            f"{channels[1]}_peak_position"
+        )
+        histos2D_left_vs_right[group] = rdf_filtered.Histo2D(
+            (f"{group}_left_peak_vs_right_peak",
+             f"Left vs Right Peak {group};Left Peak Position;Right Peak Position;Counts",
+             1024, 0, 1024, 1024, 0, 1024),
+            f"{channels[0]}_peak_position",
+            f"{channels[1]}_peak_position"
+        )
+        histos1D_left_peak[group] = rdf_filtered.Histo1D(
+            (f"{group}_left_peak_value",
+             f"Left Peak Value {group};Peak Value;Counts", 2048, -2500, 1999),
+            f"{channels[0]}_peak_value"
+        )
+        histos1D_right_peak[group] = rdf_filtered.Histo1D(
+            (f"{group}_right_peak_value",
+             f"Right Peak Value {group};Peak Value;Counts", 2048, -2500, 1999),
+            f"{channels[1]}_peak_value"
+        )
 
-            means = []
-            means_normalized = []
-            for channel in channels:
-                for i in range(0, 1024):
-                    mean_normalized = rdf_filtered.Define(f"{channel}_subtracted_norm_{i}", f"{channel}_subtracted_norm[{i}]").Mean(
-                        f"{channel}_subtracted_norm_{i}")
-                    mean = rdf_filtered.Define(f"{channel}_subtracted_{i}", f"{channel}_subtracted[{i}]").Mean(
-                        f"{channel}_subtracted_{i}")
-                    means.append(mean)
-                    means_normalized.append(mean_normalized)
+        means = []
+        means_normalized = []
+        for channel in channels:
+            for i in range(0, 1024):
+                mean_normalized = rdf_filtered.Define(f"{channel}_subtracted_norm_{i}", f"{channel}_subtracted_norm[{i}]").Mean(
+                    f"{channel}_subtracted_norm_{i}")
+                mean = rdf_filtered.Define(f"{channel}_subtractMedian_{i}", f"{channel}_subtractMedian[{i}]").Mean(
+                    f"{channel}_subtractMedian_{i}")
+                means.append(mean)
+                means_normalized.append(mean_normalized)
 
-                maps_mean[channel] = means
-                map_means_normalized[channel] = means_normalized
+            maps_mean[channel] = means
+            map_means_normalized[channel] = means_normalized
 
     print("Average channel normalized pulse shapes calculated.")
 
@@ -141,7 +130,7 @@ def analyzePeak(infilename):
         histos1D_means_normalized[channel] = histo_normalized
 
     print("Writing histograms to output file...")
-    ofile = ROOT.TFile("root/hodoscope_peaks.root", "RECREATE")
+    ofile = ROOT.TFile(f"root/Run{runNumber}/hodoscope_peaks.root", "RECREATE")
     if not ofile or ofile.IsZombie():
         raise RuntimeError(f"Failed to open output file: {ofile}")
     for group, hist in histos1D_diff.items():
@@ -171,6 +160,78 @@ def analyzePeak(infilename):
     ofile.Close()
 
 
+def plotPeak():
+    infile = ROOT.TFile(f"root/Run{runNumber}/hodoscope_peaks.root", "READ")
+    if not infile or infile.IsZombie():
+        raise RuntimeError(f"Failed to open input file: {infile}")
+
+    histos1D_diff = {}
+    histos1D_sum = {}
+    histos1D_left = {}
+    histos1D_right = {}
+    histos2D_left_vs_right = {}
+    histos1D_left_peak = {}
+    histos1D_right_peak = {}
+
+    plots = []
+    outdir = f"plots/Run{runNumber}/HodoPos/"
+    for group, channels in hodo_pos_channels.items():
+        histos1D_diff[group] = infile.Get(f"{group}_delta_peak")
+        histos1D_sum[group] = infile.Get(f"{group}_sum_peak")
+        histos1D_left[group] = infile.Get(f"{group}_left_peak")
+        histos1D_right[group] = infile.Get(f"{group}_right_peak")
+        histos2D_left_vs_right[group] = infile.Get(
+            f"{group}_left_peak_vs_right_peak")
+        histos1D_left_peak[group] = infile.Get(f"{group}_left_peak_value")
+        histos1D_right_peak[group] = infile.Get(f"{group}_right_peak_value")
+
+        outputname = f"{group}_diff_peak"
+        DrawHistos([histos1D_diff[group]], [f"Delta Peak {group}"], -250, 250, "Peak Position Difference", 0, 300, "Counts",
+                   outputname=outputname, outdir=outdir,
+                   dology=False, mycolors=[1], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True
+                   )
+        plots.append(outputname + ".png")
+
+        outputname = f"{group}_sum_peak"
+        DrawHistos(
+            [histos1D_sum[group]], [
+                f"Sum Peak {group}"], 600, 1200, "Peak Position Sum", 0, 300, "Counts",
+            outputname=outputname, outdir=outdir,
+            dology=False, mycolors=[1], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True
+        )
+        plots.append(outputname + ".png")
+
+        outputname = f"{group}_peaks"
+        DrawHistos(
+            [histos1D_left[group], histos1D_right[group]], [
+                f"Left Peak {group}", f"Right Peak {group}"], 300, 800, "Peak Position", 0, 300, "Counts",
+            outputname=outputname, outdir=outdir,
+            dology=False, mycolors=[1, 2], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True
+        )
+        plots.append(outputname + ".png")
+
+        outputname = f"{group}_left_vs_right_peak"
+        DrawHistos(
+            [histos2D_left_vs_right[group]], [
+            ], 0, 1024, "Left Peak Position", 0, 1024, "Right Peak Position",
+            outputname=outputname, outdir=outdir,
+            drawoptions="COLz", zmin=1, zmax=1e3, dologz=True,
+            dology=False, runNumber=runNumber, addOverflow=True, doth2=True,
+        )
+        plots.append(outputname + ".png")
+
+        outputname = f"{group}_peak_values"
+        DrawHistos(
+            [histos1D_left_peak[group], histos1D_right_peak[group]], [
+                f"{group} Left", f"{group} Right"], -1500, 100, "Peak Value", 0, 600, "Counts",
+            outputname=outputname, outdir=outdir,
+            dology=False, mycolors=[1, 2], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True
+        )
+        plots.append(outputname + ".png")
+    generate_html(plots, f"plots/Run{runNumber}/HodoPos/", plots_per_row=5,
+                  output_html=f"html/Run{runNumber}/HodoPos/viewer.html")
+
+
 def analyzeHodoPulse(infilename):
     infile = ROOT.TFile(infilename, "READ")
     if not infile or infile.IsZombie():
@@ -193,7 +254,7 @@ def analyzeHodoPulse(infilename):
         #    continue
         # dump the pulse shapes for hodoscope channels
         h1_hodos = {}
-        for group, channels in hodoscope_channels.items():
+        for group, channels in hodo_pos_channels.items():
             hs_todraw = []
             for channel in channels:
                 pulse_shape = rdf.Take["ROOT::VecOps::RVec<float>"](
@@ -228,19 +289,22 @@ def analyzeHodoPulse(infilename):
                     extraToDraw.AddText(f"Right Peak: {peak_right}")
                     extraToDraw.AddText(
                         f"delta Peak: {deltaTS} ts")
-                output_name = f"pulse_shape_Hodoscopes_Evt{evtNumber}_{group}"
+                output_name = f"pulse_shape_HodoPos_Evt{evtNumber}_{group}"
                 DrawHistos(hs_todraw, labels, 0, 1024, "TS",
                            -2500, 1999, "Amplitude", output_name,
                            dology=False, mycolors=[2, 4], drawashist=True, extraToDraw=extraToDraw,
-                           outdir=outdir)
+                           outdir=f"plots/Run{runNumber}/HodoPos/")
                 plots_toDraw.append(
                     f"{output_name}.png")
     print(f"Events left after filtering: {rdf.Count().GetValue()}")
-    generate_html(plots_toDraw, outdir, plots_per_row=5,
-                  output_html="html/Hodoscopes/viewer.html")
+    generate_html(plots_toDraw, f"plots/Run{runNumber}/HodoPos/", plots_per_row=5,
+                  output_html=f"html/Run{runNumber}/HodoPos/viewer.html")
 
 
 if __name__ == "__main__":
+    analyzePeak()
+    plotPeak()
+    sys.exit(0)
     # input_file = "root/filtered_events_board1.root"
     # print(f"Processing file: {input_file}")
     # analyzeHodoPulse(input_file)
