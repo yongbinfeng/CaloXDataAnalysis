@@ -1,6 +1,6 @@
 import os
 import ROOT
-from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTriggerChannels
+from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels
 from utils.utils import number2string, getDataFile, processDRSBoards
 from runNumber import runNumber
 import time
@@ -39,7 +39,7 @@ for _, FERSBoard in FERSBoards.items():
             f"FERS_Board{boardNo}_energyLG[{channel.channelNo}]"
         )
 
-rdf = processDRSBoards(rdf, DRSBoards)
+rdf = processDRSBoards(rdf)
 
 
 def makeFERS1DPlots():
@@ -222,18 +222,15 @@ def trackDRSPlots():
 
 
 def compareDRSChannels(channels_to_compare):
-    """
-    Compare trigger channels with DRS channels.
-    """
     hists_trigger = []
     for chan_name in channels_to_compare:
-        hist = rdf.Histo2D((
-            f"hist_{chan_name}",
-            f"{chan_name};TS;DRS values",
-            1024, 0, 1024,
-            200, 500, 2500),
-            "TS", chan_name
-        )
+        # hist = rdf.Histo2D((
+        #    f"hist_{chan_name}",
+        #    f"{chan_name};TS;DRS values",
+        #    1024, 0, 1024,
+        #    200, 500, 2500),
+        #    "TS", chan_name
+        # )
         hist_subtractMedian = rdf.Histo2D((
             f"hist_{chan_name}_subtractMedian",
             f"{chan_name} (subtract median);TS;DRS values",
@@ -241,7 +238,7 @@ def compareDRSChannels(channels_to_compare):
             200, -1500, 500),
             "TS", chan_name + "_subtractMedian"
         )
-        hists_trigger.append(hist)
+        # hists_trigger.append(hist)
         hists_trigger.append(hist_subtractMedian)
     return hists_trigger
 
@@ -257,8 +254,16 @@ if __name__ == "__main__":
     hists2d_DRS_vs_TS = makeDRS2DPlots()
     # hists2d_DRS_vs_Event = trackDRSPlots()
 
-    trigger_channels = buildTriggerChannels(run=runNumber)
-    hists2d_trigger = compareDRSChannels(trigger_channels)
+    time_reference_channels = buildTimeReferenceChannels(run=runNumber)
+    hists2d_time_reference = compareDRSChannels(time_reference_channels)
+
+    hodo_trigger_channels = buildHodoTriggerChannels(run=runNumber)
+    hists2d_hodo_trigger = compareDRSChannels(hodo_trigger_channels)
+
+    hodo_pos_channels = buildHodoPosChannels(run=runNumber)
+    channels = [channel for channels in hodo_pos_channels.values()
+                for channel in channels]
+    hists2d_hodo_pos = compareDRSChannels(channels)
 
     print("Save histograms")
 
@@ -298,12 +303,26 @@ if __name__ == "__main__":
     #    hist.Write()
     # outfile_DRS.Close()
 
-    outfile_trigger = ROOT.TFile(
-        f"{rootdir}/trigger_channels.root", "RECREATE")
-    for hist in hists2d_trigger:
-        hist.SetDirectory(outfile_trigger)
+    outfile_time_reference = ROOT.TFile(
+        f"{rootdir}/time_reference_channels.root", "RECREATE")
+    for hist in hists2d_time_reference:
+        hist.SetDirectory(outfile_time_reference)
         hist.Write()
-    outfile_trigger.Close()
+    outfile_time_reference.Close()
+
+    outfile_hodo_trigger = ROOT.TFile(
+        f"{rootdir}/hodo_trigger_channels.root", "RECREATE")
+    for hist in hists2d_hodo_trigger:
+        hist.SetDirectory(outfile_hodo_trigger)
+        hist.Write()
+    outfile_hodo_trigger.Close()
+
+    outfile_hodo_pos = ROOT.TFile(
+        f"{rootdir}/hodo_pos_channels.root", "RECREATE")
+    for hist in hists2d_hodo_pos:
+        hist.SetDirectory(outfile_hodo_pos)
+        hist.Write()
+    outfile_hodo_pos.Close()
 
     time_taken = time.time() - start_time
     print(f"Finished running script in {time_taken:.2f} seconds")

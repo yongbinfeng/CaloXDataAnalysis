@@ -30,7 +30,7 @@ def getBranchStats(rdf, branches):
     return stats
 
 
-def processDRSBoards(rdf, DRSBoards):
+def processDRSBoards(rdf):
     import re
     import ROOT
     # Get the list of all branch names
@@ -48,16 +48,6 @@ def processDRSBoards(rdf, DRSBoards):
             "min": res['min'].GetValue(),
             "max": res['max'].GetValue()
         }
-
-    # get the mean of DRS outputs per channel
-    for _, DRSBoard in DRSBoards.items():
-        boardNo = DRSBoard.boardNo
-        for channel in DRSBoard:
-            varname = channel.GetChannelName()
-            rdf = rdf.Define(
-                f"{varname}_mean",
-                f"ROOT::VecOps::Mean({varname})"
-            )
 
     ROOT.gInterpreter.Declare("""
     ROOT::RVec<int> FillIndices(size_t n) {

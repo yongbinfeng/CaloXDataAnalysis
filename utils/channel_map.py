@@ -168,30 +168,30 @@ def buildDRSBoards(run=316):
     return DRSBoards
 
 
-def buildTriggerChannels(run=316):
+def buildTimeReferenceChannels(run=316):
     """
     Returns a list of time reference channels.
     """
-    trigger_channels = []
+    time_reference_channels = []
     if run < 685:
-        trigger_channels.append("DRS_Board0_Group3_Channel7")
-        trigger_channels.append("DRS_Board2_Group3_Channel7")
-        trigger_channels.append("DRS_Board1_Group0_Channel0")
+        time_reference_channels.append("DRS_Board0_Group3_Channel7")
+        time_reference_channels.append("DRS_Board2_Group3_Channel7")
+        time_reference_channels.append("DRS_Board1_Group0_Channel0")
     elif run >= 685:
-        trigger_channels.append("DRS_Board1_Group0_Channel8")
-        trigger_channels.append("DRS_Board1_Group1_Channel8")
-        trigger_channels.append("DRS_Board1_Group2_Channel8")
-        trigger_channels.append("DRS_Board1_Group3_Channel8")
-        trigger_channels.append("DRS_Board2_Group0_Channel8")
-        trigger_channels.append("DRS_Board2_Group1_Channel8")
-        trigger_channels.append("DRS_Board2_Group2_Channel8")
-        trigger_channels.append("DRS_Board2_Group3_Channel8")
-        trigger_channels.append("DRS_Board0_Group0_Channel8")
+        time_reference_channels.append("DRS_Board1_Group0_Channel8")
+        time_reference_channels.append("DRS_Board1_Group1_Channel8")
+        time_reference_channels.append("DRS_Board1_Group2_Channel8")
+        time_reference_channels.append("DRS_Board1_Group3_Channel8")
+        time_reference_channels.append("DRS_Board2_Group0_Channel8")
+        time_reference_channels.append("DRS_Board2_Group1_Channel8")
+        time_reference_channels.append("DRS_Board2_Group2_Channel8")
+        time_reference_channels.append("DRS_Board2_Group3_Channel8")
+        time_reference_channels.append("DRS_Board0_Group0_Channel8")
     else:
         raise ValueError(
             f"Unsupported run number {run} for time reference channels.")
 
-    return trigger_channels
+    return time_reference_channels
 
 
 def buildHodoTriggerChannels(run=316):
@@ -212,12 +212,11 @@ def buildHodoTriggerChannels(run=316):
     return hodo_trigger_channels
 
 
-def buildHodoChannels(run=316):
+def buildHodoPosChannels(run=316):
     """
-    Returns a dictionary containing the hodoscope channels.
+    Returns a dictionary containing the hodoscope channels for the position measurements
     """
     hodoscope_channels = {}
-    # hodoscope_channels["trigger"] = ["DRS_Board1_Group0_Channel0"]
     hodoscope_channels["TopX"] = [
         "DRS_Board1_Group0_Channel1",
         "DRS_Board1_Group0_Channel2",
@@ -242,6 +241,25 @@ def buildHodoChannels(run=316):
             "DRS_Board1_Group1_Channel0",
         ]
 
+    if run >= 685:
+        # For runs >= 685, board 0 is used for hodoscope position channels
+        hodoscope_channels["TopX"] = [
+            "DRS_Board0_Group0_Channel0",
+            "DRS_Board0_Group0_Channel1",
+        ]
+        hodoscope_channels["TopZ"] = [
+            "DRS_Board0_Group0_Channel2",
+            "DRS_Board0_Group0_Channel3",
+        ]
+        hodoscope_channels["BottomX"] = [
+            "DRS_Board0_Group0_Channel4",
+            "DRS_Board0_Group0_Channel5",
+        ]
+        hodoscope_channels["BottomZ"] = [
+            "DRS_Board0_Group0_Channel6",
+            "DRS_Board0_Group0_Channel7",
+        ]
+
     return hodoscope_channels
 
 
@@ -259,7 +277,7 @@ if __name__ == "__main__":
     for board_name, board in drs_boards.items():
         print(f"{board_name}: {board}")
 
-    print("\nHodoscope Channels:")
-    hodo_channels = buildHodoChannels(run=run_number)
+    print("\nHodoscope Position Channels:")
+    hodo_channels = buildHodoPosChannels(run=run_number)
     for hodo_type, channels in hodo_channels.items():
         print(f"{hodo_type}: {channels}")
