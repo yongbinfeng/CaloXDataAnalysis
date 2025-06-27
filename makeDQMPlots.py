@@ -2,7 +2,7 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from myFunction import DrawHistos
-from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTriggerChannels
+from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels
 from utils.utils import number2string
 from utils.html_generator import generate_html
 from utils.validateMap import DrawFERSBoards, DrawDRSBoards
@@ -13,7 +13,9 @@ ROOT.gROOT.SetBatch(True)
 
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)
-trigger_channels = buildTriggerChannels(run=runNumber)
+time_reference_channels = buildTimeReferenceChannels(run=runNumber)
+hodo_trigger_channels = buildHodoTriggerChannels(run=runNumber)
+hodo_pos_channels = buildHodoPosChannels(run=runNumber)
 
 
 rootdir = f"root/Run{runNumber}/"
@@ -59,13 +61,15 @@ def makeFERS1DPlots():
             output_name = f"Energy_Board{boardNo}_iTowerX{sTowerX}_iTowerY{sTowerY}"
             DrawHistos([hist_C, hist_S], ["Cer", "Sci"], 0, 1000, "Energy HG", 1, 1e5, "Counts",
                        output_name,
-                       dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, extraToDraw=extraToDraw,
+                       dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True, extraToDraw=extraToDraw,
                        outdir=outdir_plots, runNumber=runNumber)
 
             plots.append(output_name + ".png")
 
+    output_html = f"html/Run{runNumber}/FERS_1D/index.html"
     generate_html(plots, outdir_plots,
-                  output_html=f"html/Run{runNumber}/FERS_1D/viewer.html")
+                  output_html=output_html)
+    return output_html
 
 
 # 2D FERS histograms, hg vs lg
@@ -103,8 +107,10 @@ def makeFERS2DPlots():
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True, extraToDraw=extraToDraw,
                            outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
                 plots.append(output_name + ".png")
+    output_html = f"html/Run{runNumber}/FERS_2D/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
-                  output_html=f"html/Run{runNumber}/FERS_2D/viewer.html")
+                  output_html=output_html)
+    return output_html
 
 
 # FERS output vs event
@@ -150,8 +156,10 @@ def trackFERSPlots():
                            extraToDraw=extraToDraw,
                            outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
                 plots.append(output_name + ".png")
+    output_html = f"html/Run{runNumber}/FERS_vs_Event/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
-                  output_html=f"html/Run{runNumber}/FERS_vs_Event/viewer.html")
+                  output_html=output_html)
+    return output_html
 
 
 # 1D histograms for DRS variables
@@ -196,13 +204,15 @@ def makeDRS1DPlots():
             outdir_plots = outdir + "/DRS_1D"
             DrawHistos([hist_C, hist_S], ["Cer", "Sci"], 1400, 2500, "DRS Output", 1, 1e12, "Counts",
                        output_name,
-                       dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, extraToDraw=extraToDraw,
+                       dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True, extraToDraw=extraToDraw,
                        legendPos=(0.60, 0.78, 0.90, 0.68),
                        outdir=outdir_plots)
             plots.append(output_name + ".png")
 
+    output_html = f"html/Run{runNumber}/DRS_1D/index.html"
     generate_html(plots, outdir_plots,
-                  output_html=f"html/Run{runNumber}/DRS_1D/viewer.html")
+                  output_html=output_html)
+    return output_html
 
 
 # DRS vs TS
@@ -254,8 +264,10 @@ def makeDRS2DPlots(doSubtractMedian=False):
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                            extraToDraw=extraToDraw,
                            outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
+    output_html = f"html/Run{runNumber}/DRS_vs_TS{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
-                  output_html=f"html/Run{runNumber}/DRS_vs_TS{suffix}/viewer.html")
+                  output_html=output_html)
+    return output_html
 
 
 # DRS mean vs event
@@ -301,12 +313,14 @@ def trackDRSPlots():
                            extraToDraw=extraToDraw,
                            outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
                 plots.append(output_name + ".png")
+    output_html = f"html/Run{runNumber}/DRS_vs_Event/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
-                  output_html=f"html/Run{runNumber}/DRS_vs_Event/viewer.html")
+                  output_html=output_html)
+    return output_html
 
 
-# trigger
-def makeTriggerPlots(doSubtractMedian=False):
+# time reference
+def compareTimeReferencePlots(doSubtractMedian=False):
     suffix = ""
     ymin = 500
     ymax = 2500
@@ -315,10 +329,10 @@ def makeTriggerPlots(doSubtractMedian=False):
         ymin = -1500
         ymax = 500
     plots = []
-    infile_name = f"{rootdir}/trigger_channels.root"
+    infile_name = f"{rootdir}/time_reference_channels.root"
     infile = ROOT.TFile(infile_name, "READ")
-    outdir_plots = outdir + "/Trigger"
-    for chan_name in trigger_channels:
+    outdir_plots = outdir + "/TimeReference"
+    for chan_name in time_reference_channels:
         hist_name = f"hist_{chan_name}{suffix}"
         hist = infile.Get(hist_name)
         if not hist:
@@ -331,7 +345,7 @@ def makeTriggerPlots(doSubtractMedian=False):
         extraToDraw.SetTextFont(42)
         extraToDraw.SetTextSize(0.04)
         extraToDraw.AddText(f"{chan_name}")
-        output_name = f"Trigger_{chan_name}{suffix}"
+        output_name = f"TimeReference_{chan_name}{suffix}"
         DrawHistos([hist], "", 0, 1024, "Time Slice", ymin, ymax, "Counts",
                    output_name,
                    dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
@@ -339,21 +353,112 @@ def makeTriggerPlots(doSubtractMedian=False):
                    outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
         plots.append(output_name + ".png")
 
+    output_html = f"html/Run{runNumber}/TimeReference{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
-                  output_html=f"html/Run{runNumber}/Trigger{suffix}/viewer.html")
+                  output_html=output_html)
+    return output_html
+
+
+# trigger
+def compareHodoTriggerPlots(doSubtractMedian=False):
+    suffix = ""
+    ymin = 500
+    ymax = 2500
+    if doSubtractMedian:
+        suffix = "_subtractMedian"
+        ymin = -1500
+        ymax = 500
+    plots = []
+    infile_name = f"{rootdir}/hodo_trigger_channels.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    outdir_plots = outdir + "/HodoTrigger"
+    for chan_name in hodo_trigger_channels:
+        hist_name = f"hist_{chan_name}{suffix}"
+        hist = infile.Get(hist_name)
+        if not hist:
+            print(f"Warning: Histogram {hist_name} not found in {infile_name}")
+            continue
+        extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
+        extraToDraw.SetTextAlign(11)
+        extraToDraw.SetFillColorAlpha(0, 0)
+        extraToDraw.SetBorderSize(0)
+        extraToDraw.SetTextFont(42)
+        extraToDraw.SetTextSize(0.04)
+        extraToDraw.AddText(f"{chan_name}")
+        output_name = f"HodoTrigger_{chan_name}{suffix}"
+        DrawHistos([hist], "", 0, 1024, "Time Slice", ymin, ymax, "Counts",
+                   output_name,
+                   dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+                   extraToDraw=extraToDraw,
+                   outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+        plots.append(output_name + ".png")
+
+    output_html = f"html/Run{runNumber}/HodoTrigger{suffix}/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=2,
+                  output_html=output_html)
+    return output_html
+
+# hodo position
+
+
+def compareHodoPosPlots(doSubtractMedian=False):
+    suffix = ""
+    ymin = 500
+    ymax = 2500
+    if doSubtractMedian:
+        suffix = "_subtractMedian"
+        ymin = -1500
+        ymax = 500
+    plots = []
+    infile_name = f"{rootdir}/hodo_pos_channels.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    outdir_plots = outdir + "/HodoPos"
+    print(f"hodo_pos_channels: {hodo_pos_channels}")
+    for board, channels in hodo_pos_channels.items():
+        for chan_name in channels:
+            hist_name = f"hist_{chan_name}{suffix}"
+            hist = infile.Get(hist_name)
+            if not hist:
+                print(
+                    f"Warning: Histogram {hist_name} not found in {infile_name}")
+                continue
+            extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
+            extraToDraw.SetTextAlign(11)
+            extraToDraw.SetFillColorAlpha(0, 0)
+            extraToDraw.SetBorderSize(0)
+            extraToDraw.SetTextFont(42)
+            extraToDraw.SetTextSize(0.04)
+            extraToDraw.AddText(f"{chan_name}")
+            output_name = f"HodoPos_{chan_name}{suffix}"
+            DrawHistos([hist], "", 0, 1024, "Time Slice", ymin, ymax, "Counts",
+                       output_name,
+                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+                       extraToDraw=extraToDraw,
+                       outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+            plots.append(output_name + ".png")
+
+    output_html = f"html/Run{runNumber}/HodoPos{suffix}/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=2,
+                  output_html=output_html)
+    return output_html
 
 
 if __name__ == "__main__":
+    output_htmls = {}
 
     # validate DRS and FERS boards
-    DrawFERSBoards(run=runNumber)
-    DrawDRSBoards(run=runNumber)
+    output_htmls["fers mapping"] = DrawFERSBoards(run=runNumber)
+    output_htmls["drs mapping"] = DrawDRSBoards(run=runNumber)
 
-    makeFERS1DPlots()
+    output_htmls["fers 1D"] = makeFERS1DPlots()
     # makeDRS2DPlots()
-    makeDRS2DPlots(doSubtractMedian=True)
+    output_htmls["drs 2D"] = makeDRS2DPlots(doSubtractMedian=True)
 
-    # makeTriggerPlots()
-    makeTriggerPlots(doSubtractMedian=True)
+    output_htmls["time reference"] = compareTimeReferencePlots(True)
+    output_htmls["hodo trigger"] = compareHodoTriggerPlots(True)
+    output_htmls["hodo pos"] = compareHodoPosPlots(True)
+
+    for key, value in output_htmls.items():
+        print(f"{key} plots can be viewed at: {value}")
 
     print("All plots generated successfully.")
