@@ -4,6 +4,11 @@ Download the data file from [here](https://yofeng.web.cern.ch/yofeng/CaloX/)
 
 Change the path in `data/datafiles.json`
 
+First compile the functions in `utils/functions.cc`
+```
+root [0] .L utils/functions.cc+
+```
+
 DQM plots:
 
 ```

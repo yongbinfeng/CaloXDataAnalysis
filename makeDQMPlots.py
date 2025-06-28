@@ -413,7 +413,6 @@ def compareHodoPosPlots(doSubtractMedian=False):
     infile_name = f"{rootdir}/hodo_pos_channels.root"
     infile = ROOT.TFile(infile_name, "READ")
     outdir_plots = outdir + "/HodoPos"
-    print(f"hodo_pos_channels: {hodo_pos_channels}")
     for board, channels in hodo_pos_channels.items():
         for chan_name in channels:
             hist_name = f"hist_{chan_name}{suffix}"
@@ -458,7 +457,8 @@ if __name__ == "__main__":
     output_htmls["hodo trigger"] = compareHodoTriggerPlots(True)
     output_htmls["hodo pos"] = compareHodoPosPlots(True)
 
+    print("\n*" * 30)
     for key, value in output_htmls.items():
-        print(f"{key} plots can be viewed at: {value}")
+        print(f"✅ {key} plots can be viewed at: {value}")
 
     print("All plots generated successfully.")

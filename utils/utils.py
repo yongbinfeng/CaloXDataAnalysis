@@ -49,30 +49,9 @@ def processDRSBoards(rdf):
             "max": res['max'].GetValue()
         }
 
-    ROOT.gInterpreter.Declare("""
-    ROOT::RVec<int> FillIndices(size_t n) {
-        ROOT::RVec<int> out(n);
-        for (size_t i = 0; i < n; ++i) out[i] = i;
-        return out;
-    }
-    """)
     # Create an array of indices for DRS outputs
     rdf = rdf.Define("TS", "FillIndices(1024)")
 
-    ROOT.gInterpreter.Declare("""
-    #include "ROOT/RVec.hxx"
-    #include <algorithm>
-
-    float compute_median(ROOT::RVec<float> vec) {
-        if (vec.empty()) return -9999;
-        std::sort(vec.begin(), vec.end());
-        size_t n = vec.size();
-        if (n % 2 == 0)
-            return 0.5 * (vec[n / 2 - 1] + vec[n / 2]);
-        else
-            return vec[n / 2];
-    }
-    """)
     # get the mean of DRS outputs per channel
     for varname in drs_branches:
         rdf = rdf.Define(
@@ -85,3 +64,22 @@ def processDRSBoards(rdf):
         )
 
     return rdf
+
+
+def filterPrefireEvents(rdf, TS=350):
+    # use the hodo trigger to filter prefire events
+    from utils.channel_map import buildHodoTriggerChannels
+    trigger_name_top, trigger_name_bottom = buildHodoTriggerChannels()
+    # index of the minimum value in the trigger channels
+    rdf = rdf.Define(
+        "TS_fired_up", f"ROOT::VecOps::ArgMin({trigger_name_top})")
+    rdf = rdf.Define(
+        "TS_fired_down", f"ROOT::VecOps::ArgMin({trigger_name_bottom})")
+
+    rdf = rdf.Define(
+        "NormalFired", f"(TS_fired_up >= {TS}) && (TS_fired_down >= {TS})")
+
+    rdf_prefilter = rdf
+    rdf = rdf.Filter("NormalFired == 1")
+
+    return rdf, rdf_prefilter

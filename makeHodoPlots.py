@@ -5,11 +5,11 @@ from CMSPLOTS.myFunction import DrawHistos
 from utils.channel_map import buildHodoPosChannels
 from utils.html_generator import generate_html
 from runNumber import runNumber
-from utils.utils import processDRSBoards, getDataFile
+from utils.utils import processDRSBoards, getDataFile, filterPrefireEvents
 
 ROOT.gROOT.SetBatch(True)  # Run in batch mode
-# multithread
 ROOT.ROOT.EnableImplicitMT(10)
+ROOT.gSystem.Load("utils/functions_cc.so")
 
 hodo_pos_channels = buildHodoPosChannels(run=runNumber)
 
@@ -18,6 +18,8 @@ def analyzePeak():
     ifile = getDataFile(runNumber)
     infile = ROOT.TFile(ifile, "READ")
     rdf = ROOT.RDataFrame("EventTree", infile)
+
+    rdf, rdf_prefilter = filterPrefireEvents(rdf)
 
     rdf = processDRSBoards(rdf)
 

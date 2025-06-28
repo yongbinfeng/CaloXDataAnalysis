@@ -2,7 +2,7 @@ import sys
 import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels
-from utils.utils import number2string, getDataFile, processDRSBoards
+from utils.utils import number2string, getDataFile, processDRSBoards, filterPrefireEvents
 import time
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
@@ -12,6 +12,7 @@ from runNumber import runNumber
 # multi-threading support
 ROOT.gROOT.SetBatch(True)  # Disable interactive mode
 ROOT.ROOT.EnableImplicitMT(5)
+ROOT.gSystem.Load("utils/functions_cc.so")
 
 suffix = f"run{runNumber}"
 
@@ -29,16 +30,6 @@ DRS_LG_max = 2e3
 
 
 def findTrigFireTime(rdf, channels):
-    ROOT.gInterpreter.Declare("""
-    size_t findTrigFireTime(const ROOT::VecOps::RVec<float>& vec, float val_min) {
-        for (size_t i = 0; i < vec.size(); ++i) {
-            if (vec[i] < val_min / 2.0) {
-                return i;  // return the index of the first value below the threshold
-            }
-        }
-        return -1;  // return -1 if no value is below the threshold
-    }
-    """)
     for channel in channels:
         rdf = rdf.Define("TrigMin_" + channel,
                          f"ROOT::VecOps::Min({channel}_subtractMedian)")
@@ -55,6 +46,11 @@ def prepareFERSDRSPlots():
 
     rdf = rdf_temp.Filter("event_n > 1")  # filter out the two events
 
+    rdf = filterPrefireEvents(rdf)
+
+    _rdf_old = rdf
+    rdf = rdf.Filter("NormalFired == 1")
+
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
         for channel in FERSBoard:
@@ -68,32 +64,6 @@ def prepareFERSDRSPlots():
 
     rdf = processDRSBoards(rdf)
 
-    # get the mean of DRS outputs per channel
-    ROOT.gInterpreter.Declare("""
-    ROOT::VecOps::RVec<float> clipToZero(const ROOT::VecOps::RVec<float>& vec) {
-        ROOT::VecOps::RVec<float> out;
-        for (float v : vec) {
-            if (fabs(v) < 3.0f) v = 0.0f;  // clip to zero if below threshold
-            out.push_back(v);
-        }
-        return out;
-    }
-    """)
-    ROOT.gInterpreter.Declare("""
-float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
-    if (i >= v.size() || j > v.size() || i >= j) return 0.0;
-    return std::accumulate(v.begin() + i, v.begin() + j, 0.0f);
-}
-""")
-    ROOT.gInterpreter.Declare("""
-                              float MaxRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
-    if (i >= v.size() || j > v.size() || i >= j) return 0.0;
-    float maxVal = v[i];
-    for (size_t k = i + 1; k < j; ++k)
-        if (v[k] > maxVal) maxVal = v[k];
-    return maxVal;
-}
-""")
     # get the mean of DRS outputs per channel
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo

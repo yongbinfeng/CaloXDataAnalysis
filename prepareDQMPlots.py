@@ -1,7 +1,7 @@
 import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels
-from utils.utils import number2string, getDataFile, processDRSBoards
+from utils.utils import number2string, getDataFile, processDRSBoards, filterPrefireEvents
 from runNumber import runNumber
 import time
 
@@ -9,6 +9,7 @@ print("Start running prepareDQMPlots.py")
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
+ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
 # Open the input ROOT file
 ifile = getDataFile(runNumber)
@@ -16,6 +17,8 @@ ifile = getDataFile(runNumber)
 suffix = f"run{runNumber}"
 infile = ROOT.TFile(ifile, "READ")
 rdf = ROOT.RDataFrame("EventTree", infile)
+
+rdf, rdf_prefilter = filterPrefireEvents(rdf)
 
 # Get total number of entries
 n_entries = rdf.Count().GetValue()
