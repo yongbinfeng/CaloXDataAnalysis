@@ -77,7 +77,7 @@ def buildFERSBoards(run=316):
         # FERSBoards["Board12"].MoveTo(6.5, -0.5)
         FERSBoards["Board5"].MoveTo(-1.5, 1.875)
 
-    elif run >= 685:
+    elif run >= 685 and run < 895:
         FERSBoards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
         FERSBoards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
         FERSBoards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
@@ -97,6 +97,39 @@ def buildFERSBoards(run=316):
 
         FERSBoards["Board3"].MoveTo(-1.5, 1.875)
         FERSBoards["Board7"].MoveTo(0.5, 1.875)
+
+    elif run >= 895:
+        FERSBoards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
+        FERSBoards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
+        FERSBoards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
+        FERSBoards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
+        FERSBoards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
+        FERSBoards["Board6"] = base_FERSBoard_6mm.copy(boardNo=6)
+        FERSBoards["Board7"] = base_FERSBoard_6mm.copy(boardNo=7)
+        FERSBoards["Board8"] = base_FERSBoard_6mm.copy(boardNo=8)
+        FERSBoards["Board9"] = base_FERSBoard_6mm.copy(boardNo=9)
+        FERSBoards["Board10"] = base_FERSBoard_6mm.copy(boardNo=10)
+        FERSBoards["Board12"] = base_FERSBoard_6mm.copy(boardNo=12)
+        FERSBoards["Board13"] = base_FERSBoard_6mm.copy(boardNo=13)
+
+        FERSBoards["Board3"] = base_FERSBoard_3mm.copy(boardNo=3)
+        FERSBoards["Board11"] = base_FERSBoard_3mm.copy(boardNo=11)
+
+        FERSBoards["Board0"].MoveTo(-13.5, 3.5)
+        FERSBoards["Board1"].MoveTo(-9.5, 7.5)
+        FERSBoards["Board2"].MoveTo(-5.5, 7.5)
+        FERSBoards["Board4"].MoveTo(-1.5, 9.5)
+        FERSBoards["Board5"].MoveTo(2.5, 7.5)
+        FERSBoards["Board6"].MoveTo(6.5, 7.5)
+        FERSBoards["Board7"].MoveTo(10.5, 3.5)
+        FERSBoards["Board8"].MoveTo(-9.5, -0.5)
+        FERSBoards["Board9"].MoveTo(-5.5, -0.5)
+        FERSBoards["Board10"].MoveTo(-1.5, -2.5)
+        FERSBoards["Board12"].MoveTo(2.5, -0.5)
+        FERSBoards["Board13"].MoveTo(6.5, -0.5)
+
+        FERSBoards["Board3"].MoveTo(-1.5, 1.875)
+        FERSBoards["Board11"].MoveTo(0.5, 1.875)
 
     else:
         raise ValueError(f"Unsupported run number {run} for FERS boards.")
