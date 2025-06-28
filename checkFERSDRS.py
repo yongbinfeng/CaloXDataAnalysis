@@ -1,7 +1,7 @@
 import sys
 import os
 import ROOT
-from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTriggerChannels, buildHodoTriggerChannels
+from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels
 from utils.utils import number2string, getDataFile, processDRSBoards
 import time
 sys.path.append("CMSPLOTS")  # noqa
@@ -17,7 +17,7 @@ suffix = f"run{runNumber}"
 
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)
-trigger_channels = buildTriggerChannels(run=runNumber)
+time_reference_channels = buildTimeReferenceChannels(run=runNumber)
 hodo_trigger_channels = buildHodoTriggerChannels(run=runNumber)
 
 FERS_min = 100
@@ -108,7 +108,8 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
                 f"SumRange({varname}_subtractMedian_positive, 0, 400)"
             )
 
-    rdf = findTrigFireTime(rdf, trigger_channels + hodo_trigger_channels)
+    rdf = findTrigFireTime(
+        rdf, time_reference_channels + hodo_trigger_channels)
     rdf = rdf.Define("TriggerHodo_deltaT",
                      f"TrigHalfMin_{hodo_trigger_channels[1]} - TrigHalfMin_{hodo_trigger_channels[0]}")
 
@@ -199,7 +200,7 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
 
     # trigger fire time
     hists_trig_fire_time = []
-    for channel in trigger_channels + hodo_trigger_channels:
+    for channel in time_reference_channels + hodo_trigger_channels:
         h_trig_fire_time = rdf.Histo1D((
             f"hist_TrigFireTime_{channel}",
             f"Trigger fire time for {channel}",
@@ -304,10 +305,10 @@ float SumRange(const ROOT::VecOps::RVec<float>& v, size_t i, size_t j) {
                       for channel in FERSBoard]
         variables += [f"FERS_Board{FERSBoard.boardNo}_energyLG_{channel.channelNo}"
                       for channel in FERSBoard]
-        variables += [f"TrigMin_{channel}" for channel in trigger_channels +
+        variables += [f"TrigMin_{channel}" for channel in time_reference_channels +
                       hodo_trigger_channels]
         variables += [
-            f"TrigHalfMin_{channel}" for channel in trigger_channels + hodo_trigger_channels]
+            f"TrigHalfMin_{channel}" for channel in time_reference_channels + hodo_trigger_channels]
         variables += vars_ratio
         rdf.Snapshot("DRSBoards", os.path.join(
             rootdir, f"DRSBoards_{suffix}.root"), variables)
@@ -470,7 +471,7 @@ def makeFERSDRSPlots():
     print(f"Opened file {inputfile_name} successfully")
     plots_trig_fire_time = []
     outdir_trig_fire_time = f"plots/Run{runNumber}/checkFERSDRS/trigFireTime"
-    for channel in trigger_channels:
+    for channel in time_reference_channels:
         hist_name = f"hist_TrigFireTime_{channel}"
         hist = input_file.Get(hist_name)
         if not hist:
