@@ -9,6 +9,8 @@ from runNumber import runNumber
 import time
 
 
+ROOT.gSystem.Load("utils/functions_cc.so")
+
 ROOT.gROOT.SetBatch(True)  # Run in batch mode
 
 outdir = f"plots/Run{runNumber}/"
@@ -33,7 +35,7 @@ def makeEventDisplays(infilename):
     DRSBoards = buildDRSBoards(run=runNumber)
     FERSBoards = buildFERSBoards(run=runNumber)
 
-    rdf = processDRSBoards(rdf, DRSBoards)
+    rdf = processDRSBoards(rdf)
 
     hists_eventdisplay = []
     hists_pulse_shapes = {}
@@ -42,7 +44,7 @@ def makeEventDisplays(infilename):
 
     # print how many events are left after filtering
     for ievt in range(0, rdf.Count().GetValue()):
-        if ievt > 20:
+        if ievt > 10:
             break
         print(f"Processing event {ievt + 1} of {rdf.Count().GetValue()}")
         evtNumber = rdf.Take["unsigned int"]("event_n").GetValue()[ievt]

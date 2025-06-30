@@ -238,7 +238,7 @@ def compareDRSChannels(channels_to_compare):
             f"hist_{chan_name}_subtractMedian",
             f"{chan_name} (subtract median);TS;DRS values",
             1024, 0, 1024,
-            200, -1500, 500),
+            300, -2500, 500),
             "TS", chan_name + "_subtractMedian"
         )
         # hists_trigger.append(hist)

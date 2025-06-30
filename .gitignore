@@ -1,0 +1,11 @@
+__pycache__
+*pyc
+html
+plots
+root
+backup*
+*zip
+*.d
+*.so
+*.pcm
+.DS_Store

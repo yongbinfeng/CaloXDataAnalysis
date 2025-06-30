@@ -46,10 +46,7 @@ def prepareFERSDRSPlots():
 
     rdf = rdf_temp.Filter("event_n > 1")  # filter out the two events
 
-    rdf = filterPrefireEvents(rdf)
-
-    _rdf_old = rdf
-    rdf = rdf.Filter("NormalFired == 1")
+    rdf, _rdf_old = filterPrefireEvents(rdf)
 
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo

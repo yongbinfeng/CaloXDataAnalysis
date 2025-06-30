@@ -123,8 +123,8 @@ def analyzePeak():
         histo_normalized = ROOT.TH1F(
             f"{channel}_means_normalized", f"Means of {channel} normalized;Time Slice;Mean Value", 1024, 0, 1024)
         for i, mean in enumerate(means):
-            print(
-                f"Channel {channel}, Time Slice {i}, Mean Value: {mean.GetValue()}")
+            # print(
+            #    f"Channel {channel}, Time Slice {i}, Mean Value: {mean.GetValue()}")
             histo.SetBinContent(i + 1, mean.GetValue())
         for i, mean_normalized in enumerate(map_means_normalized[channel]):
             histo_normalized.SetBinContent(i + 1, mean_normalized.GetValue())
@@ -187,8 +187,11 @@ def plotPeak():
         histos1D_left_peak[group] = infile.Get(f"{group}_left_peak_value")
         histos1D_right_peak[group] = infile.Get(f"{group}_right_peak_value")
 
+        nevents = histos1D_diff[group].Integral(0, 10000)
+        print(f"Group: {group}, Number of events: {nevents}")
+
         outputname = f"{group}_diff_peak"
-        DrawHistos([histos1D_diff[group]], [f"Delta Peak {group}"], -250, 250, "Peak Position Difference", 0, 300, "Counts",
+        DrawHistos([histos1D_diff[group]], [f"Delta Peak {group}"], -250, 250, "Peak Position Difference", 0, 0.05*nevents, "Counts",
                    outputname=outputname, outdir=outdir,
                    dology=False, mycolors=[1], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True
                    )
@@ -197,7 +200,7 @@ def plotPeak():
         outputname = f"{group}_sum_peak"
         DrawHistos(
             [histos1D_sum[group]], [
-                f"Sum Peak {group}"], 600, 1200, "Peak Position Sum", 0, 300, "Counts",
+                f"Sum Peak {group}"], 600, 1200, "Peak Position Sum", 0, 0.03*nevents, "Counts",
             outputname=outputname, outdir=outdir,
             dology=False, mycolors=[1], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True
         )
@@ -206,7 +209,7 @@ def plotPeak():
         outputname = f"{group}_peaks"
         DrawHistos(
             [histos1D_left[group], histos1D_right[group]], [
-                f"Left Peak {group}", f"Right Peak {group}"], 300, 800, "Peak Position", 0, 300, "Counts",
+                f"Left Peak {group}", f"Right Peak {group}"], 300, 800, "Peak Position", 0, 0.03*nevents, "Counts",
             outputname=outputname, outdir=outdir,
             dology=False, mycolors=[1, 2], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True
         )
@@ -225,7 +228,7 @@ def plotPeak():
         outputname = f"{group}_peak_values"
         DrawHistos(
             [histos1D_left_peak[group], histos1D_right_peak[group]], [
-                f"{group} Left", f"{group} Right"], -1500, 100, "Peak Value", 0, 600, "Counts",
+                f"{group} Left", f"{group} Right"], -1500, 100, "Peak Value", 0, 0.6*nevents, "Counts",
             outputname=outputname, outdir=outdir,
             dology=False, mycolors=[1, 2], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True
         )

@@ -326,7 +326,7 @@ def compareTimeReferencePlots(doSubtractMedian=False):
     ymax = 2500
     if doSubtractMedian:
         suffix = "_subtractMedian"
-        ymin = -1500
+        ymin = -2500
         ymax = 500
     plots = []
     infile_name = f"{rootdir}/time_reference_channels.root"
@@ -457,7 +457,8 @@ if __name__ == "__main__":
     output_htmls["hodo trigger"] = compareHodoTriggerPlots(True)
     output_htmls["hodo pos"] = compareHodoPosPlots(True)
 
-    print("\n*" * 30)
+    print("\n\n\n")
+    print("*" * 30)
     for key, value in output_htmls.items():
         print(f"✅ {key} plots can be viewed at: {value}")
 
