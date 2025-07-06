@@ -241,6 +241,13 @@ def makeDRS2DPlots(doSubtractMedian=False):
                 output_name = f"DRS_{var}_vs_TS_{sTowerX}_{sTowerY}{suffix}"
                 plots.append(output_name + ".png")
 
+                ymax_tmp = ymax
+                ymin_tmp = ymin
+                if boardNo == 1 and chan.groupNo == 0:
+                    if chan.channelNo == 0 or chan.channelNo == 1:
+                        ymax_tmp = 300
+                        ymin_tmp = -100
+
                 if not hist:
                     print(
                         f"Warning: Histogram {hist_name} not found in {infile_name}")
@@ -259,7 +266,7 @@ def makeDRS2DPlots(doSubtractMedian=False):
                 extraToDraw.AddText(f"iTowerX: {iTowerX}")
                 extraToDraw.AddText(f"iTowerY: {iTowerY}")
 
-                DrawHistos([hist], "", 0, 1024, "Time Slice", value_mean + ymin, value_mean + ymax, f"DRS Output",
+                DrawHistos([hist], "", 0, 1024, "Time Slice", value_mean + ymin_tmp, value_mean + ymax_tmp, f"DRS Output",
                            output_name,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                            extraToDraw=extraToDraw,

@@ -184,7 +184,7 @@ def buildDRSBoards(run=316):
         channel.isCer = prechannel_isCer
         DRSBoards["Board0"].RemoveChannelByGroupChannel(3, 7)
 
-    elif run >= 685:
+    elif run >= 685 and run < 1003:
         DRSBoards["Board1"] = base_DRSBoard.copy(boardNo=1)
         DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
 
@@ -196,6 +196,17 @@ def buildDRSBoards(run=316):
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 5)
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 6)
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 7)
+    elif run >= 1003:
+        # 3 DRS boards in 1003
+        DRSBoards["Board1"] = base_DRSBoard.copy(boardNo=1)
+        DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
+        DRSBoards["Board3"] = base_DRSBoard.copy(boardNo=3)
+
+        DRSBoards["Board1"].MoveTo(-1.5, 9.5)
+        DRSBoards["Board2"].MoveTo(-1.5, 5.5)
+        DRSBoards["Board3"].MoveTo(-1.5, -6.5)
+        # all channels are connected.
+        # no need to remove
     else:
         raise ValueError(f"Unsupported run number {run} for DRS boards.")
     return DRSBoards
