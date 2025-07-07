@@ -311,7 +311,7 @@ def makeDRS2DPlots():
                 hist_subtractMedian = rdf.Histo2D((
                     f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}_subtractMedian",
                     f"DRS Board {boardNo} - {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY} (subtract median);TS;{var} Variable",
-                    1024, 0, 1024, 400, -100, 300),
+                    1024, 0, 1024, 400, -200, 600),
                     "TS", channelName + "_subtractMedian"
                 )
                 # hists2d_DRS_vs_TS.append(hist)

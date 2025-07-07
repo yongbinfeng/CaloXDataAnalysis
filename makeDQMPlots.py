@@ -179,22 +179,22 @@ def makeFERSEnergySumPlots():
         hists_CerEnergyLG.append(hist_CerEnergyLG)
         hists_SciEnergyLG.append(hist_SciEnergyLG)
 
-    DrawHistos(hists_CerEnergyHG, legends, 0, 20000, "Cer Energy HG", 0, 1000, "Events",
+    DrawHistos(hists_CerEnergyHG, legends, 0, 20000, "Cer Energy HG", 0, 2000, "Events",
                "FERS_CerEnergyHG",
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.6, 0.90, 0.9])
     plots.append("FERS_CerEnergyHG.png")
-    DrawHistos(hists_SciEnergyHG, legends, 0, 20000, "Sci Energy HG", 0, 1000, "Events",
+    DrawHistos(hists_SciEnergyHG, legends, 0, 20000, "Sci Energy HG", 0, 2000, "Events",
                "FERS_SciEnergyHG",
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.6, 0.90, 0.9])
     plots.append("FERS_SciEnergyHG.png")
-    DrawHistos(hists_CerEnergyLG, legends, 0, 20000, "Cer Energy LG", 0, 1000, "Events",
+    DrawHistos(hists_CerEnergyLG, legends, 0, 20000, "Cer Energy LG", 0, 2000, "Events",
                "FERS_CerEnergyLG",
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.6, 0.90, 0.9])
     plots.append("FERS_CerEnergyLG.png")
-    DrawHistos(hists_SciEnergyLG, legends, 0, 20000, "Sci Energy LG", 0, 1000, "Events",
+    DrawHistos(hists_SciEnergyLG, legends, 0, 20000, "Sci Energy LG", 0, 2000, "Events",
                "FERS_SciEnergyLG",
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.6, 0.90, 0.9])
@@ -205,22 +205,22 @@ def makeFERSEnergySumPlots():
     hist_SciEnergyHG = infile.Get("hist_FERS_SciEnergyHG")
     hist_CerEnergyLG = infile.Get("hist_FERS_CerEnergyLG")
     hist_SciEnergyLG = infile.Get("hist_FERS_SciEnergyLG")
-    DrawHistos([hist_CerEnergyHG], "", 0, 2e5, "Cer Energy HG", 0, 1000, "Events",
+    DrawHistos([hist_CerEnergyHG], "", 0, 2e5, "Cer Energy HG", 0, 2000, "Events",
                "FERS_Total_CerEnergyHG",
                dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
     plots.insert(0, "FERS_Total_CerEnergyHG.png")
-    DrawHistos([hist_SciEnergyHG], "", 0, 2e5, "Sci Energy HG", 0, 1000, "Events",
+    DrawHistos([hist_SciEnergyHG], "", 0, 2e5, "Sci Energy HG", 0, 2000, "Events",
                "FERS_Total_SciEnergyHG",
                dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
     plots.insert(1, "FERS_Total_SciEnergyHG.png")
-    DrawHistos([hist_CerEnergyLG], "", 0, 2e5, "Cer Energy LG", 0, 1000, "Events",
+    DrawHistos([hist_CerEnergyLG], "", 0, 2e5, "Cer Energy LG", 0, 2000, "Events",
                "FERS_Total_CerEnergyLG",
                dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
     plots.insert(2, "FERS_Total_CerEnergyLG.png")
-    DrawHistos([hist_SciEnergyLG], "", 0, 2e5, "Sci Energy LG", 0, 1000, "Events",
+    DrawHistos([hist_SciEnergyLG], "", 0, 2e5, "Sci Energy LG", 0, 2000, "Events",
                "FERS_Total_SciEnergyLG",
                dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
@@ -538,8 +538,8 @@ def makeDRS2DPlots(doSubtractMedian=False):
                 ymin_tmp = ymin
                 if boardNo == 1 and chan.groupNo == 0:
                     if chan.channelNo == 0 or chan.channelNo == 1:
-                        ymax_tmp = 300
-                        ymin_tmp = -100
+                        ymax_tmp = 600
+                        ymin_tmp = -200
 
                 if not hist:
                     print(
