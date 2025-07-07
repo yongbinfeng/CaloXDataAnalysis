@@ -1,7 +1,7 @@
 import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels
-from utils.utils import number2string, processDRSBoards, filterPrefireEvents, loadRDF
+from utils.utils import number2string, processDRSBoards, filterPrefireEvents, loadRDF, calculateEnergySumFERS
 from runconfig import runNumber, firstEvent, lastEvent
 import time
 
@@ -39,6 +39,8 @@ for _, FERSBoard in FERSBoards.items():
             f"FERS_Board{boardNo}_energyLG[{channel.channelNo}]"
         )
 
+
+rdf = calculateEnergySumFERS(rdf, FERSBoards)
 rdf = processDRSBoards(rdf)
 
 
@@ -77,6 +79,72 @@ def monitorConditions():
         hists2d_Condition_vs_Event.append(hist_TempFPGA)
 
     return hists2d_Condition_vs_Event
+
+
+def makeFERSEnergySumPlots():
+    hists_FERS_EnergySum = []
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        hist_CerEnergyHG_Board = rdf.Histo1D((
+            f"hist_FERS_Board{boardNo}_CerEnergyHG",
+            f"FERS Board {boardNo} - CER Energy HG;CER Energy HG;Counts",
+            500, 0, 64000),
+            f"FERS_Board{boardNo}_CerEnergyHG"
+        )
+        hist_CerEnergyLG_Board = rdf.Histo1D((
+            f"hist_FERS_Board{boardNo}_CerEnergyLG",
+            f"FERS Board {boardNo} - CER Energy LG;CER Energy LG;Counts",
+            500, 0, 64000),
+            f"FERS_Board{boardNo}_CerEnergyLG"
+        )
+        hist_SciEnergyHG_Board = rdf.Histo1D((
+            f"hist_FERS_Board{boardNo}_SciEnergyHG",
+            f"FERS Board {boardNo} - SCI Energy HG;SCI Energy HG;Counts",
+            500, 0, 64000),
+            f"FERS_Board{boardNo}_SciEnergyHG"
+        )
+        hist_SciEnergyLG_Board = rdf.Histo1D((
+            f"hist_FERS_Board{boardNo}_SciEnergyLG",
+            f"FERS Board {boardNo} - SCI Energy LG;SCI Energy LG;Counts",
+            500, 0, 64000),
+            f"FERS_Board{boardNo}_SciEnergyLG"
+        )
+        hists_FERS_EnergySum.append(hist_CerEnergyHG_Board)
+        hists_FERS_EnergySum.append(hist_CerEnergyLG_Board)
+        hists_FERS_EnergySum.append(hist_SciEnergyHG_Board)
+        hists_FERS_EnergySum.append(hist_SciEnergyLG_Board)
+
+    # per-event energy sum
+    hist_CerEnergyHG = rdf.Histo1D((
+        "hist_FERS_CerEnergyHG",
+        "FERS - CER Energy HG;CER Energy HG;Counts",
+        500, 0, 8e5),
+        "FERS_CerEnergyHG"
+    )
+    hist_CerEnergyLG = rdf.Histo1D((
+        "hist_FERS_CerEnergyLG",
+        "FERS - CER Energy LG;CER Energy LG;Counts",
+        500, 0, 8e5),
+        "FERS_CerEnergyLG"
+    )
+    hist_SciEnergyHG = rdf.Histo1D((
+        "hist_FERS_SciEnergyHG",
+        "FERS - SCI Energy HG;SCI Energy HG;Counts",
+        500, 0, 8e5),
+        "FERS_SciEnergyHG"
+    )
+    hist_SciEnergyLG = rdf.Histo1D((
+        "hist_FERS_SciEnergyLG",
+        "FERS - SCI Energy LG;SCI Energy LG;Counts",
+        500, 0, 8e5),
+        "FERS_SciEnergyLG"
+    )
+    hists_FERS_EnergySum.append(hist_CerEnergyHG)
+    hists_FERS_EnergySum.append(hist_CerEnergyLG)
+    hists_FERS_EnergySum.append(hist_SciEnergyHG)
+    hists_FERS_EnergySum.append(hist_SciEnergyLG)
+
+    return hists_FERS_EnergySum
 
 
 def makeFERS1DPlots():
@@ -285,6 +353,8 @@ if __name__ == "__main__":
 
     hists_conditions = monitorConditions()
 
+    hists_FERS_EnergySum = makeFERSEnergySumPlots()
+
     hists1d_FERS = makeFERS1DPlots()
     # hists2d_FERS = makeFERS2DPlots()
     # hists2d_FERS_vs_Event = trackFERSPlots()
@@ -313,6 +383,12 @@ if __name__ == "__main__":
     # Save histograms to an output ROOT file
     outfile = ROOT.TFile(f"{rootdir}/conditions_vs_event.root", "RECREATE")
     for hist in hists_conditions:
+        hist.SetDirectory(outfile)
+        hist.Write()
+    outfile.Close()
+
+    outfile = ROOT.TFile(f"{rootdir}/fers_energy_sum.root", "RECREATE")
+    for hist in hists_FERS_EnergySum:
         hist.SetDirectory(outfile)
         hist.Write()
     outfile.Close()

@@ -146,6 +146,91 @@ def makeConditionsPlots():
     return output_html
 
 
+def makeFERSEnergySumPlots():
+    plots = []
+    infile_name = f"{rootdir}/fers_energy_sum.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    outdir_plots = outdir + "/FERS_EnergySum"
+    hists_CerEnergyHG = []
+    hists_SciEnergyHG = []
+    hists_CerEnergyLG = []
+    hists_SciEnergyLG = []
+    legends = []
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        hist_CerEnergyHG_name = f"hist_FERS_Board{boardNo}_CerEnergyHG"
+        hist_SciEnergyHG_name = f"hist_FERS_Board{boardNo}_SciEnergyHG"
+        hist_CerEnergyLG_name = f"hist_FERS_Board{boardNo}_CerEnergyLG"
+        hist_SciEnergyLG_name = f"hist_FERS_Board{boardNo}_SciEnergyLG"
+        hist_CerEnergyHG = infile.Get(hist_CerEnergyHG_name)
+        hist_SciEnergyHG = infile.Get(hist_SciEnergyHG_name)
+        hist_CerEnergyLG = infile.Get(hist_CerEnergyLG_name)
+        hist_SciEnergyLG = infile.Get(hist_SciEnergyLG_name)
+
+        if not (hist_CerEnergyHG and hist_SciEnergyHG and hist_CerEnergyLG and hist_SciEnergyLG):
+            print(
+                f"Warning: Histograms {hist_CerEnergyHG_name}, {hist_SciEnergyHG_name}, {hist_CerEnergyLG_name}, or {hist_SciEnergyLG_name} not found in {infile_name}")
+            continue
+
+        legends.append(str(boardNo))
+        hists_CerEnergyHG.append(hist_CerEnergyHG)
+        hists_SciEnergyHG.append(hist_SciEnergyHG)
+        hists_CerEnergyLG.append(hist_CerEnergyLG)
+        hists_SciEnergyLG.append(hist_SciEnergyLG)
+
+    DrawHistos(hists_CerEnergyHG, legends, 0, 20000, "Cer Energy HG", 0, 1000, "Events",
+               "FERS_CerEnergyHG",
+               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.6, 0.90, 0.9])
+    plots.append("FERS_CerEnergyHG.png")
+    DrawHistos(hists_SciEnergyHG, legends, 0, 20000, "Sci Energy HG", 0, 1000, "Events",
+               "FERS_SciEnergyHG",
+               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.6, 0.90, 0.9])
+    plots.append("FERS_SciEnergyHG.png")
+    DrawHistos(hists_CerEnergyLG, legends, 0, 20000, "Cer Energy LG", 0, 1000, "Events",
+               "FERS_CerEnergyLG",
+               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.6, 0.90, 0.9])
+    plots.append("FERS_CerEnergyLG.png")
+    DrawHistos(hists_SciEnergyLG, legends, 0, 20000, "Sci Energy LG", 0, 1000, "Events",
+               "FERS_SciEnergyLG",
+               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.6, 0.90, 0.9])
+    plots.append("FERS_SciEnergyLG.png")
+
+    # total energy sum plots
+    hist_CerEnergyHG = infile.Get("hist_FERS_CerEnergyHG")
+    hist_SciEnergyHG = infile.Get("hist_FERS_SciEnergyHG")
+    hist_CerEnergyLG = infile.Get("hist_FERS_CerEnergyLG")
+    hist_SciEnergyLG = infile.Get("hist_FERS_SciEnergyLG")
+    DrawHistos([hist_CerEnergyHG], "", 0, 2e5, "Cer Energy HG", 0, 1000, "Events",
+               "FERS_Total_CerEnergyHG",
+               dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.insert(0, "FERS_Total_CerEnergyHG.png")
+    DrawHistos([hist_SciEnergyHG], "", 0, 2e5, "Sci Energy HG", 0, 1000, "Events",
+               "FERS_Total_SciEnergyHG",
+               dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.insert(1, "FERS_Total_SciEnergyHG.png")
+    DrawHistos([hist_CerEnergyLG], "", 0, 2e5, "Cer Energy LG", 0, 1000, "Events",
+               "FERS_Total_CerEnergyLG",
+               dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.insert(2, "FERS_Total_CerEnergyLG.png")
+    DrawHistos([hist_SciEnergyLG], "", 0, 2e5, "Sci Energy LG", 0, 1000, "Events",
+               "FERS_Total_SciEnergyLG",
+               dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.insert(3, "FERS_Total_SciEnergyLG.png")
+
+    output_html = f"html/Run{runNumber}/FERS_EnergySum/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=4,
+                  output_html=output_html)
+    return output_html
+
+
 def makeFERS1DPlots():
     plots = []
 
@@ -583,6 +668,7 @@ if __name__ == "__main__":
     output_htmls["drs mapping"] = DrawDRSBoards(run=runNumber)
 
     output_htmls["fers 1D"] = makeFERS1DPlots()
+    output_htmls["fers energy sum"] = makeFERSEnergySumPlots()
     # makeDRS2DPlots()
     output_htmls["drs 2D"] = makeDRS2DPlots(doSubtractMedian=True)
 
