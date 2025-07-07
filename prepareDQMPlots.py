@@ -170,6 +170,24 @@ def makeFERS1DPlots():
     return hists1d_FERS
 
 
+def collectFERSStats():
+    stats = {}
+    for _, FERSBoard in FERSBoards.items():
+        for chan in FERSBoard:
+            channelName_HG = chan.GetHGChannelName()
+            stats[channelName_HG] = (
+                rdf.Mean(channelName_HG),
+                rdf.Max(channelName_HG),
+            )
+            channelName_LG = chan.GetLGChannelName()
+            stats[channelName_LG] = (
+                rdf.Mean(channelName_LG),
+                rdf.Max(channelName_LG),
+            )
+
+    return stats
+
+
 def trackFERSPlots():
     hists2d_FERS_vs_Event = []
     for _, FERSBoard in FERSBoards.items():
@@ -374,11 +392,21 @@ if __name__ == "__main__":
                 for channel in channels]
     hists2d_hodo_pos = compareDRSChannels(channels)
 
-    print("Save histograms")
+    stats = collectFERSStats()
+
+    print("\033[94mSave results\033[0m")
 
     rootdir = f"root/Run{runNumber}"
     if not os.path.exists(rootdir):
         os.makedirs(rootdir)
+
+    # dump stats into a json file
+    import json
+    stats_results = {}
+    for channelName, (mean, max_value) in stats.items():
+        stats_results[channelName] = (mean.GetValue(), max_value.GetValue())
+    with open(f"{rootdir}/fers_stats.json", "w") as f:
+        json.dump(stats_results, f, indent=4)
 
     # Save histograms to an output ROOT file
     outfile = ROOT.TFile(f"{rootdir}/conditions_vs_event.root", "RECREATE")
