@@ -1,8 +1,8 @@
 import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels
-from utils.utils import number2string, getDataFile, processDRSBoards, filterPrefireEvents
-from runNumber import runNumber
+from utils.utils import number2string, processDRSBoards, filterPrefireEvents, loadRDF
+from runconfig import runNumber, firstEvent, lastEvent
 import time
 
 print("Start running prepareDQMPlots.py")
@@ -11,22 +11,19 @@ print("Start running prepareDQMPlots.py")
 ROOT.ROOT.EnableImplicitMT(10)
 ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
-# Open the input ROOT file
-ifile = getDataFile(runNumber)
-
-suffix = f"run{runNumber}"
-infile = ROOT.TFile(ifile, "READ")
-rdf = ROOT.RDataFrame("EventTree", infile)
-
+rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
 rdf, rdf_prefilter = filterPrefireEvents(rdf)
+
+DRSBoards = buildDRSBoards(run=runNumber)
+FERSBoards = buildFERSBoards(run=runNumber)
+
 
 # Get total number of entries
 n_entries = rdf.Count().GetValue()
 nEvents = int(n_entries)
-print(f"Total number of events: {nEvents} in run {runNumber}")
+nbins_Event = min(max(int(nEvents / 100), 1), 500)
+print(f"Total number of events to process: {nEvents} in run {runNumber}")
 
-DRSBoards = buildDRSBoards(run=runNumber)
-FERSBoards = buildFERSBoards(run=runNumber)
 
 # FRES board outputs
 # define variables as RDF does not support reading vectors
@@ -43,6 +40,43 @@ for _, FERSBoard in FERSBoards.items():
         )
 
 rdf = processDRSBoards(rdf)
+
+
+def monitorConditions():
+    # monitor the V, I, T conditions
+    hists2d_Condition_vs_Event = []
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        hist_SipmHV = rdf.Histo2D((
+            f"hist_FERS_Board{boardNo}_SipmHV_vs_Event",
+            f"FERS Board {boardNo} - SipmHV vs Event;Event;SipmHV (V)",
+            nbins_Event, 0, nEvents, 40, 26, 29),
+            "event_n", f"FERS_Board{boardNo}_SipmHV"
+        )
+        hist_SipmI = rdf.Histo2D((
+            f"hist_FERS_Board{boardNo}_SipmI_vs_Event",
+            f"FERS Board {boardNo} - SipmI vs Event;Event;SipmI (mA)",
+            nbins_Event, 0, nEvents, 50, 0.02, 0.2),
+            "event_n", f"FERS_Board{boardNo}_SipmI"
+        )
+        hist_TempDET = rdf.Histo2D((
+            f"hist_FERS_Board{boardNo}_TempDET_vs_Event",
+            f"FERS Board {boardNo} - TempDET vs Event;Event;TempDET (C)",
+            nbins_Event, 0, nEvents, 100, 10, 30),
+            "event_n", f"FERS_Board{boardNo}_TempDET"
+        )
+        hist_TempFPGA = rdf.Histo2D((
+            f"hist_FERS_Board{boardNo}_TempFPGA_vs_Event",
+            f"FERS Board {boardNo} - TempFPGA vs Event;Event;TempFPGA (C)",
+            nbins_Event, 0, nEvents, 100, 30, 50),
+            "event_n", f"FERS_Board{boardNo}_TempFPGA"
+        )
+        hists2d_Condition_vs_Event.append(hist_SipmHV)
+        hists2d_Condition_vs_Event.append(hist_SipmI)
+        hists2d_Condition_vs_Event.append(hist_TempDET)
+        hists2d_Condition_vs_Event.append(hist_TempFPGA)
+
+    return hists2d_Condition_vs_Event
 
 
 def makeFERS1DPlots():
@@ -82,7 +116,7 @@ def trackFERSPlots():
                 hist = rdf.Histo2D((
                     f"hist_FERS_Board{boardNo}_{var}_vs_Event_{sTowerX}_{sTowerY}",
                     f"FERS Board {boardNo} - Event vs {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};Event;{var} Energy HG",
-                    100, 0, nEvents, 1000, 0, 9000),
+                    nbins_Event, 0, nEvents, 1000, 0, 9000),
                     "event_n", chan.GetHGChannelName()
                 )
                 hists2d_FERS_vs_Event.append(hist)
@@ -217,7 +251,7 @@ def trackDRSPlots():
                 hist = rdf.Histo2D((
                     f"hist_DRS_Board{boardNo}_{var}_vs_Event_{sTowerX}_{sTowerY}",
                     f"DRS Board {boardNo} Mean - Event vs {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};Event;{var} Variable",
-                    int(nEvents/100), 0, nEvents, 200, mean_value - 100, mean_value + 100),
+                    nbins_Event, 0, nEvents, 200, mean_value - 100, mean_value + 100),
                     "event_n", channelName + "_mean"
                 )
                 hists2d_DRS_vs_Event.append(hist)
@@ -249,6 +283,8 @@ def compareDRSChannels(channels_to_compare):
 if __name__ == "__main__":
     start_time = time.time()
 
+    hists_conditions = monitorConditions()
+
     hists1d_FERS = makeFERS1DPlots()
     # hists2d_FERS = makeFERS2DPlots()
     # hists2d_FERS_vs_Event = trackFERSPlots()
@@ -275,6 +311,12 @@ if __name__ == "__main__":
         os.makedirs(rootdir)
 
     # Save histograms to an output ROOT file
+    outfile = ROOT.TFile(f"{rootdir}/conditions_vs_event.root", "RECREATE")
+    for hist in hists_conditions:
+        hist.SetDirectory(outfile)
+        hist.Write()
+    outfile.Close()
+
     outfile = ROOT.TFile(f"{rootdir}/fers_all_channels_1D.root", "RECREATE")
     for hist in hists1d_FERS:
         hist.Write()

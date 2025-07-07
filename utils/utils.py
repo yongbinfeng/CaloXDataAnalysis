@@ -66,6 +66,23 @@ def processDRSBoards(rdf):
     return rdf
 
 
+def loadRDF(runNumber, firstEvent=0, lastEvent=-1):
+    import ROOT
+    # Open the input ROOT file
+    ifile = getDataFile(runNumber)
+    infile = ROOT.TFile(ifile, "READ")
+    rdf_org = ROOT.RDataFrame("EventTree", infile)
+    nevents = rdf_org.Count().GetValue()
+    if lastEvent < 0 or lastEvent > nevents:
+        lastEvent = nevents
+    print(
+        f"\033[94mfiltering events from {firstEvent} to {lastEvent} in run {runNumber}, total {nevents} events in the file.\033[0m")
+    # Apply the event range filter
+    rdf = rdf_org.Filter(f"event_n >= {firstEvent} && event_n < {lastEvent}")
+
+    return rdf, rdf_org
+
+
 def filterPrefireEvents(rdf, TS=350):
     # use the hodo trigger to filter prefire events
     from utils.channel_map import buildHodoTriggerChannels

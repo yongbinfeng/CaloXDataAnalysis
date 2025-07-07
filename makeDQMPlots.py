@@ -6,7 +6,8 @@ from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenc
 from utils.utils import number2string
 from utils.html_generator import generate_html
 from utils.validateMap import DrawFERSBoards, DrawDRSBoards
-from runNumber import runNumber
+from utils.colors import colors
+from runconfig import runNumber
 
 print("Start running script")
 ROOT.gROOT.SetBatch(True)
@@ -20,6 +21,129 @@ hodo_pos_channels = buildHodoPosChannels(run=runNumber)
 
 rootdir = f"root/Run{runNumber}/"
 outdir = f"plots/Run{runNumber}/"
+
+
+def makeConditionsPlots():
+    plots = []
+    outdir_plots = outdir + "/Conditions_vs_Event"
+    infile_name = f"{rootdir}/conditions_vs_event.root"
+    infile = ROOT.TFile(infile_name, "READ")
+
+    hprofiles_SipmHV = []
+    hprofiles_SipmI = []
+    hprofiles_TempDET = []
+    hprofiles_TempFPGA = []
+
+    legends = []
+
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        hist_SipmHV_name = f"hist_FERS_Board{boardNo}_SipmHV_vs_Event"
+        hist_SipmI_name = f"hist_FERS_Board{boardNo}_SipmI_vs_Event"
+        hist_TempDET_name = f"hist_FERS_Board{boardNo}_TempDET_vs_Event"
+        hist_TempFPGA_name = f"hist_FERS_Board{boardNo}_TempFPGA_vs_Event"
+
+        hist_SipmHV = infile.Get(hist_SipmHV_name)
+        hist_SipmI = infile.Get(hist_SipmI_name)
+        hist_TempDET = infile.Get(hist_TempDET_name)
+        hist_TempFPGA = infile.Get(hist_TempFPGA_name)
+
+        if not (hist_SipmHV and hist_SipmI and hist_TempDET and hist_TempFPGA):
+            print(
+                f"Warning: Histograms {hist_SipmHV_name}, {hist_SipmI_name}, {hist_TempDET_name}, or {hist_TempFPGA_name} not found in {infile_name}")
+            continue
+
+        hprofile_SipmHV = hist_SipmHV.ProfileX(
+            f"hprof_FERS_Board{boardNo}_SipmHV_vs_Event")
+        hprofiles_SipmHV.append(hprofile_SipmHV)
+
+        hprofile_SipmI = hist_SipmI.ProfileX(
+            f"hprof_FERS_Board{boardNo}_SipmI_vs_Event")
+        hprofiles_SipmI.append(hprofile_SipmI)
+
+        hprofile_TempDET = hist_TempDET.ProfileX(
+            f"hprof_FERS_Board{boardNo}_TempDET_vs_Event")
+        hprofiles_TempDET.append(hprofile_TempDET)
+
+        hprofile_TempFPGA = hist_TempFPGA.ProfileX(
+            f"hprof_FERS_Board{boardNo}_TempFPGA_vs_Event")
+        hprofiles_TempFPGA.append(hprofile_TempFPGA)
+
+        legends.append(str(boardNo))
+
+        nEvents = hist_SipmHV.GetXaxis().GetXmax()
+        zmax = nEvents * 10
+
+        extraToDraw = ROOT.TPaveText(0.20, 0.80, 0.60, 0.90, "NDC")
+        extraToDraw.SetTextAlign(11)
+        extraToDraw.SetFillColorAlpha(0, 0)
+        extraToDraw.SetBorderSize(0)
+        extraToDraw.SetTextFont(42)
+        extraToDraw.SetTextSize(0.04)
+        extraToDraw.AddText(f"Board: {FERSBoard.boardNo}")
+
+        output_name = f"Conditions_Board{boardNo}_SipmHV_vs_Event"
+        DrawHistos([hist_SipmHV], f"", 0, nEvents, "Event", 26, 29, "Voltage (V)",
+                   output_name,
+                   dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
+                   outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+        plots.append(output_name + ".png")
+
+        output_name = f"Conditions_Board{boardNo}_SipmI_vs_Event"
+        DrawHistos([hist_SipmI], f"", 0, nEvents, "Event", 0.02, 0.2, "Current (mA)",
+                   output_name,
+                   dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
+                   outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+        plots.append(output_name + ".png")
+
+        output_name = f"Conditions_Board{boardNo}_TempDET_vs_Event"
+        DrawHistos([hist_TempDET], f"", 0, nEvents, "Event", 10, 30, "Temperature (C)",
+                   output_name,
+                   dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
+                   outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+        plots.append(output_name + ".png")
+
+        output_name = f"Conditions_Board{boardNo}_TempFPGA_vs_Event"
+        DrawHistos([hist_TempFPGA], f"", 0, nEvents, "Event", 30, 50, "Temperature (C)",
+                   output_name,
+                   dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
+                   outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+        plots.append(output_name + ".png")
+
+    # Draw the profiles
+    legendPos = [0.3, 0.7, 0.9, 0.9]
+    output_name = "Conditions_SipmHV_vs_Event"
+    DrawHistos(hprofiles_SipmHV, legends, 0, nEvents, "Event", 26, 29, "Voltage (V)",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
+    plots.insert(0, output_name + ".png")
+
+    output_name = "Conditions_SipmI_vs_Event"
+    DrawHistos(hprofiles_SipmI, legends, 0, nEvents, "Event", 0.02, 0.2, "Current (mA)",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
+    plots.insert(1, output_name + ".png")
+
+    output_name = "Conditions_TempDET_vs_Event"
+    DrawHistos(hprofiles_TempDET, legends, 0, nEvents, "Event", 15, 30, "Temperature (C)",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
+    plots.insert(2, output_name + ".png")
+
+    output_name = "Conditions_TempFPGA_vs_Event"
+    DrawHistos(hprofiles_TempFPGA, legends, 0, nEvents, "Event", 30, 50, "Temperature (C)",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
+    plots.insert(3, output_name + ".png")
+
+    output_html = f"html/Run{runNumber}/Conditions_vs_Event/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=4,
+                  output_html=output_html)
+    return output_html
 
 
 def makeFERS1DPlots():
@@ -451,6 +575,8 @@ def compareHodoPosPlots(doSubtractMedian=False):
 
 if __name__ == "__main__":
     output_htmls = {}
+
+    output_htmls["conditions plots"] = makeConditionsPlots()
 
     # validate DRS and FERS boards
     output_htmls["fers mapping"] = DrawFERSBoards(run=runNumber)
