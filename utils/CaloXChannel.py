@@ -364,6 +364,28 @@ A5202_map_tmp = np.array([
 # swap the axes such that iX and iY are correct
 A5202_map = np.swapaxes(A5202_map_tmp, 0, 1)
 
+A5205_map_3mm_tmp = np.array([
+    [2, 0, 1, 3],
+    [6, 4, 5, 7],
+    [10, 8, 9, 11],
+    [14, 12, 13, 15],
+    [16, 18, 19, 17],
+    [20, 22, 23, 21],
+    [24, 26, 27, 25],
+    [28, 30, 31, 29],
+    [32, 34, 35, 33],
+    [36, 38, 39, 37],
+    [40, 42, 43, 41],
+    [44, 46, 47, 45],
+    [48, 50, 51, 49],
+    [52, 54, 55, 53],
+    [56, 58, 59, 57],
+    [60, 62, 63, 61]
+], dtype=int)
+# swap the axes such that iX and iY are correct
+A5205_map_3mm = np.swapaxes(A5205_map_3mm_tmp, 0, 1)
+
+
 drs_map_tmp = np.array([
     [3, 2, 1, 0],
     [7, 6, 5, 4],
@@ -382,14 +404,15 @@ def buildFERSBase(is6mm=False, boardNo=0):
     for ix in range(0, 4):
         channels_FERS_one_row = []
         for iy in range(0, 16):
-            channelNo = A5202_map[ix, iy]
             if is6mm:
+                channelNo = A5202_map[ix, iy]
                 isCer = (iy % 2 == 0)
                 channel = FERSChannel(ix, -int(iy/2), ix, iy, isCer,
                                       channelNo, boardNo)
                 channels_FERS_one_row.append(channel)
             else:
-                isCer = (ix % 2 == 1)
+                channelNo = A5205_map_3mm[ix, iy]
+                isCer = (ix % 2 == 0)
                 # 3mm has higher granularity in global Y
                 channel = FERSChannel(
                     int(ix/2), -float(iy)/4, ix, iy, isCer, channelNo, boardNo)
