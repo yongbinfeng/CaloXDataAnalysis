@@ -29,6 +29,22 @@ def getBranchStats(rdf, branches):
     }
     return stats
 
+def vectorizeFERS(rdf, FERSBoards):
+    # FRES board outputs
+    # define variables as RDF does not support reading vectors
+    # with indices directly
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        for channel in FERSBoard:
+            rdf = rdf.Define(
+                f"FERS_Board{boardNo}_energyHG_{channel.channelNo}",
+                f"FERS_Board{boardNo}_energyHG[{channel.channelNo}]")
+            rdf = rdf.Define(
+                f"FERS_Board{boardNo}_energyLG_{channel.channelNo}",
+                f"FERS_Board{boardNo}_energyLG[{channel.channelNo}]"
+            )
+    return rdf
+
 
 def processDRSBoards(rdf):
     import re
@@ -120,6 +136,23 @@ def calculateEnergySumFERS(rdf, FERSBoards):
     rdf = rdf.Define("FERS_SciEnergyHG", f"({string_SciEnergyHG_Total})")
     rdf = rdf.Define("FERS_SciEnergyLG", f"({string_SciEnergyLG_Total})")
 
+    return rdf
+
+def getDRSSum(rdf, DRSBoards, TS_start=0, TS_end=400):
+    # get the mean of DRS outputs per channel
+    TS_start = int(TS_start)
+    TS_end = int(TS_end)
+    for _, DRSBoard in DRSBoards.items():
+        for channel in DRSBoard:
+            varname = channel.GetChannelName()
+            rdf = rdf.Define(
+                f"{varname}_subtractMedian_positive",
+                f"clipToZero({varname}_subtractMedian)"
+            )
+            rdf = rdf.Define(
+                f"{varname}_sum",
+                f"SumRange({varname}_subtractMedian_positive, {TS_start}, {TS_end})"
+            )
     return rdf
 
 

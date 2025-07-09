@@ -1,7 +1,7 @@
 import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels
-from utils.utils import number2string, processDRSBoards, filterPrefireEvents, loadRDF, calculateEnergySumFERS
+from utils.utils import number2string, processDRSBoards, filterPrefireEvents, loadRDF, calculateEnergySumFERS, getDRSSum, vectorizeFERS
 from runconfig import runNumber, firstEvent, lastEvent
 import time
 
@@ -17,31 +17,16 @@ rdf, rdf_prefilter = filterPrefireEvents(rdf)
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)
 
-
 # Get total number of entries
 n_entries = rdf.Count().GetValue()
 nEvents = int(n_entries)
 nbins_Event = min(max(int(nEvents / 100), 1), 500)
 print(f"Total number of events to process: {nEvents} in run {runNumber}")
 
-
-# FRES board outputs
-# define variables as RDF does not support reading vectors
-# with indices directly
-for _, FERSBoard in FERSBoards.items():
-    boardNo = FERSBoard.boardNo
-    for channel in FERSBoard:
-        rdf = rdf.Define(
-            f"FERS_Board{boardNo}_energyHG_{channel.channelNo}",
-            f"FERS_Board{boardNo}_energyHG[{channel.channelNo}]")
-        rdf = rdf.Define(
-            f"FERS_Board{boardNo}_energyLG_{channel.channelNo}",
-            f"FERS_Board{boardNo}_energyLG[{channel.channelNo}]"
-        )
-
-
+rdf = vectorizeFERS(rdf, FERSBoards)
 rdf = calculateEnergySumFERS(rdf, FERSBoards)
 rdf = processDRSBoards(rdf)
+rdf = getDRSSum(rdf, DRSBoards) 
 
 
 def monitorConditions():
@@ -365,6 +350,88 @@ def compareDRSChannels(channels_to_compare):
         hists_trigger.append(hist_subtractMedian)
     return hists_trigger
 
+def checkFERSvsDRSSum():
+    FERS_min = 100
+    FERS_max = 9e3
+    FERS_LG_max = 2e3
+    DRS_min = -100
+    DRS_max = 1e3
+    DRS_LG_max = 2e3
+    
+    # correlate  FERS and DRS outputs
+    h2s_FERS_VS_DRS = []
+    h2s_FERSLG_VS_DRS = []
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+
+            for var in ["Cer", "Sci"]:
+                chan_DRS = DRSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                if chan_DRS is None:
+                    print(
+                        f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
+                    continue
+                chan_FERS = None
+                for _, FERSBoard in FERSBoards.items():
+                    chan_FERS = FERSBoard.GetChannelByTower(
+                        iTowerX, iTowerY, isCer=(var == "Cer"))
+                    if chan_FERS is not None:
+                        break
+                if chan_FERS is None:
+                    print(
+                        f"Warning: FERS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
+                    continue
+
+                h2_FERS_VS_DRS = rdf.Histo2D((
+                    f"hist_FERS_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
+                    f"FERS vs DRS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}",
+                    100, DRS_min, DRS_max, 100, FERS_min, FERS_max
+                ),
+                    f"{chan_DRS.GetChannelName()}_sum",
+                    chan_FERS.GetHGChannelName(),
+                )
+                h2s_FERS_VS_DRS.append(h2_FERS_VS_DRS)
+
+                h2_FERSLG_VS_DRS = rdf.Histo2D((
+                    f"hist_FERSLG_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
+                    f"FERS LG vs DRS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}",
+                    100, DRS_min, DRS_LG_max, 100, FERS_min, FERS_LG_max
+                ),
+                    f"{chan_DRS.GetChannelName()}_sum",
+                    chan_FERS.GetLGChannelName(),
+                )
+                h2s_FERSLG_VS_DRS.append(h2_FERSLG_VS_DRS)
+                
+    # sum of FERS and DRS outputs
+    h2s_FERS_VS_DRS_sum = []
+    h2s_FERSLG_VS_DRS_sum = []
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for var in ["Cer", "Sci"]:
+            h2sum = ROOT.TH2F(
+                f"hist_FERS_VS_DRS_Board{boardNo}_{var}_sum",
+                f"FERS vs DRS energy correlation for Board{boardNo}, {var}",
+                100, DRS_min, DRS_max, 100, FERS_min, FERS_max
+            )
+            for h2 in h2s_FERS_VS_DRS:
+                if f"Board{boardNo}_{var}" in h2.GetName():
+                    h2sum.Add(h2.GetValue())
+            h2s_FERS_VS_DRS_sum.append(h2sum)
+
+            h2sum_LG = ROOT.TH2F(
+                f"hist_FERSLG_VS_DRS_Board{boardNo}_{var}_sum",
+                f"FERS LG vs DRS energy correlation for Board{boardNo}, {var}",
+                100, DRS_min, DRS_LG_max, 100, FERS_min, FERS_LG_max
+            )
+            for h2 in h2s_FERSLG_VS_DRS:
+                if f"Board{boardNo}_{var}" in h2.GetName():
+                    h2sum_LG.Add(h2.GetValue())
+            h2s_FERSLG_VS_DRS_sum.append(h2sum_LG)
+    return  h2s_FERS_VS_DRS_sum + h2s_FERSLG_VS_DRS_sum + h2s_FERS_VS_DRS + h2s_FERSLG_VS_DRS
+
 
 if __name__ == "__main__":
     start_time = time.time()
@@ -391,6 +458,8 @@ if __name__ == "__main__":
     channels = [channel for channels in hodo_pos_channels.values()
                 for channel in channels]
     hists2d_hodo_pos = compareDRSChannels(channels)
+    
+    hists2d_FERS_vs_DRSs = checkFERSvsDRSSum()
 
     stats = collectFERSStats()
 
@@ -472,6 +541,13 @@ if __name__ == "__main__":
         hist.SetDirectory(outfile_hodo_pos)
         hist.Write()
     outfile_hodo_pos.Close()
+    
+    outfile_FERS_DRS = ROOT.TFile(
+        f"{rootdir}/fers_vs_drs.root", "RECREATE")
+    for hist in hists2d_FERS_vs_DRSs:
+        hist.SetDirectory(outfile_FERS_DRS)
+        hist.Write()
+    outfile_FERS_DRS.Close()
 
     time_taken = time.time() - start_time
     print(f"Finished running script in {time_taken:.2f} seconds")
