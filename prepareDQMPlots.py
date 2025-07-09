@@ -26,7 +26,7 @@ print(f"Total number of events to process: {nEvents} in run {runNumber}")
 rdf = vectorizeFERS(rdf, FERSBoards)
 rdf = calculateEnergySumFERS(rdf, FERSBoards)
 rdf = processDRSBoards(rdf)
-rdf = getDRSSum(rdf, DRSBoards) 
+rdf = getDRSSum(rdf, DRSBoards)
 
 
 def monitorConditions():
@@ -350,14 +350,18 @@ def compareDRSChannels(channels_to_compare):
         hists_trigger.append(hist_subtractMedian)
     return hists_trigger
 
+
 def checkFERSvsDRSSum():
-    FERS_min = 100
-    FERS_max = 9e3
-    FERS_LG_max = 2e3
-    DRS_min = -100
-    DRS_max = 1e3
-    DRS_LG_max = 2e3
-    
+
+    xymax = {
+        "Cer": (1000, 4000),
+        "Sci": (9000, 9000)
+    }
+    xymax_LG = {
+        "Cer": (1000, 1000),
+        "Sci": (9000, 9000)
+    }
+
     # correlate  FERS and DRS outputs
     h2s_FERS_VS_DRS = []
     h2s_FERSLG_VS_DRS = []
@@ -388,7 +392,7 @@ def checkFERSvsDRSSum():
                 h2_FERS_VS_DRS = rdf.Histo2D((
                     f"hist_FERS_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
                     f"FERS vs DRS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}",
-                    100, DRS_min, DRS_max, 100, FERS_min, FERS_max
+                    100, 0, xymax[var][0], 100, 0, xymax[var][1]
                 ),
                     f"{chan_DRS.GetChannelName()}_sum",
                     chan_FERS.GetHGChannelName(),
@@ -398,13 +402,13 @@ def checkFERSvsDRSSum():
                 h2_FERSLG_VS_DRS = rdf.Histo2D((
                     f"hist_FERSLG_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
                     f"FERS LG vs DRS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}",
-                    100, DRS_min, DRS_LG_max, 100, FERS_min, FERS_LG_max
+                    100, 0, xymax_LG[var][0], 100, 0, xymax_LG[var][1]
                 ),
                     f"{chan_DRS.GetChannelName()}_sum",
                     chan_FERS.GetLGChannelName(),
                 )
                 h2s_FERSLG_VS_DRS.append(h2_FERSLG_VS_DRS)
-                
+
     # sum of FERS and DRS outputs
     h2s_FERS_VS_DRS_sum = []
     h2s_FERSLG_VS_DRS_sum = []
@@ -414,7 +418,7 @@ def checkFERSvsDRSSum():
             h2sum = ROOT.TH2F(
                 f"hist_FERS_VS_DRS_Board{boardNo}_{var}_sum",
                 f"FERS vs DRS energy correlation for Board{boardNo}, {var}",
-                100, DRS_min, DRS_max, 100, FERS_min, FERS_max
+                100, 0, xymax[var][0], 100, 0, xymax[var][1]
             )
             for h2 in h2s_FERS_VS_DRS:
                 if f"Board{boardNo}_{var}" in h2.GetName():
@@ -424,13 +428,13 @@ def checkFERSvsDRSSum():
             h2sum_LG = ROOT.TH2F(
                 f"hist_FERSLG_VS_DRS_Board{boardNo}_{var}_sum",
                 f"FERS LG vs DRS energy correlation for Board{boardNo}, {var}",
-                100, DRS_min, DRS_LG_max, 100, FERS_min, FERS_LG_max
+                100, 0, xymax_LG[var][0], 100, 0, xymax_LG[var][1]
             )
             for h2 in h2s_FERSLG_VS_DRS:
                 if f"Board{boardNo}_{var}" in h2.GetName():
                     h2sum_LG.Add(h2.GetValue())
             h2s_FERSLG_VS_DRS_sum.append(h2sum_LG)
-    return  h2s_FERS_VS_DRS_sum + h2s_FERSLG_VS_DRS_sum + h2s_FERS_VS_DRS + h2s_FERSLG_VS_DRS
+    return h2s_FERS_VS_DRS_sum + h2s_FERSLG_VS_DRS_sum + h2s_FERS_VS_DRS + h2s_FERSLG_VS_DRS
 
 
 if __name__ == "__main__":
@@ -458,7 +462,7 @@ if __name__ == "__main__":
     channels = [channel for channels in hodo_pos_channels.values()
                 for channel in channels]
     hists2d_hodo_pos = compareDRSChannels(channels)
-    
+
     hists2d_FERS_vs_DRSs = checkFERSvsDRSSum()
 
     stats = collectFERSStats()
@@ -541,7 +545,7 @@ if __name__ == "__main__":
         hist.SetDirectory(outfile_hodo_pos)
         hist.Write()
     outfile_hodo_pos.Close()
-    
+
     outfile_FERS_DRS = ROOT.TFile(
         f"{rootdir}/fers_vs_drs.root", "RECREATE")
     for hist in hists2d_FERS_vs_DRSs:

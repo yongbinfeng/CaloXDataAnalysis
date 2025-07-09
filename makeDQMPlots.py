@@ -3,7 +3,7 @@ sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from myFunction import DrawHistos
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels
-from utils.utils import number2string
+from utils.utils import number2string, round_up_to_1eN
 from utils.html_generator import generate_html
 from utils.visualization import visualizeFERSBoards
 from utils.validateMap import DrawFERSBoards, DrawDRSBoards
@@ -83,33 +83,33 @@ def makeConditionsPlots():
         extraToDraw.SetTextSize(0.04)
         extraToDraw.AddText(f"Board: {FERSBoard.boardNo}")
 
-        output_name = f"Conditions_Board{boardNo}_SipmHV_vs_Event"
-        DrawHistos([hist_SipmHV], f"", 0, nEvents, "Event", 26, 29, "Voltage (V)",
-                   output_name,
-                   dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
-                   outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
-        plots.append(output_name + ".png")
+        # output_name = f"Conditions_Board{boardNo}_SipmHV_vs_Event"
+        # DrawHistos([hist_SipmHV], f"", 0, nEvents, "Event", 26, 29, "Voltage (V)",
+        #           output_name,
+        #           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
+        #           outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+        # plots.append(output_name + ".png")
 
-        output_name = f"Conditions_Board{boardNo}_SipmI_vs_Event"
-        DrawHistos([hist_SipmI], f"", 0, nEvents, "Event", 0.02, 0.2, "Current (mA)",
-                   output_name,
-                   dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
-                   outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
-        plots.append(output_name + ".png")
+        # output_name = f"Conditions_Board{boardNo}_SipmI_vs_Event"
+        # DrawHistos([hist_SipmI], f"", 0, nEvents, "Event", 0.02, 0.2, "Current (mA)",
+        #           output_name,
+        #           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
+        #           outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+        # plots.append(output_name + ".png")
 
-        output_name = f"Conditions_Board{boardNo}_TempDET_vs_Event"
-        DrawHistos([hist_TempDET], f"", 0, nEvents, "Event", 10, 30, "Temperature (C)",
-                   output_name,
-                   dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
-                   outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
-        plots.append(output_name + ".png")
+        # output_name = f"Conditions_Board{boardNo}_TempDET_vs_Event"
+        # DrawHistos([hist_TempDET], f"", 0, nEvents, "Event", 10, 30, "Temperature (C)",
+        #           output_name,
+        #           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
+        #           outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+        # plots.append(output_name + ".png")
 
-        output_name = f"Conditions_Board{boardNo}_TempFPGA_vs_Event"
-        DrawHistos([hist_TempFPGA], f"", 0, nEvents, "Event", 30, 50, "Temperature (C)",
-                   output_name,
-                   dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
-                   outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
-        plots.append(output_name + ".png")
+        # output_name = f"Conditions_Board{boardNo}_TempFPGA_vs_Event"
+        # DrawHistos([hist_TempFPGA], f"", 0, nEvents, "Event", 30, 50, "Temperature (C)",
+        #           output_name,
+        #           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
+        #           outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+        # plots.append(output_name + ".png")
 
     # Draw the profiles
     legendPos = [0.3, 0.7, 0.9, 0.9]
@@ -742,6 +742,85 @@ def compareHodoPosPlots(doSubtractMedian=False):
     return output_html
 
 
+def checkFERSvsDRSSum():
+    """
+    Check if the sum of FERS and DRS energies are consistent.
+    """
+    plots = []
+    outdir_plots = outdir + "/FERS_vs_DRS_Sum"
+    infile_name = f"{rootdir}/fers_vs_drs.root"
+    infile = ROOT.TFile(infile_name, "READ")
+
+    xymax = {
+        "Cer": (1000, 4000),
+        "Sci": (9000, 9000)
+    }
+    xymax_LG = {
+        "Cer": (1000, 1000),
+        "Sci": (9000, 9000)
+    }
+
+    # for _, DRSBoard in DRSBoards.items():
+    #    boardNo = DRSBoard.boardNo
+    #    for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+    #        sTowerX = number2string(iTowerX)
+    #        sTowerY = number2string(iTowerY)
+
+    #        for var in ["Cer", "Sci"]:
+    #            for gain in ["FERS", "FERSLG"]:
+    #                histname = f"hist_{gain}_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
+    #                output_name = histname.replace("hist_", "")
+    #                plots.append(output_name + ".png")
+
+    #                hist = infile.Get(histname)
+    #                if not hist:
+    #                    print(
+    #                        f"Warning: Histogram {histname} not found in {infile_name}")
+    #                    continue
+
+    #                zmax = hist.Integral(0, 10000, 0, 10000)
+    #                zmax = round_up_to_1eN(zmax)
+
+    #                tmp = xymax[var] if gain == "FERS" else xymax_LG[var]
+
+    #                DrawHistos([hist], "", 0, tmp[0], "DRS Energy", 0, tmp[1], gain,
+    #                           output_name,
+    #                           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True,
+    #                           outdir=outdir_plots, addOverflow=True, runNumber=runNumber, extraText=f"{var}")
+
+    # summary plots
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for var in ["Cer", "Sci"]:
+            for gain in ["FERS", "FERSLG"]:
+                histname = f"hist_{gain}_VS_DRS_Board{boardNo}_{var}_sum"
+                output_name = histname.replace("hist_", "")
+                # append to plots no matter what
+                plots.append(output_name + ".png")
+
+                hist = infile.Get(histname)
+                if not hist:
+                    print(
+                        f"Warning: Histogram {histname} not found in {infile_name}")
+                    continue
+
+                zmax = hist.Integral(0, 10000, 0, 10000)
+                zmax = round_up_to_1eN(zmax)
+
+                output_name = histname.replace("hist_", "")
+
+                tmp = xymax[var] if gain == "FERS" else xymax_LG[var]
+                DrawHistos([hist], "", 0, tmp[0], "DRS Energy", 0, tmp[1], gain,
+                           output_name,
+                           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True,
+                           outdir=outdir_plots, addOverflow=True, runNumber=runNumber, extraText=f"{var}")
+
+    output_html = f"html/Run{runNumber}/FERS_vs_DRS_Sum/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=4,
+                  output_html=output_html)
+    return output_html
+
+
 if __name__ == "__main__":
     output_htmls = {}
 
@@ -760,6 +839,8 @@ if __name__ == "__main__":
     output_htmls["time reference"] = compareTimeReferencePlots(True)
     output_htmls["hodo trigger"] = compareHodoTriggerPlots(True)
     output_htmls["hodo pos"] = compareHodoPosPlots(True)
+
+    output_htmls["fers vs drs sum"] = checkFERSvsDRSSum()
 
     print("\n\n\n")
     print("*" * 30)

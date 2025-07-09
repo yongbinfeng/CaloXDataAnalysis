@@ -7,6 +7,16 @@ def string2number(s):
     return float(s.replace('m', '-').replace('p', '.'))
 
 
+def round_up_to_1eN(x):
+    import math
+    """
+    Round a number up to the nearest 10^N.
+    """
+    if x <= 0:
+        return 0
+    return 10 ** math.ceil(math.log10(x))
+
+
 def getDataFile(runNumber):
     runNum = str(runNumber)
     import json
@@ -28,6 +38,7 @@ def getBranchStats(rdf, branches):
         } for br in branches
     }
     return stats
+
 
 def vectorizeFERS(rdf, FERSBoards):
     # FRES board outputs
@@ -137,6 +148,7 @@ def calculateEnergySumFERS(rdf, FERSBoards):
     rdf = rdf.Define("FERS_SciEnergyLG", f"({string_SciEnergyLG_Total})")
 
     return rdf
+
 
 def getDRSSum(rdf, DRSBoards, TS_start=0, TS_end=400):
     # get the mean of DRS outputs per channel
