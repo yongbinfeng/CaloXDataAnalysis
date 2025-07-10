@@ -1,9 +1,10 @@
 import os
+from datetime import datetime
 
 
 def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.html"):
     """
-    Generate an HTML file to view PNG plots in a grid layout.
+    Generate an HTML file to view PNG plots in a grid layout with sticky filter and wildcard support.
 
     Parameters:
     - png_files (list of str): list of PNG filenames (e.g., ['a.png', 'b.png'])
@@ -20,6 +21,8 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
     rel_paths = [os.path.relpath(png_path, start=html_dir)
                  for png_path in png_paths]
 
+    timestamp = datetime.now().strftime("%B %d, %Y, %I:%M %p")
+
     html_header = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -29,34 +32,40 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
     body {{
       font-family: sans-serif;
       padding: 20px;
+      margin: 0;
     }}
 
     h1 {{
       font-size: 20px;
-      margin-bottom: 10px;
+      margin-bottom: 5px;
     }}
 
-    .top-link {{
+    .timestamp {{
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 20px;
+    }}
+
+    .controls {{
+      position: sticky;
+      top: 0;
+      background: white;
+      padding: 10px 0;
+      z-index: 10;
+      border-bottom: 1px solid #ccc;
       margin-bottom: 15px;
     }}
 
-    .top-link a {{
-      font-size: 16px;
-      text-decoration: none;
-      color: #0066cc;
-    }}
-
-    .path-info {{
+    .controls label {{
+      margin-right: 15px;
       font-size: 14px;
-      color: #444;
-      margin-bottom: 20px;
     }}
 
-    input {{
+    input[type="text"] {{
       font-size: 16px;
       padding: 5px;
       width: 400px;
-      margin-bottom: 20px;
+      margin-right: 10px;
     }}
 
     .grid {{
@@ -99,32 +108,33 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
       .grid {{
         grid-template-columns: 1fr;
       }}
+      input[type="text"] {{
+        width: 100%;
+        margin-bottom: 10px;
+      }}
     }}
   </style>
 </head>
 <body>
 
-  <div class="top-link">
-    <a href="../">⬆️ Go Up One Directory</a>
-  </div>
-
   <h1>PNG Plot Viewer</h1>
+  <div class="timestamp">Generated on: {timestamp}</div>
 
-  <div class="path-info">HTML generated at: <code>{output_html_abs}</code></div>
-  <div class="path-info">PNG directory: <code>{png_dir_abs}</code></div>
-
-  <input type="text" id="filterInput" placeholder="Filter by filename..." onkeyup="filterPlots()">
+  <div class="controls">
+    <input type="text" id="filterInput" placeholder="Filter by filename..." onkeyup="filterPlots()">
+    <label><input type="checkbox" id="regexToggle" onchange="filterPlots()"> Use Wildcard/Regex</label>
+    <label><input type="checkbox" id="caseToggle" onchange="filterPlots()"> Case Sensitive</label>
+  </div>
 
   <div id="plotContainer" class="grid">
 """
 
     html_body = ""
     for filename, rel_path in zip(png_files, rel_paths):
-        name_attr = filename.lower().replace(".", "_").replace("/", "_")
-        block = f"""    <div class="plot" data-name="{name_attr}">
+        block = f"""    <div class="plot" data-filename="{filename}">
       <div class="filename">{filename}</div>
       <a href="{rel_path}" target="_blank">
-        <img src="{rel_path}" alt="">
+        <img src="{rel_path}" alt="{filename}">
       </a>
     </div>
 """
@@ -134,12 +144,33 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
 
   <script>
     function filterPlots() {
-      const filter = document.getElementById("filterInput").value.toLowerCase();
+      const input = document.getElementById("filterInput").value.trim();
+      const useRegex = document.getElementById("regexToggle").checked;
+      const caseSensitive = document.getElementById("caseToggle").checked;
       const plots = document.getElementsByClassName("plot");
 
       for (let plot of plots) {
-        const name = plot.getAttribute("data-name");
-        plot.style.display = name.includes(filter) ? "" : "none";
+        const name = plot.getAttribute("data-filename");
+        let match = false;
+
+        if (useRegex) {
+          try {
+            const escaped = input.replace(/[-\\/\\^$+?.()|[\]{{}}]/g, '\\\\$&')
+                                 .replace(/\\*/g, '.*')
+                                 .replace(/\\?/g, '.');
+            const flags = caseSensitive ? "" : "i";
+            const regex = new RegExp(escaped, flags);
+            match = regex.test(name);
+          } catch (e) {
+            match = false;
+          }
+        } else {
+          const nameToTest = caseSensitive ? name : name.toLowerCase();
+          const inputToTest = caseSensitive ? input : input.toLowerCase();
+          match = nameToTest.includes(inputToTest);
+        }
+
+        plot.style.display = match ? "" : "none";
       }
     }
   </script>

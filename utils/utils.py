@@ -57,7 +57,7 @@ def vectorizeFERS(rdf, FERSBoards):
     return rdf
 
 
-def processDRSBoards(rdf):
+def processDRSBoards(rdf, debug=False):
     import re
     # Get the list of all branch names
     branches = [str(b) for b in rdf.GetColumnNames()]
@@ -88,6 +88,21 @@ def processDRSBoards(rdf):
             f"{varname}_subtractMedian",
             f"{varname} - {varname}_median"
         )
+
+    if debug:
+        # define relative TS with respect to the StartIndexCell
+        for varrname in drs_branches:
+            # replace the string "Channel[0-9]+" with "StartIndexCell"
+            var_StartIndexCell = re.sub(
+                r"Channel[0-9]+", "StartIndexCell", varrname)
+            rdf = rdf.Define(
+                f"RTS_pos_{varrname}",
+                f"(TS + {var_StartIndexCell}) % 1024"
+            )
+            rdf = rdf.Define(
+                f"RTS_neg_{varrname}",
+                f"((TS - {var_StartIndexCell}) % 1024 + 1024) % 1024"
+            )
 
     return rdf
 

@@ -20,13 +20,14 @@ hodo_trigger_channels = buildHodoTriggerChannels(run=runNumber)
 hodo_pos_channels = buildHodoPosChannels(run=runNumber)
 
 
-rootdir = f"root/Run{runNumber}/"
-outdir = f"plots/Run{runNumber}/"
+rootdir = f"results/root/Run{runNumber}/"
+plotdir = f"results/plots/Run{runNumber}/"
+htmldir = f"results/html/Run{runNumber}/"
 
 
 def makeConditionsPlots():
     plots = []
-    outdir_plots = outdir + "/Conditions_vs_Event"
+    outdir_plots = f"{plotdir}/Conditions_vs_Event"
     infile_name = f"{rootdir}/conditions_vs_event.root"
     infile = ROOT.TFile(infile_name, "READ")
 
@@ -141,7 +142,7 @@ def makeConditionsPlots():
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
     plots.insert(3, output_name + ".png")
 
-    output_html = f"html/Run{runNumber}/Conditions_vs_Event/index.html"
+    output_html = f"{htmldir}/Conditions_vs_Event/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -151,7 +152,7 @@ def makeFERSEnergySumPlots():
     plots = []
     infile_name = f"{rootdir}/fers_energy_sum.root"
     infile = ROOT.TFile(infile_name, "READ")
-    outdir_plots = outdir + "/FERS_EnergySum"
+    outdir_plots = f"{plotdir}/FERS_EnergySum"
     hists_CerEnergyHG = []
     hists_SciEnergyHG = []
     hists_CerEnergyLG = []
@@ -227,7 +228,7 @@ def makeFERSEnergySumPlots():
                outdir=outdir_plots, runNumber=runNumber)
     plots.insert(3, "FERS_Total_SciEnergyLG.png")
 
-    output_html = f"html/Run{runNumber}/FERS_EnergySum/index.html"
+    output_html = f"{htmldir}/FERS_EnergySum/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -238,7 +239,7 @@ def makeFERS1DPlots():
 
     infile_name = f"{rootdir}fers_all_channels_1D.root"
     infile = ROOT.TFile(infile_name, "READ")
-    outdir_plots = outdir + "/FERS_1D"
+    outdir_plots = f"{plotdir}/FERS_1D"
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
         for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
@@ -277,7 +278,7 @@ def makeFERS1DPlots():
 
             plots.append(output_name + ".png")
 
-    output_html = f"html/Run{runNumber}/FERS_1D/index.html"
+    output_html = f"{htmldir}/FERS_1D/index.html"
     generate_html(plots, outdir_plots,
                   output_html=output_html)
     return output_html
@@ -285,7 +286,7 @@ def makeFERS1DPlots():
 
 def makeFERSStatsPlots():
     plots = []
-    outdir_plots = outdir + "/FERS_Stats"
+    outdir_plots = f"{plotdir}/FERS_Stats"
     # load the json file
     import json
     infile_name = f"{rootdir}/fers_stats.json"
@@ -360,7 +361,7 @@ def makeFERSStatsPlots():
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
     plots.append(output_name + "_Sci.png")
 
-    output_html = f"html/Run{runNumber}/FERS_Stats/index.html"
+    output_html = f"{htmldir}/FERS_Stats/index.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
@@ -369,7 +370,7 @@ def makeFERSStatsPlots():
 # 2D FERS histograms, hg vs lg
 def makeFERS2DPlots():
     plots = []
-    outdir_plots = outdir + "/FERS_2D"
+    outdir_plots = f"{plotdir}/FERS_2D"
     infile_name = f"{rootdir}/fers_all_channels_2D.root"
     infile = ROOT.TFile(infile_name, "READ")
     for _, FERSBoard in FERSBoards.items():
@@ -401,7 +402,7 @@ def makeFERS2DPlots():
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True, extraToDraw=extraToDraw,
                            outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
                 plots.append(output_name + ".png")
-    output_html = f"html/Run{runNumber}/FERS_2D/index.html"
+    output_html = f"{htmldir}/FERS_2D/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -410,7 +411,7 @@ def makeFERS2DPlots():
 # FERS output vs event
 def trackFERSPlots():
     plots = []
-    outdir_plots = outdir + "/FERS_vs_Event"
+    outdir_plots = f"{plotdir}/FERS_vs_Event"
     infile_name = f"{rootdir}/fers_all_channels_2D_vs_event.root"
     infile = ROOT.TFile(infile_name, "READ")
     for _, FERSBoard in FERSBoards.items():
@@ -450,7 +451,7 @@ def trackFERSPlots():
                            extraToDraw=extraToDraw,
                            outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
                 plots.append(output_name + ".png")
-    output_html = f"html/Run{runNumber}/FERS_vs_Event/index.html"
+    output_html = f"{htmldir}/FERS_vs_Event/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -495,7 +496,7 @@ def makeDRS1DPlots():
                 f"Sci Channel: ({chan_Sci.groupNo}, {chan_Sci.channelNo})")
 
             output_name = f"DRS_Variable_Board{boardNo}_iTowerX{sTowerX}_iTowerY{sTowerY}"
-            outdir_plots = outdir + "/DRS_1D"
+            outdir_plots = f"{plotdir}/DRS_1D"
             DrawHistos([hist_C, hist_S], ["Cer", "Sci"], 1400, 2500, "DRS Output", 1, 1e12, "Counts",
                        output_name,
                        dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True, extraToDraw=extraToDraw,
@@ -503,14 +504,14 @@ def makeDRS1DPlots():
                        outdir=outdir_plots)
             plots.append(output_name + ".png")
 
-    output_html = f"html/Run{runNumber}/DRS_1D/index.html"
+    output_html = f"{htmldir}/DRS_1D/index.html"
     generate_html(plots, outdir_plots,
                   output_html=output_html)
     return output_html
 
 
 # DRS vs TS
-def makeDRS2DPlots(doSubtractMedian=False):
+def makeDRS2DPlots(doSubtractMedian=False, doRTS=0):
     suffix = ""
     ymin = -50
     ymax = 50
@@ -518,9 +519,15 @@ def makeDRS2DPlots(doSubtractMedian=False):
         suffix = "_subtractMedian"
         ymin = -20
         ymax = 40
+    varTS = "TS"
+    if doRTS == 1:
+        varTS = "RTSpos"
+    elif doRTS == 2:
+        varTS = "RTSneg"
+
     plots = []
-    outdir_plots = outdir + "/DRS_vs_TS"
-    infile_name = f"{rootdir}/drs_all_channels_2D.root"
+    outdir_plots = f"{plotdir}/DRS_vs_{varTS}"
+    infile_name = f"{rootdir}/drs_vs_{varTS}.root"
     infile = ROOT.TFile(infile_name, "READ")
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
@@ -530,9 +537,9 @@ def makeDRS2DPlots(doSubtractMedian=False):
             for var in ["Cer", "Sci"]:
                 chan = DRSBoard.GetChannelByTower(
                     iTowerX, iTowerY, isCer=(var == "Cer"))
-                hist_name = f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}{suffix}"
+                hist_name = f"hist_DRS_Board{boardNo}_{var}_vs_{varTS}_{sTowerX}_{sTowerY}{suffix}"
                 hist = infile.Get(hist_name)
-                output_name = f"DRS_{var}_vs_TS_{sTowerX}_{sTowerY}{suffix}"
+                output_name = f"DRS_{var}_vs_{varTS}_{sTowerX}_{sTowerY}{suffix}"
                 plots.append(output_name + ".png")
 
                 ymax_tmp = ymax
@@ -565,7 +572,7 @@ def makeDRS2DPlots(doSubtractMedian=False):
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                            extraToDraw=extraToDraw,
                            outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
-    output_html = f"html/Run{runNumber}/DRS_vs_TS{suffix}/index.html"
+    output_html = f"{htmldir}/DRS_vs_{varTS}{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
@@ -576,7 +583,7 @@ def trackDRSPlots():
     plots = []
     infile_name = f"{rootdir}/drs_all_channels_2D_vs_event.root"
     infile = ROOT.TFile(infile_name, "READ")
-    outdir_plots = outdir + "/DRS_vs_Event"
+    outdir_plots = f"{plotdir}/DRS_vs_Event"
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
         for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
@@ -614,7 +621,7 @@ def trackDRSPlots():
                            extraToDraw=extraToDraw,
                            outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
                 plots.append(output_name + ".png")
-    output_html = f"html/Run{runNumber}/DRS_vs_Event/index.html"
+    output_html = f"{htmldir}/DRS_vs_Event/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -632,7 +639,7 @@ def compareTimeReferencePlots(doSubtractMedian=False):
     plots = []
     infile_name = f"{rootdir}/time_reference_channels.root"
     infile = ROOT.TFile(infile_name, "READ")
-    outdir_plots = outdir + "/TimeReference"
+    outdir_plots = f"{plotdir}/TimeReference"
     for chan_name in time_reference_channels:
         hist_name = f"hist_{chan_name}{suffix}"
         hist = infile.Get(hist_name)
@@ -654,7 +661,7 @@ def compareTimeReferencePlots(doSubtractMedian=False):
                    outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
         plots.append(output_name + ".png")
 
-    output_html = f"html/Run{runNumber}/TimeReference{suffix}/index.html"
+    output_html = f"{htmldir}/TimeReference{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
@@ -672,7 +679,7 @@ def compareHodoTriggerPlots(doSubtractMedian=False):
     plots = []
     infile_name = f"{rootdir}/hodo_trigger_channels.root"
     infile = ROOT.TFile(infile_name, "READ")
-    outdir_plots = outdir + "/HodoTrigger"
+    outdir_plots = f"{plotdir}/HodoTrigger"
     for chan_name in hodo_trigger_channels:
         hist_name = f"hist_{chan_name}{suffix}"
         hist = infile.Get(hist_name)
@@ -694,7 +701,7 @@ def compareHodoTriggerPlots(doSubtractMedian=False):
                    outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
         plots.append(output_name + ".png")
 
-    output_html = f"html/Run{runNumber}/HodoTrigger{suffix}/index.html"
+    output_html = f"{htmldir}/HodoTrigger{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
@@ -712,7 +719,7 @@ def compareHodoPosPlots(doSubtractMedian=False):
     plots = []
     infile_name = f"{rootdir}/hodo_pos_channels.root"
     infile = ROOT.TFile(infile_name, "READ")
-    outdir_plots = outdir + "/HodoPos"
+    outdir_plots = f"{plotdir}/HodoPos"
     for board, channels in hodo_pos_channels.items():
         for chan_name in channels:
             hist_name = f"hist_{chan_name}{suffix}"
@@ -736,7 +743,7 @@ def compareHodoPosPlots(doSubtractMedian=False):
                        outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
             plots.append(output_name + ".png")
 
-    output_html = f"html/Run{runNumber}/HodoPos{suffix}/index.html"
+    output_html = f"{htmldir}/HodoPos{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
@@ -747,7 +754,7 @@ def checkFERSvsDRSSum():
     Check if the sum of FERS and DRS energies are consistent.
     """
     plots = []
-    outdir_plots = outdir + "/FERS_vs_DRS_Sum"
+    outdir_plots = f"{plotdir}/FERS_vs_DRS_Sum"
     infile_name = f"{rootdir}/fers_vs_drs.root"
     infile = ROOT.TFile(infile_name, "READ")
 
@@ -815,7 +822,7 @@ def checkFERSvsDRSSum():
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True,
                            outdir=outdir_plots, addOverflow=True, runNumber=runNumber, extraText=f"{var}")
 
-    output_html = f"html/Run{runNumber}/FERS_vs_DRS_Sum/index.html"
+    output_html = f"{htmldir}/FERS_vs_DRS_Sum/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html

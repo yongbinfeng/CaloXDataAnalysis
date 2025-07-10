@@ -11,6 +11,8 @@ print("Start running prepareDQMPlots.py")
 ROOT.ROOT.EnableImplicitMT(10)
 ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
+debugDRS = False
+
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
 rdf, rdf_prefilter = filterPrefireEvents(rdf)
 
@@ -25,7 +27,7 @@ print(f"Total number of events to process: {nEvents} in run {runNumber}")
 
 rdf = vectorizeFERS(rdf, FERSBoards)
 rdf = calculateEnergySumFERS(rdf, FERSBoards)
-rdf = processDRSBoards(rdf)
+rdf = processDRSBoards(rdf, debug=debugDRS)
 rdf = getDRSSum(rdf, DRSBoards)
 
 
@@ -272,8 +274,11 @@ def makeDRS1DPlots():
     return hists1d_DRS
 
 
-def makeDRS2DPlots():
+def makeDRS2DPlots(debug=False):
     hists2d_DRS_vs_TS = []
+    if debug:
+        hists2d_DRS_vs_RTSpos = []
+        hists2d_DRS_vs_RTSneg = []
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
         for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
@@ -286,21 +291,33 @@ def makeDRS2DPlots():
                 if chan is None:
                     continue
                 channelName = chan.GetChannelName()
-                # mean_value = stats[channelName]['mean']
-                # hist = rdf.Histo2D((
-                #    f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}",
-                #    f"DRS Board {boardNo} - {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};TS;{var} Variable",
-                #    1024, 0, 1024, 200, mean_value - 100, mean_value + 100),
-                #    "TS", chan.GetChannelName()
-                # )
                 hist_subtractMedian = rdf.Histo2D((
                     f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}_subtractMedian",
                     f"DRS Board {boardNo} - {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY} (subtract median);TS;{var} Variable",
                     1024, 0, 1024, 400, -200, 600),
                     "TS", channelName + "_subtractMedian"
                 )
-                # hists2d_DRS_vs_TS.append(hist)
                 hists2d_DRS_vs_TS.append(hist_subtractMedian)
+
+                if debug:
+                    hist_subtractMedian_RTSpos = rdf.Histo2D((
+                        f"hist_DRS_Board{boardNo}_{var}_vs_RTSpos_{sTowerX}_{sTowerY}_subtractMedian",
+                        f"DRS Board {boardNo} - {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY} (subtract median);RTS pos;{var} Variable",
+                        1024, 0, 1024, 400, -200, 600),
+                        f"RTS_pos_{channelName}", channelName +
+                        "_subtractMedian"
+                    )
+                    hist_subtractMedian_RTSneg = rdf.Histo2D((
+                        f"hist_DRS_Board{boardNo}_{var}_vs_RTSneg_{sTowerX}_{sTowerY}_subtractMedian",
+                        f"DRS Board {boardNo} - {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY} (subtract median);RTS neg;{var} Variable",
+                        1024, 0, 1024, 400, -200, 600),
+                        f"RTS_neg_{channelName}", channelName +
+                        "_subtractMedian"
+                    )
+                    hists2d_DRS_vs_RTSpos.append(hist_subtractMedian_RTSpos)
+                    hists2d_DRS_vs_RTSneg.append(hist_subtractMedian_RTSneg)
+    if debug:
+        return hists2d_DRS_vs_TS, hists2d_DRS_vs_RTSpos, hists2d_DRS_vs_RTSneg
     return hists2d_DRS_vs_TS
 
 
@@ -449,7 +466,13 @@ if __name__ == "__main__":
     # hists2d_FERS_vs_Event = trackFERSPlots()
 
     # hists1d_DRS = makeDRS1DPlots()
-    hists2d_DRS_vs_TS = makeDRS2DPlots()
+    hists2d_DRS_vs_RTSpos = None
+    hists2d_DRS_vs_RTSneg = None
+    if debugDRS:
+        hists2d_DRS_vs_TS, hists2d_DRS_vs_RTSpos, hists2d_DRS_vs_RTSneg = makeDRS2DPlots(
+            debug=True)
+    else:
+        hists2d_DRS_vs_TS = makeDRS2DPlots(debug=False)
     # hists2d_DRS_vs_Event = trackDRSPlots()
 
     time_reference_channels = buildTimeReferenceChannels(run=runNumber)
@@ -469,7 +492,7 @@ if __name__ == "__main__":
 
     print("\033[94mSave results\033[0m")
 
-    rootdir = f"root/Run{runNumber}"
+    rootdir = f"results/root/Run{runNumber}"
     if not os.path.exists(rootdir):
         os.makedirs(rootdir)
 
@@ -513,11 +536,25 @@ if __name__ == "__main__":
     #    hist.SetDirectory(outfile_DRS)
     #    hist.Write()
     # outfile_DRS.Close()
-    outfile_DRS = ROOT.TFile(f"{rootdir}/drs_all_channels_2D.root", "RECREATE")
+    outfile_DRS = ROOT.TFile(f"{rootdir}/drs_vs_TS.root", "RECREATE")
     for hist in hists2d_DRS_vs_TS:
         hist.SetDirectory(outfile_DRS)
         hist.Write()
     outfile_DRS.Close()
+    if debugDRS:
+        outfile_DRS_RTSpos = ROOT.TFile(
+            f"{rootdir}/drs_vs_RTSpos.root", "RECREATE")
+        for hist in hists2d_DRS_vs_RTSpos:
+            hist.SetDirectory(outfile_DRS_RTSpos)
+            hist.Write()
+        outfile_DRS_RTSpos.Close()
+
+        outfile_DRS_RTSneg = ROOT.TFile(
+            f"{rootdir}/drs_vs_RTSneg.root", "RECREATE")
+        for hist in hists2d_DRS_vs_RTSneg:
+            hist.SetDirectory(outfile_DRS_RTSneg)
+            hist.Write()
+        outfile_DRS_RTSneg.Close()
     # outfile_DRS = ROOT.TFile(
     #    f"{rootdir}/drs_all_channels_2D_vs_event.root", "RECREATE")
     # for hist in hists2d_DRS_vs_Event:
