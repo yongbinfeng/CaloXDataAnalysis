@@ -25,7 +25,7 @@ def DrawFERSBoards(run=316):
     [h2_Cer, h2_Cer_3mm], [h2_Sci, h2_Sci_3mm] = visualizeFERSBoards(
         fers_boards, suffix=f"Run{run}")
 
-    output_dir = f"plots/Run{run}/ChannelMaps/"
+    output_dir = f"results/plots/Run{run}/ChannelMaps/"
     output_name = f"FERS_Boards_Run{run}"
     DrawHistos([h2_Cer, h2_Cer_3mm], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
@@ -71,7 +71,7 @@ def DrawDRSBoards(run=316):
             h2_DRS_Cer.Fill(channel_Cer.iTowerX,
                             channel_Cer.iTowerY, cer_encoded)
 
-    output_dir = f"plots/Run{run}/ChannelMaps/"
+    output_dir = f"results/plots/Run{run}/ChannelMaps/"
     output_name = f"DRS_Boards_Run{run}"
     h2_DRS_Cer.SetMarkerSize(0.60)
     h2_DRS_Sci.SetMarkerSize(0.60)
