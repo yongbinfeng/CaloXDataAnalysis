@@ -183,6 +183,20 @@ def getDRSSum(rdf, DRSBoards, TS_start=0, TS_end=400):
     return rdf
 
 
+def getDRSPeakTS(rdf, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
+    # get the peak TS of DRS outputs per channel
+    TS_start = int(TS_start)
+    TS_end = int(TS_end)
+    for _, DRSBoard in DRSBoards.items():
+        for channel in DRSBoard:
+            varname = channel.GetChannelName()
+            rdf = rdf.Define(
+                f"{varname}_peakTS",
+                f"ArgMaxRange({varname}_subtractMedian_positive, {TS_start}, {TS_end}, {threshold})"
+            )
+    return rdf
+
+
 def loadRDF(runNumber, firstEvent=0, lastEvent=-1):
     import ROOT
     # Open the input ROOT file

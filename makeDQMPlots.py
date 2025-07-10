@@ -578,6 +578,134 @@ def makeDRS2DPlots(doSubtractMedian=False, doRTS=0):
     return output_html
 
 
+def makeDRSPeakTSPlots():
+    plots = []
+    outdir_plots = f"{plotdir}/DRSPeakTS"
+    infile_name = f"{rootdir}/drs_peak_ts.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    hists_Cer = []
+    hists_Sci = []
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+
+            hists = {}
+            channelNos = {}
+            for var in ["Cer", "Sci"]:
+                chan = DRSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                hist_name = f"hist_DRS_PeakTS_Board{boardNo}_peakTS_{sTowerX}_{sTowerY}_{var}"
+                hist = infile.Get(hist_name)
+                output_name = hist_name[5:-4]
+
+                if not hist:
+                    print(
+                        f"Warning: Histogram {hist_name} not found in {infile_name}")
+                    hists[var] = None
+                    channelNos[var] = -1
+                else:
+                    hists[var] = hist
+                    channelNos[var] = chan.channelNo
+
+            extraToDraw = ROOT.TPaveText(0.20, 0.65, 0.60, 0.90, "NDC")
+            extraToDraw.SetTextAlign(11)
+            extraToDraw.SetFillColorAlpha(0, 0)
+            extraToDraw.SetBorderSize(0)
+            extraToDraw.SetTextFont(42)
+            extraToDraw.SetTextSize(0.04)
+            extraToDraw.AddText(
+                f"B: {DRSBoard.boardNo}, G: {chan.groupNo}")
+            extraToDraw.AddText(f"Tower X: {iTowerX}")
+            extraToDraw.AddText(f"Tower Y: {iTowerY}")
+            extraToDraw.AddText(
+                f"Cer Channel: {channelNos['Cer']}")
+            extraToDraw.AddText(
+                f"Sci Channel: {channelNos['Sci']}")
+
+            hists_Cer.append(hists["Cer"])
+            hists_Sci.append(hists["Sci"])
+
+            DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], 0, 400, "Peak TS", 1, None, "Counts",
+                       output_name,
+                       dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False, extraToDraw=extraToDraw,
+                       outdir=outdir_plots, runNumber=runNumber)
+            plots.append(output_name + ".png")
+
+    # summary plots
+    hist_Cer_Sum = ROOT.TH1F("hist_DRS_PeakTS_Cer_Sum",
+                             "DRS Peak TS Cer Sum", 400, 0, 400)
+    hist_Sci_Sum = ROOT.TH1F("hist_DRS_PeakTS_Sci_Sum",
+                             "DRS Peak TS Sci Sum", 400, 0, 400)
+    for hist in hists_Cer:
+        if hist:
+            hist_Cer_Sum.Add(hist)
+    for hist in hists_Sci:
+        if hist:
+            hist_Sci_Sum.Add(hist)
+    DrawHistos([hist_Cer_Sum, hist_Sci_Sum], ["Cer", "Sci"], 0, 400, "Peak TS", 1, None, "Counts",
+               "DRS_PeakTS_Sum",
+               dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.insert(0, "DRS_PeakTS_Sum.png")
+
+    output_html = f"{htmldir}/DRSPeakTS/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=4,
+                  output_html=output_html)
+    return output_html
+
+
+def makeDRSPeakTS2DPlots():
+    plots = []
+    hists = []
+    outdir_plots = f"{plotdir}/DRSPeakTS2D"
+    infile_name = f"{rootdir}/drs_peak_ts.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+
+            hist_name = f"hist_DRSPeak_Cer_vs_Sci_Board{boardNo}_{sTowerX}_{sTowerY}"
+            hist = infile.Get(hist_name)
+            output_name = hist_name[5:]
+
+            if not hist:
+                print(
+                    f"Warning: Histogram {hist_name} not found in {infile_name}")
+                continue
+
+            hists.append(hist)
+
+            DrawHistos([hist], "", 0, 400, "Cer Peak TS", 0, 400, f"Sci Peak TS",
+                       output_name,
+                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+                       outdir=outdir_plots, addOverflow=False, runNumber=runNumber)
+
+            plots.append(output_name + ".png")
+
+    # summary plots
+    h2 = ROOT.TH2F("hist_DRSPeak_Cer_vs_Sci_Sum",
+                   "DRS Peak TS Cer vs Sci Sum", 400, 0, 400, 400, 0, 400)
+    for hist in hists:
+        if hist:
+            h2.Add(hist)
+
+    output_name = "DRS_PeakTS_Cer_vs_Sci_Sum"
+    DrawHistos([hist], "", 0, 400, "Cer Peak TS", 0, 400, f"Sci Peak TS",
+                       output_name,
+                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+                       outdir=outdir_plots, addOverflow=False, runNumber=runNumber)
+    plots.insert(0, output_name + ".png")
+
+    output_html = f"{htmldir}/DRSPeakTS2D/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=4,
+                  output_html=output_html)
+    return output_html
+
+
 # DRS mean vs event
 def trackDRSPlots():
     plots = []
@@ -842,6 +970,8 @@ if __name__ == "__main__":
     output_htmls["fers stats"] = makeFERSStatsPlots()
     # makeDRS2DPlots()
     output_htmls["drs 2D"] = makeDRS2DPlots(doSubtractMedian=True)
+    output_htmls["drs peak ts"] = makeDRSPeakTSPlots()
+    output_htmls["drs peak ts 2D"] = makeDRSPeakTS2DPlots()
 
     output_htmls["time reference"] = compareTimeReferencePlots(True)
     output_htmls["hodo trigger"] = compareHodoTriggerPlots(True)

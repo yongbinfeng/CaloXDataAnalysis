@@ -1,7 +1,7 @@
 import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels
-from utils.utils import number2string, processDRSBoards, filterPrefireEvents, loadRDF, calculateEnergySumFERS, getDRSSum, vectorizeFERS
+from utils.utils import number2string, processDRSBoards, filterPrefireEvents, loadRDF, calculateEnergySumFERS, getDRSSum, vectorizeFERS, getDRSPeakTS
 from runconfig import runNumber, firstEvent, lastEvent
 import time
 
@@ -29,6 +29,7 @@ rdf = vectorizeFERS(rdf, FERSBoards)
 rdf = calculateEnergySumFERS(rdf, FERSBoards)
 rdf = processDRSBoards(rdf, debug=debugDRS)
 rdf = getDRSSum(rdf, DRSBoards)
+rdf = getDRSPeakTS(rdf, DRSBoards, 0, 400, 9)
 
 
 def monitorConditions():
@@ -349,13 +350,6 @@ def trackDRSPlots():
 def compareDRSChannels(channels_to_compare):
     hists_trigger = []
     for chan_name in channels_to_compare:
-        # hist = rdf.Histo2D((
-        #    f"hist_{chan_name}",
-        #    f"{chan_name};TS;DRS values",
-        #    1024, 0, 1024,
-        #    200, 500, 2500),
-        #    "TS", chan_name
-        # )
         hist_subtractMedian = rdf.Histo2D((
             f"hist_{chan_name}_subtractMedian",
             f"{chan_name} (subtract median);TS;DRS values",
@@ -363,13 +357,11 @@ def compareDRSChannels(channels_to_compare):
             300, -2500, 500),
             "TS", chan_name + "_subtractMedian"
         )
-        # hists_trigger.append(hist)
         hists_trigger.append(hist_subtractMedian)
     return hists_trigger
 
 
 def checkFERSvsDRSSum():
-
     xymax = {
         "Cer": (1000, 4000),
         "Sci": (9000, 9000)
@@ -454,6 +446,49 @@ def checkFERSvsDRSSum():
     return h2s_FERS_VS_DRS_sum + h2s_FERSLG_VS_DRS_sum + h2s_FERS_VS_DRS + h2s_FERSLG_VS_DRS
 
 
+def checkDRSPeakTS():
+    h1s_DRSPeakTS = {}
+    h1s_DRSPeakTS["Cer"] = []
+    h1s_DRSPeakTS["Sci"] = []
+    h2s_DRSPeakTS_Cer_vs_Sci = []
+
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+
+            channelNames = {}
+            for var in ["Cer", "Sci"]:
+                chan_DRS = DRSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                if chan_DRS is None:
+                    print(
+                        f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
+                    continue
+
+                channelName = chan_DRS.GetChannelName()
+                channelNames[var] = channelName
+
+                h1_DRS_PeakTS = rdf.Histo1D((
+                    f"hist_DRS_PeakTS_Board{boardNo}_peakTS_{sTowerX}_{sTowerY}_{var}",
+                    f"DRS Peak TS for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var};Peak TS;Counts",
+                    400, 0, 400),
+                    channelName + "_peakTS"
+                )
+                h1s_DRSPeakTS[var].append(h1_DRS_PeakTS)
+
+            h2_DRSPeak_Cer_vs_Sci = rdf.Histo2D((
+                f"hist_DRSPeak_Cer_vs_Sci_Board{boardNo}_{sTowerX}_{sTowerY}",
+                f"DRS Peak TS - CER vs SCI for Board{boardNo}, Tower({sTowerX}, {sTowerY});CER Peak TS;SCI Peak TS",
+                400, 0, 400, 400, 0, 400),
+                channelNames["Cer"] + "_peakTS",
+                channelNames["Sci"] + "_peakTS"
+            )
+            h2s_DRSPeakTS_Cer_vs_Sci.append(h2_DRSPeak_Cer_vs_Sci)
+    return h1s_DRSPeakTS["Cer"], h1s_DRSPeakTS["Sci"], h2s_DRSPeakTS_Cer_vs_Sci
+
+
 if __name__ == "__main__":
     start_time = time.time()
 
@@ -474,6 +509,8 @@ if __name__ == "__main__":
     else:
         hists2d_DRS_vs_TS = makeDRS2DPlots(debug=False)
     # hists2d_DRS_vs_Event = trackDRSPlots()
+
+    hists1d_DRSPeakTS_Cer, hists1d_DRSPeakTS_Sci, hists2d_DRSPeakTS_Cer_vs_Sci = checkDRSPeakTS()
 
     time_reference_channels = buildTimeReferenceChannels(run=runNumber)
     hists2d_time_reference = compareDRSChannels(time_reference_channels)
@@ -561,6 +598,18 @@ if __name__ == "__main__":
     #    hist.SetDirectory(outfile_DRS)
     #    hist.Write()
     # outfile_DRS.Close()
+
+    outfile_DRSPeakTS = ROOT.TFile(f"{rootdir}/drs_peak_ts.root", "RECREATE")
+    for hist in hists1d_DRSPeakTS_Cer:
+        hist.SetDirectory(outfile_DRSPeakTS)
+        hist.Write()
+    for hist in hists1d_DRSPeakTS_Sci:
+        hist.SetDirectory(outfile_DRSPeakTS)
+        hist.Write()
+    for hist in hists2d_DRSPeakTS_Cer_vs_Sci:
+        hist.SetDirectory(outfile_DRSPeakTS)
+        hist.Write()
+    outfile_DRSPeakTS.Close()
 
     outfile_time_reference = ROOT.TFile(
         f"{rootdir}/time_reference_channels.root", "RECREATE")
