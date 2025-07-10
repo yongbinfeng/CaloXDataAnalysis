@@ -179,22 +179,22 @@ def makeFERSEnergySumPlots():
         hists_CerEnergyLG.append(hist_CerEnergyLG)
         hists_SciEnergyLG.append(hist_SciEnergyLG)
 
-    DrawHistos(hists_CerEnergyHG, legends, 0, 20000, "Cer Energy HG", 0, 2000, "Events",
+    DrawHistos(hists_CerEnergyHG, legends, 0, 20000, "Cer Energy HG", 0, None, "Events",
                "FERS_CerEnergyHG",
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.6, 0.90, 0.9])
     plots.append("FERS_CerEnergyHG.png")
-    DrawHistos(hists_SciEnergyHG, legends, 0, 20000, "Sci Energy HG", 0, 2000, "Events",
+    DrawHistos(hists_SciEnergyHG, legends, 0, 20000, "Sci Energy HG", 0, None, "Events",
                "FERS_SciEnergyHG",
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.6, 0.90, 0.9])
     plots.append("FERS_SciEnergyHG.png")
-    DrawHistos(hists_CerEnergyLG, legends, 0, 20000, "Cer Energy LG", 0, 2000, "Events",
+    DrawHistos(hists_CerEnergyLG, legends, 0, 20000, "Cer Energy LG", 0, None, "Events",
                "FERS_CerEnergyLG",
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.6, 0.90, 0.9])
     plots.append("FERS_CerEnergyLG.png")
-    DrawHistos(hists_SciEnergyLG, legends, 0, 20000, "Sci Energy LG", 0, 2000, "Events",
+    DrawHistos(hists_SciEnergyLG, legends, 0, 20000, "Sci Energy LG", 0, None, "Events",
                "FERS_SciEnergyLG",
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.6, 0.90, 0.9])
@@ -205,22 +205,23 @@ def makeFERSEnergySumPlots():
     hist_SciEnergyHG = infile.Get("hist_FERS_SciEnergyHG")
     hist_CerEnergyLG = infile.Get("hist_FERS_CerEnergyLG")
     hist_SciEnergyLG = infile.Get("hist_FERS_SciEnergyLG")
-    DrawHistos([hist_CerEnergyHG], "", 0, 2e5, "Cer Energy HG", 0, 2000, "Events",
+    ymax = None  # let plotter decide the ymax
+    DrawHistos([hist_CerEnergyHG], "", 0, 2e5, "Cer Energy HG", 0, ymax, "Events",
                "FERS_Total_CerEnergyHG",
                dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
     plots.insert(0, "FERS_Total_CerEnergyHG.png")
-    DrawHistos([hist_SciEnergyHG], "", 0, 2e5, "Sci Energy HG", 0, 2000, "Events",
+    DrawHistos([hist_SciEnergyHG], "", 0, 2e5, "Sci Energy HG", 0, ymax, "Events",
                "FERS_Total_SciEnergyHG",
                dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
     plots.insert(1, "FERS_Total_SciEnergyHG.png")
-    DrawHistos([hist_CerEnergyLG], "", 0, 2e5, "Cer Energy LG", 0, 2000, "Events",
+    DrawHistos([hist_CerEnergyLG], "", 0, 2e5, "Cer Energy LG", 0, ymax, "Events",
                "FERS_Total_CerEnergyLG",
                dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
     plots.insert(2, "FERS_Total_CerEnergyLG.png")
-    DrawHistos([hist_SciEnergyLG], "", 0, 2e5, "Sci Energy LG", 0, 2000, "Events",
+    DrawHistos([hist_SciEnergyLG], "", 0, 2e5, "Sci Energy LG", 0, ymax, "Events",
                "FERS_Total_SciEnergyLG",
                dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
@@ -322,11 +323,11 @@ def makeFERSStatsPlots():
     output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_mean"
     DrawHistos([h2_Cer_HG_mean, h2_Cer_3mm_HG_mean], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=1600)
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=8000)
     plots.append(output_name + "_Cer.png")
     DrawHistos([h2_Sci_HG_mean, h2_Sci_3mm_HG_mean], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=1600)
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
     plots.append(output_name + "_Sci.png")
 
     output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_max"
@@ -342,11 +343,11 @@ def makeFERSStatsPlots():
     output_name = f"FERS_Boards_Run{runNumber}_Stats_LG_mean"
     DrawHistos([h2_Cer_LG_mean, h2_Cer_3mm_LG_mean], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=1600)
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=8000)
     plots.append(output_name + "_Cer.png")
     DrawHistos([h2_Sci_LG_mean, h2_Sci_3mm_LG_mean], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=1600)
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
     plots.append(output_name + "_Sci.png")
 
     output_name = f"FERS_Boards_Run{runNumber}_Stats_LG_max"
@@ -698,9 +699,8 @@ def compareHodoTriggerPlots(doSubtractMedian=False):
                   output_html=output_html)
     return output_html
 
+
 # hodo position
-
-
 def compareHodoPosPlots(doSubtractMedian=False):
     suffix = ""
     ymin = 500
