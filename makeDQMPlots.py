@@ -694,10 +694,10 @@ def makeDRSPeakTS2DPlots():
             h2.Add(hist)
 
     output_name = "DRS_PeakTS_Cer_vs_Sci_Sum"
-    DrawHistos([hist], "", 0, 400, "Cer Peak TS", 0, 400, f"Sci Peak TS",
-                       output_name,
-                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
-                       outdir=outdir_plots, addOverflow=False, runNumber=runNumber)
+    DrawHistos([h2], "", 0, 400, "Cer Peak TS", 0, 400, f"Sci Peak TS",
+               output_name,
+               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+               outdir=outdir_plots, addOverflow=False, runNumber=runNumber)
     plots.insert(0, output_name + ".png")
 
     output_html = f"{htmldir}/DRSPeakTS2D/index.html"

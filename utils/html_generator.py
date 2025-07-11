@@ -1,10 +1,11 @@
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.html"):
     """
-    Generate an HTML file to view PNG plots in a grid layout with sticky filter and wildcard support.
+    Generate an HTML file to view PNG plots in a grid layout with filter, regex, deep linking, and Geneva time.
 
     Parameters:
     - png_files (list of str): list of PNG filenames (e.g., ['a.png', 'b.png'])
@@ -21,7 +22,8 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
     rel_paths = [os.path.relpath(png_path, start=html_dir)
                  for png_path in png_paths]
 
-    timestamp = datetime.now().strftime("%B %d, %Y, %I:%M %p")
+    timestamp = datetime.now(ZoneInfo("Europe/Zurich")
+                             ).strftime("%B %d, %Y, %I:%M %p %Z")
 
     html_header = f"""<!DOCTYPE html>
 <html>
@@ -41,8 +43,9 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
     }}
 
     .timestamp {{
-      font-size: 13px;
-      color: #666;
+      font-size: 15px;
+      font-weight: bold;
+      color: #444;
       margin-bottom: 20px;
     }}
 
@@ -66,6 +69,13 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
       padding: 5px;
       width: 400px;
       margin-right: 10px;
+    }}
+
+    button {{
+      font-size: 14px;
+      padding: 5px 10px;
+      margin-left: 10px;
+      cursor: pointer;
     }}
 
     .grid {{
@@ -124,6 +134,7 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
     <input type="text" id="filterInput" placeholder="Filter by filename..." onkeyup="filterPlots()">
     <label><input type="checkbox" id="regexToggle" onchange="filterPlots()"> Use Wildcard/Regex</label>
     <label><input type="checkbox" id="caseToggle" onchange="filterPlots()"> Case Sensitive</label>
+    <button onclick="clearFilter()">Clear Filter</button>
   </div>
 
   <div id="plotContainer" class="grid">
@@ -131,23 +142,42 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
 
     html_body = ""
     for filename, rel_path in zip(png_files, rel_paths):
-        block = f"""    <div class="plot" data-filename="{filename}">
+        html_body += f"""    <div class="plot" data-filename="{filename}">
       <div class="filename">{filename}</div>
       <a href="{rel_path}" target="_blank">
         <img src="{rel_path}" alt="{filename}">
       </a>
     </div>
 """
-        html_body += block
 
     html_footer = """  </div>
 
   <script>
+    function getQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        filter: params.get("filter") || "",
+        regex: params.get("regex") === "1",
+        caseSensitive: params.get("case") === "1",
+      };
+    }
+
+    function updateURLParams(filter, regex, caseSensitive) {
+      const params = new URLSearchParams();
+      if (filter) params.set("filter", filter);
+      if (regex) params.set("regex", "1");
+      if (caseSensitive) params.set("case", "1");
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      history.replaceState(null, "", newUrl);
+    }
+
     function filterPlots() {
       const input = document.getElementById("filterInput").value.trim();
       const useRegex = document.getElementById("regexToggle").checked;
       const caseSensitive = document.getElementById("caseToggle").checked;
       const plots = document.getElementsByClassName("plot");
+
+      updateURLParams(input, useRegex, caseSensitive);
 
       for (let plot of plots) {
         const name = plot.getAttribute("data-filename");
@@ -155,7 +185,7 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
 
         if (useRegex) {
           try {
-            const escaped = input.replace(/[-\\/\\^$+?.()|[\]{{}}]/g, '\\\\$&')
+            const escaped = input.replace(/[-\\/\\^$+?.()|[\\]{{}}]/g, '\\\\$&')
                                  .replace(/\\*/g, '.*')
                                  .replace(/\\?/g, '.');
             const flags = caseSensitive ? "" : "i";
@@ -173,6 +203,22 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
         plot.style.display = match ? "" : "none";
       }
     }
+
+    function clearFilter() {
+      document.getElementById("filterInput").value = "";
+      document.getElementById("regexToggle").checked = false;
+      document.getElementById("caseToggle").checked = false;
+      history.replaceState(null, "", window.location.pathname);
+      filterPlots();
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const { filter, regex, caseSensitive } = getQueryParams();
+      document.getElementById("filterInput").value = filter;
+      document.getElementById("regexToggle").checked = regex;
+      document.getElementById("caseToggle").checked = caseSensitive;
+      filterPlots();
+    });
   </script>
 
 </body>
