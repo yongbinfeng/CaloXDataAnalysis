@@ -662,6 +662,14 @@ def makeDRSPeakTS2DPlots():
     outdir_plots = f"{plotdir}/DRSPeakTS2D"
     infile_name = f"{rootdir}/drs_peak_ts.root"
     infile = ROOT.TFile(infile_name, "READ")
+
+    # Create a dashed diagonal line from (0,0) to (400,400)
+    diagonal_line = ROOT.TLine(0, 0, 400, 400)
+    diagonal_line.SetLineStyle(2)  # 2 = dashed
+    diagonal_line.SetLineWidth(1)
+    diagonal_line.SetLineColor(ROOT.kRed)
+    extraToDraw = diagonal_line
+
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
         for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
@@ -681,8 +689,8 @@ def makeDRSPeakTS2DPlots():
 
             DrawHistos([hist], "", 0, 400, "Cer Peak TS", 0, 400, f"Sci Peak TS",
                        output_name,
-                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
-                       outdir=outdir_plots, addOverflow=False, runNumber=runNumber)
+                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
+                       outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
 
             plots.append(output_name + ".png")
 
@@ -696,8 +704,8 @@ def makeDRSPeakTS2DPlots():
     output_name = "DRS_PeakTS_Cer_vs_Sci_Sum"
     DrawHistos([h2], "", 0, 400, "Cer Peak TS", 0, 400, f"Sci Peak TS",
                output_name,
-               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
-               outdir=outdir_plots, addOverflow=False, runNumber=runNumber)
+               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
+               outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
     plots.insert(0, output_name + ".png")
 
     output_html = f"{htmldir}/DRSPeakTS2D/index.html"
