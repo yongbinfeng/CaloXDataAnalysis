@@ -57,6 +57,26 @@ def vectorizeFERS(rdf, FERSBoards):
     return rdf
 
 
+def subtractFERSPedestal(rdf, FERSBoards, pedestals):
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        for channel in FERSBoard:
+            channelNo = channel.channelNo
+            channelNameHG = channel.GetHGChannelName()
+            pedestal = pedestals[channelNameHG]
+            # subtract pedestal from HG and LG energies
+            rdf = rdf.Define(
+                f"FERS_Board{boardNo}_energyHG_{channelNo}_subtracted",
+                f"FERS_Board{boardNo}_energyHG_{channelNo} - {pedestal}"
+            )
+            # not on LG yet
+            rdf = rdf.Define(
+                f"FERS_Board{boardNo}_energyLG_{channelNo}_subtracted",
+                f"FERS_Board{boardNo}_energyLG_{channelNo} - 0."
+            )
+    return rdf
+
+
 def processDRSBoards(rdf, debug=False):
     import re
     # Get the list of all branch names
@@ -107,10 +127,13 @@ def processDRSBoards(rdf, debug=False):
     return rdf
 
 
-def calculateEnergySumFERS(rdf, FERSBoards):
+def calculateEnergySumFERS(rdf, FERSBoards, subtractPedestal=False):
     """
     Calculate the Sci and Cer energy sum for FERS boards, per board and per event.
     """
+    suffix = ""
+    if subtractPedestal:
+        suffix = "_subtracted"
     boardNos = []
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
@@ -120,47 +143,51 @@ def calculateEnergySumFERS(rdf, FERSBoards):
         channels_Sci = FERSBoard.GetSciChannels()
 
         string_CerEnergyHG = "+".join(
-            chan.GetHGChannelName() for chan in channels_Cer
+            chan.GetHGChannelName() + suffix for chan in channels_Cer
         )
         string_CerEnergyLG = "+".join(
             chan.GetLGChannelName() for chan in channels_Cer
         )
         string_SciEnergyHG = "+".join(
-            chan.GetHGChannelName() for chan in channels_Sci
+            chan.GetHGChannelName() + suffix for chan in channels_Sci
         )
         string_SciEnergyLG = "+".join(
             chan.GetLGChannelName() for chan in channels_Sci
         )
         # per-board energy sum
         rdf = rdf.Define(
-            f"FERS_Board{boardNo}_CerEnergyHG",
+            f"FERS_Board{boardNo}_CerEnergyHG" + suffix,
             f"({string_CerEnergyHG})")
         rdf = rdf.Define(
-            f"FERS_Board{boardNo}_CerEnergyLG",
+            f"FERS_Board{boardNo}_CerEnergyLG" + suffix,
             f"({string_CerEnergyLG})")
         rdf = rdf.Define(
-            f"FERS_Board{boardNo}_SciEnergyHG",
+            f"FERS_Board{boardNo}_SciEnergyHG" + suffix,
             f"({string_SciEnergyHG})")
         rdf = rdf.Define(
-            f"FERS_Board{boardNo}_SciEnergyLG",
+            f"FERS_Board{boardNo}_SciEnergyLG" + suffix,
             f"({string_SciEnergyLG})")
     # per-event energy sum
     string_CerEnergyHG_Total = "+".join(
-        f"FERS_Board{boardNo}_CerEnergyHG" for boardNo in boardNos
+        f"FERS_Board{boardNo}_CerEnergyHG" + suffix for boardNo in boardNos
     )
     string_CerEnergyLG_Total = "+".join(
-        f"FERS_Board{boardNo}_CerEnergyLG" for boardNo in boardNos
+        f"FERS_Board{boardNo}_CerEnergyLG" + suffix for boardNo in boardNos
     )
     string_SciEnergyHG_Total = "+".join(
-        f"FERS_Board{boardNo}_SciEnergyHG" for boardNo in boardNos
+        f"FERS_Board{boardNo}_SciEnergyHG" + suffix for boardNo in boardNos
     )
     string_SciEnergyLG_Total = "+".join(
-        f"FERS_Board{boardNo}_SciEnergyLG" for boardNo in boardNos
+        f"FERS_Board{boardNo}_SciEnergyLG" + suffix for boardNo in boardNos
     )
-    rdf = rdf.Define("FERS_CerEnergyHG", f"({string_CerEnergyHG_Total})")
-    rdf = rdf.Define("FERS_CerEnergyLG", f"({string_CerEnergyLG_Total})")
-    rdf = rdf.Define("FERS_SciEnergyHG", f"({string_SciEnergyHG_Total})")
-    rdf = rdf.Define("FERS_SciEnergyLG", f"({string_SciEnergyLG_Total})")
+    rdf = rdf.Define("FERS_CerEnergyHG" + suffix,
+                     f"({string_CerEnergyHG_Total})")
+    rdf = rdf.Define("FERS_CerEnergyLG" + suffix,
+                     f"({string_CerEnergyLG_Total})")
+    rdf = rdf.Define("FERS_SciEnergyHG" + suffix,
+                     f"({string_SciEnergyHG_Total})")
+    rdf = rdf.Define("FERS_SciEnergyLG" + suffix,
+                     f"({string_SciEnergyLG_Total})")
 
     return rdf
 
