@@ -2,7 +2,7 @@ import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards
 from utils.utils import number2string, getDataFile
-from runNumber import runNumber
+from runconfig import runNumber
 import time
 
 start_time = time.time()

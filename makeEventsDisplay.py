@@ -5,7 +5,7 @@ from CMSPLOTS.myFunction import DrawHistos
 from utils.channel_map import buildDRSBoards, buildFERSBoards
 from utils.utils import number2string, getDataFile, processDRSBoards
 from utils.html_generator import generate_html
-from runNumber import runNumber
+from runconfig import runNumber
 import time
 
 
