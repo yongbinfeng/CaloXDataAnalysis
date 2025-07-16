@@ -1,5 +1,13 @@
 import numpy as np
 from utils.CaloXChannel import FERSBoard, DRSBoard
+import json
+
+f_scanruns = "data/scanruns.json"
+with open(f_scanruns, 'r') as f:
+    temp = json.load(f)
+    scanruns = temp["scanruns"]
+    print("Loaded scan runs from", f_scanruns)
+print("Scan runs:", scanruns)
 
 
 def buildFERSBoards(run=316):
@@ -143,6 +151,11 @@ def buildDRSBoards(run=316):
     """
     base_DRSBoard = DRSBoard(boardNo=-1)
     DRSBoards = {}
+    if run in scanruns:
+        # no DRS boards in scan runs
+        # only FERS
+        return DRSBoards
+
     if run < 685:
         DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 5)
@@ -217,6 +230,11 @@ def buildTimeReferenceChannels(run=316):
     Returns a list of time reference channels.
     """
     time_reference_channels = []
+    if run in scanruns:
+        # no time reference channels in scan runs
+        # since no drs boards
+        return time_reference_channels
+
     if run < 685:
         time_reference_channels.append("DRS_Board0_Group3_Channel7")
         time_reference_channels.append("DRS_Board2_Group3_Channel7")
@@ -243,6 +261,11 @@ def buildHodoTriggerChannels(run=316):
     Returns a list of hodoscope trigger channels.
     """
     hodo_trigger_channels = []
+    if run in scanruns:
+        # no hodoscope trigger channels in scan runs
+        # since no drs boards
+        return hodo_trigger_channels
+
     if run < 685:
         hodo_trigger_channels.append("DRS_Board1_Group2_Channel0")
         hodo_trigger_channels.append("DRS_Board1_Group2_Channel1")
@@ -261,6 +284,11 @@ def buildHodoPosChannels(run=316):
     Returns a dictionary containing the hodoscope channels for the position measurements
     """
     hodoscope_channels = {}
+    if run in scanruns:
+        # no hodoscope position channels in scan runs
+        # since no drs boards
+        return hodoscope_channels
+
     hodoscope_channels["TopX"] = [
         "DRS_Board1_Group0_Channel1",
         "DRS_Board1_Group0_Channel2",
