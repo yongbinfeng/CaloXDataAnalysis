@@ -19,7 +19,7 @@ def runFit(hist, outdir, outname):
     mu0_guess = 145.0
     dpe_guess = 140.0
     sigma_guess = 20.0
-    npe_max = 3  # Number of peaks (0 = pedestal)
+    npe_max = 4  # Number of peaks (0 = pedestal)
     mu_pe_guess = 1.0   # Mean photon count
     p_xt_guess = 0.05   # Crosstalk probability
 
@@ -33,12 +33,15 @@ def runFit(hist, outdir, outname):
         "mu_ped_" + outname, "Pedestal mean", mu0_guess, mu0_guess - 10, mu0_guess + 10)
     dpe = ROOT.RooRealVar(
         "dpe_" + outname, "1 p.e. spacing", dpe_guess, 100, 160)
-    sigma = ROOT.RooRealVar(
-        "sigma_" + outname, "Single p.e. sigma", sigma_guess, 10, 30)
+    sigmaL = ROOT.RooRealVar(
+        "sigmaL_" + outname, "Single p.e. sigma", sigma_guess, 10, 30)
+    sigmaR = ROOT.RooRealVar(
+        "sigmaR_" + outname, "Single p.e. sigma right", sigma_guess, 10, 30)
 
-    alpha_cb = ROOT.RooRealVar(
-        "alpha_cb_" + outname, "CrystalBall alpha", 1.5, 0.5, 5.0)
-    n_cb = ROOT.RooRealVar("n_cb_" + outname, "CrystalBall n", 5.0, 0.01, 50)
+    alphaL = ROOT.RooRealVar("alphaL", "Left tail alpha", 1.5, 0.5, 5.0)
+    nL = ROOT.RooRealVar("nL", "Left tail n", 5.0, 0.5, 50.0)
+    alphaR = ROOT.RooRealVar("alphaR", "Right tail alpha", 1.5, 0.5, 5.0)
+    nR = ROOT.RooRealVar("nR", "Right tail n", 5.0, 0.5, 50.0)
 
     # --------------------------
     # 4. Build Multi-Peak Crystal Ball Model
@@ -51,6 +54,8 @@ def runFit(hist, outdir, outname):
     sigma_list = []
     cb_list = []
     coef_refs = []
+    alpha_list = []
+    n_cb_list = []
 
     # Poisson-based initial fractions
     poisson_weights = []
@@ -65,14 +70,32 @@ def runFit(hist, outdir, outname):
     for i in range(npe_max):
         mu_i = ROOT.RooFormulaVar(
             f"mu_{i}_{outname}", f"@0 + {i}*@1", ROOT.RooArgList(mu_ped, dpe))
-        sigma_i = ROOT.RooFormulaVar(
-            f"sigma_{i}_{outname}", f"sqrt({i+1})*@0", ROOT.RooArgList(sigma))
-        cb_i = ROOT.RooCBShape(
-            f"cb_{i}_{outname}", f"CB {i} p.e.", x, mu_i, sigma_i, alpha_cb, n_cb)
+        sigma_L_i = ROOT.RooFormulaVar(
+            f"sigma_L_{i}_{outname}", f"sqrt({i+1})*@0", ROOT.RooArgList(sigmaL))
+        sigma_R_i = ROOT.RooFormulaVar(
+            f"sigma_R_{i}_{outname}", f"sqrt({i+1})*@0", ROOT.RooArgList(sigmaR))
+        alpha_L_cb_i = ROOT.RooRealVar(
+            f"alpha_L_cb_{i}_{outname}", "CrystalBall alpha", 1.5, 0.5, 5.0)
+        alpha_R_cb_i = ROOT.RooRealVar(
+            f"alpha_R_cb_{i}_{outname}", "CrystalBall alpha right", 1.5, 0.5, 5.0)
+        n_L_cb_i = ROOT.RooRealVar(
+            f"n_L_cb_{i}_{outname}", "CrystalBall n", 5.0, 0.01, 50)
+        n_R_cb_i = ROOT.RooRealVar(
+            f"n_R_cb_{i}_{outname}", "CrystalBall n right", 5.0, 0.01, 50)
+
+        cb_i = ROOT.RooCrystalBall(
+            f"cb_{i}_{outname}", f"CB {i} p.e.", x, mu_i, sigma_L_i, sigma_R_i,
+            alphaL, nL, alphaR, nR)
 
         mu_list.append(mu_i)
-        sigma_list.append(sigma_i)
+        sigma_list.append(sigma_L_i)
+        sigma_list.append(sigma_R_i)
         cb_list.append(cb_i)
+        alpha_list.append(alpha_L_cb_i)
+        alpha_list.append(alpha_R_cb_i)
+        n_cb_list.append(n_R_cb_i)
+        n_cb_list.append(n_L_cb_i)
+
         pdf_list.add(cb_i)
 
         if i < npe_max - 1:  # Coefficients only for N-1 peaks
@@ -93,11 +116,12 @@ def runFit(hist, outdir, outname):
         "tau_" + outname, "Background slope", -0.01, -2.0, -1e-3)
     bkg = ROOT.RooExponential("bkg_" + outname, "Background", x, tau)
     frac_bkg = ROOT.RooRealVar(
-        "frac_bkg_" + outname, "Background fraction", 0.05, 0.0, 1.0)
+        "frac_bkg_" + outname, "Background fraction", 0.0, 0.0, 1.0)
+    frac_bkg.setConstant(True)  # Fix background fraction for now
 
     final_pdf = ROOT.RooAddPdf(
         "final_pdf_" + outname, "Peaks + Background",
-        ROOT.RooArgList(total_pdf, bkg),
+        ROOT.RooArgList(bkg, total_pdf),
         ROOT.RooArgList(frac_bkg)
     )
 
