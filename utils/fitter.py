@@ -4,22 +4,37 @@ import os
 import math
 
 
-def runFit(hist, outdir, outname):
+def runFit(hist, outdir, outname, npe_max=3, is3mm=False):
     # --------------------------
     # 1. Define Observable
     # --------------------------
     x = ROOT.RooRealVar("x_" + outname, "Pulse Amplitude (a.u.)", 0, 1000)
-    x.setRange("fitrange", 10, 700)
+    if is3mm:
+        x.setRange("fitrange", 10, 700)
+    else:
+        x.setRange("fitrange", 20, 500)
+    x.setRange("plotrange", 0, 1000)
     data_hist = ROOT.RooDataHist(
         "data_hist_" + outname, "SiPM data", ROOT.RooArgList(x), hist)
 
     # --------------------------
     # 2. Initial Guesses
     # --------------------------
-    mu0_guess = 145.0
-    dpe_guess = 140.0
-    sigma_guess = 20.0
-    npe_max = 4  # Number of peaks (0 = pedestal)
+    if is3mm:
+        mu0_guess = 145.0
+        dpe_guess = 140.0
+        dpe_min = 115
+        dpe_max = 170
+        sigma_guess = 20.0
+    else:
+        # Default values for 6mm SiPMs
+        mu0_guess = 140.0
+        dpe_guess = 60.0
+        dpe_min = 51
+        dpe_max = 75
+        sigma_guess = 15.0
+
+    npe_max = npe_max  # Number of peaks (0 = pedestal)
     mu_pe_guess = 1.0   # Mean photon count
     p_xt_guess = 0.05   # Crosstalk probability
 
@@ -32,7 +47,7 @@ def runFit(hist, outdir, outname):
     mu_ped = ROOT.RooRealVar(
         "mu_ped_" + outname, "Pedestal mean", mu0_guess, mu0_guess - 10, mu0_guess + 10)
     dpe = ROOT.RooRealVar(
-        "dpe_" + outname, "1 p.e. spacing", dpe_guess, 100, 160)
+        "dpe_" + outname, "1 p.e. spacing", dpe_guess, dpe_min, dpe_max)
     sigmaL = ROOT.RooRealVar(
         "sigmaL_" + outname, "Single p.e. sigma", sigma_guess, 10, 30)
     sigmaR = ROOT.RooRealVar(
@@ -102,6 +117,7 @@ def runFit(hist, outdir, outname):
             coef_i = ROOT.RooRealVar(
                 f"coef_{i}_{outname}", f"Fraction {i}", poisson_weights[i], 0.0, 1.0
             )
+            # coef_i.setConstant(True)  # Fix coefficients for now
             coef_list.add(coef_i)
             coef_refs.append(coef_i)
 
@@ -112,24 +128,41 @@ def runFit(hist, outdir, outname):
     # --------------------------
     # 5. Background
     # --------------------------
-    tau = ROOT.RooRealVar(
-        "tau_" + outname, "Background slope", -0.01, -2.0, -1e-3)
-    bkg = ROOT.RooExponential("bkg_" + outname, "Background", x, tau)
-    frac_bkg = ROOT.RooRealVar(
-        "frac_bkg_" + outname, "Background fraction", 0.0, 0.0, 1.0)
-    frac_bkg.setConstant(True)  # Fix background fraction for now
+    # tau = ROOT.RooRealVar(
+    #    "tau_" + outname, "Background slope", -0.01, -2.0, -1e-3)
+    # bkg = ROOT.RooExponential("bkg_" + outname, "Background", x, tau)
+    # frac_bkg = ROOT.RooRealVar(
+    #    "frac_bkg_" + outname, "Background fraction", 0.0, 0.0, 1.0)
+    # frac_bkg.setConstant(True)  # Fix background fraction for now
 
-    final_pdf = ROOT.RooAddPdf(
-        "final_pdf_" + outname, "Peaks + Background",
-        ROOT.RooArgList(bkg, total_pdf),
-        ROOT.RooArgList(frac_bkg)
-    )
+    # final_pdf = ROOT.RooAddPdf(
+    #    "final_pdf_" + outname, "Peaks + Background",
+    #    ROOT.RooArgList(bkg, total_pdf),
+    #    ROOT.RooArgList(frac_bkg)
+    # )
+    final_pdf = total_pdf  # No background for now
 
     # --------------------------
     # 6. Fit
     # --------------------------
     fit_result = final_pdf.fitTo(
-        data_hist, ROOT.RooFit.Save(), ROOT.RooFit.Range("fitrange"))
+        data_hist, ROOT.RooFit.Save(), ROOT.RooFit.Range("fitrange"), ROOT.RooFit.Strategy(0))
+    fit_result = final_pdf.fitTo(
+        data_hist, ROOT.RooFit.Save(), ROOT.RooFit.Range("fitrange"), ROOT.RooFit.Minimizer(
+            "Minuit2", "scan"), ROOT.RooFit.Strategy(2), ROOT.RooFit.Save(), ROOT.RooFit.PrintLevel(-1)
+    )
+    fit_result = final_pdf.fitTo(
+        data_hist, ROOT.RooFit.Save(), ROOT.RooFit.Range(
+            "fitrange"),
+        ROOT.RooFit.Minimizer("Minuit2", "improve"), ROOT.RooFit.Strategy(
+            1), ROOT.RooFit.PrintLevel(-1)
+    )
+    fit_result = final_pdf.fitTo(
+        data_hist, ROOT.RooFit.Save(), ROOT.RooFit.Range(
+            "fitrange"),
+        ROOT.RooFit.Minimizer("Minuit2", "minimize"), ROOT.RooFit.Strategy(
+            1), ROOT.RooFit.PrintLevel(-1), ROOT.RooFit.Save()
+    )
     fit_result.Print()
 
     # --------------------------
@@ -140,15 +173,19 @@ def runFit(hist, outdir, outname):
     frame.SetTitle("")
     frame.GetXaxis().SetTitle("ADC")
     frame.GetYaxis().SetTitle("Events")
-    data_hist.plotOn(frame, ROOT.RooFit.Name("data_hist_" + outname))
-    final_pdf.plotOn(frame, ROOT.RooFit.Name("final_pdf_" + outname))
+    data_hist.plotOn(frame, ROOT.RooFit.Name(
+        "data_hist_" + outname), ROOT.RooFit.Range("plotrange"))
+    final_pdf.plotOn(frame, ROOT.RooFit.Name("final_pdf_" + outname),
+                     ROOT.RooFit.Range("plotrange"), ROOT.RooFit.NormRange("fitrange"))
 
     # Plot background
-    final_pdf.plotOn(frame,
-                     ROOT.RooFit.Components(f"bkg_{outname}"),
-                     ROOT.RooFit.LineStyle(ROOT.kDashed),
-                     ROOT.RooFit.LineColor(ROOT.kRed),
-                     ROOT.RooFit.Name(f"bkg_{outname}"))
+    # final_pdf.plotOn(frame,
+    #                 ROOT.RooFit.Components(f"bkg_{outname}"),
+    #                 ROOT.RooFit.LineStyle(ROOT.kDashed),
+    #                 ROOT.RooFit.LineColor(ROOT.kRed),
+    #                 ROOT.RooFit.Name(f"bkg_{outname}"),
+    #                 ROOT.RooFit.Range("plotrange"),
+    #                 ROOT.RooFit.NormRange("fitrange"))
 
     # Plot pedestal and peaks
     for i in range(npe_max):
@@ -158,15 +195,17 @@ def runFit(hist, outdir, outname):
                          ROOT.RooFit.Components(f"cb_{i}_{outname}"),
                          ROOT.RooFit.LineStyle(style),
                          ROOT.RooFit.LineColor(color),
-                         ROOT.RooFit.Name(f"cb_{i}_{outname}"))
+                         ROOT.RooFit.Name(f"cb_{i}_{outname}"),
+                         ROOT.RooFit.Range("plotrange"),
+                         ROOT.RooFit.NormRange("fitrange"))
 
     # --------------------------
     # 8. Legend
     # --------------------------
-    legend = ROOT.TLegend(0.6, 0.65, 0.9, 0.9)
+    legend = ROOT.TLegend(0.6, 0.70, 0.9, 0.9)
     legend.AddEntry(frame.findObject("data_hist_" + outname), "Data", "ep")
     legend.AddEntry(frame.findObject("final_pdf_" + outname), "Fit", "l")
-    legend.AddEntry(frame.findObject(f"bkg_{outname}"), "Background", "l")
+    # legend.AddEntry(frame.findObject(f"bkg_{outname}"), "Background", "l")
     legend.AddEntry(frame.findObject(f"cb_0_{outname}"), "Pedestal CB", "l")
     if npe_max > 1:
         legend.AddEntry(frame.findObject(
@@ -198,10 +237,4 @@ def runFit(hist, outdir, outname):
     c.SaveAs(outputname)
 
     # Return references to avoid GC
-    return {
-        "mu_list": mu_list,
-        "sigma_list": sigma_list,
-        "cb_list": cb_list,
-        "coef_refs": coef_refs,
-        "fit_result": fit_result
-    }
+    return mu_ped.getVal(), dpe.getVal()
