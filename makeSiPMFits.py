@@ -1,7 +1,7 @@
 import ROOT
+import os
 import sys
 sys.path.append("CMSPLOTS")  # noqa
-import ROOT
 from myFunction import DrawHistos
 from utils.html_generator import generate_html
 from utils.fitter import runFit
@@ -10,6 +10,7 @@ from utils.visualization import visualizeFERSBoards
 from utils.channel_map import buildFERSBoards
 from utils.utils import number2string
 from collections import OrderedDict
+import json
 
 ROOT.gROOT.SetBatch(True)  # Disable interactive mode for batch processing
 
@@ -44,13 +45,6 @@ for _, FERSBoard in FERSBoards.items():
 
             hists[channelName] = ifile.Get(hname).Clone(f"{hname}_clone")
 
-
-# for h in hists:
-#    hname = h.GetName()
-#    if "hist_FERS_Board11" in hname or "hist_FERS_Board3" in hname:
-#        hists_3mm.append(hname)
-#    else:
-#        hists_6mm.append(hname)
 
 plots = []
 valuemaps_pedestal = {}
@@ -106,3 +100,14 @@ plots.append(output_name + "_Sci.png")
 
 generate_html(plots, outdir_plots, plots_per_row=2,
               output_html=f"results/html/Run{runNumber}/sipm_fit_results/summary.html")
+
+
+# dump the valuemaps to JSON files
+output_json_dir = f"results/root/Run{runNumber}/"
+if not os.path.exists(output_json_dir):
+    os.makedirs(output_json_dir)
+with open(f"{output_json_dir}/valuemaps_pedestal.json", "w") as f:
+    json.dump(valuemaps_pedestal, f, indent=4)
+
+with open(f"{output_json_dir}/valuemaps_gain.json", "w") as f:
+    json.dump(valuemaps_gain, f, indent=4)
