@@ -6,7 +6,7 @@ from utils.utils import number2string, filterPrefireEvents, loadRDF, calculateEn
 from utils.html_generator import generate_html
 from utils.fitter import eventFit
 from utils.colors import colors
-from configs.plotranges import getRangesForFERSEnergySums
+from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters, getEventEnergyFitParameters
 from runconfig import runNumber, firstEvent, lastEvent
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
@@ -18,9 +18,6 @@ print("Start running prepareDQMPlots.py")
 ROOT.ROOT.EnableImplicitMT(10)
 ROOT.gROOT.SetBatch(True)  # Disable interactive mode for batch processing
 ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
-
-debugDRS = False
-
 
 file_gains = f"results/root/Run{runNumber}/valuemaps_gain.json"
 file_pedestals = f"results/root/Run{runNumber}/valuemaps_pedestal.json"
@@ -234,48 +231,19 @@ def makeBoardFits():
         hCer = ifile.Get(f"hist_FERS_Board{boardNo}_CerEnergyHG_{suffix}")
         hSci = ifile.Get(f"hist_FERS_Board{boardNo}_SciEnergyHG_{suffix}")
 
-        if FERSBoard.Is3mm():
-            output_name = eventFit(hCer, f"Run{runNumber}_Board{boardNo}_CerHG",
-                                   outdir=outdir, addMIP=False, addHE=False, xlabel="Cer # p.e.",
-                                   xmin=-10, xmax=50,
-                                   xfitmin=-10, xfitmax=6,
-                                   xgausmean=5, xgausmin=2, xgausmax=10,
-                                   wgausmean=5, wgausmin=1, wgausmax=10,
-                                   xmipmean=15, xmipmin=10, xmipmax=30,
-                                   wmipmean=5, wmipmin=1, wmipmax=30,
-                                   runNumber=runNumber)
-            plots.append(output_name)
-            output_name = eventFit(hSci, f"Run{runNumber}_Board{boardNo}_SciHG",
-                                   outdir=outdir, addMIP=True, addHE=False, xlabel="Sci # p.e.",
-                                   xmin=-10, xmax=100,
-                                   xfitmin=-10, xfitmax=60,
-                                   xgausmean=5, xgausmin=1, xgausmax=12,
-                                   wgausmean=4, wgausmin=2, wgausmax=10,
-                                   xmipmean=30, xmipmin=12, xmipmax=35,
-                                   wmipmean=6, wmipmin=1, wmipmax=30,
-                                   runNumber=runNumber)
-            plots.append(output_name)
-        else:
-            output_name = eventFit(hCer, f"Run{runNumber}_Board{boardNo}_CerHG",
-                                   outdir=outdir, addMIP=False, addHE=False, xlabel="Cer # p.e.",
-                                   xmin=-30, xmax=100,
-                                   xfitmin=-30, xfitmax=20,
-                                   xgausmean=10, xgausmin=1, xgausmax=20,
-                                   wgausmean=10, wgausmin=5, wgausmax=50,
-                                   xmipmean=40, xmipmin=30, xmipmax=60,
-                                   wmipmean=30, wmipmin=10, wmipmax=50,
-                                   runNumber=runNumber)
-            plots.append(output_name)
-            output_name = eventFit(hSci, f"Run{runNumber}_Board{boardNo}_SciHG",
-                                   outdir=outdir, addMIP=True, addHE=False, xlabel="Sci # p.e.",
-                                   xmin=-30, xmax=200,
-                                   xfitmin=-30, xfitmax=160,
-                                   xgausmean=10, xgausmin=1, xgausmax=20,
-                                   wgausmean=20, wgausmin=10, wgausmax=50,
-                                   xmipmean=100, xmipmin=20, xmipmax=140,
-                                   wmipmean=60, wmipmin=10, wmipmax=80,
-                                   runNumber=runNumber)
-            plots.append(output_name)
+        args_cer = getBoardEnergyFitParameters(
+            runNumber, is3mm=FERSBoard.Is3mm(), isCer=True)
+        args_sci = getBoardEnergyFitParameters(
+            runNumber, is3mm=FERSBoard.Is3mm(), isCer=False)
+
+        output_name = eventFit(hCer, f"Run{runNumber}_Board{boardNo}_CerHG",
+                               outdir=outdir, xlabel="Cer # p.e.",
+                               **args_cer)
+        plots.append(output_name)
+        output_name = eventFit(hSci, f"Run{runNumber}_Board{boardNo}_SciHG",
+                               outdir=outdir, xlabel="Sci # p.e.",
+                               **args_sci)
+        plots.append(output_name)
 
     output_html = f"{htmldir}/boardfits/index.html"
     generate_html(plots, outdir, plots_per_row=2,
@@ -296,27 +264,20 @@ def makeEventFits():
     hCer = ifile.Get(f"hist_FERS_CerEnergyHG_{suffix}")
     hSci = ifile.Get(f"hist_FERS_SciEnergyHG_{suffix}")
 
+    args_cer = getEventEnergyFitParameters(
+        runNumber, isCer=True)
+    args_sci = getEventEnergyFitParameters(
+        runNumber, isCer=False)
+
     plots = []
     outdir = f"{plotdir}/energyfits"
     output_name = eventFit(hCer, f"Run{runNumber}_CerHG",
-                           outdir=outdir, addMIP=True, addHE=False, xlabel="Cer # p.e.",
-                           xmin=-50, xmax=1000,
-                           xfitmin=-50, xfitmax=250,
-                           xgausmean=105, xgausmin=50, xgausmax=120,
-                           wgausmean=40, wgausmin=20, wgausmax=50,
-                           xmipmean=170, xmipmin=120, xmipmax=200,
-                           wmipmean=60, wmipmin=30, wmipmax=80,
-                           runNumber=runNumber)
+                           outdir=outdir, xlabel="Cer # p.e.",
+                           **args_cer)
     plots.append(output_name)
     output_name = eventFit(hSci, f"Run{runNumber}_SciHG",
-                           outdir=outdir, addMIP=True, addHE=False, xlabel="Sci # p.e.",
-                           xmin=-50, xmax=1000,
-                           xfitmin=-50, xfitmax=450,
-                           xgausmean=110, xgausmin=50, xgausmax=150,
-                           wgausmean=40, wgausmin=20, wgausmax=60,
-                           xmipmean=300, xmipmin=200, xmipmax=350,
-                           wmipmean=60, wmipmin=30, wmipmax=80,
-                           runNumber=runNumber)
+                           outdir=outdir, xlabel="Sci # p.e.",
+                           **args_sci)
     plots.append(output_name)
     output_html = f"{htmldir}/energyfits/index.html"
     generate_html(plots, outdir, plots_per_row=2,
@@ -326,8 +287,8 @@ def makeEventFits():
 
 
 if __name__ == "__main__":
-    preparePlots = True
-    makePlots = True
+    preparePlots = False
+    makePlots = False
     makeFits = True
     outputs_html = {}
 

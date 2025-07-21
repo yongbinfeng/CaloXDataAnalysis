@@ -424,6 +424,10 @@ def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="
     if addMIP:
         legend.AddEntry(frame.findObject(
             f"pdf_mip_{suffix}"), "MIP", "l")
+    legend.SetFillColor(0)
+    legend.SetBorderSize(0)
+    legend.SetTextSize(tsize)
+    legend.SetTextFont(42)
     frame.addObject(legend)
 
     frame.SetTitle("")

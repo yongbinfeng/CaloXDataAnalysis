@@ -17,6 +17,15 @@ def round_up_to_1eN(x):
     return 10 ** math.ceil(math.log10(x))
 
 
+def IsScanRun(runNumber):
+    import json
+    f_scanruns = "data/scanruns.json"
+    with open(f_scanruns, 'r') as f:
+        temp = json.load(f)
+        scanruns = temp["scanruns"]
+    return runNumber in scanruns
+
+
 def getDataFile(runNumber):
     runNum = str(runNumber)
     import json

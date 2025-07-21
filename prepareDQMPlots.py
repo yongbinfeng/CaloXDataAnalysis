@@ -27,7 +27,7 @@ nbins_Event = min(max(int(nEvents / 100), 1), 500)
 print(f"Total number of events to process: {nEvents} in run {runNumber}")
 
 rdf = vectorizeFERS(rdf, FERSBoards)
-rdf = calculateEnergySumFERS(rdf, FERSBoards)
+# rdf = calculateEnergySumFERS(rdf, FERSBoards)
 rdf = processDRSBoards(rdf, debug=debugDRS)
 rdf = getDRSSum(rdf, DRSBoards)
 rdf = getDRSPeakTS(rdf, DRSBoards, 0, 400, 9)
@@ -527,15 +527,15 @@ if __name__ == "__main__":
 
     hists_conditions = monitorConditions()
 
-    hists_FERS_EnergySum = makeFERSEnergySumPlots()
+    # hists_FERS_EnergySum = makeFERSEnergySumPlots()
 
     hists1d_FERS = makeFERS1DPlots()
 
-    pedestals = collectFERSPedestals(hists1d_FERS)
-    rdf = subtractFERSPedestal(rdf, FERSBoards, pedestals)
-    rdf = calculateEnergySumFERS(rdf, FERSBoards, subtractPedestal=True)
-    hists_FERS_EnergySum_subtracted = makeFERSEnergySumPlots(
-        subtractPedestal=True)
+    # pedestals = collectFERSPedestals(hists1d_FERS)
+    # rdf = subtractFERSPedestal(rdf, FERSBoards, pedestals)
+    # rdf = calculateEnergySumFERS(rdf, FERSBoards, subtractPedestal=True)
+    # hists_FERS_EnergySum_subtracted = makeFERSEnergySumPlots(
+    #    subtractPedestal=True)
 
     # hists2d_FERS = makeFERS2DPlots()
     # hists2d_FERS_vs_Event = trackFERSPlots()
@@ -582,8 +582,8 @@ if __name__ == "__main__":
         json.dump(stats_results, f, indent=4)
 
     # dump pedestals into a json file
-    with open(f"{rootdir}/fers_pedestals.json", "w") as f:
-        json.dump(pedestals, f, indent=4)
+    # with open(f"{rootdir}/fers_pedestals.json", "w") as f:
+    #    json.dump(pedestals, f, indent=4)
 
     # Save histograms to an output ROOT file
     outfile = ROOT.TFile(f"{rootdir}/conditions_vs_event.root", "RECREATE")
@@ -592,18 +592,18 @@ if __name__ == "__main__":
         hist.Write()
     outfile.Close()
 
-    outfile = ROOT.TFile(f"{rootdir}/fers_energy_sum.root", "RECREATE")
-    for hist in hists_FERS_EnergySum:
-        hist.SetDirectory(outfile)
-        hist.Write()
-    outfile.Close()
+    # outfile = ROOT.TFile(f"{rootdir}/fers_energy_sum.root", "RECREATE")
+    # for hist in hists_FERS_EnergySum:
+    #    hist.SetDirectory(outfile)
+    #    hist.Write()
+    # outfile.Close()
 
-    outfile = ROOT.TFile(
-        f"{rootdir}/fers_energy_sum_subtracted.root", "RECREATE")
-    for hist in hists_FERS_EnergySum_subtracted:
-        hist.SetDirectory(outfile)
-        hist.Write()
-    outfile.Close()
+    # outfile = ROOT.TFile(
+    #    f"{rootdir}/fers_energy_sum_subtracted.root", "RECREATE")
+    # for hist in hists_FERS_EnergySum_subtracted:
+    #    hist.SetDirectory(outfile)
+    #    hist.Write()
+    # outfile.Close()
 
     outfile = ROOT.TFile(f"{rootdir}/fers_all_channels_1D.root", "RECREATE")
     for hist in hists1d_FERS:
