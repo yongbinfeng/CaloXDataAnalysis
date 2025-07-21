@@ -238,6 +238,72 @@ def plotFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
     return output_html
 
 
+def makeBoardFits():
+    suffix = "subtracted_calibrated"
+    filename = f"{rootdir}/fers_energy_sum_{suffix}.root"
+    if not os.path.exists(filename):
+        print(
+            f"File {filename} does not exist. Please run prepareDQMPlots.py first.")
+        exit(1)
+
+    ifile = ROOT.TFile(filename, "READ")
+    plots = []
+    outdir = f"{plotdir}/boardfits"
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        hCer = ifile.Get(f"hist_FERS_Board{boardNo}_CerEnergyHG_{suffix}")
+        hSci = ifile.Get(f"hist_FERS_Board{boardNo}_SciEnergyHG_{suffix}")
+
+        if FERSBoard.Is3mm():
+            output_name = eventFit(hCer, f"Run{runNumber}_Board{boardNo}_CerHG",
+                                   outdir=outdir, addMIP=False, addHE=False, xlabel="Cer # p.e.",
+                                   xmin=0, xmax=50,
+                                   xfitmin=1, xfitmax=30,
+                                   xgausmean=5, xgausmin=2, xgausmax=10,
+                                   wgausmean=5, wgausmin=1, wgausmax=10,
+                                   xmipmean=15, xmipmin=10, xmipmax=30,
+                                   wmipmean=5, wmipmin=1, wmipmax=30,
+                                   runNumber=runNumber)
+            plots.append(output_name)
+            output_name = eventFit(hSci, f"Run{runNumber}_Board{boardNo}_SciHG",
+                                   outdir=outdir, addMIP=True, addHE=False, xlabel="Sci # p.e.",
+                                   xmin=0, xmax=100,
+                                   xfitmin=1, xfitmax=60,
+                                   xgausmean=5, xgausmin=1, xgausmax=12,
+                                   wgausmean=4, wgausmin=2, wgausmax=10,
+                                   xmipmean=30, xmipmin=12, xmipmax=35,
+                                   wmipmean=6, wmipmin=1, wmipmax=30,
+                                   runNumber=runNumber)
+            plots.append(output_name)
+        else:
+            output_name = eventFit(hCer, f"Run{runNumber}_Board{boardNo}_CerHG",
+                                   outdir=outdir, addMIP=False, addHE=False, xlabel="Cer # p.e.",
+                                   xmin=0, xmax=100,
+                                   xfitmin=2, xfitmax=50,
+                                   xgausmean=10, xgausmin=1, xgausmax=20,
+                                   wgausmean=10, wgausmin=5, wgausmax=50,
+                                   xmipmean=40, xmipmin=30, xmipmax=60,
+                                   wmipmean=30, wmipmin=10, wmipmax=50,
+                                   runNumber=runNumber)
+            plots.append(output_name)
+            output_name = eventFit(hSci, f"Run{runNumber}_Board{boardNo}_SciHG",
+                                   outdir=outdir, addMIP=True, addHE=False, xlabel="Sci # p.e.",
+                                   xmin=0, xmax=200,
+                                   xfitmin=2, xfitmax=160,
+                                   xgausmean=10, xgausmin=1, xgausmax=20,
+                                   wgausmean=20, wgausmin=10, wgausmax=50,
+                                   xmipmean=100, xmipmin=20, xmipmax=140,
+                                   wmipmean=60, wmipmin=10, wmipmax=80,
+                                   runNumber=runNumber)
+            plots.append(output_name)
+
+    output_html = f"{htmldir}/boardfits/index.html"
+    generate_html(plots, outdir, plots_per_row=2,
+                  output_html=output_html)
+    print(f"Generated HTML file: {output_html}")
+    return output_html
+
+
 def makeEventFits():
     suffix = "subtracted_calibrated"
     filename = f"{rootdir}/fers_energy_sum_{suffix}.root"
@@ -317,6 +383,8 @@ if __name__ == "__main__":
     outputs_html["subtracted_calibrated"] = plotFERSEnergySumPlots(
         subtractPedestal=True, calibrate=True)
 
+    # make board fits
+    outputs_html["board_fits"] = makeBoardFits()
     # run event fits
     outputs_html["event_fits"] = makeEventFits()
 
