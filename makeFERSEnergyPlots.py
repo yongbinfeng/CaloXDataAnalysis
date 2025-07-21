@@ -4,6 +4,7 @@ import ROOT
 from utils.channel_map import buildFERSBoards
 from utils.utils import number2string, filterPrefireEvents, loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrateFERSChannels
 from utils.html_generator import generate_html
+from utils.fitter import eventFit
 from utils.colors import colors
 from runconfig import runNumber, firstEvent, lastEvent
 import time
@@ -56,13 +57,23 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
         suffix = "_subtracted"
     if calibrate:
         suffix += "_calibrated"
+    xmax_board = 15000
+    xmax_total = 200000
+    if subtractPedestal:
+        suffix = "_subtracted"
+        xmax_board = 10000
+        xmax_total = 5e4
+    if calibrate:
+        suffix += "_calibrated"
+        xmax_board = 200
+        xmax_total = 1e3
     hists_FERS_EnergySum = []
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
         hist_CerEnergyHG_Board = rdf.Histo1D((
             f"hist_FERS_Board{boardNo}_CerEnergyHG{suffix}",
             f"FERS Board {boardNo} - CER Energy HG;CER Energy HG;Counts",
-            500, 0, 40000),
+            500, 0, xmax_board),
             f"FERS_Board{boardNo}_CerEnergyHG{suffix}"
         )
         # hist_CerEnergyLG_Board = rdf.Histo1D((
@@ -74,7 +85,7 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
         hist_SciEnergyHG_Board = rdf.Histo1D((
             f"hist_FERS_Board{boardNo}_SciEnergyHG{suffix}",
             f"FERS Board {boardNo} - SCI Energy HG;SCI Energy HG;Counts",
-            500, 0, 40000),
+            500, 0, xmax_board),
             f"FERS_Board{boardNo}_SciEnergyHG{suffix}"
         )
         # hist_SciEnergyLG_Board = rdf.Histo1D((
@@ -92,7 +103,7 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
     hist_CerEnergyHG = rdf.Histo1D((
         f"hist_FERS_CerEnergyHG{suffix}",
         "FERS - CER Energy HG;CER Energy HG;Counts",
-        500, 0, 2e5),
+        500, 0, xmax_total),
         f"FERS_CerEnergyHG{suffix}"
     )
     # hist_CerEnergyLG = rdf.Histo1D((
@@ -104,7 +115,7 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
     hist_SciEnergyHG = rdf.Histo1D((
         f"hist_FERS_SciEnergyHG{suffix}",
         "FERS - SCI Energy HG;SCI Energy HG;Counts",
-        500, 0, 2e5),
+        500, 0, xmax_total),
         f"FERS_SciEnergyHG{suffix}"
     )
     # hist_SciEnergyLG = rdf.Histo1D((
@@ -166,15 +177,15 @@ def plotFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
         # hists_SciEnergyLG.append(hist_SciEnergyLG)
 
     output_name = "FERS_CerEnergyHG" + suffix
-    DrawHistos(hists_CerEnergyHG, legends, 0, xmax_board, "Cer Energy HG", 0, None, "Events",
+    DrawHistos(hists_CerEnergyHG, legends, 0, xmax_board, "Cer Energy HG", 1, None, "Events",
                output_name,
-               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.7, 0.90, 0.9])
     plots.append(output_name + ".png")
     output_name = "FERS_SciEnergyHG" + suffix
-    DrawHistos(hists_SciEnergyHG, legends, 0, xmax_board, "Sci Energy HG", 0, None, "Events",
+    DrawHistos(hists_SciEnergyHG, legends, 0, xmax_board, "Sci Energy HG", 1, None, "Events",
                output_name,
-               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.7, 0.90, 0.9])
     plots.append(output_name + ".png")
     # output_name = "FERS_CerEnergyLG" + suffix
@@ -197,13 +208,13 @@ def plotFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
     # hist_SciEnergyLG = infile.Get(f"hist_FERS_SciEnergyLG{suffix}")
     ymax = None  # let plotter decide the ymax
     output_name = "FERS_Total_CerEnergyHG" + suffix
-    DrawHistos([hist_CerEnergyHG], "", 0, xmax_total, "Cer Energy HG", 0, ymax, "Events",
+    DrawHistos([hist_CerEnergyHG], "", 0, xmax_total, "Cer Energy HG", 1, ymax, "Events",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
     plots.insert(0, output_name + ".png")
     output_name = "FERS_Total_SciEnergyHG" + suffix
-    DrawHistos([hist_SciEnergyHG], "", 0, xmax_total, "Sci Energy HG", 0, ymax, "Events",
+    DrawHistos([hist_SciEnergyHG], "", 0, xmax_total, "Sci Energy HG", 1, ymax, "Events",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
@@ -224,6 +235,43 @@ def plotFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
     output_html = f"{htmldir}/FERS_EnergySum{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
+    return output_html
+
+
+def makeEventFits():
+    suffix = "subtracted_calibrated"
+    filename = f"{rootdir}/fers_energy_sum_{suffix}.root"
+    if not os.path.exists(filename):
+        print(
+            f"File {filename} does not exist. Please run prepareDQMPlots.py first.")
+        exit(1)
+
+    ifile = ROOT.TFile(filename, "READ")
+    hCer = ifile.Get(f"hist_FERS_CerEnergyHG_{suffix}")
+    hSci = ifile.Get(f"hist_FERS_SciEnergyHG_{suffix}")
+
+    plots = []
+    outdir = f"{plotdir}/energyfits"
+    output_name = eventFit(hCer, f"Run{runNumber}_CerHG",
+                           outdir=outdir, addMIP=False, addHE=False, xlabel="Cer # p.e.",
+                           xmin=0, xmax=1000,
+                           xfitmin=0, xfitmax=250,
+                           xgausmean=110, xgausmin=50, xgausmax=150,
+                           wgausmean=40, wgausmin=20, wgausmax=60)
+    plots.append(output_name)
+    output_name = eventFit(hSci, f"Run{runNumber}_SciHG",
+                           outdir=outdir, addMIP=True, addHE=False, xlabel="Sci # p.e.",
+                           xmin=0, xmax=1000,
+                           xfitmin=0, xfitmax=450,
+                           xgausmean=110, xgausmin=50, xgausmax=150,
+                           wgausmean=40, wgausmin=20, wgausmax=60,
+                           xmipmean=300, xmipmin=200, xmipmax=350,
+                           wmipmean=60, wmipmin=30, wmipmax=80)
+    plots.append(output_name)
+    output_html = f"{htmldir}/energyfits/index.html"
+    generate_html(plots, outdir, plots_per_row=2,
+                  output_html=output_html)
+    print(f"Generated HTML file: {output_html}")
     return output_html
 
 
@@ -264,6 +312,9 @@ if __name__ == "__main__":
         subtractPedestal=True, calibrate=False)
     outputs_html["subtracted_calibrated"] = plotFERSEnergySumPlots(
         subtractPedestal=True, calibrate=True)
+
+    # run event fits
+    outputs_html["event_fits"] = makeEventFits()
 
     print("Generated HTML files:")
     for key, html in outputs_html.items():
