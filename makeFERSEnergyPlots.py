@@ -6,8 +6,8 @@ from utils.utils import number2string, filterPrefireEvents, loadRDF, calculateEn
 from utils.html_generator import generate_html
 from utils.fitter import eventFit
 from utils.colors import colors
+from configs.plotranges import getRangesForFERSEnergySums
 from runconfig import runNumber, firstEvent, lastEvent
-import time
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
 
@@ -52,28 +52,16 @@ htmldir = f"results/html/Run{runNumber}/"
 
 
 def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
-    suffix = ""
-    if subtractPedestal:
-        suffix = "_subtracted"
-    if calibrate:
-        suffix += "_calibrated"
-    xmax_board = 15000
-    xmax_total = 200000
-    if subtractPedestal:
-        suffix = "_subtracted"
-        xmax_board = 10000
-        xmax_total = 5e4
-    if calibrate:
-        suffix += "_calibrated"
-        xmax_board = 200
-        xmax_total = 1e3
+    suffix, xmin_board, xmax_board, xmin_total, xmax_total = getRangesForFERSEnergySums(
+        subtractPedestal=subtractPedestal, calibrate=calibrate)
+
     hists_FERS_EnergySum = []
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
         hist_CerEnergyHG_Board = rdf.Histo1D((
             f"hist_FERS_Board{boardNo}_CerEnergyHG{suffix}",
             f"FERS Board {boardNo} - CER Energy HG;CER Energy HG;Counts",
-            500, 0, xmax_board),
+            500, xmin_board, xmax_board),
             f"FERS_Board{boardNo}_CerEnergyHG{suffix}"
         )
         # hist_CerEnergyLG_Board = rdf.Histo1D((
@@ -85,7 +73,7 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
         hist_SciEnergyHG_Board = rdf.Histo1D((
             f"hist_FERS_Board{boardNo}_SciEnergyHG{suffix}",
             f"FERS Board {boardNo} - SCI Energy HG;SCI Energy HG;Counts",
-            500, 0, xmax_board),
+            500, xmin_board, xmax_board),
             f"FERS_Board{boardNo}_SciEnergyHG{suffix}"
         )
         # hist_SciEnergyLG_Board = rdf.Histo1D((
@@ -103,7 +91,7 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
     hist_CerEnergyHG = rdf.Histo1D((
         f"hist_FERS_CerEnergyHG{suffix}",
         "FERS - CER Energy HG;CER Energy HG;Counts",
-        500, 0, xmax_total),
+        500, xmin_total, xmax_total),
         f"FERS_CerEnergyHG{suffix}"
     )
     # hist_CerEnergyLG = rdf.Histo1D((
@@ -115,7 +103,7 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
     hist_SciEnergyHG = rdf.Histo1D((
         f"hist_FERS_SciEnergyHG{suffix}",
         "FERS - SCI Energy HG;SCI Energy HG;Counts",
-        500, 0, xmax_total),
+        500, xmin_total, xmax_total),
         f"FERS_SciEnergyHG{suffix}"
     )
     # hist_SciEnergyLG = rdf.Histo1D((
@@ -133,17 +121,9 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
 
 
 def plotFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
-    suffix = ""
-    xmax_board = 15000
-    xmax_total = 200000
-    if subtractPedestal:
-        suffix = "_subtracted"
-        xmax_board = 10000
-        xmax_total = 5e4
-    if calibrate:
-        suffix += "_calibrated"
-        xmax_board = 200
-        xmax_total = 1e3
+    suffix, xmin_board, xmax_board, xmin_total, xmax_total = getRangesForFERSEnergySums(
+        subtractPedestal=subtractPedestal, calibrate=calibrate)
+
     plots = []
     infile_name = f"{rootdir}/fers_energy_sum{suffix}.root"
     infile = ROOT.TFile(infile_name, "READ")
@@ -177,16 +157,16 @@ def plotFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
         # hists_SciEnergyLG.append(hist_SciEnergyLG)
 
     output_name = "FERS_CerEnergyHG" + suffix
-    DrawHistos(hists_CerEnergyHG, legends, 0, xmax_board, "Cer Energy HG", 1, None, "Events",
+    DrawHistos(hists_CerEnergyHG, legends, xmin_board, xmax_board, "Cer Energy HG", 1, None, "Events",
                output_name,
                dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.7, 0.90, 0.9])
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
     plots.append(output_name + ".png")
     output_name = "FERS_SciEnergyHG" + suffix
-    DrawHistos(hists_SciEnergyHG, legends, 0, xmax_board, "Sci Energy HG", 1, None, "Events",
+    DrawHistos(hists_SciEnergyHG, legends, xmin_board, xmax_board, "Sci Energy HG", 1, None, "Events",
                output_name,
                dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.7, 0.90, 0.9])
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
     plots.append(output_name + ".png")
     # output_name = "FERS_CerEnergyLG" + suffix
     # DrawHistos(hists_CerEnergyLG, legends, 0, xmax_total, "Cer Energy LG", 0, None, "Events",
@@ -208,13 +188,13 @@ def plotFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
     # hist_SciEnergyLG = infile.Get(f"hist_FERS_SciEnergyLG{suffix}")
     ymax = None  # let plotter decide the ymax
     output_name = "FERS_Total_CerEnergyHG" + suffix
-    DrawHistos([hist_CerEnergyHG], "", 0, xmax_total, "Cer Energy HG", 1, ymax, "Events",
+    DrawHistos([hist_CerEnergyHG], "", xmin_total, xmax_total, "Cer Energy HG", 1, ymax, "Events",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
     plots.insert(0, output_name + ".png")
     output_name = "FERS_Total_SciEnergyHG" + suffix
-    DrawHistos([hist_SciEnergyHG], "", 0, xmax_total, "Sci Energy HG", 1, ymax, "Events",
+    DrawHistos([hist_SciEnergyHG], "", xmin_total, xmax_total, "Sci Energy HG", 1, ymax, "Events",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
@@ -257,8 +237,8 @@ def makeBoardFits():
         if FERSBoard.Is3mm():
             output_name = eventFit(hCer, f"Run{runNumber}_Board{boardNo}_CerHG",
                                    outdir=outdir, addMIP=False, addHE=False, xlabel="Cer # p.e.",
-                                   xmin=0, xmax=50,
-                                   xfitmin=1, xfitmax=30,
+                                   xmin=-10, xmax=50,
+                                   xfitmin=-10, xfitmax=6,
                                    xgausmean=5, xgausmin=2, xgausmax=10,
                                    wgausmean=5, wgausmin=1, wgausmax=10,
                                    xmipmean=15, xmipmin=10, xmipmax=30,
@@ -267,8 +247,8 @@ def makeBoardFits():
             plots.append(output_name)
             output_name = eventFit(hSci, f"Run{runNumber}_Board{boardNo}_SciHG",
                                    outdir=outdir, addMIP=True, addHE=False, xlabel="Sci # p.e.",
-                                   xmin=0, xmax=100,
-                                   xfitmin=1, xfitmax=60,
+                                   xmin=-10, xmax=100,
+                                   xfitmin=-10, xfitmax=60,
                                    xgausmean=5, xgausmin=1, xgausmax=12,
                                    wgausmean=4, wgausmin=2, wgausmax=10,
                                    xmipmean=30, xmipmin=12, xmipmax=35,
@@ -278,8 +258,8 @@ def makeBoardFits():
         else:
             output_name = eventFit(hCer, f"Run{runNumber}_Board{boardNo}_CerHG",
                                    outdir=outdir, addMIP=False, addHE=False, xlabel="Cer # p.e.",
-                                   xmin=0, xmax=100,
-                                   xfitmin=2, xfitmax=50,
+                                   xmin=-30, xmax=100,
+                                   xfitmin=-30, xfitmax=20,
                                    xgausmean=10, xgausmin=1, xgausmax=20,
                                    wgausmean=10, wgausmin=5, wgausmax=50,
                                    xmipmean=40, xmipmin=30, xmipmax=60,
@@ -288,8 +268,8 @@ def makeBoardFits():
             plots.append(output_name)
             output_name = eventFit(hSci, f"Run{runNumber}_Board{boardNo}_SciHG",
                                    outdir=outdir, addMIP=True, addHE=False, xlabel="Sci # p.e.",
-                                   xmin=0, xmax=200,
-                                   xfitmin=2, xfitmax=160,
+                                   xmin=-30, xmax=200,
+                                   xfitmin=-30, xfitmax=160,
                                    xgausmean=10, xgausmin=1, xgausmax=20,
                                    wgausmean=20, wgausmin=10, wgausmax=50,
                                    xmipmean=100, xmipmin=20, xmipmax=140,
@@ -320,8 +300,8 @@ def makeEventFits():
     outdir = f"{plotdir}/energyfits"
     output_name = eventFit(hCer, f"Run{runNumber}_CerHG",
                            outdir=outdir, addMIP=True, addHE=False, xlabel="Cer # p.e.",
-                           xmin=0, xmax=1000,
-                           xfitmin=0, xfitmax=250,
+                           xmin=-50, xmax=1000,
+                           xfitmin=-50, xfitmax=250,
                            xgausmean=105, xgausmin=50, xgausmax=120,
                            wgausmean=40, wgausmin=20, wgausmax=50,
                            xmipmean=170, xmipmin=120, xmipmax=200,
@@ -330,8 +310,8 @@ def makeEventFits():
     plots.append(output_name)
     output_name = eventFit(hSci, f"Run{runNumber}_SciHG",
                            outdir=outdir, addMIP=True, addHE=False, xlabel="Sci # p.e.",
-                           xmin=0, xmax=1000,
-                           xfitmin=0, xfitmax=450,
+                           xmin=-50, xmax=1000,
+                           xfitmin=-50, xfitmax=450,
                            xgausmean=110, xgausmin=50, xgausmax=150,
                            wgausmean=40, wgausmin=20, wgausmax=60,
                            xmipmean=300, xmipmin=200, xmipmax=350,
@@ -346,47 +326,55 @@ def makeEventFits():
 
 
 if __name__ == "__main__":
-    hists_raw = makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False)
-    hists_subtracted = makeFERSEnergySumPlots(
-        subtractPedestal=True, calibrate=False)
-    hists_subtractged_calibrated = makeFERSEnergySumPlots(
-        subtractPedestal=True, calibrate=True)
+    preparePlots = True
+    makePlots = True
+    makeFits = True
+    outputs_html = {}
 
-    # save histograms to ROOT files
-    outfile_name = f"{rootdir}/fers_energy_sum.root"
-    with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-        for hist in hists_raw:
-            hist.SetDirectory(outfile)
-            hist.Write()
-    print(f"Saved raw histograms to {outfile_name}")
+    if preparePlots:
+        hists_raw = makeFERSEnergySumPlots(
+            subtractPedestal=False, calibrate=False)
+        hists_subtracted = makeFERSEnergySumPlots(
+            subtractPedestal=True, calibrate=False)
+        hists_subtractged_calibrated = makeFERSEnergySumPlots(
+            subtractPedestal=True, calibrate=True)
 
-    outfile_name = f"{rootdir}/fers_energy_sum_subtracted.root"
-    with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-        for hist in hists_subtracted:
-            hist.SetDirectory(outfile)
-            hist.Write()
-    print(f"Saved subtracted histograms to {outfile_name}")
+        # save histograms to ROOT files
+        outfile_name = f"{rootdir}/fers_energy_sum.root"
+        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+            for hist in hists_raw:
+                hist.SetDirectory(outfile)
+                hist.Write()
+        print(f"Saved raw histograms to {outfile_name}")
 
-    outfile_name = f"{rootdir}/fers_energy_sum_subtracted_calibrated.root"
-    with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-        for hist in hists_subtractged_calibrated:
-            hist.SetDirectory(outfile)
-            hist.Write()
-    print(f"Saved subtracted and calibrated histograms to {outfile_name}")
+        outfile_name = f"{rootdir}/fers_energy_sum_subtracted.root"
+        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+            for hist in hists_subtracted:
+                hist.SetDirectory(outfile)
+                hist.Write()
+        print(f"Saved subtracted histograms to {outfile_name}")
+
+        outfile_name = f"{rootdir}/fers_energy_sum_subtracted_calibrated.root"
+        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+            for hist in hists_subtractged_calibrated:
+                hist.SetDirectory(outfile)
+                hist.Write()
+        print(f"Saved subtracted and calibrated histograms to {outfile_name}")
 
     # make plots
-    outputs_html = {}
-    outputs_html["raw"] = plotFERSEnergySumPlots(
-        subtractPedestal=False, calibrate=False)
-    outputs_html["subtracted"] = plotFERSEnergySumPlots(
-        subtractPedestal=True, calibrate=False)
-    outputs_html["subtracted_calibrated"] = plotFERSEnergySumPlots(
-        subtractPedestal=True, calibrate=True)
+    if makePlots:
+        outputs_html["raw"] = plotFERSEnergySumPlots(
+            subtractPedestal=False, calibrate=False)
+        outputs_html["subtracted"] = plotFERSEnergySumPlots(
+            subtractPedestal=True, calibrate=False)
+        outputs_html["subtracted_calibrated"] = plotFERSEnergySumPlots(
+            subtractPedestal=True, calibrate=True)
 
-    # make board fits
-    outputs_html["board_fits"] = makeBoardFits()
-    # run event fits
-    outputs_html["event_fits"] = makeEventFits()
+    if makeFits:
+        # make board fits
+        outputs_html["board_fits"] = makeBoardFits()
+        # run event fits
+        outputs_html["event_fits"] = makeEventFits()
 
     print("Generated HTML files:")
     for key, html in outputs_html.items():
