@@ -1,10 +1,11 @@
 import ROOT
 from CMSPLOTS.tdrstyle import setTDRStyle
+import CMSPLOTS.CMS_lumi as CMS_lumi
 import os
 import math
 
 
-def channelFit(hist, outdir, outname, npe_max=3, is3mm=False):
+def channelFit(hist, outdir, outname, npe_max=3, is3mm=False, runNumber=None):
     # --------------------------
     # 1. Define Observable
     # --------------------------
@@ -219,6 +220,16 @@ def channelFit(hist, outdir, outname, npe_max=3, is3mm=False):
     c.SetLogy()
     frame.Draw()
 
+    CMS_lumi.lumi_sqrtS = ""
+    CMS_lumi.relPosX = 0.25
+    # CMS_lumi.extraText = "Internal"
+    CMS_lumi.extraText = ""
+
+    if runNumber is not None:
+        CMS_lumi.lumi_13TeV = f"Cosmic Run {runNumber}"
+
+    CMS_lumi.CMS_lumi(c, 4, 0)
+
     # Draw TLatex annotations
     latex = ROOT.TLatex()
     latex.SetNDC()
@@ -246,7 +257,8 @@ def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="
              xgausmean=6800, xgausmin=4000, xgausmax=7100,
              wgausmean=2500, wgausmin=500, wgausmax=2500,
              xmipmean=4000, xmipmin=2000, xmipmax=6000,
-             wmipmean=1000, wmipmin=100, wmipmax=2000):
+             wmipmean=1000, wmipmin=100, wmipmax=2000,
+             runNumber=None):
 
     xfitmin = max(xfitmin, xmin)
     xfitmax = min(xfitmax, xmax)
@@ -438,22 +450,30 @@ def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="
     latex.DrawLatexNDC(0.60, ylabel, "#sigma = %.2f #pm %.2f" %
                        (vsigma.getVal(), vsigma.getError()))
     ylabel -= 0.05
-    if addHE:
+    if addHE or addMIP:
         latex.DrawLatexNDC(0.60, ylabel, "f_gaus = %.2f #pm %.2f" %
                            (frac_gaus.getVal(), frac_gaus.getError()))
         ylabel -= 0.05
+    if addHE:
         latex.DrawLatexNDC(0.60, ylabel, "exp slope = %.6f #pm %.6f" %
                            (vexp.getVal(), vexp.getError()))
         ylabel -= 0.05
     if addMIP:
-        latex.DrawLatexNDC(0.60, ylabel, "f_{MIP} = %.2f #pm %.2f" %
-                           (frac_mip.getVal(), frac_mip.getError()))
-        ylabel -= 0.05
         latex.DrawLatexNDC(0.60, ylabel, "MIP #mu = %.2f #pm %.2f" %
                            (vmean_mip.getVal(), vmean_mip.getError()))
         ylabel -= 0.05
         latex.DrawLatexNDC(0.60, ylabel, "MIP #sigma = %.2f #pm %.2f" %
                            (vwidth_mip.getVal(), vwidth_mip.getError()))
+
+    CMS_lumi.lumi_sqrtS = ""
+    CMS_lumi.relPosX = 0.25
+    # CMS_lumi.extraText = "Internal"
+    CMS_lumi.extraText = "Cer" if "Cer" in suffix else "Sci"
+
+    if runNumber is not None:
+        CMS_lumi.lumi_13TeV = f"Cosmic Run {runNumber}"
+
+    CMS_lumi.CMS_lumi(padtop, 4, 0)
 
     # make pull histograms
     hpull = frame.pullHist()

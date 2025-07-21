@@ -51,14 +51,16 @@ valuemaps_pedestal = {}
 valuemaps_gain = {}
 for channelName, h in hists_6mm.items():
     print(f"Processing histogram: {channelName}")
-    mu_ped, dpe = channelFit(h, outdir, channelName, is3mm=False, npe_max=4)
+    mu_ped, dpe = channelFit(h, outdir, channelName,
+                             is3mm=False, npe_max=4, runNumber=runNumber)
     plots.append(channelName + ".png")
     valuemaps_pedestal[channelName] = mu_ped
     valuemaps_gain[channelName] = dpe
 
 for channelName, h in hists_3mm.items():
     print(f"Processing histogram: {channelName}")
-    mu_ped, dpe = channelFit(h, outdir, channelName, is3mm=True, npe_max=4)
+    mu_ped, dpe = channelFit(h, outdir, channelName,
+                             is3mm=True, npe_max=4, runNumber=runNumber)
     plots.append(channelName + ".png")
     valuemaps_pedestal[channelName] = mu_ped
     valuemaps_gain[channelName] = dpe

@@ -253,11 +253,14 @@ def makeEventFits():
     plots = []
     outdir = f"{plotdir}/energyfits"
     output_name = eventFit(hCer, f"Run{runNumber}_CerHG",
-                           outdir=outdir, addMIP=False, addHE=False, xlabel="Cer # p.e.",
+                           outdir=outdir, addMIP=True, addHE=False, xlabel="Cer # p.e.",
                            xmin=0, xmax=1000,
                            xfitmin=0, xfitmax=250,
-                           xgausmean=110, xgausmin=50, xgausmax=150,
-                           wgausmean=40, wgausmin=20, wgausmax=60)
+                           xgausmean=105, xgausmin=50, xgausmax=120,
+                           wgausmean=40, wgausmin=20, wgausmax=50,
+                           xmipmean=170, xmipmin=120, xmipmax=200,
+                           wmipmean=60, wmipmin=30, wmipmax=80,
+                           runNumber=runNumber)
     plots.append(output_name)
     output_name = eventFit(hSci, f"Run{runNumber}_SciHG",
                            outdir=outdir, addMIP=True, addHE=False, xlabel="Sci # p.e.",
@@ -266,7 +269,8 @@ def makeEventFits():
                            xgausmean=110, xgausmin=50, xgausmax=150,
                            wgausmean=40, wgausmin=20, wgausmax=60,
                            xmipmean=300, xmipmin=200, xmipmax=350,
-                           wmipmean=60, wmipmin=30, wmipmax=80)
+                           wmipmean=60, wmipmin=30, wmipmax=80,
+                           runNumber=runNumber)
     plots.append(output_name)
     output_html = f"{htmldir}/energyfits/index.html"
     generate_html(plots, outdir, plots_per_row=2,
