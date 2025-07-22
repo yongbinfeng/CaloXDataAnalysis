@@ -2,7 +2,7 @@ import os
 import sys
 import ROOT
 from utils.channel_map import buildFERSBoards
-from utils.utils import number2string, filterPrefireEvents, loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrateFERSChannels
+from utils.utils import filterPrefireEvents, loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrateFERSChannels
 from utils.html_generator import generate_html
 from utils.fitter import eventFit
 from utils.colors import colors
@@ -19,6 +19,7 @@ ROOT.ROOT.EnableImplicitMT(10)
 ROOT.gROOT.SetBatch(True)  # Disable interactive mode for batch processing
 ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
+# load the gains and pedestals from SiPM fits
 file_gains = f"results/root/Run{runNumber}/valuemaps_gain.json"
 file_pedestals = f"results/root/Run{runNumber}/valuemaps_pedestal.json"
 
@@ -26,12 +27,6 @@ rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
 rdf, rdf_prefilter = filterPrefireEvents(rdf, runNumber)
 
 FERSBoards = buildFERSBoards(run=runNumber)
-
-# Get total number of entries
-n_entries = rdf.Count().GetValue()
-nEvents = int(n_entries)
-nbins_Event = min(max(int(nEvents / 100), 1), 500)
-print(f"Total number of events to process: {nEvents} in run {runNumber}")
 
 rdf = vectorizeFERS(rdf, FERSBoards)
 rdf = calibrateFERSChannels(
@@ -47,13 +42,22 @@ rootdir = f"results/root/Run{runNumber}/"
 plotdir = f"results/plots/Run{runNumber}/"
 htmldir = f"results/html/Run{runNumber}/"
 
+random_comparisons = {
+    "Board0_CerEnergyHG": "Board1_SciEnergyHG",
+    "Board1_CerEnergyHG": "Board3_SciEnergyHG",
+    "Board4_CerEnergyHG": "Board5_SciEnergyHG",
+    "Board4_CerEnergyHG": "Board5_CerEnergyHG",
+    "Board4_SciEnergyHG": "Board8_CerEnergyHG",
+    "Board10_CerEnergyHG": "Board12_SciEnergyHG",
+    "Board12_CerEnergyHG": "Board13_SciEnergyHG",
+}
 
-def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
+
+def makeFERSEnergySumHists(subtractPedestal=False, calibrate=False):
     suffix, xmin_board, xmax_board, xmin_total, xmax_total, _ = getRangesForFERSEnergySums(
         subtractPedestal=subtractPedestal, calibrate=calibrate)
 
     hists_FERS_EnergySum = []
-    hists_FERS_Cer_vs_Sci = []
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
         hist_CerEnergyHG_Board = rdf.Histo1D((
@@ -85,17 +89,6 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
         hists_FERS_EnergySum.append(hist_SciEnergyHG_Board)
         # hists_FERS_EnergySum.append(hist_SciEnergyLG_Board)
 
-        # CER vs SCI energy plot
-        hist_Cer_vs_Sci = rdf.Histo2D((
-            f"hist_FERS_Board{boardNo}_Cer_vs_Sci{suffix}",
-            f"FERS Board {boardNo} - CER vs SCI Energy;CER Energy HG;SCI Energy HG;Counts",
-            500, xmin_board, xmax_board,
-            500, xmin_board, xmax_board),
-            f"FERS_Board{boardNo}_SciEnergyHG{suffix}",
-            f"FERS_Board{boardNo}_CerEnergyHG{suffix}"
-        )
-        hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci)
-
     # per-event energy sum
     hist_CerEnergyHG = rdf.Histo1D((
         f"hist_FERS_CerEnergyHG{suffix}",
@@ -126,7 +119,27 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
     hists_FERS_EnergySum.append(hist_SciEnergyHG)
     # hists_FERS_EnergySum.append(hist_SciEnergyLG)
 
-    # CER vs SCI energy plot for total energy
+    return hists_FERS_EnergySum
+
+
+def makeFERSCervsSciHists(subtractPedestal=False, calibrate=False):
+    suffix, xmin_board, xmax_board, xmin_total, xmax_total, _ = getRangesForFERSEnergySums(
+        subtractPedestal=subtractPedestal, calibrate=calibrate)
+
+    hists_FERS_Cer_vs_Sci = []
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        hist_Cer_vs_Sci = rdf.Histo2D((
+            f"hist_FERS_Board{boardNo}_Cer_vs_Sci{suffix}",
+            f"FERS Board {boardNo} - CER vs SCI Energy;CER Energy HG;SCI Energy HG;Counts",
+            500, xmin_board, xmax_board,
+            500, xmin_board, xmax_board),
+            f"FERS_Board{boardNo}_SciEnergyHG{suffix}",
+            f"FERS_Board{boardNo}_CerEnergyHG{suffix}"
+        )
+        hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci)
+
+    # total CER vs SCI energy plot
     hist_Cer_vs_Sci_Total = rdf.Histo2D((
         f"hist_FERS_Cer_vs_Sci{suffix}",
         "FERS - CER vs SCI Energy;CER Energy HG;SCI Energy HG;Counts",
@@ -137,10 +150,29 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
     )
     hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci_Total)
 
-    return hists_FERS_EnergySum, hists_FERS_Cer_vs_Sci
+    return hists_FERS_Cer_vs_Sci
 
 
-def plotFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
+def makeFERSCervsSciRandomHists(subtractPedestal=False, calibrate=False):
+    suffix, xmin_board, xmax_board, _, _, _ = getRangesForFERSEnergySums(
+        subtractPedestal=subtractPedestal, calibrate=calibrate)
+
+    hists_FERS_Cer_vs_Sci_random = []
+    for key, value in random_comparisons.items():
+        hist_Cer_vs_Sci = rdf.Histo2D((
+            f"hist_FERS_{key}_vs_{value}{suffix}",
+            f"FERS {key} vs {value}",
+            500, xmin_board, xmax_board,
+            500, xmin_board, xmax_board),
+            f"FERS_{key}{suffix}",
+            f"FERS_{value}{suffix}"
+        )
+        hists_FERS_Cer_vs_Sci_random.append(hist_Cer_vs_Sci)
+
+    return hists_FERS_Cer_vs_Sci_random
+
+
+def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
     suffix, xmin_board, xmax_board, xmin_total, xmax_total, xtitle = getRangesForFERSEnergySums(
         subtractPedestal=subtractPedestal, calibrate=calibrate)
 
@@ -238,7 +270,7 @@ def plotFERSEnergySumPlots(subtractPedestal=False, calibrate=False):
     return output_html
 
 
-def plotFERSCerVsSciPlots(subtractPedestal=False, calibrate=False):
+def makeFERSCerVsSciPlots(subtractPedestal=False, calibrate=False):
     suffix, xmin_board, xmax_board, xmin_total, xmax_total, xtitle = getRangesForFERSEnergySums(
         subtractPedestal=subtractPedestal, calibrate=calibrate)
 
@@ -258,7 +290,7 @@ def plotFERSCerVsSciPlots(subtractPedestal=False, calibrate=False):
         output_name = f"FERS_Board{boardNo}_Cer_vs_Sci{suffix}"
         DrawHistos([hist_Cer_vs_Sci], "", xmin_board, xmax_board, f"Sci {xtitle}", xmin_board, xmax_board, f"Cer {xtitle}",
                    output_name,
-                   dology=False, drawoptions=["col"],
+                   dology=False, drawoptions=["colz"],
                    outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None)
         plots.append(output_name + ".png")
 
@@ -271,11 +303,45 @@ def plotFERSCerVsSciPlots(subtractPedestal=False, calibrate=False):
         output_name = "FERS_Total_Cer_vs_Sci" + suffix
         DrawHistos([hist_Cer_vs_Sci_Total], "", xmin_total, xmax_total, f"Sci {xtitle}", xmin_total, xmax_total, f"Cer {xtitle}",
                    output_name,
-                   dology=False, drawoptions=["col"],
+                   dology=False, drawoptions=["colz"],
                    outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None)
         plots.append(output_name + ".png")
 
     output_html = f"{htmldir}/FERS_Cer_vs_Sci{suffix}/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=4,
+                  output_html=output_html)
+    return output_html
+
+
+def makeFERSCerVsSciRandomPlots(subtractPedestal=False, calibrate=False):
+    suffix, xmin_board, xmax_board, _, _, xtitle = getRangesForFERSEnergySums(
+        subtractPedestal=subtractPedestal, calibrate=calibrate)
+
+    plots = []
+    infile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random{suffix}.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    outdir_plots = f"{plotdir}/FERS_Cer_vs_Sci_Random{suffix}"
+    for key, value in random_comparisons.items():
+        hist_Cer_vs_Sci_name = f"hist_FERS_{key}_vs_{value}{suffix}"
+        hist_Cer_vs_Sci = infile.Get(hist_Cer_vs_Sci_name)
+        if not hist_Cer_vs_Sci:
+            print(
+                f"Warning: Histogram {hist_Cer_vs_Sci_name} not found in {infile_name}")
+            continue
+
+        xtitle_temp = key.split(
+            "_")[0] + (" Cer " if "Cer" in key else " Sci ") + xtitle
+        ytitle_temp = value.split(
+            "_")[0] + (" Cer " if "Cer" in value else " Sci ") + xtitle
+
+        output_name = f"FERS_{key}_vs_{value}{suffix}"
+        DrawHistos([hist_Cer_vs_Sci], "", xmin_board, xmax_board, xtitle_temp, xmin_board, xmax_board, ytitle_temp,
+                   output_name,
+                   dology=False, drawoptions=["colz"],
+                   outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None)
+        plots.append(output_name + ".png")
+
+    output_html = f"{htmldir}/FERS_Cer_vs_Sci_Random{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -353,17 +419,31 @@ def makeEventFits():
 
 
 if __name__ == "__main__":
-    preparePlots = True
+    makeHists = True
     makePlots = True
-    makeFits = True
+    makeFits = False
     outputs_html = {}
 
-    if preparePlots:
-        hists_raw, hists_FERS_Cer_vs_Sci = makeFERSEnergySumPlots(
+    if makeHists:
+        hists_raw = makeFERSEnergySumHists(
             subtractPedestal=False, calibrate=False)
-        hists_subtracted, hists_FERS_Cer_vs_Sci = makeFERSEnergySumPlots(
+        hists_subtracted = makeFERSEnergySumHists(
             subtractPedestal=True, calibrate=False)
-        hists_subtractged_calibrated, hists_FERS_Cer_vs_Sci = makeFERSEnergySumPlots(
+        hists_subtracted_calibrated = makeFERSEnergySumHists(
+            subtractPedestal=True, calibrate=True)
+
+        hists_cer_vs_sci_raw = makeFERSCervsSciHists(
+            subtractPedestal=False, calibrate=False)
+        hists_cer_vs_sci_subtracted = makeFERSCervsSciHists(
+            subtractPedestal=True, calibrate=False)
+        hists_cer_vs_sci_subtracted_calibrated = makeFERSCervsSciHists(
+            subtractPedestal=True, calibrate=True)
+
+        hists_cer_vs_sci_random_raw = makeFERSCervsSciRandomHists(
+            subtractPedestal=False, calibrate=False)
+        hists_cer_vs_sci_random_subtracted = makeFERSCervsSciRandomHists(
+            subtractPedestal=True, calibrate=False)
+        hists_cer_vs_sci_random_subtracted_calibrated = makeFERSCervsSciRandomHists(
             subtractPedestal=True, calibrate=True)
 
         # save histograms to ROOT files
@@ -374,13 +454,6 @@ if __name__ == "__main__":
                 hist.Write()
         print(f"Saved raw histograms to {outfile_name}")
 
-        outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci.root"
-        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_FERS_Cer_vs_Sci:
-                hist.SetDirectory(outfile)
-                hist.Write()
-        print(f"Saved CER vs SCI histograms to {outfile_name}")
-
         outfile_name = f"{rootdir}/fers_energy_sum_subtracted.root"
         with ROOT.TFile(outfile_name, "RECREATE") as outfile:
             for hist in hists_subtracted:
@@ -388,38 +461,81 @@ if __name__ == "__main__":
                 hist.Write()
         print(f"Saved subtracted histograms to {outfile_name}")
 
-        outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_subtracted.root"
-        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_FERS_Cer_vs_Sci:
-                hist.SetDirectory(outfile)
-                hist.Write()
-        print(f"Saved subtracted CER vs SCI histograms to {outfile_name}")
-
         outfile_name = f"{rootdir}/fers_energy_sum_subtracted_calibrated.root"
         with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_subtractged_calibrated:
+            for hist in hists_subtracted_calibrated:
                 hist.SetDirectory(outfile)
                 hist.Write()
         print(f"Saved subtracted and calibrated histograms to {outfile_name}")
 
+        # save cer vs sci histograms
+
+        outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci.root"
+        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+            for hist in hists_cer_vs_sci_raw:
+                hist.SetDirectory(outfile)
+                hist.Write()
+        print(f"Saved CER vs SCI histograms to {outfile_name}")
+
+        outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_subtracted.root"
+        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+            for hist in hists_cer_vs_sci_subtracted:
+                hist.SetDirectory(outfile)
+                hist.Write()
+        print(f"Saved subtracted CER vs SCI histograms to {outfile_name}")
+
         outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_subtracted_calibrated.root"
         with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_FERS_Cer_vs_Sci:
+            for hist in hists_cer_vs_sci_subtracted_calibrated:
                 hist.SetDirectory(outfile)
                 hist.Write()
         print(
             f"Saved subtracted and calibrated CER vs SCI histograms to {outfile_name}")
 
+        # save random CER vs SCI histograms
+        outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random.root"
+        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+            for hist in hists_cer_vs_sci_random_raw:
+                hist.SetDirectory(outfile)
+                hist.Write()
+        print(f"Saved random CER vs SCI histograms to {outfile_name}")
+
+        outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random_subtracted.root"
+        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+            for hist in hists_cer_vs_sci_random_subtracted:
+                hist.SetDirectory(outfile)
+                hist.Write()
+        print(f"Saved random CER vs SCI histograms to {outfile_name}")
+
+        outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random_subtracted_calibrated.root"
+        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+            for hist in hists_cer_vs_sci_random_subtracted_calibrated:
+                hist.SetDirectory(outfile)
+                hist.Write()
+        print(
+            f"Saved random CER vs SCI subtracted and calibrated histograms to {outfile_name}")
+
     # make plots
     if makePlots:
-        outputs_html["raw"] = plotFERSEnergySumPlots(
+        outputs_html["raw"] = makeFERSEnergySumPlots(
             subtractPedestal=False, calibrate=False)
-        outputs_html["subtracted"] = plotFERSEnergySumPlots(
+        outputs_html["subtracted"] = makeFERSEnergySumPlots(
             subtractPedestal=True, calibrate=False)
-        outputs_html["subtracted_calibrated"] = plotFERSEnergySumPlots(
+        outputs_html["subtracted_calibrated"] = makeFERSEnergySumPlots(
             subtractPedestal=True, calibrate=True)
 
-        outputs_html["cer_vs_sci_subtracted_calibrated"] = plotFERSCerVsSciPlots(
+        outputs_html["cer_vs_sci_raw"] = makeFERSCerVsSciPlots(
+            subtractPedestal=False, calibrate=False)
+        outputs_html["cer_vs_sci_subtracted"] = makeFERSCerVsSciPlots(
+            subtractPedestal=True, calibrate=False)
+        outputs_html["cer_vs_sci_subtracted_calibrated"] = makeFERSCerVsSciPlots(
+            subtractPedestal=True, calibrate=True)
+
+        outputs_html["cer_vs_sci_random_random"] = makeFERSCerVsSciRandomPlots(
+            subtractPedestal=False, calibrate=False)
+        outputs_html["cer_vs_sci_random_subtracted"] = makeFERSCerVsSciRandomPlots(
+            subtractPedestal=True, calibrate=False)
+        outputs_html["cer_vs_sci_random_subtracted_calibrated"] = makeFERSCerVsSciRandomPlots(
             subtractPedestal=True, calibrate=True)
 
     if makeFits:

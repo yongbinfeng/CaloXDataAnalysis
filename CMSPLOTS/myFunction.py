@@ -577,7 +577,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         ROOT.TGaxis.SetMaxDigits(nMaxDigits)
     else:
         # default val
-        ROOT.TGaxis.SetMaxDigits(5)
+        ROOT.TGaxis.SetMaxDigits(4)
 
     if ymax == None:
         ymax = max([h.GetMaximum() for h in myhistos])
@@ -591,6 +591,20 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
             ymin *= 0.75
         else:
             ymin *= 0.1
+
+    if doth2 and zmax is None:
+        zmax = max([h.GetMaximum() for h in myhistos])
+        if dologz:
+            zmax *= 10.0
+        else:
+            zmax *= 1.25
+
+    if doth2 and zmin is None:
+        zmin = min([h.GetMinimum() for h in myhistos])
+        if dologz:
+            zmin *= 0.1
+        else:
+            zmin *= 0.75
 
     W = W_ref
     H = H_ref
