@@ -109,6 +109,10 @@ def calibrateFERSChannels(rdf, FERSBoards, file_gains, file_pedestals):
                 f"FERS_Board{boardNo}_energyHG_{channelNo}_subtracted_calibrated",
                 f"FERS_Board{boardNo}_energyHG_{channelNo}_subtracted / {gain}"
             )
+            rdf = rdf.Define(
+                f"FERS_Board{boardNo}_energyHG_{channelNo}_subtracted_calibrated_clipped",
+                f"FERS_Board{boardNo}_energyHG_{channelNo}_subtracted_calibrated > 0.8 ? FERS_Board{boardNo}_energyHG_{channelNo}_subtracted_calibrated : 0"
+            )
             # Not calibrating LG yet
             # rdf = rdf.Define(
             #    f"FERS_Board{boardNo}_energyLG_{channelNo}_calibrated",
@@ -168,7 +172,7 @@ def processDRSBoards(rdf, debug=False):
     return rdf
 
 
-def calculateEnergySumFERS(rdf, FERSBoards, subtractPedestal=False, calibrate=False):
+def calculateEnergySumFERS(rdf, FERSBoards, subtractPedestal=False, calibrate=False, clip=False):
     """
     Calculate the Sci and Cer energy sum for FERS boards, per board and per event.
     """
@@ -177,6 +181,8 @@ def calculateEnergySumFERS(rdf, FERSBoards, subtractPedestal=False, calibrate=Fa
         suffix = "_subtracted"
     if calibrate:
         suffix += "_calibrated"
+    if clip:
+        suffix += "_clipped"
     boardNos = []
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo

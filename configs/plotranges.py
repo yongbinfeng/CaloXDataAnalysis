@@ -1,4 +1,4 @@
-def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False):
+def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=False):
     suffix = ""
     xmin_board = 0
     xmin_total = 0
@@ -19,6 +19,13 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False):
         xmax_board = 200
         xmax_total = 1e3
         title = "# p.e."
+    if clip:
+        suffix += "_clipped"
+        xmin_board = -50
+        xmin_total = -100
+        xmax_board = 200
+        xmax_total = 1e3
+        title = "# p.e. (clipped)"
     return suffix, xmin_board, xmax_board, xmin_total, xmax_total, title
 
 
