@@ -155,7 +155,7 @@ def getEventEnergyFitParameters(runNumber, isCer=False, clip=False):
 
     args["cosmicruns_clipped"]["Cer"] = args["cosmicruns"]["Cer"].copy()
     args["cosmicruns_clipped"]["Cer"].update({
-        "xgausmean": 140, "xgausmin": 100, "xgausmax": 180,
+        "xgausmean": 150, "xgausmin": 100, "xgausmax": 180,
         "wgausmean": 20, "wgausmin": 10, "wgausmax": 30,
         "xmipmean": 200, "xmipmin": 150, "xmipmax": 250,
         "wmipmean": 40, "wmipmin": 20, "wmipmax": 80,

@@ -269,7 +269,7 @@ def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="
 
     n_all = h.Integral(0, h.GetNbinsX() + 1)
     # get the number of events in the plot range
-    n_events = h.Integral(h.FindBin(xmin), h.FindBin(xmax))
+    h_fit = h.Integral(h.FindBin(xfitmin), h.FindBin(xfitmax))
     n_gaus = 0
     n_exp = 0
     n_mip = 0
@@ -465,24 +465,24 @@ def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="
         latex.DrawLatexNDC(0.60, ylabel, "f_{DC} = %.2f #pm %.2f" %
                            (frac_gaus.getVal(), frac_gaus.getError()))
         ylabel -= 0.05
-        n_gaus = frac_gaus.getVal() * n_events
+        n_gaus = frac_gaus.getVal() * h_fit
     if addHE:
         latex.DrawLatexNDC(0.60, ylabel, "exp slope = %.6f #pm %.6f" %
                            (vexp.getVal(), vexp.getError()))
         ylabel -= 0.05
-        n_exp = frac_exp.getVal() * n_events
+        n_exp = frac_exp.getVal() * h_fit
     if addMIP:
         latex.DrawLatexNDC(0.60, ylabel, "#mu_{MIP} = %.2f #pm %.2f" %
                            (vmean_mip.getVal(), vmean_mip.getError()))
         ylabel -= 0.05
         latex.DrawLatexNDC(0.60, ylabel, "#sigma_{MIP} = %.2f #pm %.2f" %
                            (vwidth_mip.getVal(), vwidth_mip.getError()))
-        n_mip = n_events - n_gaus - n_exp
+        n_mip = h_fit - n_gaus - n_exp
 
     ylabel = 0.85
     latex.DrawLatexNDC(0.20, ylabel, f"# all = {n_all:.0f}")
     ylabel -= 0.05
-    latex.DrawLatexNDC(0.20, ylabel, f"# fit range = {n_events:.0f}")
+    latex.DrawLatexNDC(0.20, ylabel, f"# fit range = {h_fit:.0f}")
     if n_gaus > 0:
         ylabel -= 0.05
         latex.DrawLatexNDC(0.20, ylabel, f"# Dark Count = {n_gaus:.0f}")
