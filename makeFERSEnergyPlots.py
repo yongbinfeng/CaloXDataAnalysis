@@ -29,6 +29,7 @@ rdf, rdf_prefilter = filterPrefireEvents(rdf, runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)
 
 rdf = vectorizeFERS(rdf, FERSBoards)
+# define energy sums with different configurations
 rdf = calibrateFERSChannels(
     rdf, FERSBoards, file_gains=file_gains, file_pedestals=file_pedestals)
 rdf = calculateEnergySumFERS(

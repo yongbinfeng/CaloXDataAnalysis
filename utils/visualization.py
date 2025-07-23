@@ -1,4 +1,7 @@
 import ROOT
+import sys
+sys.path.append("CMSPLOTS")  # noqa
+from myFunction import DrawHistos
 
 
 def visualizeFERSBoards(fers_boards, valuemaps=None, suffix="", useHG=True):
@@ -56,3 +59,18 @@ def visualizeFERSBoards(fers_boards, valuemaps=None, suffix="", useHG=True):
     h2_Sci_3mm.SetMarkerSize(0.60)
 
     return [h2_Cer, h2_Cer_3mm], [h2_Sci, h2_Sci_3mm]
+
+
+def makeEventDisplay(h2_6mm, h2_3mm, output_name, outdir, runNumber, zmin, zmax, isCer=False):
+    xmax = 14
+    xmin = -14
+    ymax = 10
+    ymin = -10
+    W_ref = 1000
+    H_ref = 1100
+    if isCer:
+        extraText = "Cer"
+    else:
+        extraText = "Sci"
+    DrawHistos([h2_6mm, h2_3mm], "", xmin, xmax, "iX", ymin, ymax, "iY", output_name, dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText=extraText, runNumber=runNumber, zmin=zmin, zmax=zmax)
