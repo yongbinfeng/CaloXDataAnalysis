@@ -110,10 +110,12 @@ def getBoardEnergyFitParameters(runNumber, is3mm=False, isCer=False):
     return results
 
 
-def getEventEnergyFitParameters(runNumber, isCer=False):
+def getEventEnergyFitParameters(runNumber, isCer=False, clip=False):
     args = {}
     args["scanruns"] = {}
     args["cosmicruns"] = {}
+    args["scanruns_clipped"] = {}
+    args["cosmicruns_clipped"] = {}
 
     args["scanruns"]["Cer"] = {
         "addMIP": False,
@@ -125,6 +127,9 @@ def getEventEnergyFitParameters(runNumber, isCer=False):
     }
     # for the scan runs, no difference between Cer and Sci
     args["scanruns"]["Sci"] = args["scanruns"]["Cer"].copy()
+
+    args["scanruns_clipped"]["Cer"] = args["scanruns"]["Cer"].copy()
+    args["scanruns_clipped"]["Sci"] = args["scanruns"]["Sci"].copy()
 
     args["cosmicruns"]["Cer"] = {
         "addMIP": True,
@@ -148,9 +153,26 @@ def getEventEnergyFitParameters(runNumber, isCer=False):
         "wmipmean": 60, "wmipmin": 30, "wmipmax": 80,
     }
 
+    args["cosmicruns_clipped"]["Cer"] = args["cosmicruns"]["Cer"].copy()
+    args["cosmicruns_clipped"]["Cer"].update({
+        "xgausmean": 140, "xgausmin": 100, "xgausmax": 180,
+        "wgausmean": 20, "wgausmin": 10, "wgausmax": 30,
+        "xmipmean": 200, "xmipmin": 150, "xmipmax": 250,
+        "wmipmean": 40, "wmipmin": 20, "wmipmax": 80,
+    })
+    args["cosmicruns_clipped"]["Sci"] = args["cosmicruns"]["Sci"].copy()
+    args["cosmicruns_clipped"]["Sci"].update({
+        "xgausmean": 140, "xgausmin": 100, "xgausmax": 180,
+        "wgausmean": 20, "wgausmin": 10, "wgausmax": 30,
+        "xmipmean": 400, "xmipmin": 300, "xmipmax": 450,
+        "wmipmean": 40, "wmipmin": 20, "wmipmax": 80,
+    })
+
     from utils.utils import IsScanRun
     isscanrun = IsScanRun(runNumber)
     runtype = "scanruns" if isscanrun else "cosmicruns"
+    if clip:
+        runtype += "_clipped"
 
     channeltype = "Cer" if isCer else "Sci"
 

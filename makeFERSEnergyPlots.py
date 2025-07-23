@@ -454,34 +454,35 @@ def makeBoardFits():
     return output_html
 
 
-def makeEventFits():
-    suffix = "subtracted_calibrated"
-    filename = f"{rootdir}/fers_energy_sum_{suffix}.root"
+def makeEventFits(subtractPedestal=False, calibrate=False, clip=False):
+    suffix, _, _, _, _, xtitle = getRangesForFERSEnergySums(
+        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip)
+    filename = f"{rootdir}/fers_energy_sum{suffix}.root"
     if not os.path.exists(filename):
         print(
             f"File {filename} does not exist. Please run prepareDQMPlots.py first.")
         exit(1)
 
     ifile = ROOT.TFile(filename, "READ")
-    hCer = ifile.Get(f"hist_FERS_CerEnergyHG_{suffix}")
-    hSci = ifile.Get(f"hist_FERS_SciEnergyHG_{suffix}")
+    hCer = ifile.Get(f"hist_FERS_CerEnergyHG{suffix}")
+    hSci = ifile.Get(f"hist_FERS_SciEnergyHG{suffix}")
 
     args_cer = getEventEnergyFitParameters(
-        runNumber, isCer=True)
+        runNumber, isCer=True, clip=clip)
     args_sci = getEventEnergyFitParameters(
-        runNumber, isCer=False)
+        runNumber, isCer=False, clip=clip)
 
     plots = []
-    outdir = f"{plotdir}/energyfits"
-    output_name = eventFit(hCer, f"Run{runNumber}_CerHG",
-                           outdir=outdir, xlabel="Cer # p.e.",
+    outdir = f"{plotdir}/energyfits{suffix}"
+    output_name = eventFit(hCer, f"Run{runNumber}_CerHG{suffix}",
+                           outdir=outdir, xlabel="Cer " + xtitle,
                            **args_cer)
     plots.append(output_name)
-    output_name = eventFit(hSci, f"Run{runNumber}_SciHG",
-                           outdir=outdir, xlabel="Sci # p.e.",
+    output_name = eventFit(hSci, f"Run{runNumber}_SciHG{suffix}",
+                           outdir=outdir, xlabel="Sci " + xtitle,
                            **args_sci)
     plots.append(output_name)
-    output_html = f"{htmldir}/energyfits/index.html"
+    output_html = f"{htmldir}/energyfits{suffix}/index.html"
     generate_html(plots, outdir, plots_per_row=2,
                   output_html=output_html)
     print(f"Generated HTML file: {output_html}")
@@ -489,16 +490,16 @@ def makeEventFits():
 
 
 if __name__ == "__main__":
-    makeHists = True
-    makePlots = True
-    makeFits = False
+    makeHists = False
+    makePlots = False
+    makeFits = True
     outputs_html = {}
 
     if makeHists:
         hists_raw = makeFERSEnergySumHists(
             subtractPedestal=False, calibrate=False, clip=False)
-        hists_subtracted = makeFERSEnergySumHists(
-            subtractPedestal=True, calibrate=False, clip=False)
+        # hists_subtracted = makeFERSEnergySumHists(
+        #    subtractPedestal=True, calibrate=False, clip=False)
         hists_subtracted_calibrated = makeFERSEnergySumHists(
             subtractPedestal=True, calibrate=True, clip=False)
         hists_subtracted_calibrated_clipped = makeFERSEnergySumHists(
@@ -506,30 +507,30 @@ if __name__ == "__main__":
 
         hists_cer_vs_sci_raw = makeFERSCervsSciHists(
             subtractPedestal=False, calibrate=False, clip=False)
-        hists_cer_vs_sci_subtracted = makeFERSCervsSciHists(
-            subtractPedestal=True, calibrate=False, clip=False)
+        # hists_cer_vs_sci_subtracted = makeFERSCervsSciHists(
+        #    subtractPedestal=True, calibrate=False, clip=False)
         hists_cer_vs_sci_subtracted_calibrated = makeFERSCervsSciHists(
             subtractPedestal=True, calibrate=True, clip=False)
         hists_cer_vs_sci_subtracted_calibrated_clipped = makeFERSCervsSciHists(
             subtractPedestal=True, calibrate=True, clip=True)
 
-        hists_cer_vs_sci_random_raw = makeFERSCervsSciRandomHists(
-            subtractPedestal=False, calibrate=False, clip=False)
-        hists_cer_vs_sci_random_subtracted = makeFERSCervsSciRandomHists(
-            subtractPedestal=True, calibrate=False, clip=False)
-        hists_cer_vs_sci_random_subtracted_calibrated = makeFERSCervsSciRandomHists(
-            subtractPedestal=True, calibrate=True, clip=False)
-        hists_cer_vs_sci_random_subtracted_calibrated_clipped = makeFERSCervsSciRandomHists(
-            subtractPedestal=True, calibrate=True, clip=True)
+        # hists_cer_vs_sci_random_raw = makeFERSCervsSciRandomHists(
+        #    subtractPedestal=False, calibrate=False, clip=False)
+        # hists_cer_vs_sci_random_subtracted = makeFERSCervsSciRandomHists(
+        #    subtractPedestal=True, calibrate=False, clip=False)
+        # hists_cer_vs_sci_random_subtracted_calibrated = makeFERSCervsSciRandomHists(
+        #    subtractPedestal=True, calibrate=True, clip=False)
+        # hists_cer_vs_sci_random_subtracted_calibrated_clipped = makeFERSCervsSciRandomHists(
+        #    subtractPedestal=True, calibrate=True, clip=True)
 
-        hists_channel_comparison = makeFERSChannelComparisonHists(
-            subtractPedestal=False, calibrate=False)
-        hists_channel_comparison_subtracted = makeFERSChannelComparisonHists(
-            subtractPedestal=True, calibrate=False)
-        hists_channel_comparison_subtracted_calibrated = makeFERSChannelComparisonHists(
-            subtractPedestal=True, calibrate=True)
-        hists_channel_comparison_subtracted_calibrated_clipped = makeFERSChannelComparisonHists(
-            subtractPedestal=True, calibrate=True, clip=True)
+        # hists_channel_comparison = makeFERSChannelComparisonHists(
+        #    subtractPedestal=False, calibrate=False)
+        # hists_channel_comparison_subtracted = makeFERSChannelComparisonHists(
+        #    subtractPedestal=True, calibrate=False)
+        # hists_channel_comparison_subtracted_calibrated = makeFERSChannelComparisonHists(
+        #    subtractPedestal=True, calibrate=True)
+        # hists_channel_comparison_subtracted_calibrated_clipped = makeFERSChannelComparisonHists(
+        #    subtractPedestal=True, calibrate=True, clip=True)
 
         # save histograms to ROOT files
         outfile_name = f"{rootdir}/fers_energy_sum.root"
@@ -539,12 +540,12 @@ if __name__ == "__main__":
                 hist.Write()
         print(f"Saved raw histograms to {outfile_name}")
 
-        outfile_name = f"{rootdir}/fers_energy_sum_subtracted.root"
-        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_subtracted:
-                hist.SetDirectory(outfile)
-                hist.Write()
-        print(f"Saved subtracted histograms to {outfile_name}")
+        # outfile_name = f"{rootdir}/fers_energy_sum_subtracted.root"
+        # with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+        #    for hist in hists_subtracted:
+        #        hist.SetDirectory(outfile)
+        #        hist.Write()
+        # print(f"Saved subtracted histograms to {outfile_name}")
 
         outfile_name = f"{rootdir}/fers_energy_sum_subtracted_calibrated.root"
         with ROOT.TFile(outfile_name, "RECREATE") as outfile:
@@ -570,12 +571,12 @@ if __name__ == "__main__":
                 hist.Write()
         print(f"Saved CER vs SCI histograms to {outfile_name}")
 
-        outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_subtracted.root"
-        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_cer_vs_sci_subtracted:
-                hist.SetDirectory(outfile)
-                hist.Write()
-        print(f"Saved subtracted CER vs SCI histograms to {outfile_name}")
+        # outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_subtracted.root"
+        # with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+        #    for hist in hists_cer_vs_sci_subtracted:
+        #        hist.SetDirectory(outfile)
+        #        hist.Write()
+        # print(f"Saved subtracted CER vs SCI histograms to {outfile_name}")
 
         outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_subtracted_calibrated.root"
         with ROOT.TFile(outfile_name, "RECREATE") as outfile:
@@ -594,65 +595,65 @@ if __name__ == "__main__":
             f"Saved subtracted, calibrated, and clipped CER vs SCI histograms to {outfile_name}")
 
         # save random CER vs SCI histograms
-        outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random.root"
-        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_cer_vs_sci_random_raw:
-                hist.SetDirectory(outfile)
-                hist.Write()
-        print(f"Saved random CER vs SCI histograms to {outfile_name}")
+        # outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random.root"
+        # with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+        #    for hist in hists_cer_vs_sci_random_raw:
+        #        hist.SetDirectory(outfile)
+        #        hist.Write()
+        # print(f"Saved random CER vs SCI histograms to {outfile_name}")
 
-        outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random_subtracted.root"
-        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_cer_vs_sci_random_subtracted:
-                hist.SetDirectory(outfile)
-                hist.Write()
-        print(f"Saved random CER vs SCI histograms to {outfile_name}")
+        # outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random_subtracted.root"
+        # with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+        #    for hist in hists_cer_vs_sci_random_subtracted:
+        #        hist.SetDirectory(outfile)
+        #        hist.Write()
+        # print(f"Saved random CER vs SCI histograms to {outfile_name}")
 
-        outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random_subtracted_calibrated.root"
-        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_cer_vs_sci_random_subtracted_calibrated:
-                hist.SetDirectory(outfile)
-                hist.Write()
-        print(
-            f"Saved random CER vs SCI subtracted and calibrated histograms to {outfile_name}")
+        # outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random_subtracted_calibrated.root"
+        # with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+        #    for hist in hists_cer_vs_sci_random_subtracted_calibrated:
+        #        hist.SetDirectory(outfile)
+        #        hist.Write()
+        # print(
+        #    f"Saved random CER vs SCI subtracted and calibrated histograms to {outfile_name}")
 
-        outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random_subtracted_calibrated_clipped.root"
-        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_cer_vs_sci_random_subtracted_calibrated_clipped:
-                hist.SetDirectory(outfile)
-                hist.Write()
-        print(
-            f"Saved random CER vs SCI subtracted, calibrated, and clipped histograms to {outfile_name}")
+        # outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random_subtracted_calibrated_clipped.root"
+        # with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+        #    for hist in hists_cer_vs_sci_random_subtracted_calibrated_clipped:
+        #        hist.SetDirectory(outfile)
+        #        hist.Write()
+        # print(
+        #    f"Saved random CER vs SCI subtracted, calibrated, and clipped histograms to {outfile_name}")
 
         # save channel comparison histograms
-        outfile_name = f"{rootdir}/fers_energy_channel_comparison.root"
-        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_channel_comparison:
-                hist.SetDirectory(outfile)
-                hist.Write()
-        print(f"Saved channel comparison histograms to {outfile_name}")
-        outfile_name = f"{rootdir}/fers_energy_channel_comparison_subtracted.root"
-        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_channel_comparison_subtracted:
-                hist.SetDirectory(outfile)
-                hist.Write()
-        print(
-            f"Saved subtracted channel comparison histograms to {outfile_name}")
-        outfile_name = f"{rootdir}/fers_energy_channel_comparison_subtracted_calibrated.root"
-        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_channel_comparison_subtracted_calibrated:
-                hist.SetDirectory(outfile)
-                hist.Write()
-        print(
-            f"Saved subtracted and calibrated channel comparison histograms to {outfile_name}")
+        # outfile_name = f"{rootdir}/fers_energy_channel_comparison.root"
+        # with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+        #    for hist in hists_channel_comparison:
+        #        hist.SetDirectory(outfile)
+        #        hist.Write()
+        # print(f"Saved channel comparison histograms to {outfile_name}")
+        # outfile_name = f"{rootdir}/fers_energy_channel_comparison_subtracted.root"
+        # with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+        #    for hist in hists_channel_comparison_subtracted:
+        #        hist.SetDirectory(outfile)
+        #        hist.Write()
+        # print(
+        #    f"Saved subtracted channel comparison histograms to {outfile_name}")
+        # outfile_name = f"{rootdir}/fers_energy_channel_comparison_subtracted_calibrated.root"
+        # with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+        #    for hist in hists_channel_comparison_subtracted_calibrated:
+        #        hist.SetDirectory(outfile)
+        #        hist.Write()
+        # print(
+        #    f"Saved subtracted and calibrated channel comparison histograms to {outfile_name}")
 
-        outfile_name = f"{rootdir}/fers_energy_channel_comparison_subtracted_calibrated_clipped.root"
-        with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-            for hist in hists_channel_comparison_subtracted_calibrated_clipped:
-                hist.SetDirectory(outfile)
-                hist.Write()
-        print(
-            f"Saved subtracted, calibrated, and clipped channel comparison histograms to {outfile_name}")
+        # outfile_name = f"{rootdir}/fers_energy_channel_comparison_subtracted_calibrated_clipped.root"
+        # with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+        #    for hist in hists_channel_comparison_subtracted_calibrated_clipped:
+        #        hist.SetDirectory(outfile)
+        #        hist.Write()
+        # print(
+        #    f"Saved subtracted, calibrated, and clipped channel comparison histograms to {outfile_name}")
 
     # make plots
     if makePlots:
@@ -674,29 +675,32 @@ if __name__ == "__main__":
         outputs_html["cer_vs_sci_subtracted_calibrated_clipped"] = makeFERSCerVsSciPlots(
             subtractPedestal=True, calibrate=True, clip=True)
 
-        outputs_html["cer_vs_sci_random_random"] = makeFERSCerVsSciRandomPlots(
-            subtractPedestal=False, calibrate=False)
+        # outputs_html["cer_vs_sci_random_random"] = makeFERSCerVsSciRandomPlots(
+        #    subtractPedestal=False, calibrate=False)
         # outputs_html["cer_vs_sci_random_subtracted"] = makeFERSCerVsSciRandomPlots(
-        #    subtractPedestal=True, calibrate=False)
-        outputs_html["cer_vs_sci_random_subtracted_calibrated"] = makeFERSCerVsSciRandomPlots(
-            subtractPedestal=True, calibrate=True)
-        outputs_html["cer_vs_sci_random_subtracted_calibrated_clipped"] = makeFERSCerVsSciRandomPlots(
-            subtractPedestal=True, calibrate=True, clip=True)
+        # subtractPedestal=True, calibrate=False)
+        # outputs_html["cer_vs_sci_random_subtracted_calibrated"] = makeFERSCerVsSciRandomPlots(
+        #    subtractPedestal=True, calibrate=True)
+        # outputs_html["cer_vs_sci_random_subtracted_calibrated_clipped"] = makeFERSCerVsSciRandomPlots(
+        #    subtractPedestal=True, calibrate=True, clip=True)
 
-        outputs_html["channel_comparison"] = makeFERSChannelComparisonPlots(
-            subtractPedestal=False, calibrate=False)
+        # outputs_html["channel_comparison"] = makeFERSChannelComparisonPlots(
+        #    subtractPedestal=False, calibrate=False)
         # outputs_html["channel_comparison_subtracted"] = makeFERSChannelComparisonPlots(
-        #    subtractPedestal=True, calibrate=False)
-        outputs_html["channel_comparison_subtracted_calibrated"] = makeFERSChannelComparisonPlots(
-            subtractPedestal=True, calibrate=True)
-        outputs_html["channel_comparison_subtracted_calibrated_clipped"] = makeFERSChannelComparisonPlots(
-            subtractPedestal=True, calibrate=True, clip=True)
+        # subtractPedestal=True, calibrate=False)
+        # outputs_html["channel_comparison_subtracted_calibrated"] = makeFERSChannelComparisonPlots(
+        #    subtractPedestal=True, calibrate=True)
+        # outputs_html["channel_comparison_subtracted_calibrated_clipped"] = makeFERSChannelComparisonPlots(
+        #    subtractPedestal=True, calibrate=True, clip=True)
 
     if makeFits:
         # make board fits
-        outputs_html["board_fits"] = makeBoardFits()
+        # outputs_html["board_fits"] = makeBoardFits()
         # run event fits
-        outputs_html["event_fits"] = makeEventFits()
+        outputs_html["event_fits_subtracted_calibrated"] = makeEventFits(
+            subtractPedestal=True, calibrate=True, clip=False)
+        outputs_html["event_fits_subtracted_calibrated_clipped"] = makeEventFits(
+            subtractPedestal=True, calibrate=True, clip=True)
 
     print("Generated HTML files:")
     for key, html in outputs_html.items():
