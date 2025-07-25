@@ -122,7 +122,7 @@ def calibrateFERSChannels(rdf, FERSBoards, file_gains, file_pedestals):
     return rdf
 
 
-def processDRSBoards(rdf, debug=False):
+def preProcessDRSBoards(rdf, debug=False):
     import re
     # Get the list of all branch names
     branches = [str(b) for b in rdf.GetColumnNames()]
@@ -143,7 +143,8 @@ def processDRSBoards(rdf, debug=False):
     # Create an array of indices for DRS outputs
     rdf = rdf.Define("TS", "FillIndices(1024)")
 
-    # get the mean of DRS outputs per channel
+    # find the baseline of each DRS channel
+    # and subtract it from the DRS outputs
     for varname in drs_branches:
         rdf = rdf.Define(
             f"{varname}_median",
@@ -270,6 +271,32 @@ def getDRSPeakTS(rdf, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
                 f"{varname}_peakTS",
                 f"ArgMaxRange({varname}_subtractMedian_positive, {TS_start}, {TS_end}, {threshold})"
             )
+    return rdf
+
+
+def getDRSPeak(rdf, DRSBoards, TS_start=0, TS_end=400):
+    """
+    Get the peak value of DRS outputs per channel.
+    """
+    TS_start = int(TS_start)
+    TS_end = int(TS_end)
+    for _, DRSBoard in DRSBoards.items():
+        for channel in DRSBoard:
+            varname = channel.GetChannelName()
+            rdf = rdf.Define(
+                f"{varname}_peak",
+                f"MaxRange({varname}_subtractMedian_positive, {TS_start}, {TS_end})"
+            )
+    return rdf
+
+
+def prepareDRSStats(rdf, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
+    """
+    Get the statistics of DRS outputs per channel.
+    """
+    rdf = getDRSSum(rdf, DRSBoards, TS_start, TS_end)
+    rdf = getDRSPeakTS(rdf, DRSBoards, TS_start, TS_end, threshold)
+    rdf = getDRSPeak(rdf, DRSBoards, TS_start, TS_end)
     return rdf
 
 

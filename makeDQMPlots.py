@@ -8,6 +8,7 @@ from utils.html_generator import generate_html
 from utils.visualization import visualizeFERSBoards
 from utils.validateMap import DrawFERSBoards, DrawDRSBoards
 from utils.colors import colors
+from configs.plotranges import getDRSPlotRanges
 from runconfig import runNumber
 
 print("Start running script")
@@ -143,107 +144,6 @@ def makeConditionsPlots():
     plots.insert(3, output_name + ".png")
 
     output_html = f"{htmldir}/Conditions_vs_Event/index.html"
-    generate_html(plots, outdir_plots, plots_per_row=4,
-                  output_html=output_html)
-    return output_html
-
-
-def makeFERSEnergySumPlots(subtractPedestal=False):
-    suffix = ""
-    xmax_board = 15000
-    xmax_total = 200000
-    if subtractPedestal:
-        suffix = "_subtracted"
-        xmax_board = 10000
-        xmax_total = 5e4
-    plots = []
-    infile_name = f"{rootdir}/fers_energy_sum{suffix}.root"
-    infile = ROOT.TFile(infile_name, "READ")
-    outdir_plots = f"{plotdir}/FERS_EnergySum{suffix}"
-    hists_CerEnergyHG = []
-    hists_SciEnergyHG = []
-    hists_CerEnergyLG = []
-    hists_SciEnergyLG = []
-    legends = []
-    for _, FERSBoard in FERSBoards.items():
-        boardNo = FERSBoard.boardNo
-        hist_CerEnergyHG_name = f"hist_FERS_Board{boardNo}_CerEnergyHG{suffix}"
-        hist_SciEnergyHG_name = f"hist_FERS_Board{boardNo}_SciEnergyHG{suffix}"
-        hist_CerEnergyLG_name = f"hist_FERS_Board{boardNo}_CerEnergyLG{suffix}"
-        hist_SciEnergyLG_name = f"hist_FERS_Board{boardNo}_SciEnergyLG{suffix}"
-        hist_CerEnergyHG = infile.Get(hist_CerEnergyHG_name)
-        hist_SciEnergyHG = infile.Get(hist_SciEnergyHG_name)
-        hist_CerEnergyLG = infile.Get(hist_CerEnergyLG_name)
-        hist_SciEnergyLG = infile.Get(hist_SciEnergyLG_name)
-
-        if not (hist_CerEnergyHG and hist_SciEnergyHG and hist_CerEnergyLG and hist_SciEnergyLG):
-            print(
-                f"Warning: Histograms {hist_CerEnergyHG_name}, {hist_SciEnergyHG_name}, {hist_CerEnergyLG_name}, or {hist_SciEnergyLG_name} not found in {infile_name}")
-            continue
-
-        legends.append(str(boardNo))
-        hists_CerEnergyHG.append(hist_CerEnergyHG)
-        hists_SciEnergyHG.append(hist_SciEnergyHG)
-        hists_CerEnergyLG.append(hist_CerEnergyLG)
-        hists_SciEnergyLG.append(hist_SciEnergyLG)
-
-    output_name = "FERS_CerEnergyHG" + suffix
-    DrawHistos(hists_CerEnergyHG, legends, 0, xmax_board, "Cer Energy HG", 0, None, "Events",
-               output_name,
-               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.7, 0.90, 0.9])
-    plots.append(output_name + ".png")
-    output_name = "FERS_SciEnergyHG" + suffix
-    DrawHistos(hists_SciEnergyHG, legends, 0, xmax_board, "Sci Energy HG", 0, None, "Events",
-               output_name,
-               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.7, 0.90, 0.9])
-    plots.append(output_name + ".png")
-    output_name = "FERS_CerEnergyLG" + suffix
-    DrawHistos(hists_CerEnergyLG, legends, 0, xmax_total, "Cer Energy LG", 0, None, "Events",
-               output_name,
-               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.7, 0.90, 0.9])
-    plots.append(output_name + ".png")
-    output_name = "FERS_SciEnergyLG" + suffix
-    DrawHistos(hists_SciEnergyLG, legends, 0, xmax_total, "Sci Energy LG", 0, None, "Events",
-               output_name,
-               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.7, 0.90, 0.9])
-    plots.append(output_name + ".png")
-
-    # total energy sum plots
-    hist_CerEnergyHG = infile.Get(f"hist_FERS_CerEnergyHG{suffix}")
-    hist_SciEnergyHG = infile.Get(f"hist_FERS_SciEnergyHG{suffix}")
-    hist_CerEnergyLG = infile.Get(f"hist_FERS_CerEnergyLG{suffix}")
-    hist_SciEnergyLG = infile.Get(f"hist_FERS_SciEnergyLG{suffix}")
-    ymax = None  # let plotter decide the ymax
-    output_name = "FERS_Total_CerEnergyHG" + suffix
-    DrawHistos([hist_CerEnergyHG], "", 0, xmax_total, "Cer Energy HG", 0, ymax, "Events",
-               output_name,
-               dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber)
-    plots.insert(0, output_name + ".png")
-    output_name = "FERS_Total_SciEnergyHG" + suffix
-    DrawHistos([hist_SciEnergyHG], "", 0, xmax_total, "Sci Energy HG", 0, ymax, "Events",
-               output_name,
-               dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber)
-    plots.insert(1, output_name + ".png")
-    output_name = "FERS_Total_CerEnergyLG" + suffix
-    DrawHistos([hist_CerEnergyLG], "", 0,  xmax_total, "Cer Energy LG", 0, ymax, "Events",
-               output_name,
-               dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber)
-    plots.insert(2, output_name + ".png")
-    output_name = "FERS_Total_SciEnergyLG" + suffix
-    DrawHistos([hist_SciEnergyLG], "", 0, xmax_total, "Sci Energy LG", 0, ymax, "Events",
-               output_name,
-               dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber)
-    plots.insert(3, output_name + ".png")
-
-    output_html = f"{htmldir}/FERS_EnergySum{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -549,12 +449,8 @@ def makeDRS1DPlots():
 # DRS vs TS
 def makeDRS2DPlots(doSubtractMedian=False, doRTS=0):
     suffix = ""
-    ymin = -50
-    ymax = 50
     if doSubtractMedian:
         suffix = "_subtractMedian"
-        ymin = -20
-        ymax = 40
     varTS = "TS"
     if doRTS == 1:
         varTS = "RTSpos"
@@ -575,22 +471,19 @@ def makeDRS2DPlots(doSubtractMedian=False, doRTS=0):
                     iTowerX, iTowerY, isCer=(var == "Cer"))
                 hist_name = f"hist_DRS_Board{boardNo}_{var}_vs_{varTS}_{sTowerX}_{sTowerY}{suffix}"
                 hist = infile.Get(hist_name)
-                output_name = f"DRS_{var}_vs_{varTS}_{sTowerX}_{sTowerY}{suffix}"
-                plots.append(output_name + ".png")
-
-                ymax_tmp = ymax
-                ymin_tmp = ymin
-                if boardNo == 1 and chan.groupNo == 0:
-                    if chan.channelNo == 0 or chan.channelNo == 1:
-                        ymax_tmp = 600
-                        ymin_tmp = -200
 
                 if not hist:
                     print(
                         f"Warning: Histogram {hist_name} not found in {infile_name}")
                     continue
 
-                value_mean = hist.GetMean(2)
+                output_name = f"DRS_{var}_vs_{varTS}_{sTowerX}_{sTowerY}{suffix}"
+                plots.append(output_name + ".png")
+
+                ymin_tmp, ymax_tmp = getDRSPlotRanges(
+                    subtractMedian=doSubtractMedian, isAmplified=chan.isAmplified)
+
+                # value_mean = hist.GetMean(2)
 
                 extraToDraw = ROOT.TPaveText(0.20, 0.75, 0.60, 0.90, "NDC")
                 extraToDraw.SetTextAlign(11)
@@ -603,7 +496,7 @@ def makeDRS2DPlots(doSubtractMedian=False, doRTS=0):
                 extraToDraw.AddText(f"iTowerX: {iTowerX}")
                 extraToDraw.AddText(f"iTowerY: {iTowerY}")
 
-                DrawHistos([hist], "", 0, 1024, "Time Slice", value_mean + ymin_tmp, value_mean + ymax_tmp, f"DRS Output",
+                DrawHistos([hist], "", 0, 1024, "Time Slice", ymin_tmp, ymax_tmp, f"DRS Output",
                            output_name,
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                            extraToDraw=extraToDraw,
@@ -1000,6 +893,44 @@ def checkFERSvsDRSSum():
     return output_html
 
 
+def checkDRSPeakvsFERS():
+    plots = []
+    outdir_plots = f"{plotdir}/DRSPeak_vs_FERS"
+    infile_name = f"{rootdir}/drs_peak_vs_fers.root"
+    infile = ROOT.TFile(infile_name, "READ")
+
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+
+            for var in ["Cer", "Sci"]:
+                chan = DRSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                _, ymax = getDRSPlotRanges(
+                    subtractMedian=True, isAmplified=chan.isAmplified)
+                histname = f"hist_DRSPeak_VS_FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
+                output_name = histname.replace("hist_", "")
+                plots.append(output_name + ".png")
+
+                hist = infile.Get(histname)
+                if not hist:
+                    print(
+                        f"Warning: Histogram {histname} not found in {infile_name}")
+                    continue
+
+                DrawHistos([hist], "", 0, 9000, "FERS ADC", 0, ymax, "DRS Peak",
+                           output_name,
+                           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=None, dologz=True,
+                           outdir=outdir_plots, addOverflow=True, runNumber=runNumber, extraText=f"{var}")
+
+    output_html = f"{htmldir}/DRSPeak_vs_FERS/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=4,
+                  output_html=output_html)
+    return output_html
+
+
 if __name__ == "__main__":
     output_htmls = {}
 
@@ -1010,9 +941,6 @@ if __name__ == "__main__":
     output_htmls["drs mapping"] = DrawDRSBoards(run=runNumber)
 
     output_htmls["fers 1D"] = makeFERS1DPlots()
-    output_htmls["fers energy sum"] = makeFERSEnergySumPlots()
-    output_htmls["fers energy sum (subtract pedestal)"] = makeFERSEnergySumPlots(
-        True)
     output_htmls["fers stats"] = makeFERSStatsPlots()
     # makeDRS2DPlots()
     output_htmls["drs 2D"] = makeDRS2DPlots(doSubtractMedian=True)
@@ -1024,6 +952,8 @@ if __name__ == "__main__":
     output_htmls["hodo pos"] = compareHodoPosPlots(True)
 
     output_htmls["fers vs drs sum"] = checkFERSvsDRSSum()
+
+    output_htmls["drs peak vs fers"] = checkDRSPeakvsFERS()
 
     print("\n\n\n")
     print("*" * 30)

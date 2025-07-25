@@ -220,6 +220,12 @@ def buildDRSBoards(run=316):
         DRSBoards["Board3"].MoveTo(-1.5, -6.5)
         # all channels are connected.
         # no need to remove
+        if run >= 1033:
+            # two amplified channels in board 1
+            channel = DRSBoards["Board1"].GetChannelByGroupChannel(0, 0)
+            channel.isAmplified = True
+            channel = DRSBoards["Board1"].GetChannelByGroupChannel(0, 1)
+            channel.isAmplified = True
     else:
         raise ValueError(f"Unsupported run number {run} for DRS boards.")
     return DRSBoards

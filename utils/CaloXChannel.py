@@ -72,16 +72,17 @@ class FERSChannel(CaloXChannel):
 
 
 class DRSChannel(CaloXChannel):
-    def __init__(self, iTowerX: float, iTowerY: float, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, groupNo: int, boardNo: int):
+    def __init__(self, iTowerX: float, iTowerY: float, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, groupNo: int, boardNo: int, isAmplified: bool = False):
         super().__init__(iTowerX, iTowerY, iBoardX, iBoardY, isCer)
         self.channelNo = channelNo
         self.groupNo = groupNo
         self.boardNo = boardNo
+        self.isAmplified = isAmplified
 
     def __str__(self):
         base_str = super().__str__()
         base_str += (f", channelNo={self.channelNo}, groupNo={self.groupNo}, "
-                     f"boardNo={self.boardNo})")
+                     f"boardNo={self.boardNo}, isAmplified={self.isAmplified})")
         base_str = base_str.replace("CaloXChannel", "DRSChannel")
         return base_str
 
@@ -91,7 +92,8 @@ class DRSChannel(CaloXChannel):
         """
         return DRSChannel(
             self.iTowerX, self.iTowerY, self.iBoardX, self.iBoardY,
-            self.isCer, self.channelNo, self.groupNo, self.boardNo
+            self.isCer, self.channelNo, self.groupNo, self.boardNo,
+            self.isAmplified
         )
 
     def GetChannelName(self):

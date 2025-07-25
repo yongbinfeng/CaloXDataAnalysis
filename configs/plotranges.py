@@ -29,6 +29,18 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
     return suffix, xmin_board, xmax_board, xmin_total, xmax_total, title
 
 
+def getDRSPlotRanges(subtractMedian=False, isAmplified=False):
+    xmin = -50
+    xmax = 50
+    if subtractMedian:
+        xmin = -20
+        xmax = 40
+    if isAmplified:
+        xmin = -200
+        xmax = 2000
+    return xmin, xmax
+
+
 def getBoardEnergyFitParameters(runNumber, is3mm=False, isCer=False):
     args = {}
     args["scanruns"] = {}
