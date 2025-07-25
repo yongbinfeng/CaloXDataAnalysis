@@ -340,6 +340,36 @@ def buildHodoPosChannels(run=316):
 
     return hodoscope_channels
 
+def findTimeReferenceDelay(channel):
+
+    delay = {
+        "DRS_Board0_Group0_Channel8":9.545,
+        "DRS_Board0_Group1_Channel8":9.545,
+        "DRS_Board0_Group2_Channel8":3.1889,
+        "DRS_Board0_Group3_Channel8":3.1889,
+        "DRS_Board1_Group0_Channel8":8.7275,
+        "DRS_Board1_Group1_Channel8":8.7275,
+        "DRS_Board1_Group2_Channel8":3.3646,
+        "DRS_Board1_Group3_Channel8":3.3646,
+        "DRS_Board2_Group0_Channel8":9.9585,
+        "DRS_Board2_Group1_Channel8":9.9585,
+        "DRS_Board2_Group2_Channel8":6.283,
+        "DRS_Board2_Group3_Channel8":6.283,
+        "DRS_Board3_Group0_Channel8":11.085,
+        "DRS_Board3_Group1_Channel8":11.085,
+        "DRS_Board3_Group2_Channel8":7.5975,
+        "DRS_Board3_Group3_Channel8":7.5975,
+        "DRS_Board4_Group0_Channel8":8.482,
+        "DRS_Board4_Group1_Channel8":8.482,
+        "DRS_Board4_Group2_Channel8":8.2775,
+        "DRS_Board4_Group3_Channel8":8.2775,
+        "DRS_Board5_Group0_Channel8":11.2745,
+        "DRS_Board5_Group1_Channel8":11.2745,
+        "DRS_Board5_Group2_Channel8":8.3525,
+        "DRS_Board5_Group3_Channel8":8.3525
+    }
+    return delay[channel]
+
 
 if __name__ == "__main__":
     # Example usage
