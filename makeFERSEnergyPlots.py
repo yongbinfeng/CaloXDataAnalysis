@@ -12,7 +12,7 @@ sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
 
 
-print("Start running prepareDQMPlots.py")
+print("Start running makeFERSEnergyPlots.py")
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
@@ -423,7 +423,7 @@ def makeBoardFits():
     filename = f"{rootdir}/fers_energy_sum_{suffix}.root"
     if not os.path.exists(filename):
         print(
-            f"File {filename} does not exist. Please run prepareDQMPlots.py first.")
+            f"File {filename} does not exist. Please run makeFERSEnergyPlots.py with makeHists=True first.")
         exit(1)
 
     ifile = ROOT.TFile(filename, "READ")
@@ -491,8 +491,8 @@ def makeEventFits(subtractPedestal=False, calibrate=False, clip=False):
 
 
 if __name__ == "__main__":
-    makeHists = False
-    makePlots = False
+    makeHists = True
+    makePlots = True
     makeFits = True
     outputs_html = {}
 

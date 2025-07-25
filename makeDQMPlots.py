@@ -208,10 +208,6 @@ def makeFERSStatsPlots():
     with open(infile_name, "r") as f:
         stats = json.load(f)
 
-    infile_name = f"{rootdir}/fers_pedestals.json"
-    with open(infile_name, "r") as f:
-        pedestals = json.load(f)
-
     xmax = 14
     xmin = -14
     ymax = 10
@@ -222,7 +218,6 @@ def makeFERSStatsPlots():
     valuemaps_HG_max = {}
     valuemaps_LG_mean = {}
     valuemaps_LG_max = {}
-    valuemaps_pedestals = {}
 
     for channelName, (vmean, vmax) in stats.items():
         if "energyHG" in channelName:
@@ -232,9 +227,6 @@ def makeFERSStatsPlots():
             valuemaps_LG_mean[channelName] = vmean
             valuemaps_LG_max[channelName] = vmax
 
-    for channelName, pedestal in pedestals.items():
-        valuemaps_pedestals[channelName] = pedestal
-
     [h2_Cer_HG_mean, h2_Cer_3mm_HG_mean], [h2_Sci_HG_mean, h2_Sci_3mm_HG_mean] = visualizeFERSBoards(
         FERSBoards, valuemaps_HG_mean, suffix=f"Run{runNumber}_HG_mean", useHG=True)
     [h2_Cer_HG_max, h2_Cer_3mm_HG_max], [h2_Sci_HG_max, h2_Sci_3mm_HG_max] = visualizeFERSBoards(
@@ -243,9 +235,6 @@ def makeFERSStatsPlots():
         FERSBoards, valuemaps_LG_mean, suffix=f"Run{runNumber}_LG_mean", useHG=False)
     [h2_Cer_LG_max, h2_Cer_3mm_LG_max], [h2_Sci_LG_max, h2_Sci_3mm_LG_max] = visualizeFERSBoards(
         FERSBoards, valuemaps_LG_max, suffix=f"Run{runNumber}_LG_max", useHG=False)
-
-    [h2_Cer_pedestal, h2_Cer_3mm_pedestal], [h2_Sci_pedestal, h2_Sci_3mm_pedestal] = visualizeFERSBoards(
-        FERSBoards, valuemaps_pedestals, suffix=f"Run{runNumber}_pedestal", useHG=True)
 
     output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_mean"
     DrawHistos([h2_Cer_HG_mean, h2_Cer_3mm_HG_mean], "", xmin, xmax, "iX", ymin,
@@ -285,16 +274,6 @@ def makeFERSStatsPlots():
     DrawHistos([h2_Sci_LG_max, h2_Sci_3mm_LG_max], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
-    plots.append(output_name + "_Sci.png")
-
-    output_name = f"FERS_Boards_Run{runNumber}_Stats_Pedestal"
-    DrawHistos([h2_Cer_pedestal, h2_Cer_3mm_pedestal], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=100, zmax=200)
-    plots.append(output_name + "_Cer.png")
-    DrawHistos([h2_Sci_pedestal, h2_Sci_3mm_pedestal], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=100, zmax=200)
     plots.append(output_name + "_Sci.png")
 
     output_html = f"{htmldir}/FERS_Stats/index.html"
@@ -537,6 +516,11 @@ def makeDRSPeakTSPlots():
                 else:
                     hists[var] = hist
                     channelNos[var] = chan.channelNo
+
+            if not hists["Cer"] or not hists["Sci"]:
+                print(
+                    f"Warning: Histograms for Cer or Sci not found for Board {boardNo}, Tower ({iTowerX}, {iTowerY})")
+                continue
 
             extraToDraw = ROOT.TPaveText(0.20, 0.65, 0.60, 0.90, "NDC")
             extraToDraw.SetTextAlign(11)
@@ -908,6 +892,10 @@ def checkDRSPeakvsFERS():
             for var in ["Cer", "Sci"]:
                 chan = DRSBoard.GetChannelByTower(
                     iTowerX, iTowerY, isCer=(var == "Cer"))
+                if not chan:
+                    print(
+                        f"Warning: Channel not found for Board {boardNo}, Tower ({iTowerX}, {iTowerY}), Var {var}")
+                    continue
                 _, ymax = getDRSPlotRanges(
                     subtractMedian=True, isAmplified=chan.isAmplified)
                 histname = f"hist_DRSPeak_VS_FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"

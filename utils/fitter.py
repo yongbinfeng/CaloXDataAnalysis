@@ -24,14 +24,14 @@ def channelFit(hist, outdir, outname, npe_max=3, is3mm=False, runNumber=None):
     if is3mm:
         mu0_guess = 145.0
         dpe_guess = 140.0
-        dpe_min = 115
+        dpe_min = 100
         dpe_max = 170
         sigma_guess = 20.0
     else:
         # Default values for 6mm SiPMs
         mu0_guess = 140.0
         dpe_guess = 60.0
-        dpe_min = 51
+        dpe_min = 45
         dpe_max = 75
         sigma_guess = 15.0
 

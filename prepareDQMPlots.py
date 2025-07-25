@@ -484,6 +484,11 @@ def checkDRSPeakTS():
                 )
                 h1s_DRSPeakTS[var].append(h1_DRS_PeakTS)
 
+            if len(channelNames) < 2:
+                print(
+                    f"Warning: Not enough channels found for Board{boardNo}, Tower({sTowerX}, {sTowerY})")
+                continue
+
             h2_DRSPeak_Cer_vs_Sci = rdf.Histo2D((
                 f"hist_DRSPeak_Cer_vs_Sci_Board{boardNo}_{sTowerX}_{sTowerY}",
                 f"DRS Peak TS - CER vs SCI for Board{boardNo}, Tower({sTowerX}, {sTowerY});CER Peak TS;SCI Peak TS",
