@@ -9,6 +9,9 @@ with open(f_scanruns, 'r') as f:
     print("Loaded scan runs from", f_scanruns)
 print("Scan runs:", scanruns)
 
+f_triggerdelay = "data/triggerdelay.json"
+with open(f_triggerdelay, 'r') as f:
+    triggerdelay = json.load(f)
 
 def buildFERSBoards(run=316):
     """
@@ -339,6 +342,12 @@ def buildHodoPosChannels(run=316):
         ]
 
     return hodoscope_channels
+
+def findTimeReferenceDelay(channel,run=1040):
+    if str(run) not in triggerdelay.keys:
+        return triggerdelay["default"][channel]
+    else:
+        return triggerdelay[str(run)][channel]
 
 
 if __name__ == "__main__":
