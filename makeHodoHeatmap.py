@@ -37,6 +37,7 @@ def buildHeatMapEntries():
 
     for x, y in heatmap_entries:
         heatmap_matrix[y, x] += 1  
+    
 
     return heatmap_matrix
 
@@ -49,7 +50,22 @@ def get_mode(hist):
     return best_bin - 1
 
 def makeHeatmaps():
-    #blank for now
+    heatmap_matrix = buildHeatMapEntries()
+    heatmap = ROOT.TH2I("h2",
+                        "64x64 Coincidence Map;Board1 Index;Board2 Index",
+                        64, 0, 64,
+                        64, 0, 64)
+    for x, y in heatmap_entries:
+        heatmap.Fill(x, y)
+    c = ROOT.TCanvas("c", "Coincidence Heatmap", 800, 700)
+    heatmap.SetStats(False)
+    heatmap.Draw("COLZ")
+    for i in range(65):
+        ROOT.TLine(i, 0, i, 64).Draw()
+        ROOT.TLine(0, i, 64, i).Draw()
+    c.SaveAs(f"/hodoHeatmap.png")
+    print(f"Saved heatmap to {plotdir}/hodoHeatmap.png")
+    return heatmap_matrix
 
 def generateHTML():
     plots = ["hodoHeatmap.png"]
@@ -63,6 +79,7 @@ def main():
     eventProcess()
     makeHeatmaps()
     generateHTML()
-    
+
+
 if __name__ == "__main__":
     main()
