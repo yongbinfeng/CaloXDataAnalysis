@@ -13,6 +13,7 @@ f_triggerdelay = "data/triggerdelay.json"
 with open(f_triggerdelay, 'r') as f:
     triggerdelay = json.load(f)
 
+
 def buildFERSBoards(run=316):
     """
     Build a map for ixy and FERS channels for both boards.
@@ -109,7 +110,7 @@ def buildFERSBoards(run=316):
         FERSBoards["Board3"].MoveTo(-1.5, 1.875)
         FERSBoards["Board7"].MoveTo(0.5, 1.875)
 
-    elif run >= 895:
+    elif run >= 895 and run < 1100:
         FERSBoards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
         FERSBoards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
         FERSBoards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
@@ -141,6 +142,39 @@ def buildFERSBoards(run=316):
 
         FERSBoards["Board3"].MoveTo(-1.5, 1.875)
         FERSBoards["Board11"].MoveTo(0.5, 1.875)
+    elif run >= 1173:
+        # test beam
+        FERSBoards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
+        FERSBoards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
+        FERSBoards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
+        FERSBoards["Board3"] = base_FERSBoard_6mm.copy(boardNo=3)
+        FERSBoards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
+        FERSBoards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
+        FERSBoards["Board6"] = base_FERSBoard_6mm.copy(boardNo=6)
+        FERSBoards["Board9"] = base_FERSBoard_6mm.copy(boardNo=9)
+        FERSBoards["Board10"] = base_FERSBoard_6mm.copy(boardNo=10)
+        FERSBoards["Board11"] = base_FERSBoard_6mm.copy(boardNo=11)
+        FERSBoards["Board12"] = base_FERSBoard_6mm.copy(boardNo=12)
+        FERSBoards["Board13"] = base_FERSBoard_6mm.copy(boardNo=13)
+
+        FERSBoards["Board7"] = base_FERSBoard_3mm.copy(boardNo=7)
+        FERSBoards["Board8"] = base_FERSBoard_3mm.copy(boardNo=8)
+
+        FERSBoards["Board0"].MoveTo(-13.5, 3.5)
+        FERSBoards["Board1"].MoveTo(-9.5, 7.5)
+        FERSBoards["Board2"].MoveTo(-5.5, 7.5)
+        FERSBoards["Board3"].MoveTo(-1.5, 9.5)
+        FERSBoards["Board4"].MoveTo(2.5, 7.5)
+        FERSBoards["Board5"].MoveTo(6.5, 7.5)
+        FERSBoards["Board6"].MoveTo(10.5, 3.5)
+        FERSBoards["Board9"].MoveTo(-9.5, -0.5)
+        FERSBoards["Board10"].MoveTo(-5.5, -0.5)
+        FERSBoards["Board11"].MoveTo(-1.5, -2.5)
+        FERSBoards["Board12"].MoveTo(2.5, -0.5)
+        FERSBoards["Board13"].MoveTo(6.5, -0.5)
+
+        FERSBoards["Board7"].MoveTo(-1.5, 1.875)
+        FERSBoards["Board8"].MoveTo(0.5, 1.875)
 
     else:
         raise ValueError(f"Unsupported run number {run} for FERS boards.")
@@ -212,7 +246,7 @@ def buildDRSBoards(run=316):
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 5)
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 6)
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 7)
-    elif run >= 1003:
+    elif run >= 1003 and run < 1100:
         # 3 DRS boards in 1003
         DRSBoards["Board1"] = base_DRSBoard.copy(boardNo=1)
         DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
@@ -229,6 +263,15 @@ def buildDRSBoards(run=316):
             channel.isAmplified = True
             channel = DRSBoards["Board1"].GetChannelByGroupChannel(0, 1)
             channel.isAmplified = True
+    elif run >= 1173:
+        # test beam
+        DRSBoards["Board1"] = base_DRSBoard.copy(boardNo=1)
+        DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
+        DRSBoards["Board3"] = base_DRSBoard.copy(boardNo=3)
+        DRSBoards["Board4"] = base_DRSBoard.copy(boardNo=4)
+        DRSBoards["Board5"] = base_DRSBoard.copy(boardNo=5)
+        DRSBoards["Board6"] = base_DRSBoard.copy(boardNo=6)
+        DRSBoards["Board7"] = base_DRSBoard.copy(boardNo=7)
     else:
         raise ValueError(f"Unsupported run number {run} for DRS boards.")
     return DRSBoards
@@ -343,7 +386,8 @@ def buildHodoPosChannels(run=316):
 
     return hodoscope_channels
 
-def findTimeReferenceDelay(channel,run=1040):
+
+def findTimeReferenceDelay(channel, run=1040):
     if str(run) not in triggerdelay.keys:
         return triggerdelay["default"][channel]
     else:

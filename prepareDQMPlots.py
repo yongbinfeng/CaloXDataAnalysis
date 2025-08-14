@@ -16,7 +16,7 @@ ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 debugDRS = False
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
-rdf, rdf_prefilter = filterPrefireEvents(rdf, runNumber)
+# rdf, rdf_prefilter = filterPrefireEvents(rdf, runNumber)
 
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)

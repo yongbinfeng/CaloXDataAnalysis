@@ -2,8 +2,8 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
     suffix = ""
     xmin_board = 0
     xmin_total = 0
-    xmax_board = 15000
-    xmax_total = 200000
+    xmax_board = 500000
+    xmax_total = 1000000
     title = "Energy (Raw)"
     if subtractPedestal:
         suffix = "_subtracted"

@@ -570,7 +570,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         CMS_lumi.extraText = "Simulation"
 
     if runNumber is not None:
-        CMS_lumi.lumi_13TeV = f"Cosmic Run {runNumber}"
+        CMS_lumi.lumi_13TeV = f"Run {runNumber}"
 
     if nMaxDigits:
         # print(f"set the maximum number of digits {nMaxDigits}")
