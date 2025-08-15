@@ -216,25 +216,33 @@ def makeFERSStatsPlots():
     H_ref = 1100
     valuemaps_HG_mean = {}
     valuemaps_HG_max = {}
+    valuemaps_HG_satfreq = {}
     valuemaps_LG_mean = {}
     valuemaps_LG_max = {}
+    valuemaps_LG_satfreq = {}
 
-    for channelName, (vmean, vmax) in stats.items():
+    for channelName, (vmean, vmax, vsatfreq) in stats.items():
         if "energyHG" in channelName:
             valuemaps_HG_mean[channelName] = vmean
             valuemaps_HG_max[channelName] = vmax
+            valuemaps_HG_satfreq[channelName] = vsatfreq
         elif "energyLG" in channelName:
             valuemaps_LG_mean[channelName] = vmean
             valuemaps_LG_max[channelName] = vmax
+            valuemaps_LG_satfreq[channelName] = vsatfreq
 
     [h2_Cer_HG_mean, h2_Cer_3mm_HG_mean], [h2_Sci_HG_mean, h2_Sci_3mm_HG_mean] = visualizeFERSBoards(
         FERSBoards, valuemaps_HG_mean, suffix=f"Run{runNumber}_HG_mean", useHG=True)
     [h2_Cer_HG_max, h2_Cer_3mm_HG_max], [h2_Sci_HG_max, h2_Sci_3mm_HG_max] = visualizeFERSBoards(
         FERSBoards, valuemaps_HG_max, suffix=f"Run{runNumber}_HG_max", useHG=True)
+    [h2_Cer_HG_satfreq, h2_Cer_3mm_HG_satfreq], [h2_Sci_HG_satfreq, h2_Sci_3mm_HG_satfreq] = visualizeFERSBoards(
+        FERSBoards, valuemaps_HG_satfreq, suffix=f"Run{runNumber}_HG_satfreq", useHG=True)
     [h2_Cer_LG_mean, h2_Cer_3mm_LG_mean], [h2_Sci_LG_mean, h2_Sci_3mm_LG_mean] = visualizeFERSBoards(
         FERSBoards, valuemaps_LG_mean, suffix=f"Run{runNumber}_LG_mean", useHG=False)
     [h2_Cer_LG_max, h2_Cer_3mm_LG_max], [h2_Sci_LG_max, h2_Sci_3mm_LG_max] = visualizeFERSBoards(
         FERSBoards, valuemaps_LG_max, suffix=f"Run{runNumber}_LG_max", useHG=False)
+    [h2_Cer_LG_satfreq, h2_Cer_3mm_LG_satfreq], [h2_Sci_LG_satfreq, h2_Sci_3mm_LG_satfreq] = visualizeFERSBoards(
+        FERSBoards, valuemaps_LG_satfreq, suffix=f"Run{runNumber}_LG_satfreq", useHG=False)
 
     output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_mean"
     DrawHistos([h2_Cer_HG_mean, h2_Cer_3mm_HG_mean], "", xmin, xmax, "iX", ymin,
@@ -256,6 +264,16 @@ def makeFERSStatsPlots():
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
     plots.append(output_name + "_Sci.png")
 
+    output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_satfreq"
+    DrawHistos([h2_Cer_HG_satfreq, h2_Cer_3mm_HG_satfreq], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_HG_satfreq, h2_Sci_3mm_HG_satfreq], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
+    plots.append(output_name + "_Sci.png")
+
     output_name = f"FERS_Boards_Run{runNumber}_Stats_LG_mean"
     DrawHistos([h2_Cer_LG_mean, h2_Cer_3mm_LG_mean], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
@@ -274,6 +292,16 @@ def makeFERSStatsPlots():
     DrawHistos([h2_Sci_LG_max, h2_Sci_3mm_LG_max], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
+    plots.append(output_name + "_Sci.png")
+
+    output_name = f"FERS_Boards_Run{runNumber}_Stats_LG_satfreq"
+    DrawHistos([h2_Cer_LG_satfreq, h2_Cer_3mm_LG_satfreq], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_LG_satfreq, h2_Sci_3mm_LG_satfreq], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
     plots.append(output_name + "_Sci.png")
 
     output_html = f"{htmldir}/FERS_Stats/index.html"

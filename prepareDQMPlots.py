@@ -122,18 +122,24 @@ def collectFERSPedestals(hists1d_FERS):
 
 
 def collectFERSStats():
+    from configs.plotranges import getFERSSaturationValue
+    saturation_value = getFERSSaturationValue()
     stats = {}
+    # mean, max,
+    # and how frequent the saturation value is reached
     for _, FERSBoard in FERSBoards.items():
         for chan in FERSBoard:
             channelName_HG = chan.GetHGChannelName()
             stats[channelName_HG] = (
                 rdf.Mean(channelName_HG),
                 rdf.Max(channelName_HG),
+                rdf.Filter(f"{channelName_HG} >= {saturation_value}").Count()
             )
             channelName_LG = chan.GetLGChannelName()
             stats[channelName_LG] = (
                 rdf.Mean(channelName_LG),
                 rdf.Max(channelName_LG),
+                rdf.Filter(f"{channelName_LG} >= {saturation_value}").Count()
             )
 
     return stats
@@ -546,24 +552,29 @@ if __name__ == "__main__":
         os.makedirs(rootdir)
 
     # dump stats into a json file
-    import json
-    stats_results = {}
-    for channelName, (mean, max_value) in stats.items():
-        stats_results[channelName] = (mean.GetValue(), max_value.GetValue())
-    with open(f"{rootdir}/fers_stats.json", "w") as f:
-        json.dump(stats_results, f, indent=4)
+    if 'stats' in locals() and stats:
+        import json
+        stats_results = {}
+        for channelName, (mean, max_value, sat_frequency) in stats.items():
+            stats_results[channelName] = (mean.GetValue(), max_value.GetValue(), float(
+                sat_frequency.GetValue()) / nEvents)
+        with open(f"{rootdir}/fers_stats.json", "w") as f:
+            json.dump(stats_results, f, indent=4)
 
     # Save histograms to an output ROOT file
-    outfile = ROOT.TFile(f"{rootdir}/conditions_vs_event.root", "RECREATE")
-    for hist in hists_conditions:
-        hist.SetDirectory(outfile)
-        hist.Write()
-    outfile.Close()
+    if 'hists_conditions' in locals() and hists_conditions:
+        outfile = ROOT.TFile(f"{rootdir}/conditions_vs_event.root", "RECREATE")
+        for hist in hists_conditions:
+            hist.SetDirectory(outfile)
+            hist.Write()
+        outfile.Close()
 
-    outfile = ROOT.TFile(f"{rootdir}/fers_all_channels_1D.root", "RECREATE")
-    for hist in hists1d_FERS:
-        hist.Write()
-    outfile.Close()
+    if 'hists1d_FERS' in locals() and hists1d_FERS:
+        outfile = ROOT.TFile(
+            f"{rootdir}/fers_all_channels_1D.root", "RECREATE")
+        for hist in hists1d_FERS:
+            hist.Write()
+        outfile.Close()
     # outfile = ROOT.TFile(f"{rootdir}/fers_all_channels_2D.root", "RECREATE")
     # for hist in hists2d_FERS:
     #    hist.Write()
