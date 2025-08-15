@@ -278,6 +278,7 @@ def buildDRSBoards(run=316):
 
         DRSBoards["Board4"] = buildDRSBoardTestBeam(boardNo=4)
         DRSBoards["Board5"] = buildDRSBoardTestBeam(boardNo=5)
+        DRSBoards["Board6"] = buildDRSBoardTestBeam(boardNo=6)
     else:
         raise ValueError(f"Unsupported run number {run} for DRS boards.")
     return DRSBoards
@@ -369,6 +370,48 @@ def buildDRSBoardTestBeam(boardNo=4):
 
         drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
 
+        return drsboard
+
+    elif boardNo == 6:
+        base_iX_R = -1.5
+        base_iY_R = -2.5
+        base_iX_T = 2.5
+        base_iY_T = -0.5
+        maps_board6 = {
+            (base_iX_R + 3, base_iY_R - 1): (0, 2),
+            (base_iX_R + 2, base_iY_R - 1): (0, 3),
+            (base_iX_R + 1, base_iY_R - 1): (0, 4),
+            (base_iX_R + 0, base_iY_R - 1): (0, 5),
+            (base_iX_R + 3, base_iY_R - 2): (0, 6),
+            (base_iX_R + 2, base_iY_R - 2): (0, 7),
+            (base_iX_R + 1, base_iY_R - 2): (2, 2),
+            (base_iX_R + 0, base_iY_R - 2): (2, 3),
+            (base_iX_R + 3, base_iY_R - 3): (1, 0),
+            (base_iX_R + 2, base_iY_R - 3): (1, 1),
+            (base_iX_R + 1, base_iY_R - 3): (2, 4),
+            (base_iX_R + 0, base_iY_R - 3): (2, 5),
+
+            (base_iX_T + 1, base_iY_T): (1, 2),
+            (base_iX_T + 0, base_iY_T): (1, 3),
+            (base_iX_T + 1, base_iY_T - 1): (1, 4),
+            (base_iX_T + 0, base_iY_T - 1): (1, 5),
+            (base_iX_T + 1, base_iY_T - 2): (1, 6),
+            (base_iX_T + 0, base_iY_T - 2): (1, 7),
+            (base_iX_T + 1, base_iY_T - 3): (2, 0),
+            (base_iX_T + 0, base_iY_T - 3): (2, 1),
+        }
+        channels_DRS = []
+        for iX in range(0, 4):
+            channels_DRS_one_row = []
+            channels_DRS.append(channels_DRS_one_row)
+
+        for (iTowerX, iTowerY), (groupNo, chanNo) in maps_board6.items():
+            isCer = True
+            channel = DRSChannel(iTowerX, iTowerY, groupNo, chanNo, isCer,
+                                 chanNo, groupNo, boardNo, is6mm=True, isAmplified=False)
+            channels_DRS[groupNo].append(channel)
+
+        drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
         return drsboard
 
 
