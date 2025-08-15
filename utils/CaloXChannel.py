@@ -72,17 +72,18 @@ class FERSChannel(CaloXChannel):
 
 
 class DRSChannel(CaloXChannel):
-    def __init__(self, iTowerX: float, iTowerY: float, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, groupNo: int, boardNo: int, isAmplified: bool = False):
+    def __init__(self, iTowerX: float, iTowerY: float, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, groupNo: int, boardNo: int, isAmplified: bool = False, is6mm: bool = True):
         super().__init__(iTowerX, iTowerY, iBoardX, iBoardY, isCer)
         self.channelNo = channelNo
         self.groupNo = groupNo
         self.boardNo = boardNo
         self.isAmplified = isAmplified
+        self.is6mm = is6mm
 
     def __str__(self):
         base_str = super().__str__()
         base_str += (f", channelNo={self.channelNo}, groupNo={self.groupNo}, "
-                     f"boardNo={self.boardNo}, isAmplified={self.isAmplified})")
+                     f"boardNo={self.boardNo}, isAmplified={self.isAmplified}, is6mm={self.is6mm})")
         base_str = base_str.replace("CaloXChannel", "DRSChannel")
         return base_str
 
@@ -93,7 +94,7 @@ class DRSChannel(CaloXChannel):
         return DRSChannel(
             self.iTowerX, self.iTowerY, self.iBoardX, self.iBoardY,
             self.isCer, self.channelNo, self.groupNo, self.boardNo,
-            self.isAmplified
+            self.isAmplified, self.is6mm
         )
 
     def GetChannelName(self):
@@ -283,7 +284,7 @@ class DRSBoard(Board):
     A class to represent a DRS board.
     """
 
-    def __init__(self, boardNo):
+    def __init__(self, boardNo, is6mm=True):
         """
         Initialize a DRS board with a specific board number and channel configuration.
         :param boardNo: The board number.
@@ -291,7 +292,7 @@ class DRSBoard(Board):
         super().__init__(boardNo)
         # channels is a 2D list of DRSChannel objects
         # organized by (iBoardX, iBoardY)
-        self.channels = buildDRSBase(boardNo=boardNo)
+        self.channels = buildDRSBase(is6mm=is6mm, boardNo=boardNo)
 
     def __str__(self):
         base_str = super().__str__()
@@ -423,21 +424,29 @@ def buildFERSBase(is6mm=False, boardNo=0):
     return channels_FERS
 
 
-def buildDRSBase(boardNo=0):
+def buildDRSBase(is6mm=True, boardNo=0):
     # right now only have DRS on 6mm
     channels_DRS = []
     for ix in range(0, 4):
         channels_DRS_one_row = []
         for iy in range(0, 8):
             channelNo = drs_map[ix, iy]
-            isCer = (iy % 2 == 0)
             # DRS channels are grouped in groups of 8
             # groupNo is the group number (0-3)
             # chanNo is the channel number within the group (0-7)
             groupNo = (channelNo // 8)
             chanNo = (channelNo % 8)
-            channel = DRSChannel(ix, -int(iy/2), ix, iy, isCer,
-                                 chanNo, groupNo, boardNo)
+            if is6mm:
+                isCer = (iy % 2 == 0)
+                channel = DRSChannel(ix, -int(iy/2), ix, iy, isCer,
+                                     chanNo, groupNo, boardNo, is6mm=is6mm)
+            else:
+                # this is INCONSISTENT with the FERS 3mm channels
+                # need to CHECK
+                isCer = (ix % 2 == 1)
+                # 3mm has higher granularity in global Y
+                channel = DRSChannel(
+                    int(ix/2), -float(iy)/4, ix, iy, isCer, chanNo, groupNo, boardNo, is6mm=False, isAmplified=True)
             channels_DRS_one_row.append(channel)
         channels_DRS.append(channels_DRS_one_row)
     return channels_DRS

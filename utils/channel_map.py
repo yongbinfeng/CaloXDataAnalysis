@@ -186,7 +186,8 @@ def buildDRSBoards(run=316):
     Build a map for ixy and DRS channels.
     DRS boards are the same for all runs for now.
     """
-    base_DRSBoard = DRSBoard(boardNo=-1)
+    base_DRSBoard_6mm = DRSBoard(boardNo=-1, is6mm=True)
+    base_DRSBoard_3mm = DRSBoard(boardNo=-1, is6mm=False)
     DRSBoards = {}
     if run in scanruns:
         # no DRS boards in scan runs
@@ -194,7 +195,7 @@ def buildDRSBoards(run=316):
         return DRSBoards
 
     if run < 685:
-        DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
+        DRSBoards["Board2"] = base_DRSBoard_6mm.copy(boardNo=2)
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 5)
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 6)
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 7)
@@ -204,7 +205,7 @@ def buildDRSBoards(run=316):
         channel.iTowerY = -9.5
         channel.isCer = False
 
-        DRSBoards["Board0"] = base_DRSBoard.copy(boardNo=0)
+        DRSBoards["Board0"] = base_DRSBoard_6mm.copy(boardNo=0)
         DRSBoards["Board0"].MoveTo(-1.5, -6.5)
         channels = DRSBoards["Board0"].GetListOfChannels()
         for channel in channels:
@@ -235,8 +236,8 @@ def buildDRSBoards(run=316):
         DRSBoards["Board0"].RemoveChannelByGroupChannel(3, 7)
 
     elif run >= 685 and run < 1003:
-        DRSBoards["Board1"] = base_DRSBoard.copy(boardNo=1)
-        DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
+        DRSBoards["Board1"] = base_DRSBoard_6mm.copy(boardNo=1)
+        DRSBoards["Board2"] = base_DRSBoard_6mm.copy(boardNo=2)
 
         # remove channels that are not used
         DRSBoards["Board1"].MoveTo(-1.5, 9.5)
@@ -248,9 +249,9 @@ def buildDRSBoards(run=316):
         DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 7)
     elif run >= 1003 and run < 1100:
         # 3 DRS boards in 1003
-        DRSBoards["Board1"] = base_DRSBoard.copy(boardNo=1)
-        DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
-        DRSBoards["Board3"] = base_DRSBoard.copy(boardNo=3)
+        DRSBoards["Board1"] = base_DRSBoard_6mm.copy(boardNo=1)
+        DRSBoards["Board2"] = base_DRSBoard_6mm.copy(boardNo=2)
+        DRSBoards["Board3"] = base_DRSBoard_6mm.copy(boardNo=3)
 
         DRSBoards["Board1"].MoveTo(-1.5, 9.5)
         DRSBoards["Board2"].MoveTo(-1.5, 5.5)
@@ -265,13 +266,15 @@ def buildDRSBoards(run=316):
             channel.isAmplified = True
     elif run >= 1173:
         # test beam
-        DRSBoards["Board1"] = base_DRSBoard.copy(boardNo=1)
-        DRSBoards["Board2"] = base_DRSBoard.copy(boardNo=2)
-        DRSBoards["Board3"] = base_DRSBoard.copy(boardNo=3)
-        DRSBoards["Board4"] = base_DRSBoard.copy(boardNo=4)
-        DRSBoards["Board5"] = base_DRSBoard.copy(boardNo=5)
-        DRSBoards["Board6"] = base_DRSBoard.copy(boardNo=6)
-        DRSBoards["Board7"] = base_DRSBoard.copy(boardNo=7)
+        DRSBoards["Board0"] = base_DRSBoard_3mm.copy(boardNo=0)
+        DRSBoards["Board1"] = base_DRSBoard_3mm.copy(boardNo=1)
+        DRSBoards["Board2"] = base_DRSBoard_3mm.copy(boardNo=2)
+        DRSBoards["Board3"] = base_DRSBoard_3mm.copy(boardNo=3)
+
+        DRSBoards["Board0"].MoveTo(-1.5, 1.875)
+        DRSBoards["Board1"].MoveTo(-1.5, -0.125)
+        DRSBoards["Board2"].MoveTo(0.5, 1.875)
+        DRSBoards["Board3"].MoveTo(0.5, -0.125)
     else:
         raise ValueError(f"Unsupported run number {run} for DRS boards.")
     return DRSBoards

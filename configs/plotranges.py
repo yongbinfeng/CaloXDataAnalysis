@@ -36,8 +36,8 @@ def getDRSPlotRanges(subtractMedian=False, isAmplified=False):
         xmin = -20
         xmax = 40
     if isAmplified:
-        xmin = -200
-        xmax = 2000
+        xmin = -1000
+        xmax = 2500
     return xmin, xmax
 
 
