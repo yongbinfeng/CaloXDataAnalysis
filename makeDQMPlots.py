@@ -540,7 +540,7 @@ def makeDRSPeakTSPlots():
             hists_Cer.append(hists["Cer"])
             hists_Sci.append(hists["Sci"])
 
-            DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], 0, 400, "Peak TS", 1, None, "Counts",
+            DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], 0, 1000, "Peak TS", 1, None, "Counts",
                        output_name,
                        dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False, extraToDraw=extraToDraw,
                        outdir=outdir_plots, runNumber=runNumber)
@@ -548,16 +548,16 @@ def makeDRSPeakTSPlots():
 
     # summary plots
     hist_Cer_Sum = ROOT.TH1F("hist_DRS_PeakTS_Cer_Sum",
-                             "DRS Peak TS Cer Sum", 400, 0, 400)
+                             "DRS Peak TS Cer Sum", 1000, 0, 1000)
     hist_Sci_Sum = ROOT.TH1F("hist_DRS_PeakTS_Sci_Sum",
-                             "DRS Peak TS Sci Sum", 400, 0, 400)
+                             "DRS Peak TS Sci Sum", 1000, 0, 1000)
     for hist in hists_Cer:
         if hist:
             hist_Cer_Sum.Add(hist)
     for hist in hists_Sci:
         if hist:
             hist_Sci_Sum.Add(hist)
-    DrawHistos([hist_Cer_Sum, hist_Sci_Sum], ["Cer", "Sci"], 0, 400, "Peak TS", 1, None, "Counts",
+    DrawHistos([hist_Cer_Sum, hist_Sci_Sum], ["Cer", "Sci"], 0, 1000, "Peak TS", 1, None, "Counts",
                "DRS_PeakTS_Sum",
                dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False,
                outdir=outdir_plots, runNumber=runNumber)
@@ -576,8 +576,8 @@ def makeDRSPeakTS2DPlots():
     infile_name = f"{rootdir}/drs_peak_ts.root"
     infile = ROOT.TFile(infile_name, "READ")
 
-    # Create a dashed diagonal line from (0,0) to (400,400)
-    diagonal_line = ROOT.TLine(0, 0, 400, 400)
+    # Create a dashed diagonal line from (0,0) to (1000,1000)
+    diagonal_line = ROOT.TLine(0, 0, 1000, 1000)
     diagonal_line.SetLineStyle(2)  # 2 = dashed
     diagonal_line.SetLineWidth(1)
     diagonal_line.SetLineColor(ROOT.kRed)
@@ -600,7 +600,7 @@ def makeDRSPeakTS2DPlots():
 
             hists.append(hist)
 
-            DrawHistos([hist], "", 0, 400, "Cer Peak TS", 0, 400, f"Sci Peak TS",
+            DrawHistos([hist], "", 0, 1000, "Cer Peak TS", 0, 1000, f"Sci Peak TS",
                        output_name,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
                        outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
@@ -609,13 +609,13 @@ def makeDRSPeakTS2DPlots():
 
     # summary plots
     h2 = ROOT.TH2F("hist_DRSPeak_Cer_vs_Sci_Sum",
-                   "DRS Peak TS Cer vs Sci Sum", 400, 0, 400, 400, 0, 400)
+                   "DRS Peak TS Cer vs Sci Sum", 1000, 0, 1000, 1000, 0, 1000)
     for hist in hists:
         if hist:
             h2.Add(hist)
 
     output_name = "DRS_PeakTS_Cer_vs_Sci_Sum"
-    DrawHistos([h2], "", 0, 400, "Cer Peak TS", 0, 400, f"Sci Peak TS",
+    DrawHistos([h2], "", 0, 1000, "Cer Peak TS", 0, 1000, f"Sci Peak TS",
                output_name,
                dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
                outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
@@ -935,9 +935,9 @@ if __name__ == "__main__":
     output_htmls["drs peak ts"] = makeDRSPeakTSPlots()
     output_htmls["drs peak ts 2D"] = makeDRSPeakTS2DPlots()
 
-    output_htmls["time reference"] = compareTimeReferencePlots(True)
-    output_htmls["hodo trigger"] = compareHodoTriggerPlots(True)
-    output_htmls["hodo pos"] = compareHodoPosPlots(True)
+    # output_htmls["time reference"] = compareTimeReferencePlots(True)
+    # output_htmls["hodo trigger"] = compareHodoTriggerPlots(True)
+    # output_htmls["hodo pos"] = compareHodoPosPlots(True)
 
     output_htmls["fers vs drs sum"] = checkFERSvsDRSSum()
 

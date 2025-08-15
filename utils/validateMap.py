@@ -75,7 +75,7 @@ def DrawDRSBoards(run=316):
 if __name__ == "__main__":
     # Example usage
     output_htmls = {}
-    for run in [316, 571, 624, 662, 685]:
+    for run in [1175]:
         output_htmls[f"fers mapping {run}"] = DrawFERSBoards(run=run)
         output_htmls[f"drs mapping {run}"] = DrawDRSBoards(run=run)
 

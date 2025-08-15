@@ -29,7 +29,7 @@ print(f"Total number of events to process: {nEvents} in run {runNumber}")
 
 rdf = vectorizeFERS(rdf, FERSBoards)
 rdf = preProcessDRSBoards(rdf, debug=debugDRS)
-rdf = prepareDRSStats(rdf, DRSBoards, 0, 400, 9)
+rdf = prepareDRSStats(rdf, DRSBoards, 0, 1000, 9)
 
 
 def monitorConditions():
@@ -479,7 +479,7 @@ def checkDRSPeakTS():
                 h1_DRS_PeakTS = rdf.Histo1D((
                     f"hist_DRS_PeakTS_Board{boardNo}_peakTS_{sTowerX}_{sTowerY}_{var}",
                     f"DRS Peak TS for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var};Peak TS;Counts",
-                    400, 0, 400),
+                    1000, 0, 1000),
                     channelName + "_peakTS"
                 )
                 h1s_DRSPeakTS[var].append(h1_DRS_PeakTS)
@@ -492,7 +492,7 @@ def checkDRSPeakTS():
             h2_DRSPeak_Cer_vs_Sci = rdf.Histo2D((
                 f"hist_DRSPeak_Cer_vs_Sci_Board{boardNo}_{sTowerX}_{sTowerY}",
                 f"DRS Peak TS - CER vs SCI for Board{boardNo}, Tower({sTowerX}, {sTowerY});CER Peak TS;SCI Peak TS",
-                400, 0, 400, 400, 0, 400),
+                1000, 0, 1000, 1000, 0, 1000),
                 channelNames["Cer"] + "_peakTS",
                 channelNames["Sci"] + "_peakTS"
             )

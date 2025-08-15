@@ -284,7 +284,7 @@ class DRSBoard(Board):
     A class to represent a DRS board.
     """
 
-    def __init__(self, boardNo, is6mm=True):
+    def __init__(self, boardNo, is6mm=True, channels=None):
         """
         Initialize a DRS board with a specific board number and channel configuration.
         :param boardNo: The board number.
@@ -292,7 +292,10 @@ class DRSBoard(Board):
         super().__init__(boardNo)
         # channels is a 2D list of DRSChannel objects
         # organized by (iBoardX, iBoardY)
-        self.channels = buildDRSBase(is6mm=is6mm, boardNo=boardNo)
+        if channels is not None:
+            self.channels = channels
+        else:
+            self.channels = buildDRSBase(is6mm=is6mm, boardNo=boardNo)
 
     def __str__(self):
         base_str = super().__str__()
