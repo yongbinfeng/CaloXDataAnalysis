@@ -532,6 +532,47 @@ def findTimeReferenceDelay(channel, run=1040):
         return triggerdelay[str(run)][channel]
 
 
+def getUpstreamVetoChannel(run=1184):
+    if run < 1183:
+        return None
+    else:
+        return "DRS_Board7_Group1_Channel5"
+
+
+def getDownStreamMuonChannel(run=1184):
+    if run < 1183:
+        return None
+    else:
+        return "DRS_Board7_Group1_Channel0"
+
+
+def getServiceDRSChannels(run=1184):
+    """
+    Returns a list of service DRS channels.
+    """
+    if run < 1183:
+        return []
+    else:
+        return [
+            "DRS_Board7_Group0_Channel0",
+            "DRS_Board7_Group0_Channel1",
+            "DRS_Board7_Group0_Channel2",
+            "DRS_Board7_Group0_Channel3",
+            "DRS_Board7_Group0_Channel4",
+            "DRS_Board7_Group0_Channel5",
+            "DRS_Board7_Group0_Channel6",
+            "DRS_Board7_Group0_Channel7",
+            "DRS_Board7_Group1_Channel0",
+            "DRS_Board7_Group1_Channel1",
+            "DRS_Board7_Group1_Channel2",
+            "DRS_Board7_Group1_Channel3",
+            "DRS_Board7_Group1_Channel4",
+            "DRS_Board7_Group1_Channel5",
+            "DRS_Board7_Group1_Channel6",
+            "DRS_Board7_Group1_Channel7",
+        ]
+
+
 if __name__ == "__main__":
     # Example usage
     run_number = 583

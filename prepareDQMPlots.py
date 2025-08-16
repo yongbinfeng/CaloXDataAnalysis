@@ -1,8 +1,8 @@
 import os
 import ROOT
-from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels
+from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
 from utils.utils import number2string, preProcessDRSBoards, filterPrefireEvents, loadRDF, vectorizeFERS, prepareDRSStats
-from configs.plotranges import getDRSPlotRanges
+from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from runconfig import runNumber, firstEvent, lastEvent
 import time
 import sys
@@ -318,14 +318,19 @@ def trackDRSPlots():
     return hists2d_DRS_vs_Event
 
 
-def compareDRSChannels(channels_to_compare):
+def compareDRSChannels(channels_to_compare, isServiceDRS=False):
     hists_trigger = []
     for chan_name in channels_to_compare:
+        ymin = -2500
+        ymax = 500
+        if isServiceDRS:
+            ymin, ymax = getServiceDRSPlotRanges(
+                chan_name, subtractMedian=True)
         hist_subtractMedian = rdf.Histo2D((
             f"hist_{chan_name}_subtractMedian",
             f"{chan_name} (subtract median);TS;DRS values",
             1024, 0, 1024,
-            300, -2500, 500),
+            300, ymin, ymax),
             "TS", chan_name + "_subtractMedian"
         )
         hists_trigger.append(hist_subtractMedian)
@@ -533,8 +538,19 @@ if __name__ == "__main__":
     time_reference_channels = buildTimeReferenceChannels(run=runNumber)
     hists2d_time_reference = compareDRSChannels(time_reference_channels)
 
-    hodo_trigger_channels = buildHodoTriggerChannels(run=runNumber)
-    hists2d_hodo_trigger = compareDRSChannels(hodo_trigger_channels)
+    hists2d_hodo_trigger = None
+    # hodo_trigger_channels = buildHodoTriggerChannels(run=runNumber)
+    # hists2d_hodo_trigger = compareDRSChannels(hodo_trigger_channels)
+
+    service_drs_channels = getServiceDRSChannels(run=runNumber)
+    hists2d_service_drs = compareDRSChannels(
+        service_drs_channels, isServiceDRS=True)
+
+    upstream_veto_channel = getUpstreamVetoChannel(run=runNumber)
+    hists2d_veto = compareDRSChannels([upstream_veto_channel])
+
+    downstream_muon_channel = getDownStreamMuonChannel(run=runNumber)
+    hists2d_muon = compareDRSChannels([downstream_muon_channel])
 
     hodo_pos_channels = buildHodoPosChannels(run=runNumber)
     channels = [channel for channels in hodo_pos_channels.values()
@@ -642,12 +658,37 @@ if __name__ == "__main__":
         hist.Write()
     outfile_time_reference.Close()
 
-    outfile_hodo_trigger = ROOT.TFile(
-        f"{rootdir}/hodo_trigger_channels.root", "RECREATE")
-    for hist in hists2d_hodo_trigger:
-        hist.SetDirectory(outfile_hodo_trigger)
-        hist.Write()
-    outfile_hodo_trigger.Close()
+    if 'hists2d_hodo_trigger' in locals() and hists2d_hodo_trigger:
+        outfile_hodo_trigger = ROOT.TFile(
+            f"{rootdir}/hodo_trigger_channels.root", "RECREATE")
+        for hist in hists2d_hodo_trigger:
+            hist.SetDirectory(outfile_hodo_trigger)
+            hist.Write()
+        outfile_hodo_trigger.Close()
+
+    if 'hists2d_service_drs' in locals() and hists2d_service_drs:
+        outfile_service_drs = ROOT.TFile(
+            f"{rootdir}/service_drs_channels.root", "RECREATE")
+        for hist in hists2d_service_drs:
+            hist.SetDirectory(outfile_service_drs)
+            hist.Write()
+        outfile_service_drs.Close()
+
+    if 'hists2d_veto' in locals() and hists2d_veto:
+        outfile_veto = ROOT.TFile(
+            f"{rootdir}/upstream_veto_channel.root", "RECREATE")
+        for hist in hists2d_veto:
+            hist.SetDirectory(outfile_veto)
+            hist.Write()
+        outfile_veto.Close()
+
+    if 'hists2d_muon' in locals() and hists2d_muon:
+        outfile_muon = ROOT.TFile(
+            f"{rootdir}/downstream_muon_channel.root", "RECREATE")
+        for hist in hists2d_muon:
+            hist.SetDirectory(outfile_muon)
+            hist.Write()
+        outfile_muon.Close()
 
     outfile_hodo_pos = ROOT.TFile(
         f"{rootdir}/hodo_pos_channels.root", "RECREATE")

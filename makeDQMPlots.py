@@ -2,13 +2,13 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from myFunction import DrawHistos
-from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels
+from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
 from utils.utils import number2string, round_up_to_1eN
 from utils.html_generator import generate_html
 from utils.visualization import visualizeFERSBoards
 from utils.validateMap import DrawFERSBoards, DrawDRSBoards
 from utils.colors import colors
-from configs.plotranges import getDRSPlotRanges
+from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from runconfig import runNumber
 
 print("Start running script")
@@ -19,6 +19,9 @@ FERSBoards = buildFERSBoards(run=runNumber)
 time_reference_channels = buildTimeReferenceChannels(run=runNumber)
 hodo_trigger_channels = buildHodoTriggerChannels(run=runNumber)
 hodo_pos_channels = buildHodoPosChannels(run=runNumber)
+upstream_veto_channel = getUpstreamVetoChannel(run=runNumber)
+downstream_muon_channel = getDownStreamMuonChannel(run=runNumber)
+service_drs_channels = getServiceDRSChannels(run=runNumber)
 
 
 rootdir = f"results/root/Run{runNumber}/"
@@ -744,6 +747,124 @@ def compareTimeReferencePlots(doSubtractMedian=False):
     return output_html
 
 
+def compareServiceDRSPlots(doSubtractMedian=False):
+    suffix = ""
+    ymin = 500
+    ymax = 2500
+    if doSubtractMedian:
+        suffix = "_subtractMedian"
+    plots = []
+    infile_name = f"{rootdir}/service_drs_channels.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    outdir_plots = f"{plotdir}/ServiceDRS"
+
+    for chan_name in service_drs_channels:
+        hist_name = f"hist_{chan_name}{suffix}"
+        hist = infile.Get(hist_name)
+        if not hist:
+            print(f"Warning: Histogram {hist_name} not found in {infile_name}")
+            continue
+        extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
+        extraToDraw.SetTextAlign(11)
+        extraToDraw.SetFillColorAlpha(0, 0)
+        extraToDraw.SetBorderSize(0)
+        extraToDraw.SetTextFont(42)
+        extraToDraw.SetTextSize(0.04)
+        extraToDraw.AddText(f"{chan_name}")
+        output_name = f"ServiceDRS_{chan_name}{suffix}"
+
+        ymin, ymax = getServiceDRSPlotRanges(
+            chan_name, subtractMedian=doSubtractMedian)
+        DrawHistos([hist], "", 0, 1024, "Time Slice", ymin, ymax, "Counts",
+                   output_name,
+                   dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+                   extraToDraw=extraToDraw,
+                   outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+        plots.append(output_name + ".png")
+
+    output_html = f"{htmldir}/ServiceDRS{suffix}/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=2,
+                  output_html=output_html)
+
+    return output_html
+
+
+def compareUpstreamVetoPlots(doSubtractMedian=False):
+    suffix = ""
+    ymin = 500
+    ymax = 2500
+    if doSubtractMedian:
+        suffix = "_subtractMedian"
+        ymin = -1500
+        ymax = 500
+    plots = []
+    infile_name = f"{rootdir}/upstream_veto_channel.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    outdir_plots = f"{plotdir}/UpstreamVeto"
+
+    chan_name = upstream_veto_channel
+    hist_name = f"hist_{chan_name}{suffix}"
+    hist = infile.Get(hist_name)
+
+    extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
+    extraToDraw.SetTextAlign(11)
+    extraToDraw.SetFillColorAlpha(0, 0)
+    extraToDraw.SetBorderSize(0)
+    extraToDraw.SetTextFont(42)
+    extraToDraw.SetTextSize(0.04)
+    extraToDraw.AddText(f"{chan_name}")
+    output_name = f"UpstreamVeto_{chan_name}{suffix}"
+    DrawHistos([hist], "", 0, 1024, "Time Slice", ymin, ymax, "Counts",
+               output_name,
+               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+               extraToDraw=extraToDraw,
+               outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+    plots.append(output_name + ".png")
+
+    output_html = f"{htmldir}/UpstreamVeto{suffix}/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=2,
+                  output_html=output_html)
+    return output_html
+
+
+def compareDownstreamMuonPlots(doSubtractMedian=False):
+    suffix = ""
+    ymin = 500
+    ymax = 2500
+    if doSubtractMedian:
+        suffix = "_subtractMedian"
+        ymin = -1500
+        ymax = 500
+    plots = []
+    infile_name = f"{rootdir}/downstream_muon_channel.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    outdir_plots = f"{plotdir}/DownstreamMuon"
+
+    chan_name = downstream_muon_channel
+    hist_name = f"hist_{chan_name}{suffix}"
+    hist = infile.Get(hist_name)
+
+    extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
+    extraToDraw.SetTextAlign(11)
+    extraToDraw.SetFillColorAlpha(0, 0)
+    extraToDraw.SetBorderSize(0)
+    extraToDraw.SetTextFont(42)
+    extraToDraw.SetTextSize(0.04)
+    extraToDraw.AddText(f"{chan_name}")
+    output_name = f"DownstreamMuon_{chan_name}{suffix}"
+    DrawHistos([hist], "", 0, 1024, "Time Slice", ymin, ymax, "Counts",
+               output_name,
+               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+               extraToDraw=extraToDraw,
+               outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+    plots.append(output_name + ".png")
+
+    output_html = f"{htmldir}/DownstreamMuon{suffix}/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=2,
+                  output_html=output_html)
+    return output_html
+
+
 # trigger
 def compareHodoTriggerPlots(doSubtractMedian=False):
     suffix = ""
@@ -962,6 +1083,11 @@ if __name__ == "__main__":
     output_htmls["drs 2D"] = makeDRS2DPlots(doSubtractMedian=True)
     output_htmls["drs peak ts"] = makeDRSPeakTSPlots()
     output_htmls["drs peak ts 2D"] = makeDRSPeakTS2DPlots()
+
+    output_htmls["drs services"] = compareServiceDRSPlots(
+        doSubtractMedian=True)
+    # output_htmls["upstream veto"] = compareUpstreamVetoPlots(subtractMedian=True)
+    # output_htmls["downstream muon"] = compareDownstreamMuonPlots(subtractMedian=True)
 
     # output_htmls["time reference"] = compareTimeReferencePlots(True)
     # output_htmls["hodo trigger"] = compareHodoTriggerPlots(True)

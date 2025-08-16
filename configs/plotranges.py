@@ -202,3 +202,31 @@ def getEventEnergyFitParameters(runNumber, isCer=False, clip=False):
 
     # Return a copy to avoid modifying the original dictionary
     return results
+
+
+def getServiceDRSPlotRanges(channel, subtractMedian=True):
+
+    service_drs_ranges = {
+        "DRS_Board7_Group0_Channel0": (2000, -2500),
+        "DRS_Board7_Group0_Channel1": (2000, -2500),
+        "DRS_Board7_Group0_Channel2": (2000, -2500),
+        "DRS_Board7_Group0_Channel3": (2000, -2500),
+        "DRS_Board7_Group0_Channel4": (1000, -2500),
+        "DRS_Board7_Group0_Channel5": (1000, -2500),
+        "DRS_Board7_Group0_Channel6": (1000, -2500),
+        "DRS_Board7_Group0_Channel7": (1000, -2500),
+        "DRS_Board7_Group1_Channel0": (200, -500),
+        "DRS_Board7_Group1_Channel1": (200, -2000),
+        "DRS_Board7_Group1_Channel2": (200, -500),
+        "DRS_Board7_Group1_Channel3": (100, -200),
+        "DRS_Board7_Group1_Channel4": (100, -200),
+        "DRS_Board7_Group1_Channel5": (100, -200),
+        "DRS_Board7_Group1_Channel6": (500, -2500),
+        "DRS_Board7_Group1_Channel7": (100, -200)
+    }
+    xmin = -50
+    xmax = 50
+    if subtractMedian:
+        if channel in service_drs_ranges:
+            xmax, xmin = service_drs_ranges[channel]
+    return xmin, xmax
