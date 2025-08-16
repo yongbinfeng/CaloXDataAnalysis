@@ -628,6 +628,8 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
                 canvas.SetRightMargin(0.18)
             else:
                 canvas.SetRightMargin(0.12)
+        else:
+            canvas.SetRightMargin(0.095)
         padsize2 = 0.
         padsize3 = 0.
         canvas.cd()

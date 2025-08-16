@@ -2,31 +2,39 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
     suffix = ""
     xmin_board = 0
     xmin_total = 0
-    xmax_board = 500000
-    xmax_total = 1000000
+    xmax_board = 300e3
+    xmax_total = 800e3
+    xmax_board_cer = 100e3
+    xmax_total_cer = 250e3
     title = "Energy (Raw)"
     if subtractPedestal:
         suffix = "_subtracted"
-        xmin_board = -20000
-        xmin_total = -50000
-        xmax_board = 100000
-        xmax_total = 5e5
+        xmin_board = -1000
+        xmin_total = -5000
+        xmax_board = 300000
+        xmax_total = 1e6
+        xmax_board_cer = 90e3
+        xmax_total_cer = 200e3
         title = "Energy (PD subtracted)"
     if calibrate:
         suffix += "_calibrated"
         xmin_board = -50
         xmin_total = -100
-        xmax_board = 2000
-        xmax_total = 1e4
+        xmax_board = 4000
+        xmax_total = 1.0e4
+        xmax_board_cer = 1200
+        xmax_total_cer = 2e3
         title = "# p.e."
     if clip:
         suffix += "_clipped"
         xmin_board = -50
         xmin_total = -100
-        xmax_board = 2000
-        xmax_total = 1e4
+        xmax_board = 5000
+        xmax_total = 1.5e4
+        xmax_board_cer = 1500
+        xmax_total_cer = 3e3
         title = "# p.e. (clipped)"
-    return suffix, xmin_board, xmax_board, xmin_total, xmax_total, title
+    return suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, title
 
 
 def getFERSSaturationValue():
