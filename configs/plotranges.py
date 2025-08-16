@@ -3,7 +3,7 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
     xmin_board = 0
     xmin_total = 0
     xmax_board = 300e3
-    xmax_total = 800e3
+    xmax_total = 100e4
     xmax_board_cer = 100e3
     xmax_total_cer = 250e3
     title = "Energy (Raw)"
@@ -21,7 +21,7 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
         xmin_board = -50
         xmin_total = -100
         xmax_board = 4000
-        xmax_total = 1.0e4
+        xmax_total = 1.5e4
         xmax_board_cer = 1200
         xmax_total_cer = 2e3
         title = "# p.e."

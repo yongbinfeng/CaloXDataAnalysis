@@ -145,9 +145,9 @@ def makeFERSCervsSciHists(subtractPedestal=False, calibrate=False, clip=False):
         boardNo = FERSBoard.boardNo
         hist_Cer_vs_Sci = rdf.Histo2D((
             f"hist_FERS_Board{boardNo}_Cer_vs_Sci{suffix}",
-            f"FERS Board {boardNo} - CER vs SCI Energy;CER Energy HG;SCI Energy HG;Counts",
-            500, xmin_board, xmax_board_cer,
-            500, xmin_board, xmax_board),
+            f"FERS Board {boardNo} - CER vs SCI Energy",
+            500, xmin_board, xmax_board,
+            500, xmin_board, xmax_board_cer),
             f"FERS_Board{boardNo}_SciEnergyHG{suffix}",
             f"FERS_Board{boardNo}_CerEnergyHG{suffix}"
         )
@@ -157,8 +157,8 @@ def makeFERSCervsSciHists(subtractPedestal=False, calibrate=False, clip=False):
     hist_Cer_vs_Sci_Total = rdf.Histo2D((
         f"hist_FERS_Cer_vs_Sci{suffix}",
         "FERS - CER vs SCI Energy;CER Energy HG;SCI Energy HG;Counts",
-        500, xmin_total, xmax_total_cer,
-        500, xmin_total, xmax_total),
+        500, xmin_total, xmax_total,
+        500, xmin_total, xmax_total_cer),
         f"FERS_SciEnergyHG{suffix}",
         f"FERS_CerEnergyHG{suffix}"
     )
