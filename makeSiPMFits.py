@@ -93,11 +93,11 @@ plots.append(output_name + "_Sci.png")
 output_name = f"FERS_Boards_Run{runNumber}_Stats_gain"
 DrawHistos([h2_Cer_gain, h2_Cer_3mm_gain], "", xmin, xmax, "iX", ymin,
            ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
-           outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=50, zmax=80)
+           outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=40, zmax=85)
 plots.append(output_name + "_Cer.png")
 DrawHistos([h2_Sci_gain, h2_Sci_3mm_gain], "", xmin, xmax, "iX", ymin,
            ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
-           outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=50, zmax=80)
+           outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=40, zmax=85)
 plots.append(output_name + "_Sci.png")
 
 generate_html(plots, outdir_plots, plots_per_row=2,

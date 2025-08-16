@@ -27,6 +27,12 @@ def channelFit(hist, outdir, outname, npe_max=3, is3mm=False, runNumber=None):
         dpe_min = 100
         dpe_max = 170
         sigma_guess = 20.0
+        if runNumber and runNumber >= 1100:
+            # Adjust guesses for newer runs
+            dpe_guess = 75.0
+            dpe_min = 60
+            dpe_max = 85
+            sigma_guess = 25.0
     else:
         # Default values for 6mm SiPMs
         mu0_guess = 140.0
@@ -227,6 +233,8 @@ def channelFit(hist, outdir, outname, npe_max=3, is3mm=False, runNumber=None):
 
     if runNumber is not None:
         CMS_lumi.lumi_13TeV = f"Cosmic Run {runNumber}"
+        if runNumber >= 1100:
+            CMS_lumi.lumi_13TeV = f"Run {runNumber}"
 
     CMS_lumi.CMS_lumi(c, 4, 0)
 
@@ -500,6 +508,8 @@ def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="
 
     if runNumber is not None:
         CMS_lumi.lumi_13TeV = f"Cosmic Run {runNumber}"
+        if runNumber >= 1100:
+            CMS_lumi.lumi_13TeV = f"Run {runNumber}"
 
     CMS_lumi.CMS_lumi(padtop, 4, 0)
 
