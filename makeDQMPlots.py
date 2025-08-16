@@ -313,7 +313,89 @@ def makeFERSStatsPlots():
     return output_html
 
 
+def makeFERSMaxValuePlots():
+    plots = []
+    xmin = 7500
+    xmax = 8500
+    outdir_plots = f"{plotdir}/FERS_MaxValues"
+    infile_name = f"{rootdir}/fers_max_values.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    hists_board_cer_HG_max = []
+    hists_board_cer_LG_max = []
+    hists_board_sci_HG_max = []
+    hists_board_sci_LG_max = []
+    legends = []
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        hist_board_cer_HG_max = infile.Get(
+            f"hist_FERS_Board{boardNo}_energy_cer_HG_max")
+        hist_board_sci_HG_max = infile.Get(
+            f"hist_FERS_Board{boardNo}_energy_sci_HG_max")
+        hist_board_cer_LG_max = infile.Get(
+            f"hist_FERS_Board{boardNo}_energy_cer_LG_max")
+        hist_board_sci_LG_max = infile.Get(
+            f"hist_FERS_Board{boardNo}_energy_sci_LG_max")
+        hists_board_cer_HG_max.append(hist_board_cer_HG_max)
+        hists_board_sci_HG_max.append(hist_board_sci_HG_max)
+        hists_board_cer_LG_max.append(hist_board_cer_LG_max)
+        hists_board_sci_LG_max.append(hist_board_sci_LG_max)
+        legends.append(str(boardNo))
+
+    hist_cer_HG_max = infile.Get("hist_FERS_energy_cer_HG_max")
+    hist_sci_HG_max = infile.Get("hist_FERS_energy_sci_HG_max")
+    hist_cer_LG_max = infile.Get("hist_FERS_energy_cer_LG_max")
+    hist_sci_LG_max = infile.Get("hist_FERS_energy_sci_LG_max")
+
+    output_name = "FERS_Boards_CerEnergyHG_max"
+    DrawHistos(hists_board_cer_HG_max, legends, xmin, xmax, f"HG Cer Max (Board)", 1, None, "Events",
+               output_name,
+               dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
+    plots.append(output_name + ".png")
+    output_name = "FERS_Boards_SciEnergyHG_max"
+    DrawHistos(hists_board_sci_HG_max, legends, xmin, xmax, f"HG Sci Max (Board)", 1, None, "Events",
+               output_name,
+               dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
+    plots.append(output_name + ".png")
+    output_name = "FERS_Boards_CerEnergyLG_max"
+    DrawHistos(hists_board_cer_LG_max, legends, xmin, xmax, f"LG Cer Max (Board)", 1, None, "Events",
+               output_name,
+               dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
+    plots.append(output_name + ".png")
+    output_name = "FERS_Boards_SciEnergyLG_max"
+    DrawHistos(hists_board_sci_LG_max, legends, xmin, xmax, f"LG Sci Max (Board)", 1, None, "Events",
+               output_name,
+               dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
+    plots.append(output_name + ".png")
+
+    output_name = "FERS_EnergyHG_max"
+    DrawHistos([hist_cer_HG_max, hist_sci_HG_max],
+               ["Cer",
+                   "Sci"], xmin, xmax, f"HG Max (All Boards)", 1, None, "Events",
+               output_name,
+               dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.75, 0.50, 0.9])
+    plots.append(output_name + ".png")
+    output_name = "FERS_EnergyLG_max"
+    DrawHistos([hist_cer_LG_max, hist_sci_LG_max],
+               ["Cer",
+                   "Sci"], xmin, xmax, f"LG Max (All Boards)", 1, None, "Events",
+               output_name,
+               dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.75, 0.50, 0.9])
+    plots.append(output_name + ".png")
+
+    output_html = f"{htmldir}/FERS_MaxValues/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=2,
+                  output_html=output_html)
+    return output_html
+
 # 2D FERS histograms, hg vs lg
+
+
 def makeFERS2DPlots():
     plots = []
     outdir_plots = f"{plotdir}/FERS_2D"
@@ -1073,13 +1155,13 @@ if __name__ == "__main__":
 
     output_htmls["conditions plots"] = makeConditionsPlots()
 
-    # validate DRS and FERS boards
+    # # validate DRS and FERS boards
     output_htmls["fers mapping"] = DrawFERSBoards(run=runNumber)
     output_htmls["drs mapping"] = DrawDRSBoards(run=runNumber)
 
     output_htmls["fers 1D"] = makeFERS1DPlots()
     output_htmls["fers stats"] = makeFERSStatsPlots()
-    # makeDRS2DPlots()
+    # # makeDRS2DPlots()
     output_htmls["drs 2D"] = makeDRS2DPlots(doSubtractMedian=True)
     output_htmls["drs peak ts"] = makeDRSPeakTSPlots()
     output_htmls["drs peak ts 2D"] = makeDRSPeakTS2DPlots()
@@ -1092,6 +1174,8 @@ if __name__ == "__main__":
     # output_htmls["time reference"] = compareTimeReferencePlots(True)
     # output_htmls["hodo trigger"] = compareHodoTriggerPlots(True)
     # output_htmls["hodo pos"] = compareHodoPosPlots(True)
+
+    output_htmls["fers max values"] = makeFERSMaxValuePlots()
 
     output_htmls["fers vs drs sum"] = checkFERSvsDRSSum()
 

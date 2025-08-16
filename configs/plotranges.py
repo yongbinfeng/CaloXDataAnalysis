@@ -39,7 +39,9 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
 
 def getFERSSaturationValue():
     # This is the saturation value for the FERS channels
-    return 8191
+    #return 8191
+    return 8000
+
 
 
 def getDRSPlotRanges(subtractMedian=False, isAmplified=False):

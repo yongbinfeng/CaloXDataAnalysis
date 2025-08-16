@@ -1,7 +1,7 @@
 import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
-from utils.utils import number2string, preProcessDRSBoards, filterPrefireEvents, loadRDF, vectorizeFERS, prepareDRSStats
+from utils.utils import number2string, preProcessDRSBoards, filterPrefireEvents, loadRDF, vectorizeFERS, prepareDRSStats, getFERSBoardMax
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from runconfig import runNumber, firstEvent, lastEvent
 import time
@@ -30,6 +30,8 @@ print(f"Total number of events to process: {nEvents} in run {runNumber}")
 rdf = vectorizeFERS(rdf, FERSBoards)
 rdf = preProcessDRSBoards(rdf, debug=debugDRS)
 rdf = prepareDRSStats(rdf, DRSBoards, 0, 1000, 9)
+
+rdf = getFERSBoardMax(rdf, FERSBoards)
 
 
 def monitorConditions():
@@ -143,6 +145,75 @@ def collectFERSStats():
             )
 
     return stats
+
+
+def makeFERSMaxValueHists():
+    """
+    get the max FERS readout per board and per event 
+    """
+    hists_board_cer_HG_max = []
+    hists_board_cer_LG_max = []
+    hists_board_sci_HG_max = []
+    hists_board_sci_LG_max = []
+    nbins = 100
+    xmin = 7500
+    xmax = 8500
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        hist_board_cer_HG_max = rdf.Histo1D((
+            f"hist_FERS_Board{boardNo}_energy_cer_HG_max",
+            f"FERS Board {boardNo} - CER Energy HG max;CER Energy HG max per board;Counts",
+            nbins, xmin, xmax),
+            f"FERS_Board{boardNo}_energy_cer_HG_max"
+        )
+        hist_board_cer_LG_max = rdf.Histo1D((
+            f"hist_FERS_Board{boardNo}_energy_cer_LG_max",
+            f"FERS Board {boardNo} - CER Energy LG max;CER Energy LG max per board;Counts",
+            nbins, xmin, xmax),
+            f"FERS_Board{boardNo}_energy_cer_LG_max"
+        )
+        hist_board_sci_HG_max = rdf.Histo1D((
+            f"hist_FERS_Board{boardNo}_energy_sci_HG_max",
+            f"FERS Board {boardNo} - SCI Energy HG max;SCI Energy HG max per board;Counts",
+            nbins, xmin, xmax),
+            f"FERS_Board{boardNo}_energy_sci_HG_max"
+        )
+        hist_board_sci_LG_max = rdf.Histo1D((
+            f"hist_FERS_Board{boardNo}_energy_sci_LG_max",
+            f"FERS Board {boardNo} - SCI Energy LG max;SCI Energy LG max per board;Counts",
+            nbins, xmin, xmax),
+            f"FERS_Board{boardNo}_energy_sci_LG_max"
+        )
+        hists_board_cer_HG_max.append(hist_board_cer_HG_max)
+        hists_board_cer_LG_max.append(hist_board_cer_LG_max)
+        hists_board_sci_HG_max.append(hist_board_sci_HG_max)
+        hists_board_sci_LG_max.append(hist_board_sci_LG_max)
+
+    hist_cer_HG_max = rdf.Histo1D((
+        "hist_FERS_energy_cer_HG_max",
+        "FERS - CER Energy HG max;CER Energy HG max;Counts",
+        nbins, xmin, xmax),
+        "FERS_energy_cer_HG_max"
+    )
+    hist_cer_LG_max = rdf.Histo1D((
+        "hist_FERS_energy_cer_LG_max",
+        "FERS - CER Energy LG max;CER Energy LG max;Counts",
+        nbins, xmin, xmax),
+        "FERS_energy_cer_LG_max"
+    )
+    hist_sci_HG_max = rdf.Histo1D((
+        "hist_FERS_energy_sci_HG_max",
+        "FERS - SCI Energy HG max;SCI Energy HG max;Counts",
+        nbins, xmin, xmax),
+        "FERS_energy_sci_HG_max"
+    )
+    hist_sci_LG_max = rdf.Histo1D((
+        "hist_FERS_energy_sci_LG_max",
+        "FERS - SCI Energy LG max;SCI Energy LG max;Counts",
+        nbins, xmin, xmax),
+        "FERS_energy_sci_LG_max"
+    )
+    return hists_board_cer_HG_max + hists_board_cer_LG_max + hists_board_sci_HG_max + hists_board_sci_LG_max + [hist_cer_HG_max, hist_cer_LG_max, hist_sci_HG_max, hist_sci_LG_max]
 
 
 def trackFERSPlots():
@@ -559,6 +630,8 @@ if __name__ == "__main__":
 
     hists2d_FERS_vs_DRSs = checkFERSvsDRSSum()
 
+    hists_FERS_max = makeFERSMaxValueHists()
+
     stats = collectFERSStats()
 
     print("\033[94mSave results\033[0m")
@@ -703,6 +776,13 @@ if __name__ == "__main__":
         hist.SetDirectory(outfile_FERS_DRS)
         hist.Write()
     outfile_FERS_DRS.Close()
+
+    outfile_FERS_max = ROOT.TFile(
+        f"{rootdir}/fers_max_values.root", "RECREATE")
+    for hist in hists_FERS_max:
+        hist.SetDirectory(outfile_FERS_max)
+        hist.Write()
+    outfile_FERS_max.Close()
 
     time_taken = time.time() - start_time
     print(f"Finished running script in {time_taken:.2f} seconds")

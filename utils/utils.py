@@ -49,6 +49,48 @@ def getBranchStats(rdf, branches):
     return stats
 
 
+def getFERSBoardMax(rdf, FERSBoards):
+    branches_cer_HG = []
+    branches_cer_LG = []
+    branches_sci_HG = []
+    branches_sci_LG = []
+    for _, FERSBoard in FERSBoards.items():
+        boardNo = FERSBoard.boardNo
+        branches_board_cer_HG = []
+        branches_board_cer_LG = []
+        branches_board_sci_HG = []
+        branches_board_sci_LG = []
+        for chan in FERSBoard:
+            if chan.isCer:
+                branches_board_cer_HG.append(chan.GetHGChannelName())
+                branches_board_cer_LG.append(chan.GetLGChannelName())
+            else:
+                branches_board_sci_HG.append(chan.GetHGChannelName())
+                branches_board_sci_LG.append(chan.GetLGChannelName())
+        rdf = rdf.Define(f"FERS_Board{boardNo}_energy_cer_HG_max",
+                         f"std::max({{{', '.join(branches_board_cer_HG)}}})")
+        rdf = rdf.Define(f"FERS_Board{boardNo}_energy_cer_LG_max",
+                         f"std::max({{{', '.join(branches_board_cer_LG)}}})")
+        rdf = rdf.Define(f"FERS_Board{boardNo}_energy_sci_HG_max",
+                         f"std::max({{{', '.join(branches_board_sci_HG)}}})")
+        rdf = rdf.Define(f"FERS_Board{boardNo}_energy_sci_LG_max",
+                         f"std::max({{{', '.join(branches_board_sci_LG)}}})")
+        branches_cer_HG.append(f"FERS_Board{boardNo}_energy_cer_HG_max")
+        branches_cer_LG.append(f"FERS_Board{boardNo}_energy_cer_LG_max")
+        branches_sci_HG.append(f"FERS_Board{boardNo}_energy_sci_HG_max")
+        branches_sci_LG.append(f"FERS_Board{boardNo}_energy_sci_LG_max")
+
+    rdf = rdf.Define("FERS_energy_cer_HG_max",
+                     f"std::max({{{', '.join(branches_cer_HG)}}})")
+    rdf = rdf.Define("FERS_energy_cer_LG_max",
+                     f"std::max({{{', '.join(branches_cer_LG)}}})")
+    rdf = rdf.Define("FERS_energy_sci_HG_max",
+                     f"std::max({{{', '.join(branches_sci_HG)}}})")
+    rdf = rdf.Define("FERS_energy_sci_LG_max",
+                     f"std::max({{{', '.join(branches_sci_LG)}}})")
+    return rdf
+
+
 def vectorizeFERS(rdf, FERSBoards):
     # FRES board outputs
     # define variables as RDF does not support reading vectors
