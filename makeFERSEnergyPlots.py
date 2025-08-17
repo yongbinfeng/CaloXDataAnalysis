@@ -7,7 +7,7 @@ from utils.html_generator import generate_html
 from utils.fitter import eventFit
 from utils.colors import colors
 from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters, getEventEnergyFitParameters
-from selections.selections import filterPrefireEvents, vetoMuonCounter
+from selections.selections import vetoMuonCounter, applyUpstreamVeto
 from runconfig import runNumber, firstEvent, lastEvent
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
@@ -26,8 +26,9 @@ file_pedestals = f"results/root/Run{runNumber}/valuemaps_pedestal.json"
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
 rdf = preProcessDRSBoards(rdf)
-# rdf, rdf_prefilter = filterPrefireEvents(rdf, runNumber)
 rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
+
+rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber)
 
 FERSBoards = buildFERSBoards(run=runNumber)
 

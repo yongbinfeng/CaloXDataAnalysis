@@ -7,7 +7,7 @@ from utils.utils import loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrat
 from utils.html_generator import generate_html
 from utils.colors import colors
 from utils.visualization import visualizeFERSBoards, makeEventDisplay
-from selections.selections import filterPrefireEvents, vetoMuonCounter
+from selections.selections import vetoMuonCounter, applyUpstreamVeto
 from runconfig import runNumber, firstEvent, lastEvent
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
@@ -25,7 +25,8 @@ file_gains = f"results/root/Run{runNumber}/valuemaps_gain.json"
 file_pedestals = f"results/root/Run{runNumber}/valuemaps_pedestal.json"
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
-# rdf, rdf_prefilter = filterPrefireEvents(rdf, runNumber)
+rdf = preProcessDRSBoards(rdf)
+rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber)
 
 FERSBoards = buildFERSBoards(run=runNumber)
 
@@ -41,6 +42,7 @@ plotdir = f"results/plots/Run{runNumber}/"
 htmldir = f"results/html/Run{runNumber}/"
 
 
+# the values right now only works for 80GeV positrons
 def filterBandEvents(rdf):
     suffix = "_subtracted_calibrated"
     return rdf.Filter(f"FERS_SciEnergyHG{suffix} > 2000 && FERS_SciEnergyHG{suffix} < 4000")
