@@ -109,7 +109,7 @@ def visualizeDRSBoards(drs_boards, suffix=""):
     return [h2_DRS_Cer, h2_DRS_Cer_3mm], [h2_DRS_Sci, h2_DRS_Sci_3mm]
 
 
-def makeEventDisplay(h2_6mm, h2_3mm, output_name, outdir, runNumber, zmin, zmax, isCer=False):
+def makeEventDisplay(h2_6mm, h2_3mm, output_name, outdir, runNumber, zmin, zmax, isCer=False, extraToDraw=None):
     xmax = 14
     xmin = -14
     ymax = 10
@@ -121,4 +121,4 @@ def makeEventDisplay(h2_6mm, h2_3mm, output_name, outdir, runNumber, zmin, zmax,
     else:
         extraText = "Sci"
     DrawHistos([h2_6mm, h2_3mm], "", xmin, xmax, "iX", ymin, ymax, "iY", output_name, dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText=extraText, runNumber=runNumber, zmin=zmin, zmax=zmax)
+               outdir=outdir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText=extraText, runNumber=runNumber, zmin=zmin, zmax=zmax, extraToDraw=extraToDraw)

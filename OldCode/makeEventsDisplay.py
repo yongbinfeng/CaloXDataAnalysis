@@ -23,19 +23,11 @@ W_ref = 1000
 H_ref = 1100
 
 
-def makeEventDisplays(infilename):
+def makeEventDisplays(rdf):
     start_time = time.time()
-    infile = ROOT.TFile(infilename, "READ")
-    if not infile or infile.IsZombie():
-        raise RuntimeError(f"Failed to open input file: {infile}")
-
-    # Create an RDataFrame from the EventTree
-    rdf = ROOT.RDataFrame("EventTree", infile)
 
     DRSBoards = buildDRSBoards(run=runNumber)
     FERSBoards = buildFERSBoards(run=runNumber)
-
-    rdf = processDRSBoards(rdf)
 
     hists_eventdisplay = []
     hists_pulse_shapes = {}
@@ -232,4 +224,13 @@ def makeEventDisplays(infilename):
 if __name__ == "__main__":
     input_file = f"root/Run{runNumber}/filtered.root"
     print(f"Processing file: {input_file}")
-    makeEventDisplays(input_file)
+
+    infile = ROOT.TFile(input_file, "READ")
+    if not infile or infile.IsZombie():
+        raise RuntimeError(f"Failed to open input file: {infile}")
+
+    # Create an RDataFrame from the EventTree
+    rdf = ROOT.RDataFrame("EventTree", infile)
+    rdf = processDRSBoards(rdf)
+
+    makeEventDisplays(rdf)

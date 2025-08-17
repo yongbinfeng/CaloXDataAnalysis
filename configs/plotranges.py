@@ -21,7 +21,7 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
         xmin_board = -50
         xmin_total = -100
         xmax_board = 4000
-        xmax_total = 1.5e4
+        xmax_total = 2.0e4
         xmax_board_cer = 1200
         xmax_total_cer = 2e3
         title = "# p.e."
@@ -39,9 +39,8 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
 
 def getFERSSaturationValue():
     # This is the saturation value for the FERS channels
-    #return 8191
+    # return 8191
     return 8000
-
 
 
 def getDRSPlotRanges(subtractMedian=False, isAmplified=False):
