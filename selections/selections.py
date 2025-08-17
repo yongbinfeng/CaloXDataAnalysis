@@ -43,3 +43,28 @@ def vetoMuonCounter(rdf, TSmin=400, TSmax=600, cut=-80):
     print(
         f"Events before and after muon counter veto: {rdf_prefilter.Count().GetValue()}, {rdf.Count().GetValue()}")
     return rdf, rdf_prefilter
+
+
+def checkUpstreamVeto(rdf, runNumber):
+    from utils.channel_map import getUpstreamVetoChannel
+    chan_upveto = getUpstreamVetoChannel(runNumber)
+
+    rdf = rdf.Define(f"{chan_upveto}_peak_position",
+                     f"ROOT::VecOps::ArgMin({chan_upveto}_subtractMedian)")
+    rdf = rdf.Define(f"{chan_upveto}_peak_value",
+                     f"ROOT::VecOps::Min({chan_upveto}_subtractMedian)")
+
+    rdf = rdf.Define(f"pass_upstream_veto",
+                     f"({chan_upveto}_peak_value > -1000.0)") \
+        .Define("pass_NoSel", "1.0")
+
+    return rdf
+
+
+def applyUpstreamVeto(rdf, runNumber):
+    rdf = checkUpstreamVeto(rdf, runNumber)
+    rdf_prefilter = rdf
+    rdf = rdf.Filter("pass_upstream_veto == 1")
+    print(
+        f"Events before and after upstream veto: {rdf_prefilter.Count().GetValue()}, {rdf.Count().GetValue()}")
+    return rdf, rdf_prefilter

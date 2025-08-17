@@ -503,7 +503,7 @@ def buildHodoPosChannels(run=316):
             "DRS_Board1_Group1_Channel0",
         ]
 
-    if run >= 685:
+    if run >= 685 and run < 1170:
         # For runs >= 685, board 0 is used for hodoscope position channels
         hodoscope_channels["TopX"] = [
             "DRS_Board0_Group0_Channel0",
@@ -520,6 +520,20 @@ def buildHodoPosChannels(run=316):
         hodoscope_channels["BottomZ"] = [
             "DRS_Board0_Group0_Channel6",
             "DRS_Board0_Group0_Channel7",
+        ]
+
+    if run >= 1170:
+        # test beam
+        # Left and right; top and bottom for Hodoscope2
+        # 1170 is not exactly the first run number
+        hodoscope_channels = {}
+        hodoscope_channels["LR"] = [
+            "DRS_Board7_Group0_Channel4",
+            "DRS_Board7_Group0_Channel5",
+        ]
+        hodoscope_channels["UD"] = [
+            "DRS_Board7_Group0_Channel6",
+            "DRS_Board7_Group0_Channel7",
         ]
 
     return hodoscope_channels

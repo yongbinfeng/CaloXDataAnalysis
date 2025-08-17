@@ -2,10 +2,11 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from CMSPLOTS.myFunction import DrawHistos
-from utils.channel_map import buildHodoPosChannels
+from utils.channel_map import buildHodoPosChannels, getUpstreamVetoChannel
 from utils.html_generator import generate_html
-from runNumber import runNumber
-from utils.utils import processDRSBoards, getDataFile, filterPrefireEvents
+from runconfig import runNumber, firstEvent, lastEvent
+from utils.utils import loadRDF, loadRDF, preProcessDRSBoards
+from selections.selections import checkUpstreamVeto
 
 ROOT.gROOT.SetBatch(True)  # Run in batch mode
 ROOT.ROOT.EnableImplicitMT(10)
@@ -15,15 +16,12 @@ hodo_pos_channels = buildHodoPosChannels(run=runNumber)
 
 
 def analyzePeak():
-    ifile = getDataFile(runNumber)
-    infile = ROOT.TFile(ifile, "READ")
-    rdf = ROOT.RDataFrame("EventTree", infile)
+    rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
 
-    rdf, rdf_prefilter = filterPrefireEvents(rdf)
-
-    rdf = processDRSBoards(rdf)
+    rdf = preProcessDRSBoards(rdf)
 
     histos1D_diff = {}
+    histos1D_diff_realtive = {}
     histos1D_sum = {}
     histos1D_left = {}
     histos1D_right = {}
@@ -38,6 +36,8 @@ def analyzePeak():
                              f"ROOT::VecOps::ArgMin({channel}_subtractMedian)")
             rdf = rdf.Define(f"{channel}_peak_value",
                              f"ROOT::VecOps::Min({channel}_subtractMedian)")
+
+    rdf = checkUpstreamVeto(rdf, runNumber)
 
     rdfs_filtered = []
     maps_mean = {}
@@ -58,45 +58,55 @@ def analyzePeak():
                                            f"(int){channels[1]}_peak_position - (int){channels[0]}_peak_position")
         rdf_filtered = rdf_filtered.Define(f"{group}_sum_peak",
                                            f"(int){channels[0]}_peak_position + (int){channels[1]}_peak_position")
+        rdf_filtered = rdf_filtered.Define(f"{group}_delta_peak_relative",
+                                           f"{group}_delta_peak / ({group}_sum_peak + 1e-6)")
         rdfs_filtered.append((group, rdf_filtered))
 
-        histos1D_diff[group] = rdf_filtered.Histo1D(
-            (f"{group}_delta_peak",
-             f"Delta Peak {group};Peak Position Difference;Counts", 2048, -1024, 1024),
-            f"{group}_delta_peak"
-        )
-        histos1D_sum[group] = rdf_filtered.Histo1D(
-            (f"{group}_sum_peak",
-             f"Sum Peak {group};Peak Position Sum;Counts", 2048, 0, 2048),
-            f"{group}_sum_peak"
-        )
-        histos1D_left[group] = rdf_filtered.Histo1D(
-            (f"{group}_left_peak",
-             f"Left Peak {group};Peak Position;Counts", 1024, 0, 1024),
-            f"{channels[0]}_peak_position"
-        )
-        histos1D_right[group] = rdf_filtered.Histo1D(
-            (f"{group}_right_peak",
-             f"Right Peak {group};Peak Position;Counts", 1024, 0, 1024),
-            f"{channels[1]}_peak_position"
-        )
-        histos2D_left_vs_right[group] = rdf_filtered.Histo2D(
-            (f"{group}_left_peak_vs_right_peak",
-             f"Left vs Right Peak {group};Left Peak Position;Right Peak Position;Counts",
-             1024, 0, 1024, 1024, 0, 1024),
-            f"{channels[0]}_peak_position",
-            f"{channels[1]}_peak_position"
-        )
-        histos1D_left_peak[group] = rdf_filtered.Histo1D(
-            (f"{group}_left_peak_value",
-             f"Left Peak Value {group};Peak Value;Counts", 2048, -2500, 1999),
-            f"{channels[0]}_peak_value"
-        )
-        histos1D_right_peak[group] = rdf_filtered.Histo1D(
-            (f"{group}_right_peak_value",
-             f"Right Peak Value {group};Peak Value;Counts", 2048, -2500, 1999),
-            f"{channels[1]}_peak_value"
-        )
+        for sel in ["pass_upstream_veto", "pass_NoSel"]:
+            cat = f"{group}_{sel}"
+
+            histos1D_diff[cat] = rdf_filtered.Histo1D(
+                (f"{cat}_delta_peak",
+                 f"Delta Peak {cat};Peak Position Difference;Counts", 256, -1024, 1024),
+                f"{group}_delta_peak", sel
+            )
+            histos1D_diff_realtive[cat] = rdf_filtered.Histo1D(
+                (f"{cat}_delta_peak_relative",
+                 f"Delta Peak Relative {cat};Peak Position Difference Relative;Counts", 256, -1, 1),
+                f"{group}_delta_peak_relative", sel
+            )
+            histos1D_sum[cat] = rdf_filtered.Histo1D(
+                (f"{cat}_sum_peak",
+                 f"Sum Peak {cat};Peak Position Sum;Counts", 256, 0, 2048),
+                f"{group}_sum_peak", sel
+            )
+            histos1D_left[cat] = rdf_filtered.Histo1D(
+                (f"{cat}_left_peak",
+                 f"Left Peak {cat};Peak Position;Counts", 256, 0, 1024),
+                f"{channels[0]}_peak_position", sel
+            )
+            histos1D_right[cat] = rdf_filtered.Histo1D(
+                (f"{cat}_right_peak",
+                 f"Right Peak {cat};Peak Position;Counts", 256, 0, 1024),
+                f"{channels[1]}_peak_position", sel
+            )
+            histos2D_left_vs_right[cat] = rdf_filtered.Histo2D(
+                (f"{cat}_left_peak_vs_right_peak",
+                 f"Left vs Right Peak {cat};Left Peak Position;Right Peak Position;Counts",
+                 256, 0, 1024, 256, 0, 1024),
+                f"{channels[0]}_peak_position",
+                f"{channels[1]}_peak_position", sel
+            )
+            histos1D_left_peak[cat] = rdf_filtered.Histo1D(
+                (f"{cat}_left_peak_value",
+                 f"Left Peak Value {cat};Peak Value;Counts", 200, -2500, 1999),
+                f"{channels[0]}_peak_value", sel
+            )
+            histos1D_right_peak[cat] = rdf_filtered.Histo1D(
+                (f"{cat}_right_peak_value",
+                 f"Right Peak Value {cat};Peak Value;Counts", 200, -2500, 1999),
+                f"{channels[1]}_peak_value", sel
+            )
 
         means = []
         means_normalized = []
@@ -132,24 +142,27 @@ def analyzePeak():
         histos1D_means_normalized[channel] = histo_normalized
 
     print("Writing histograms to output file...")
-    ofile = ROOT.TFile(f"root/Run{runNumber}/hodoscope_peaks.root", "RECREATE")
+    ofile = ROOT.TFile(
+        f"results/root/Run{runNumber}/hodoscope_peaks.root", "RECREATE")
     if not ofile or ofile.IsZombie():
         raise RuntimeError(f"Failed to open output file: {ofile}")
-    for group, hist in histos1D_diff.items():
+    for cat, hist in histos1D_diff.items():
         hist.SetDirectory(ofile)
         hist.Write()
-        histos1D_sum[group].SetDirectory(ofile)
-        histos1D_sum[group].Write()
-        histos1D_left[group].SetDirectory(ofile)
-        histos1D_left[group].Write()
-        histos1D_right[group].SetDirectory(ofile)
-        histos1D_right[group].Write()
-        histos2D_left_vs_right[group].SetDirectory(ofile)
-        histos2D_left_vs_right[group].Write()
-        histos1D_left_peak[group].SetDirectory(ofile)
-        histos1D_left_peak[group].Write()
-        histos1D_right_peak[group].SetDirectory(ofile)
-        histos1D_right_peak[group].Write()
+        histos1D_diff_realtive[cat].SetDirectory(ofile)
+        histos1D_diff_realtive[cat].Write()
+        histos1D_sum[cat].SetDirectory(ofile)
+        histos1D_sum[cat].Write()
+        histos1D_left[cat].SetDirectory(ofile)
+        histos1D_left[cat].Write()
+        histos1D_right[cat].SetDirectory(ofile)
+        histos1D_right[cat].Write()
+        histos2D_left_vs_right[cat].SetDirectory(ofile)
+        histos2D_left_vs_right[cat].Write()
+        histos1D_left_peak[cat].SetDirectory(ofile)
+        histos1D_left_peak[cat].Write()
+        histos1D_right_peak[cat].SetDirectory(ofile)
+        histos1D_right_peak[cat].Write()
 
     for group, hist in histos1D_means.items():
         histos1D_means[group].SetDirectory(ofile)
@@ -163,78 +176,98 @@ def analyzePeak():
 
 
 def plotPeak():
-    infile = ROOT.TFile(f"root/Run{runNumber}/hodoscope_peaks.root", "READ")
+    infile = ROOT.TFile(
+        f"results/root/Run{runNumber}/hodoscope_peaks.root", "READ")
     if not infile or infile.IsZombie():
         raise RuntimeError(f"Failed to open input file: {infile}")
 
-    histos1D_diff = {}
-    histos1D_sum = {}
-    histos1D_left = {}
-    histos1D_right = {}
-    histos2D_left_vs_right = {}
-    histos1D_left_peak = {}
-    histos1D_right_peak = {}
-
     plots = []
-    outdir = f"plots/Run{runNumber}/HodoPos/"
+    outdir = f"results/plots/Run{runNumber}/HodoPos/"
     for group, channels in hodo_pos_channels.items():
-        histos1D_diff[group] = infile.Get(f"{group}_delta_peak")
-        histos1D_sum[group] = infile.Get(f"{group}_sum_peak")
-        histos1D_left[group] = infile.Get(f"{group}_left_peak")
-        histos1D_right[group] = infile.Get(f"{group}_right_peak")
-        histos2D_left_vs_right[group] = infile.Get(
-            f"{group}_left_peak_vs_right_peak")
-        histos1D_left_peak[group] = infile.Get(f"{group}_left_peak_value")
-        histos1D_right_peak[group] = infile.Get(f"{group}_right_peak_value")
+        histos1D_diff = []
+        histos1D_diff_realtive = []
+        histos1D_sum = []
+        histos1D_left = []
+        histos1D_right = []
+        histos2D_left_vs_right = []
+        histos1D_left_peak = []
+        histos1D_right_peak = []
+        for sel in ["pass_NoSel", "pass_upstream_veto"]:
+            cat = f"{group}_{sel}"
+            hdiff = infile.Get(f"{cat}_delta_peak")
+            hdiff_relat = infile.Get(f"{cat}_delta_peak_relative")
+            hsum = infile.Get(f"{cat}_sum_peak")
+            hleft = infile.Get(f"{cat}_left_peak")
+            hright = infile.Get(f"{cat}_right_peak")
+            hleft_vs_right = infile.Get(f"{cat}_left_peak_vs_right_peak")
+            hleft_peak_value = infile.Get(f"{cat}_left_peak_value")
+            hright_peak_value = infile.Get(f"{cat}_right_peak_value")
 
-        nevents = histos1D_diff[group].Integral(0, 10000)
-        print(f"Group: {group}, Number of events: {nevents}")
+            histos1D_diff.append(hdiff)
+            histos1D_diff_realtive.append(hdiff_relat)
+            histos1D_sum.append(hsum)
+            histos1D_left.append(hleft)
+            histos1D_right.append(hright)
+            histos2D_left_vs_right.append(hleft_vs_right)
+            histos1D_left_peak.append(hleft_peak_value)
+            histos1D_right_peak.append(hright_peak_value)
+
+        labels = ["No Selection", "Veto Passed"]
+        linestyles = [1, 2]
 
         outputname = f"{group}_diff_peak"
-        DrawHistos([histos1D_diff[group]], [f"Delta Peak {group}"], -250, 250, "Peak Position Difference", 0, 0.05*nevents, "Counts",
+        DrawHistos(histos1D_diff, labels, -250, 250, "Peak Position Difference", 0, None, "Counts",
                    outputname=outputname, outdir=outdir,
-                   dology=False, mycolors=[1], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True
+                   dology=False, mycolors=[1, 1], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True, linestyles=linestyles
+                   )
+        plots.append(outputname + ".png")
+
+        outputname = f"{group}_diff_peak_relative"
+        DrawHistos(histos1D_diff_realtive, labels, -0.5, 0.5, "Peak Position Difference Relative", 0, None, "Counts",
+                   outputname=outputname, outdir=outdir,
+                   dology=False, mycolors=[1, 1], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True, linestyles=linestyles
                    )
         plots.append(outputname + ".png")
 
         outputname = f"{group}_sum_peak"
         DrawHistos(
-            [histos1D_sum[group]], [
-                f"Sum Peak {group}"], 600, 1200, "Peak Position Sum", 0, 0.03*nevents, "Counts",
+            histos1D_sum, labels, 600, 1200, "Peak Position Sum", 0, None, "Counts",
             outputname=outputname, outdir=outdir,
-            dology=False, mycolors=[1], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True
+            dology=False, mycolors=[1, 1], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True, linestyles=linestyles
         )
         plots.append(outputname + ".png")
 
         outputname = f"{group}_peaks"
         DrawHistos(
-            [histos1D_left[group], histos1D_right[group]], [
-                f"Left Peak {group}", f"Right Peak {group}"], 300, 800, "Peak Position", 0, 0.03*nevents, "Counts",
+            histos1D_left +
+            histos1D_right, [
+                "Left No Sel", "Left Pass Veto", "Right No Sel", "Right Pass Veto"], 300, 800, "Peak Position", 0, None, "Counts",
             outputname=outputname, outdir=outdir,
-            dology=False, mycolors=[1, 2], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True
+            dology=False, mycolors=[1, 1, 2, 2], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True, linestyles=[1, 2, 1, 2]
         )
         plots.append(outputname + ".png")
 
-        outputname = f"{group}_left_vs_right_peak"
-        DrawHistos(
-            [histos2D_left_vs_right[group]], [
-            ], 0, 1024, "Left Peak Position", 0, 1024, "Right Peak Position",
-            outputname=outputname, outdir=outdir,
-            drawoptions="COLz", zmin=1, zmax=1e3, dologz=True,
-            dology=False, runNumber=runNumber, addOverflow=True, doth2=True,
-        )
-        plots.append(outputname + ".png")
+        for idx, cat in enumerate(["pass_NoSel", "pass_upstream_veto"]):
+            outputname = f"{group}_left_vs_right_peak_{cat}"
+            DrawHistos(
+                [histos2D_left_vs_right[idx]], [
+                ], 0, 1024, "Left Peak Position", 0, 1024, "Right Peak Position",
+                outputname=outputname, outdir=outdir,
+                drawoptions="COLz", zmin=1, zmax=None, dologz=True,
+                dology=False, runNumber=runNumber, addOverflow=True, doth2=True,
+            )
+            plots.append(outputname + ".png")
 
         outputname = f"{group}_peak_values"
         DrawHistos(
-            [histos1D_left_peak[group], histos1D_right_peak[group]], [
-                f"{group} Left", f"{group} Right"], -1500, 100, "Peak Value", 0, 0.6*nevents, "Counts",
+            histos1D_left_peak + histos1D_right_peak, ["Left No Sel", "Left Pass Veto",
+                                                       "Right No Sel", "Right Pass Veto"], -1500, 100, "Peak Value", 0, None, "Counts",
             outputname=outputname, outdir=outdir,
-            dology=False, mycolors=[1, 2], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True
+            dology=False, mycolors=[1, 1, 2, 2], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True, linestyles=[1, 2, 1, 2]
         )
         plots.append(outputname + ".png")
-    generate_html(plots, f"plots/Run{runNumber}/HodoPos/", plots_per_row=5,
-                  output_html=f"html/Run{runNumber}/HodoPos/viewer.html")
+    generate_html(plots, f"results/plots/Run{runNumber}/HodoPos/", plots_per_row=7,
+                  output_html=f"results/html/Run{runNumber}/HodoPos/viewer.html")
 
 
 def analyzeHodoPulse(infilename):
@@ -298,12 +331,12 @@ def analyzeHodoPulse(infilename):
                 DrawHistos(hs_todraw, labels, 0, 1024, "TS",
                            -2500, 1999, "Amplitude", output_name,
                            dology=False, mycolors=[2, 4], drawashist=True, extraToDraw=extraToDraw,
-                           outdir=f"plots/Run{runNumber}/HodoPos/")
+                           outdir=f"results/plots/Run{runNumber}/HodoPos/")
                 plots_toDraw.append(
                     f"{output_name}.png")
     print(f"Events left after filtering: {rdf.Count().GetValue()}")
-    generate_html(plots_toDraw, f"plots/Run{runNumber}/HodoPos/", plots_per_row=5,
-                  output_html=f"html/Run{runNumber}/HodoPos/viewer.html")
+    generate_html(plots_toDraw, f"results/plots/Run{runNumber}/HodoPos/", plots_per_row=5,
+                  output_html=f"results/html/Run{runNumber}/HodoPos/viewer.html")
 
 
 if __name__ == "__main__":
@@ -315,7 +348,7 @@ if __name__ == "__main__":
     # analyzeHodoPulse(input_file)
 
     # input_file = "/Users/yfeng/Desktop/TTU/CaloX/Data/run316_250517140056_converted.root"
-    inputfile_name = f"root/Run{runNumber}/filtered.root"
+    inputfile_name = f"results/root/Run{runNumber}/filtered.root"
     print(f"Processing file: {inputfile_name}")
     analyzeHodoPulse(inputfile_name)
     # analyzePeak(inputfile_name)
