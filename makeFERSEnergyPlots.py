@@ -2,11 +2,12 @@ import os
 import sys
 import ROOT
 from utils.channel_map import buildFERSBoards
-from utils.utils import filterPrefireEvents, loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrateFERSChannels
+from utils.utils import loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrateFERSChannels, preProcessDRSBoards
 from utils.html_generator import generate_html
 from utils.fitter import eventFit
 from utils.colors import colors
 from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters, getEventEnergyFitParameters
+from selections.selections import filterPrefireEvents, vetoMuonCounter
 from runconfig import runNumber, firstEvent, lastEvent
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
@@ -24,7 +25,9 @@ file_gains = f"results/root/Run{runNumber}/valuemaps_gain.json"
 file_pedestals = f"results/root/Run{runNumber}/valuemaps_pedestal.json"
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
+rdf = preProcessDRSBoards(rdf)
 # rdf, rdf_prefilter = filterPrefireEvents(rdf, runNumber)
+rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
 
 FERSBoards = buildFERSBoards(run=runNumber)
 

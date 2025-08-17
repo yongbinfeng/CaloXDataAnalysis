@@ -357,28 +357,3 @@ def loadRDF(runNumber, firstEvent=0, lastEvent=-1):
     rdf = rdf_org.Filter(f"event_n >= {firstEvent} && event_n < {lastEvent}")
 
     return rdf, rdf_org
-
-
-def filterPrefireEvents(rdf, runNumber, TS=350):
-    # use the hodo trigger to filter prefire events
-    from utils.channel_map import buildHodoTriggerChannels
-    trigger_names = buildHodoTriggerChannels(runNumber)
-    if not trigger_names:
-        return rdf, rdf  # No hodo trigger channels available for this run
-
-    trigger_name_top, trigger_name_bottom = trigger_names[0], trigger_names[1]
-    print(
-        f"Filtering prefire events with TS >= {TS} using triggers: {trigger_name_top}, {trigger_name_bottom}")
-    # index of the minimum value in the trigger channels
-    rdf = rdf.Define(
-        "TS_fired_up", f"ROOT::VecOps::ArgMin({trigger_name_top})")
-    rdf = rdf.Define(
-        "TS_fired_down", f"ROOT::VecOps::ArgMin({trigger_name_bottom})")
-
-    rdf = rdf.Define(
-        "NormalFired", f"(TS_fired_up >= {TS}) && (TS_fired_down >= {TS})")
-
-    rdf_prefilter = rdf
-    rdf = rdf.Filter("NormalFired == 1")
-
-    return rdf, rdf_prefilter

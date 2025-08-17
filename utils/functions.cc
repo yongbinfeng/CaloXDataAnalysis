@@ -63,6 +63,17 @@ float MaxRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j)
     return maxVal;
 }
 
+float MinRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j)
+{
+    if (i >= v.size() || j > v.size() || i >= j)
+        return 0.0;
+    float minVal = v[i];
+    for (size_t k = i + 1; k < j; ++k)
+        if (v[k] < minVal)
+            minVal = v[k];
+    return minVal;
+}
+
 size_t ArgMinRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j)
 {
     if (i >= v.size() || j > v.size() || i >= j)

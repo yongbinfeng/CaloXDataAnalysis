@@ -3,10 +3,11 @@ import os
 import sys
 import ROOT
 from utils.channel_map import buildFERSBoards
-from utils.utils import filterPrefireEvents, loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrateFERSChannels
+from utils.utils import loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrateFERSChannels, preProcessDRSBoards
 from utils.html_generator import generate_html
 from utils.colors import colors
 from utils.visualization import visualizeFERSBoards, makeEventDisplay
+from selections.selections import filterPrefireEvents, vetoMuonCounter
 from runconfig import runNumber, firstEvent, lastEvent
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos

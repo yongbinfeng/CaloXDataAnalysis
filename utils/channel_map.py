@@ -536,7 +536,7 @@ def getUpstreamVetoChannel(run=1184):
     if run < 1183:
         return None
     else:
-        return "DRS_Board7_Group1_Channel5"
+        return "DRS_Board7_Group1_Channel6"
 
 
 def getDownStreamMuonChannel(run=1184):
