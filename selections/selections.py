@@ -45,6 +45,26 @@ def vetoMuonCounter(rdf, TSmin=400, TSmax=600, cut=-80):
     return rdf, rdf_prefilter
 
 
+def PSDSelection(rdf, runNumber):
+    from utils.channel_map import getPreShowerChannel
+    preshower_channel = getPreShowerChannel(runNumber)
+    if preshower_channel is None:
+        print("Pre-shower channel not found, skipping PSD selection.")
+        return rdf
+
+    print("Applying PSD selection based on pre-shower channel.")
+    rdf = rdf.Define(f"{preshower_channel}_peak_value",
+                     f"MinRange({preshower_channel}_subtractMedian, 100, 400)")
+    rdf = rdf.Define("pass_psd_selection",
+                     f"({preshower_channel}_peak_value < -200.0)")
+
+    rdf_prefilter = rdf
+    rdf = rdf.Filter("pass_psd_selection == 1")
+    print(
+        f"Events before and after PSD selection: {rdf_prefilter.Count().GetValue()}, {rdf.Count().GetValue()}")
+    return rdf, rdf_prefilter
+
+
 def checkUpstreamVeto(rdf, runNumber):
     from utils.channel_map import getUpstreamVetoChannel
     chan_upveto = getUpstreamVetoChannel(runNumber)

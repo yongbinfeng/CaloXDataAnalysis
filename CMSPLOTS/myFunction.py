@@ -744,7 +744,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
 
     h1.Draw()
 
-    x1_l = 0.92
+    x1_l = 0.88
     y1_l = 0.88
 
     # dx_l = 0.20

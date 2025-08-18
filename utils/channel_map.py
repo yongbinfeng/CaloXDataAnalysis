@@ -560,12 +560,41 @@ def getDownStreamMuonChannel(run=1184):
         return "DRS_Board7_Group1_Channel0"
 
 
+def getPreShowerChannel(run=1184):
+    """
+    Returns the pre-shower channel.
+    """
+    if run < 1183:
+        return None
+    else:
+        return "DRS_Board7_Group1_Channel1"
+
+
 def getServiceDRSChannels(run=1184):
     """
     Returns a list of service DRS channels.
     """
     if run < 1183:
         return []
+    elif run < 1260:
+        return [
+            "DRS_Board7_Group0_Channel0",
+            "DRS_Board7_Group0_Channel1",
+            "DRS_Board7_Group0_Channel2",
+            "DRS_Board7_Group0_Channel3",
+            "DRS_Board7_Group0_Channel4",
+            "DRS_Board7_Group0_Channel5",
+            "DRS_Board7_Group0_Channel6",
+            "DRS_Board7_Group0_Channel7",
+            "DRS_Board7_Group1_Channel0",
+            "DRS_Board7_Group1_Channel1",
+            "DRS_Board7_Group1_Channel2",
+            "DRS_Board7_Group1_Channel3",
+            "DRS_Board7_Group1_Channel4",
+            "DRS_Board7_Group1_Channel5",
+            "DRS_Board7_Group1_Channel6",
+            "DRS_Board7_Group1_Channel7",
+        ]
     else:
         return [
             "DRS_Board7_Group0_Channel0",
@@ -584,6 +613,8 @@ def getServiceDRSChannels(run=1184):
             "DRS_Board7_Group1_Channel5",
             "DRS_Board7_Group1_Channel6",
             "DRS_Board7_Group1_Channel7",
+            "DRS_Board7_Group2_Channel0",
+            "DRS_Board7_Group2_Channel1",
         ]
 
 

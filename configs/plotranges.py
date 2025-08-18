@@ -239,3 +239,23 @@ def getServiceDRSPlotRanges(channel, subtractMedian=True):
         if channel in service_drs_ranges:
             xmax, xmin = service_drs_ranges[channel]
     return xmin, xmax
+
+
+def getServiceDRSProcessedInfoRanges(channel, cat):
+    service_drs_ranges = {
+        "muon": {
+            "peak_value": (-100, 10),
+            "sum": (-2000, 1500)
+        },
+        "preshower": {
+            "peak_value": (-3000, 50),
+            "sum": (-7e4, 1e4)
+        },
+    }
+    if channel in service_drs_ranges:
+        if cat in service_drs_ranges[channel]:
+            return service_drs_ranges[channel][cat]
+        else:
+            print(f"Category {cat} not found for channel {channel}.")
+            return -100, 100
+    return -100, 100

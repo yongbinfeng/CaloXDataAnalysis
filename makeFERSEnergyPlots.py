@@ -7,7 +7,7 @@ from utils.html_generator import generate_html
 from utils.fitter import eventFit
 from utils.colors import colors
 from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters, getEventEnergyFitParameters
-from selections.selections import vetoMuonCounter, applyUpstreamVeto
+from selections.selections import vetoMuonCounter, applyUpstreamVeto, PSDSelection
 from runconfig import runNumber, firstEvent, lastEvent
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
@@ -29,6 +29,7 @@ rdf = preProcessDRSBoards(rdf)
 rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
 
 rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber)
+rdf, rdf_psd = PSDSelection(rdf, runNumber)
 
 FERSBoards = buildFERSBoards(run=runNumber)
 
