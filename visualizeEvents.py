@@ -7,7 +7,7 @@ from utils.utils import loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrat
 from utils.html_generator import generate_html
 from utils.colors import colors
 from utils.visualization import visualizeFERSBoards, makeEventDisplay
-from selections.selections import vetoMuonCounter, applyUpstreamVeto
+from selections.selections import vetoMuonCounter, applyUpstreamVeto, PSDSelection
 from runconfig import runNumber, firstEvent, lastEvent
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
@@ -27,6 +27,7 @@ file_pedestals = f"results/root/Run{runNumber}/valuemaps_pedestal.json"
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
 rdf = preProcessDRSBoards(rdf)
 rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber)
+rdf, rdf_psd = PSDSelection(rdf, runNumber, isHadron=True)
 
 FERSBoards = buildFERSBoards(run=runNumber)
 
@@ -143,12 +144,14 @@ def DrawEventDisplay(values_FERS_events, suffix="MIP", applyScaling=False, zmax=
 
 
 rdfs_filtered = {}
-rdfs_filtered["ElePeak"] = filterElePeakEvents(rdf)
-rdfs_filtered["HE"] = filterHEEvents(rdf)
-rdfs_filtered["Band"] = filterBandEvents(rdf)
-rdfs_filtered["DarkCount"] = filterDarkCountEvents(rdf)
+rdfs_filtered["Inc"] = rdf
+# rdfs_filtered["ElePeak"] = filterElePeakEvents(rdf)
+# rdfs_filtered["HE"] = filterHEEvents(rdf)
+# rdfs_filtered["Band"] = filterBandEvents(rdf)
+# rdfs_filtered["DarkCount"] = filterDarkCountEvents(rdf)
 
 zranges = {
+    "Inc": (2, 100),
     "ElePeak": (2, 100),
     "HE": (2, 100),
     "Band": (1, 100),

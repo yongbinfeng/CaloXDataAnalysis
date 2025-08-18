@@ -45,7 +45,7 @@ def vetoMuonCounter(rdf, TSmin=400, TSmax=600, cut=-80):
     return rdf, rdf_prefilter
 
 
-def PSDSelection(rdf, runNumber):
+def PSDSelection(rdf, runNumber, isHadron=False):
     from utils.channel_map import getPreShowerChannel
     preshower_channel = getPreShowerChannel(runNumber)
     if preshower_channel is None:
@@ -55,8 +55,12 @@ def PSDSelection(rdf, runNumber):
     print("Applying PSD selection based on pre-shower channel.")
     rdf = rdf.Define(f"{preshower_channel}_peak_value",
                      f"MinRange({preshower_channel}_subtractMedian, 100, 400)")
-    rdf = rdf.Define("pass_psd_selection",
-                     f"({preshower_channel}_peak_value < -200.0)")
+    if not isHadron:
+        rdf = rdf.Define("pass_psd_selection",
+                         f"({preshower_channel}_peak_value < -200.0)")
+    else:
+        rdf = rdf.Define("pass_psd_selection",
+                         f"({preshower_channel}_peak_value < -100.0) && ({preshower_channel}_peak_value > -1000.0)")
 
     rdf_prefilter = rdf
     rdf = rdf.Filter("pass_psd_selection == 1")

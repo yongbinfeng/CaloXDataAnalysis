@@ -1,7 +1,7 @@
 import os
 import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
-from utils.utils import number2string, preProcessDRSBoards, filterPrefireEvents, loadRDF, vectorizeFERS, prepareDRSStats, getFERSBoardMax
+from utils.utils import number2string, preProcessDRSBoards, loadRDF, vectorizeFERS, prepareDRSStats, getFERSBoardMax
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from runconfig import runNumber, firstEvent, lastEvent
 import time
@@ -16,7 +16,6 @@ ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 debugDRS = False
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
-# rdf, rdf_prefilter = filterPrefireEvents(rdf, runNumber)
 
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)

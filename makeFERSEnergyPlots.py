@@ -15,6 +15,8 @@ from myFunction import DrawHistos
 
 print("Start running makeFERSEnergyPlots.py")
 
+HE = (runNumber == 1264)
+
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
 ROOT.gROOT.SetBatch(True)  # Disable interactive mode for batch processing
@@ -29,7 +31,7 @@ rdf = preProcessDRSBoards(rdf)
 rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
 
 rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber)
-rdf, rdf_psd = PSDSelection(rdf, runNumber)
+rdf, rdf_psd = PSDSelection(rdf, runNumber, isHadron=True)
 
 FERSBoards = buildFERSBoards(run=runNumber)
 
@@ -74,7 +76,7 @@ for chan in range(32):
 
 def makeFERSEnergySumHists(subtractPedestal=False, calibrate=False, clip=False):
     suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, _ = getRangesForFERSEnergySums(
-        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip)
+        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
 
     hists_FERS_EnergySum = []
     for _, FERSBoard in FERSBoards.items():
@@ -143,7 +145,7 @@ def makeFERSEnergySumHists(subtractPedestal=False, calibrate=False, clip=False):
 
 def makeFERSCervsSciHists(subtractPedestal=False, calibrate=False, clip=False):
     suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, _ = getRangesForFERSEnergySums(
-        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip)
+        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
 
     hists_FERS_Cer_vs_Sci = []
     for _, FERSBoard in FERSBoards.items():
@@ -174,7 +176,7 @@ def makeFERSCervsSciHists(subtractPedestal=False, calibrate=False, clip=False):
 
 def makeFERSCervsSciRandomHists(subtractPedestal=False, calibrate=False, clip=False):
     suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, _ = getRangesForFERSEnergySums(
-        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip)
+        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
 
     hists_FERS_Cer_vs_Sci_random = []
     for key, value in random_board_comparisons:
@@ -193,7 +195,7 @@ def makeFERSCervsSciRandomHists(subtractPedestal=False, calibrate=False, clip=Fa
 
 def makeFERSChannelComparisonHists(subtractPedestal=False, calibrate=False, clip=False):
     suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, _ = getRangesForFERSEnergySums(
-        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip)
+        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
 
     xmin_channel = xmin_board / 32
     xmax_channel = xmax_board / 32
@@ -215,7 +217,7 @@ def makeFERSChannelComparisonHists(subtractPedestal=False, calibrate=False, clip
 
 def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False, clip=False):
     suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, xtitle = getRangesForFERSEnergySums(
-        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip)
+        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
 
     plots = []
     infile_name = f"{rootdir}/fers_energy_sum{suffix}.root"
@@ -313,7 +315,7 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False, clip=False):
 
 def makeFERSCerVsSciPlots(subtractPedestal=False, calibrate=False, clip=False):
     suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, xtitle = getRangesForFERSEnergySums(
-        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip)
+        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
 
     plots = []
     infile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci{suffix}.root"
@@ -356,7 +358,7 @@ def makeFERSCerVsSciPlots(subtractPedestal=False, calibrate=False, clip=False):
 
 def makeFERSCerVsSciRandomPlots(subtractPedestal=False, calibrate=False, clip=False):
     suffix, xmin_board, xmax_board, xmax_board_cer, _, _, _, xtitle = getRangesForFERSEnergySums(
-        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip)
+        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
 
     plots = []
     infile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_random{suffix}.root"
@@ -390,7 +392,7 @@ def makeFERSCerVsSciRandomPlots(subtractPedestal=False, calibrate=False, clip=Fa
 
 def makeFERSChannelComparisonPlots(subtractPedestal=False, calibrate=False, clip=False):
     suffix, xmin_board, xmax_board, xmax_board_cer, _, _, _, xtitle = getRangesForFERSEnergySums(
-        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip)
+        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
     xmin_channel = xmin_board / 32
     xmax_channel = xmax_board / 32
 
@@ -463,7 +465,7 @@ def makeBoardFits():
 
 def makeEventFits(subtractPedestal=False, calibrate=False, clip=False):
     suffix, _, _, _, _, _, _, xtitle = getRangesForFERSEnergySums(
-        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip)
+        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
     filename = f"{rootdir}/fers_energy_sum{suffix}.root"
     if not os.path.exists(filename):
         print(
