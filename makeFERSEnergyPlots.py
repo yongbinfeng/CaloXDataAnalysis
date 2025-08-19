@@ -463,45 +463,9 @@ def makeBoardFits():
     return output_html
 
 
-def makeEventFits(subtractPedestal=False, calibrate=False, clip=False):
-    suffix, _, _, _, _, _, _, xtitle = getRangesForFERSEnergySums(
-        subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
-    filename = f"{rootdir}/fers_energy_sum{suffix}.root"
-    if not os.path.exists(filename):
-        print(
-            f"File {filename} does not exist. Please run prepareDQMPlots.py first.")
-        exit(1)
-
-    ifile = ROOT.TFile(filename, "READ")
-    hCer = ifile.Get(f"hist_FERS_CerEnergyHG{suffix}")
-    hSci = ifile.Get(f"hist_FERS_SciEnergyHG{suffix}")
-
-    args_cer = getEventEnergyFitParameters(
-        runNumber, isCer=True, clip=clip)
-    args_sci = getEventEnergyFitParameters(
-        runNumber, isCer=False, clip=clip)
-
-    plots = []
-    outdir = f"{plotdir}/energyfits{suffix}"
-    output_name = eventFit(hCer, f"Run{runNumber}_CerHG{suffix}",
-                           outdir=outdir, xlabel="Cer " + xtitle,
-                           **args_cer)
-    plots.append(output_name)
-    output_name = eventFit(hSci, f"Run{runNumber}_SciHG{suffix}",
-                           outdir=outdir, xlabel="Sci " + xtitle,
-                           **args_sci)
-    plots.append(output_name)
-    output_html = f"{htmldir}/energyfits{suffix}/index.html"
-    generate_html(plots, outdir, plots_per_row=2,
-                  output_html=output_html)
-    print(f"Generated HTML file: {output_html}")
-    return output_html
-
-
 if __name__ == "__main__":
     makeHists = True
     makePlots = True
-    makeFits = False
     outputs_html = {}
 
     if makeHists:
@@ -701,15 +665,6 @@ if __name__ == "__main__":
         #    subtractPedestal=True, calibrate=True)
         # outputs_html["channel_comparison_subtracted_calibrated_clipped"] = makeFERSChannelComparisonPlots(
         #    subtractPedestal=True, calibrate=True, clip=True)
-
-    if makeFits:
-        # make board fits
-        # outputs_html["board_fits"] = makeBoardFits()
-        # run event fits
-        outputs_html["event_fits_subtracted_calibrated"] = makeEventFits(
-            subtractPedestal=True, calibrate=True, clip=False)
-        outputs_html["event_fits_subtracted_calibrated_clipped"] = makeEventFits(
-            subtractPedestal=True, calibrate=True, clip=True)
 
     print("Generated HTML files:")
     for key, html in outputs_html.items():

@@ -199,9 +199,27 @@ def getEventEnergyFitParameters(runNumber, isCer=False, clip=False):
         "wmipmean": 40, "wmipmin": 20, "wmipmax": 80,
     })
 
+    args["positron"] = {}
+    args["positron"]["Cer"] = {
+        "addMIP": False, "addHE": False,
+        "xmin": -50, "xmax": 2000,
+        "xfitmin": -50, "xfitmax": 1500,
+        "xgausmean": 1000, "xgausmin": 100, "xgausmax": 1500,
+        "wgausmean": 50, "wgausmin": 10, "wgausmax": 700,
+    }
+    args["positron"]["Sci"] = {
+        "addMIP": False, "addHE": False,
+        "xmin": -50, "xmax": 2e4,
+        "xfitmin": 2000, "xfitmax": None,
+        "xgausmean": 5e3, "xgausmin": 1e3, "xgausmax": 1e4,
+        "wgausmean": 200, "wgausmin": 10, "wgausmax": 550
+    }
+
     from utils.utils import IsScanRun
     isscanrun = IsScanRun(runNumber)
     runtype = "scanruns" if isscanrun else "cosmicruns"
+    if runNumber >= 1150:
+        runtype = "positron"
     if clip:
         runtype += "_clipped"
 

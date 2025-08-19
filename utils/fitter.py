@@ -268,6 +268,11 @@ def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="
              wmipmean=1000, wmipmin=100, wmipmax=2000,
              runNumber=None):
 
+    peak_pos = h.GetBinCenter(h.GetMaximumBin())
+    if xfitmax is None:
+        print("using dynamic range for xfitmax")
+        xfitmax = peak_pos + 2 * h.GetStdDev()
+
     xfitmin = max(xfitmin, xmin)
     xfitmax = min(xfitmax, xmax)
 
@@ -432,7 +437,7 @@ def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="
     legend = ROOT.TLegend(0.6, 0.70, 0.9, 0.9)
     legend.AddEntry(frame.findObject("datahist_" + suffix), "Data", "ep")
     legend.AddEntry(frame.findObject("final_pdf_" + suffix), "Fit", "l")
-    legend.AddEntry(frame.findObject("pdf_gaus_" + suffix), "Dark Count", "l")
+    # legend.AddEntry(frame.findObject("pdf_gaus_" + suffix), "Gaus", "l")
     if addHE:
         legend.AddEntry(frame.findObject(
             f"pdf_exp_{suffix}"), "HE", "l")
@@ -463,10 +468,10 @@ def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="
     latex.SetTextFont(42)
     # latex.DrawLatexNDC(0.65, 0.80, "#chi^{2}/ndf = %.2f" % (chi2))
     ylabel = 0.65
-    latex.DrawLatexNDC(0.60, ylabel, "#mu_{DC} = %.2f #pm %.2f" %
+    latex.DrawLatexNDC(0.60, ylabel, "#mu = %.2f #pm %.2f" %
                        (vmean.getVal(), vmean.getError()))
     ylabel -= 0.05
-    latex.DrawLatexNDC(0.60, ylabel, "#sigma_{DC} = %.2f #pm %.2f" %
+    latex.DrawLatexNDC(0.60, ylabel, "#sigma = %.2f #pm %.2f" %
                        (vsigma.getVal(), vsigma.getError()))
     ylabel -= 0.05
     if addHE or addMIP:
@@ -541,4 +546,11 @@ def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="
 
     print("nevents: ", h.Integral(0, h.GetNbinsX()+1))
 
-    return f"fit_{suffix}.png"
+    result_mean = [vmean.getVal(), vmean.getError()]
+    result_sigma = [vsigma.getVal(), vsigma.getError()]
+    result = {
+        "mean": result_mean,
+        "sigma": result_sigma,
+    }
+
+    return f"fit_{suffix}.png", result
