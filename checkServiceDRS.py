@@ -2,17 +2,22 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from CMSPLOTS.myFunction import DrawHistos
-from utils.channel_map import getUpstreamVetoChannel, getPreShowerChannel, getDownStreamMuonChannel, buildHodoPosChannels
+from utils.channel_map import getPreShowerChannel, getDownStreamMuonChannel, buildHodoPosChannels
 from utils.html_generator import generate_html
-from runconfig import runNumber, firstEvent, lastEvent
 from utils.utils import loadRDF, loadRDF, preProcessDRSBoards
 from configs.plotranges import getServiceDRSProcessedInfoRanges
 from selections.selections import checkUpstreamVeto
+from utils.parser import get_args
 import time
 
 ROOT.gROOT.SetBatch(True)  # Run in batch mode
 ROOT.ROOT.EnableImplicitMT(10)
 ROOT.gSystem.Load("utils/functions_cc.so")
+
+parser = get_args()
+runNumber = parser.run
+firstEvent = parser.first_event
+lastEvent = parser.last_event
 
 
 def analyzePulse(channels, names):
