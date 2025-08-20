@@ -7,6 +7,8 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
     xmax_board_cer = 100e3
     xmax_total_cer = 250e3
     title = "Energy (Raw)"
+    if HE:
+        xmax_total = 2e6
     if subtractPedestal:
         suffix = "_subtracted"
         xmin_board = -1000
@@ -254,7 +256,9 @@ def getServiceDRSPlotRanges(channel, subtractMedian=True):
         "DRS_Board7_Group1_Channel4": (100, -200),
         "DRS_Board7_Group1_Channel5": (100, -200),
         "DRS_Board7_Group1_Channel6": (500, -2500),
-        "DRS_Board7_Group1_Channel7": (100, -200)
+        "DRS_Board7_Group1_Channel7": (100, -200),
+        "DRS_Board7_Group2_Channel0": (500, -2500),
+        "DRS_Board7_Group2_Channel1": (500, -2500),
     }
     xmin = -50
     xmax = 50
