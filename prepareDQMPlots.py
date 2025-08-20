@@ -6,7 +6,6 @@ from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from utils.parser import get_args
 import time
 import sys
-import parser
 
 print("Start running prepareDQMPlots.py")
 
