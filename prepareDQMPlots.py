@@ -3,9 +3,10 @@ import ROOT
 from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
 from utils.utils import number2string, preProcessDRSBoards, loadRDF, vectorizeFERS, prepareDRSStats, getFERSBoardMax
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
-from runconfig import runNumber, firstEvent, lastEvent
+from utils.parser import get_args
 import time
 import sys
+import parser
 
 print("Start running prepareDQMPlots.py")
 
@@ -14,6 +15,11 @@ ROOT.ROOT.EnableImplicitMT(10)
 ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
 debugDRS = False
+
+args = get_args()
+runNumber = args.run
+firstEvent = args.first_event
+lastEvent = args.last_event
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
 

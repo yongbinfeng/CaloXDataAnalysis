@@ -9,10 +9,13 @@ from utils.visualization import visualizeFERSBoards
 from utils.validateMap import DrawFERSBoards, DrawDRSBoards
 from utils.colors import colors
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
-from runconfig import runNumber
+from utils.parser import get_args
 
 print("Start running script")
 ROOT.gROOT.SetBatch(True)
+
+args = get_args()
+runNumber = args.run
 
 DRSBoards = buildDRSBoards(run=runNumber)
 FERSBoards = buildFERSBoards(run=runNumber)
