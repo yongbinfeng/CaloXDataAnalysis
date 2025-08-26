@@ -36,7 +36,7 @@ rdf = preProcessDRSBoards(rdf)
 rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
 
 rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber)
-rdf, rdf_psd = PSDSelection(rdf, runNumber, isHadron=True)
+rdf, rdf_psd = PSDSelection(rdf, runNumber, isHadron=False)
 
 FERSBoards = buildFERSBoards(run=runNumber)
 

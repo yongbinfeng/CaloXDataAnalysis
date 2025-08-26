@@ -1,13 +1,15 @@
 import random
 import os
 import sys
+from collections import OrderedDict
 import ROOT
-from utils.channel_map import buildFERSBoards
-from utils.utils import loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrateFERSChannels, preProcessDRSBoards
+from utils.channel_map import buildFERSBoards, buildDRSBoards
+from utils.utils import loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrateFERSChannels, preProcessDRSBoards, number2string
 from utils.html_generator import generate_html
 from utils.colors import colors
 from utils.visualization import visualizeFERSBoards, makeEventDisplay
 from selections.selections import vetoMuonCounter, applyUpstreamVeto, PSDSelection
+from configs.plotranges import getDRSPlotRanges
 from runconfig import runNumber, firstEvent, lastEvent
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
@@ -30,37 +32,38 @@ rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber)
 rdf, rdf_psd = PSDSelection(rdf, runNumber, isHadron=True)
 
 FERSBoards = buildFERSBoards(run=runNumber)
+DRSBoards = buildDRSBoards(run=runNumber)
 
 rdf = vectorizeFERS(rdf, FERSBoards)
 # define energy sums with different configurations
-rdf = calibrateFERSChannels(
-    rdf, FERSBoards, file_gains=file_gains, file_pedestals=file_pedestals)
+# rdf = calibrateFERSChannels(
+#    rdf, FERSBoards, file_gains=file_gains, file_pedestals=file_pedestals)
 rdf = calculateEnergySumFERS(
-    rdf, FERSBoards, subtractPedestal=True, calibrate=True, clip=False)
+    rdf, FERSBoards, subtractPedestal=False, calibrate=False, clip=False)
+# rdf = calculateEnergySumFERS(
+#    rdf, FERSBoards, subtractPedestal=True, calibrate=True, clip=False)
 
 rootdir = f"results/root/Run{runNumber}/"
 plotdir = f"results/plots/Run{runNumber}/"
 htmldir = f"results/html/Run{runNumber}/"
 
+# suffix = "_subtracted_calibrated"
+suffix = ""
 
-# the values right now only works for 80GeV positrons
+
 def filterBandEvents(rdf):
-    suffix = "_subtracted_calibrated"
     return rdf.Filter(f"FERS_SciEnergyHG{suffix} > 2000 && FERS_SciEnergyHG{suffix} < 4000")
 
 
 def filterDarkCountEvents(rdf):
-    suffix = "_subtracted_calibrated"
     return rdf.Filter(f"FERS_SciEnergyHG{suffix} < 200")
 
 
 def filterElePeakEvents(rdf):
-    suffix = "_subtracted_calibrated"
     return rdf.Filter(f"FERS_SciEnergyHG{suffix} > 5000 && FERS_SciEnergyHG{suffix} < 7000")
 
 
 def filterHEEvents(rdf):
-    suffix = "_subtracted_calibrated"
     return rdf.Filter(f"FERS_SciEnergyHG{suffix} > 12000")
 
 
@@ -70,27 +73,73 @@ def fillInValueMap(rdf, event_numbers):
     """
     # this should be lazy action
     # do everything in a loop
-    values_FERS_events_lazy = {}
     rdfs_temp = []
     for event_number in event_numbers:
         # filter everything to one event, then use the mean value for readout
         # this achieves "lazy" evaluation
         rdf_temp = rdf.Filter(f"event_n == {event_number}")
+        rdfs_temp.append(rdf_temp)
+
+    values_FERS_events_lazy = {}
+    for event_number, rdf_temp in zip(event_numbers, rdfs_temp):
         values_FERS = {}
         for _, FERSBoard in FERSBoards.items():
             for chan in FERSBoard:
                 channelName_HG = chan.GetHGChannelName()
-                variableName = channelName_HG + "_subtracted_calibrated"
+                variableName = f"{channelName_HG}{suffix}"
                 value = rdf_temp.Mean(variableName)
 
                 values_FERS[channelName_HG] = value
         # total energy for the event
         for var in ["Cer", "Sci"]:
-            variableName = f"FERS_{var}EnergyHG_subtracted_calibrated"
+            variableName = f"FERS_{var}EnergyHG{suffix}"
             value = rdf_temp.Mean(variableName)
             values_FERS[f"FERS_{var}EnergyHG"] = value
         values_FERS_events_lazy[event_number] = values_FERS
-        rdfs_temp.append(rdf_temp)
+
+    hists_DRS_events_lazy = {}
+    for event_number, rdf_temp in zip(event_numbers, rdfs_temp):
+        hists_DRS_board_cer = OrderedDict()
+        hists_DRS_board_sci = OrderedDict()
+        suffix_plot = f"_Run{runNumber}_Event{event_number}_DRS_vs_TS"
+        for _, DRSBoard in DRSBoards.items():
+            boardNo = DRSBoard.boardNo
+            hists_DRS_board_cer[boardNo] = OrderedDict()
+            hists_DRS_board_sci[boardNo] = OrderedDict()
+            for group in [0, 1, 2, 3]:
+                hists_DRS_board_cer[boardNo][group] = OrderedDict()
+                hists_DRS_board_sci[boardNo][group] = OrderedDict()
+            for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+                for var in ["Cer", "Sci"]:
+                    chan = DRSBoard.GetChannelByTower(
+                        iTowerX, iTowerY, isCer=(var == "Cer"))
+                    if chan is None:
+                        continue
+                    channelName = chan.GetChannelName()
+                    groupNo = chan.groupNo
+                    channelNo = chan.channelNo
+                    # hist_subtractMedian = rdf_temp.Histo2D((
+                    #    f"hist_DRS_Board{boardNo}_{var}_vs_TS_{sTowerX}_{sTowerY}_subtractMedian_{suffix_plot}",
+                    #    f"DRS Board {boardNo} - {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY} (subtract median);TS;{var} Variable",
+                    #    1024, 0, 1024, 50, ymin, ymax),
+                    #    "TS", channelName + "_subtractMedian"
+                    # )
+                    hist_subtractMedian = rdf_temp.Graph(
+                        "TS", channelName + "_subtractMedian")
+                    if var == "Cer":
+                        hists_DRS_board_cer[boardNo][groupNo][channelNo] = hist_subtractMedian
+                    else:
+                        hists_DRS_board_sci[boardNo][groupNo][channelNo] = hist_subtractMedian
+            # add channel 8 (time reference)
+            for group in [0, 1, 2, 3]:
+                groupNo = group
+                # channel 8 for time reference
+                hist_channel8 = rdf_temp.Graph(
+                    "TS", f"DRS_Board{boardNo}_Group{groupNo}_Channel8_subtractMedian")
+                hists_DRS_board_cer[boardNo][groupNo][8] = hist_channel8
+                hists_DRS_board_sci[boardNo][groupNo][8] = hist_channel8
+        hists_DRS_events_lazy[event_number] = [
+            hists_DRS_board_cer, hists_DRS_board_sci]
 
     # read all values
     values_FERS_events = {}
@@ -100,11 +149,11 @@ def fillInValueMap(rdf, event_numbers):
             value = value.GetValue()
             values_FERS_events[event_number][channelName_HG] = value
 
-    return values_FERS_events
+    return values_FERS_events, hists_DRS_events_lazy
 
 
 def DrawEventDisplay(values_FERS_events, suffix="MIP", applyScaling=False, zmax=100, zmin=2):
-    outdir_plots = f"{plotdir}/EventDisplay_{suffix}/"
+    outdir_plots = f"{plotdir}/EventDisplay{suffix}/"
     plots = []
     for event_number, values_FERS in values_FERS_events.items():
         suffix_plot = f"_Run{runNumber}_Event{event_number}_Display"
@@ -137,10 +186,67 @@ def DrawEventDisplay(values_FERS_events, suffix="MIP", applyScaling=False, zmax=
                          "_Sci", outdir_plots, runNumber, zmin, zmax, isCer=False, extraToDraw=extraToDraw)
         plots.append(output_name + "_Sci.png")
 
-    output_html = f"{htmldir}/EventDisplay_{suffix}/index.html"
+    output_html = f"{htmldir}/EventDisplay{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
+
+
+def makeDRS2DPlots(hists_DRS_events):
+    outdir_plots = f"{plotdir}/DRS_vs_TS{suffix}/"
+    colors = {
+        0: ROOT.kRed,
+        1: ROOT.kBlue,
+        2: ROOT.kGreen+2,
+        3: ROOT.kMagenta,
+        4: ROOT.kCyan+2,
+        5: ROOT.kOrange+7,
+        6: ROOT.kGray+2,
+        7: ROOT.kPink+9,
+        8: ROOT.kBlack
+    }
+    output_htmls_drs = {}
+    for event_number, (hists_DRS_board_cer, hists_DRS_board_sci) in hists_DRS_events.items():
+        plots = []
+        for hists in [hists_DRS_board_cer, hists_DRS_board_sci]:
+            output_name = None
+            var = "Cer" if hists == hists_DRS_board_cer else "Sci"
+            for board, hists_board in hists.items():
+                for group, hists_group in hists_board.items():
+                    hists_to_draw = []
+                    labels = []
+                    for channelNo, hist in hists_group.items():
+                        hist = hist.GetValue()
+                        hist.SetLineColor(colors.get(channelNo, ROOT.kBlack))
+                        hist.SetLineWidth(2)
+                        hist.SetMarkerStyle(20)
+                        hist.SetMarkerSize(0.5)
+                        hist.SetMarkerColor(colors.get(channelNo, ROOT.kBlack))
+                        hists_to_draw.append(hist)
+                        labels.append(f"Ch{number2string(channelNo)}")
+                    output_name = f"DRS_vs_TS_Run{runNumber}_Event{event_number}_Board{board}_{var}_Group{group}"
+
+                    extraText = ROOT.TPaveText(0.20, 0.77, 0.90, 0.83, "NDC")
+                    extraText.SetTextAlign(11)
+                    extraText.SetFillColorAlpha(0, 0)
+                    extraText.SetBorderSize(0)
+                    extraText.SetTextFont(42)
+                    extraText.SetTextSize(0.04)
+                    extraText.AddText(
+                        f"Evt {event_number} B {board} G {group}")
+
+                    DrawHistos(hists_to_draw, labels, 0, 1024, "Time Slice", -500, 2000, f"DRS Output",
+                               output_name,
+                               dology=False, drawoptions="LP",
+                               outdir=outdir_plots, extraText=var, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.85, 0.90, 0.90], addOverflow=False, addUnderflow=False,
+                               extraToDraw=extraText)
+                    plots.append(output_name + ".png")
+
+        output_html = f"{htmldir}/DRS_vs_TS{suffix}/event{event_number}.html"
+        generate_html(plots, outdir_plots, plots_per_row=4,
+                      output_html=output_html)
+        output_htmls_drs[event_number] = output_html
+    return output_htmls_drs
 
 
 rdfs_filtered = {}
@@ -167,17 +273,20 @@ for cat in rdfs_filtered:
 
 output_htmls = {}
 
-# randomly select 10 events from MIP and Dark Count events
 random.seed(42)  # for reproducibility
 for cat in event_numbers:
     selected_events = random.sample(
-        event_numbers[cat], min(20, len(event_numbers[cat])))
+        event_numbers[cat], min(2, len(event_numbers[cat])))
     print(f"selected {cat} events: {selected_events}")
 
-    values_FERS_events = fillInValueMap(rdfs_filtered[cat], selected_events)
+    values_FERS_events, values_DRS_events = fillInValueMap(
+        rdfs_filtered[cat], selected_events)
     output_html = DrawEventDisplay(
         values_FERS_events, suffix=cat, applyScaling=True, zmin=zranges[cat][0], zmax=zranges[cat][1])
     output_htmls[cat] = output_html
+    output_htmls_drs = makeDRS2DPlots(values_DRS_events)
+    for event_number, html in output_htmls_drs.items():
+        output_htmls[f"{cat}_DRS_Event{event_number}"] = html
 
 
 print("Event display HTML files generated:")
