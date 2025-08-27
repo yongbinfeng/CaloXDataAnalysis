@@ -28,15 +28,15 @@ ROOT.gROOT.SetBatch(True)  # Disable interactive mode for batch processing
 ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
 # load the gains and pedestals from SiPM fits
-file_gains = f"results/root/Run{runNumber}/valuemaps_gain.json"
-file_pedestals = f"results/root/Run{runNumber}/valuemaps_pedestal.json"
+# file_gains = f"results/root/Run{runNumber}/valuemaps_gain.json"
+# file_pedestals = f"results/root/Run{runNumber}/valuemaps_pedestal.json"
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
 rdf = preProcessDRSBoards(rdf)
 rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
 
 rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber)
-rdf, rdf_psd = PSDSelection(rdf, runNumber, isHadron=False)
+# rdf, rdf_psd = PSDSelection(rdf, runNumber, isHadron=False)
 
 FERSBoards = buildFERSBoards(run=runNumber)
 
@@ -57,30 +57,30 @@ rootdir = f"results/root/Run{runNumber}/"
 plotdir = f"results/plots/Run{runNumber}/"
 htmldir = f"results/html/Run{runNumber}/"
 
-random_board_comparisons = [
-    ("Board0_CerEnergyHG", "Board1_SciEnergyHG"),
-    ("Board1_CerEnergyHG", "Board3_SciEnergyHG"),
-    ("Board4_CerEnergyHG", "Board5_SciEnergyHG"),
-    ("Board4_CerEnergyHG", "Board5_CerEnergyHG"),
-    ("Board4_SciEnergyHG", "Board8_CerEnergyHG"),
-    ("Board10_CerEnergyHG", "Board12_SciEnergyHG"),
-    ("Board12_CerEnergyHG", "Board13_SciEnergyHG"),
-]
-
-random_channel_comparisons = []
-for chan in range(64):
-    random_channel_comparisons.append(
-        ("Board4_energyHG_0", f"Board4_energyHG_{chan}"))
-for chan in range(32):
-    random_channel_comparisons.append(
-        ("Board4_energyHG_32", f"Board5_energyHG_{chan}"))
-for chan in range(32):
-    random_channel_comparisons.append(
-        ("Board3_energyHG_1", f"Board3_energyHG_{chan}"))
+# random_board_comparisons = [
+#    ("Board0_CerEnergyHG", "Board1_SciEnergyHG"),
+#    ("Board1_CerEnergyHG", "Board3_SciEnergyHG"),
+#    ("Board4_CerEnergyHG", "Board5_SciEnergyHG"),
+#    ("Board4_CerEnergyHG", "Board5_CerEnergyHG"),
+#    ("Board4_SciEnergyHG", "Board8_CerEnergyHG"),
+#    ("Board10_CerEnergyHG", "Board12_SciEnergyHG"),
+#    ("Board12_CerEnergyHG", "Board13_SciEnergyHG"),
+# ]
+#
+# random_channel_comparisons = []
+# for chan in range(64):
+#    random_channel_comparisons.append(
+#        ("Board4_energyHG_0", f"Board4_energyHG_{chan}"))
+# for chan in range(32):
+#    random_channel_comparisons.append(
+#        ("Board4_energyHG_32", f"Board5_energyHG_{chan}"))
+# for chan in range(32):
+#    random_channel_comparisons.append(
+#        ("Board3_energyHG_1", f"Board3_energyHG_{chan}"))
 
 
 def makeFERSEnergySumHists(subtractPedestal=False, calibrate=False, clip=False):
-    suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, _ = getRangesForFERSEnergySums(
+    suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, _, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, _ = getRangesForFERSEnergySums(
         subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
 
     hists_FERS_EnergySum = []
@@ -92,28 +92,28 @@ def makeFERSEnergySumHists(subtractPedestal=False, calibrate=False, clip=False):
             500, xmin_board, xmax_board_cer),
             f"FERS_Board{boardNo}_CerEnergyHG{suffix}"
         )
-        # hist_CerEnergyLG_Board = rdf.Histo1D((
-        #    f"hist_FERS_Board{boardNo}_CerEnergyLG{suffix}",
-        #    f"FERS Board {boardNo} - CER Energy LG;CER Energy LG;Counts",
-        #    500, 0, 40000),
-        #    f"FERS_Board{boardNo}_CerEnergyLG{suffix}"
-        # )
+        hist_CerEnergyLG_Board = rdf.Histo1D((
+            f"hist_FERS_Board{boardNo}_CerEnergyLG{suffix}",
+            f"FERS Board {boardNo} - CER Energy LG;CER Energy LG;Counts",
+            500, xmin_LG_board, xmax_LG_board_cer),
+            f"FERS_Board{boardNo}_CerEnergyLG{suffix}"
+        )
         hist_SciEnergyHG_Board = rdf.Histo1D((
             f"hist_FERS_Board{boardNo}_SciEnergyHG{suffix}",
             f"FERS Board {boardNo} - SCI Energy HG;SCI Energy HG;Counts",
             500, xmin_board, xmax_board),
             f"FERS_Board{boardNo}_SciEnergyHG{suffix}"
         )
-        # hist_SciEnergyLG_Board = rdf.Histo1D((
-        #    f"hist_FERS_Board{boardNo}_SciEnergyLG{suffix}",
-        #    f"FERS Board {boardNo} - SCI Energy LG;SCI Energy LG;Counts",
-        #    500, 0, 40000),
-        #    f"FERS_Board{boardNo}_SciEnergyLG{suffix}"
-        # )
+        hist_SciEnergyLG_Board = rdf.Histo1D((
+            f"hist_FERS_Board{boardNo}_SciEnergyLG{suffix}",
+            f"FERS Board {boardNo} - SCI Energy LG;SCI Energy LG;Counts",
+            500, xmin_LG_board, xmax_LG_board),
+            f"FERS_Board{boardNo}_SciEnergyLG{suffix}"
+        )
         hists_FERS_EnergySum.append(hist_CerEnergyHG_Board)
-        # hists_FERS_EnergySum.append(hist_CerEnergyLG_Board)
+        hists_FERS_EnergySum.append(hist_CerEnergyLG_Board)
         hists_FERS_EnergySum.append(hist_SciEnergyHG_Board)
-        # hists_FERS_EnergySum.append(hist_SciEnergyLG_Board)
+        hists_FERS_EnergySum.append(hist_SciEnergyLG_Board)
 
     # per-event energy sum
     hist_CerEnergyHG = rdf.Histo1D((
@@ -122,48 +122,58 @@ def makeFERSEnergySumHists(subtractPedestal=False, calibrate=False, clip=False):
         500, xmin_total, xmax_total_cer),
         f"FERS_CerEnergyHG{suffix}"
     )
-    # hist_CerEnergyLG = rdf.Histo1D((
-    #     f"hist_FERS_CerEnergyLG{suffix}",
-    #     "FERS - CER Energy LG;CER Energy LG;Counts",
-    #     500, 0, 2e5),
-    #     f"FERS_CerEnergyLG{suffix}"
-    # )
+    hist_CerEnergyLG = rdf.Histo1D((
+        f"hist_FERS_CerEnergyLG{suffix}",
+        "FERS - CER Energy LG;CER Energy LG;Counts",
+        500, xmin_LG_total, xmax_LG_total_cer),
+        f"FERS_CerEnergyLG{suffix}"
+    )
     hist_SciEnergyHG = rdf.Histo1D((
         f"hist_FERS_SciEnergyHG{suffix}",
         "FERS - SCI Energy HG;SCI Energy HG;Counts",
         500, xmin_total, xmax_total),
         f"FERS_SciEnergyHG{suffix}"
     )
-    # hist_SciEnergyLG = rdf.Histo1D((
-    #     f"hist_FERS_SciEnergyLG{suffix}",
-    #     "FERS - SCI Energy LG;SCI Energy LG;Counts",
-    #     500, 0, 2e5),
-    #     f"FERS_SciEnergyLG{suffix}"
-    # )
+    hist_SciEnergyLG = rdf.Histo1D((
+        f"hist_FERS_SciEnergyLG{suffix}",
+        "FERS - SCI Energy LG;SCI Energy LG;Counts",
+        500, xmin_LG_total, xmax_LG_total),
+        f"FERS_SciEnergyLG{suffix}"
+    )
     hists_FERS_EnergySum.append(hist_CerEnergyHG)
-    # hists_FERS_EnergySum.append(hist_CerEnergyLG)
+    hists_FERS_EnergySum.append(hist_CerEnergyLG)
     hists_FERS_EnergySum.append(hist_SciEnergyHG)
-    # hists_FERS_EnergySum.append(hist_SciEnergyLG)
+    hists_FERS_EnergySum.append(hist_SciEnergyLG)
 
     return hists_FERS_EnergySum
 
 
 def makeFERSCervsSciHists(subtractPedestal=False, calibrate=False, clip=False):
-    suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, _ = getRangesForFERSEnergySums(
+    suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, _, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, _ = getRangesForFERSEnergySums(
         subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
 
     hists_FERS_Cer_vs_Sci = []
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
         hist_Cer_vs_Sci = rdf.Histo2D((
-            f"hist_FERS_Board{boardNo}_Cer_vs_Sci{suffix}",
-            f"FERS Board {boardNo} - CER vs SCI Energy",
+            f"hist_FERS_Board{boardNo}_Cer_vs_Sci_HG{suffix}",
+            f"FERS Board {boardNo} - CER vs SCI HG Energy",
             500, xmin_board, xmax_board,
             500, xmin_board, xmax_board_cer),
             f"FERS_Board{boardNo}_SciEnergyHG{suffix}",
             f"FERS_Board{boardNo}_CerEnergyHG{suffix}"
         )
         hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci)
+
+        hist_Cer_vs_Sci_LG = rdf.Histo2D((
+            f"hist_FERS_Board{boardNo}_Cer_vs_Sci_LG{suffix}",
+            f"FERS Board {boardNo} - CER vs SCI LG Energy",
+            500, xmin_LG_board, xmax_LG_board,
+            500, xmin_LG_board, xmax_LG_board_cer),
+            f"FERS_Board{boardNo}_SciEnergyLG{suffix}",
+            f"FERS_Board{boardNo}_CerEnergyLG{suffix}"
+        )
+        hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci_LG)
 
     # total CER vs SCI energy plot
     hist_Cer_vs_Sci_Total = rdf.Histo2D((
@@ -174,7 +184,16 @@ def makeFERSCervsSciHists(subtractPedestal=False, calibrate=False, clip=False):
         f"FERS_SciEnergyHG{suffix}",
         f"FERS_CerEnergyHG{suffix}"
     )
+    hist_Cer_vs_Sci_LG_Total = rdf.Histo2D((
+        f"hist_FERS_Cer_vs_Sci_LG{suffix}",
+        "FERS - CER vs SCI LG Energy;CER Energy LG;SCI Energy LG;Counts",
+        500, xmin_LG_total, xmax_LG_total,
+        500, xmin_LG_total, xmax_LG_total_cer),
+        f"FERS_SciEnergyLG{suffix}",
+        f"FERS_CerEnergyLG{suffix}"
+    )
     hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci_Total)
+    hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci_LG_Total)
 
     return hists_FERS_Cer_vs_Sci
 
@@ -221,7 +240,7 @@ def makeFERSChannelComparisonHists(subtractPedestal=False, calibrate=False, clip
 
 
 def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False, clip=False):
-    suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, xtitle = getRangesForFERSEnergySums(
+    suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, xtitle, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, xtitle_LG = getRangesForFERSEnergySums(
         subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
 
     plots = []
@@ -230,31 +249,31 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False, clip=False):
     outdir_plots = f"{plotdir}/FERS_EnergySum{suffix}"
     hists_CerEnergyHG = []
     hists_SciEnergyHG = []
-    # hists_CerEnergyLG = []
-    # hists_SciEnergyLG = []
+    hists_CerEnergyLG = []
+    hists_SciEnergyLG = []
     legends = []
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
         hist_CerEnergyHG_name = f"hist_FERS_Board{boardNo}_CerEnergyHG{suffix}"
         hist_SciEnergyHG_name = f"hist_FERS_Board{boardNo}_SciEnergyHG{suffix}"
-        # hist_CerEnergyLG_name = f"hist_FERS_Board{boardNo}_CerEnergyLG{suffix}"
-        # hist_SciEnergyLG_name = f"hist_FERS_Board{boardNo}_SciEnergyLG{suffix}"
+        hist_CerEnergyLG_name = f"hist_FERS_Board{boardNo}_CerEnergyLG{suffix}"
+        hist_SciEnergyLG_name = f"hist_FERS_Board{boardNo}_SciEnergyLG{suffix}"
         hist_CerEnergyHG = infile.Get(hist_CerEnergyHG_name)
         hist_SciEnergyHG = infile.Get(hist_SciEnergyHG_name)
-        # hist_CerEnergyLG = infile.Get(hist_CerEnergyLG_name)
-        # hist_SciEnergyLG = infile.Get(hist_SciEnergyLG_name)
+        hist_CerEnergyLG = infile.Get(hist_CerEnergyLG_name)
+        hist_SciEnergyLG = infile.Get(hist_SciEnergyLG_name)
 
-        # if not (hist_CerEnergyHG and hist_SciEnergyHG and hist_CerEnergyLG and hist_SciEnergyLG):
-        if not (hist_CerEnergyHG and hist_SciEnergyHG):
+        if not (hist_CerEnergyHG and hist_SciEnergyHG and hist_CerEnergyLG and hist_SciEnergyLG):
+            # if not (hist_CerEnergyHG and hist_SciEnergyHG):
             print(
-                f"Warning: Histograms {hist_CerEnergyHG_name}, {hist_SciEnergyHG_name} not found in {infile_name}")
+                f"Warning: Histograms {hist_CerEnergyHG_name}, {hist_SciEnergyHG_name}, {hist_CerEnergyLG_name}, {hist_SciEnergyLG_name} not found in {infile_name}")
             continue
 
         legends.append(str(boardNo))
         hists_CerEnergyHG.append(hist_CerEnergyHG)
         hists_SciEnergyHG.append(hist_SciEnergyHG)
-        # hists_CerEnergyLG.append(hist_CerEnergyLG)
-        # hists_SciEnergyLG.append(hist_SciEnergyLG)
+        hists_CerEnergyLG.append(hist_CerEnergyLG)
+        hists_SciEnergyLG.append(hist_SciEnergyLG)
 
     output_name = "FERS_CerEnergyHG" + suffix
     DrawHistos(hists_CerEnergyHG, legends, xmin_board, xmax_board_cer, f"Cer {xtitle}", 1, None, "Events",
@@ -268,24 +287,24 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False, clip=False):
                dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
     plots.append(output_name + ".png")
-    # output_name = "FERS_CerEnergyLG" + suffix
-    # DrawHistos(hists_CerEnergyLG, legends, 0, xmax_total_cer, "Cer Energy LG", 0, None, "Events",
-    #           output_name,
-    #           dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
-    #           outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.7, 0.90, 0.9])
-    # plots.append(output_name + ".png")
-    # output_name = "FERS_SciEnergyLG" + suffix
-    # DrawHistos(hists_SciEnergyLG, legends, 0, xmax_total, "Sci Energy LG", 0, None, "Events",
-    #           output_name,
-    #           dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
-    #           outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=[0.30, 0.7, 0.90, 0.9])
-    # plots.append(output_name + ".png")
+    output_name = "FERS_CerEnergyLG" + suffix
+    DrawHistos(hists_CerEnergyLG, legends, xmin_LG_board, xmax_LG_board_cer, f"Cer {xtitle_LG}", 1, None, "Events",
+               output_name,
+               dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
+    plots.append(output_name + ".png")
+    output_name = "FERS_SciEnergyLG" + suffix
+    DrawHistos(hists_SciEnergyLG, legends, xmin_LG_board, xmax_LG_board, f"Sci {xtitle_LG}", 1, None, "Events",
+               output_name,
+               dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
+    plots.append(output_name + ".png")
 
     # total energy sum plots
     hist_CerEnergyHG = infile.Get(f"hist_FERS_CerEnergyHG{suffix}")
     hist_SciEnergyHG = infile.Get(f"hist_FERS_SciEnergyHG{suffix}")
-    # hist_CerEnergyLG = infile.Get(f"hist_FERS_CerEnergyLG{suffix}")
-    # hist_SciEnergyLG = infile.Get(f"hist_FERS_SciEnergyLG{suffix}")
+    hist_CerEnergyLG = infile.Get(f"hist_FERS_CerEnergyLG{suffix}")
+    hist_SciEnergyLG = infile.Get(f"hist_FERS_SciEnergyLG{suffix}")
     ymax = None  # let plotter decide the ymax
     output_name = "FERS_Total_CerEnergyHG" + suffix
     DrawHistos([hist_CerEnergyHG], "", xmin_total, xmax_total_cer, f"Cer {xtitle}", 1, ymax, "Events",
@@ -299,18 +318,18 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False, clip=False):
                dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber)
     plots.insert(1, output_name + ".png")
-    # output_name = "FERS_Total_CerEnergyLG" + suffix
-    # DrawHistos([hist_CerEnergyLG], "", 0, xmax_total_cer, "Cer Energy LG", 0, ymax, "Events",
-    #           output_name,
-    #           dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
-    #           outdir=outdir_plots, runNumber=runNumber)
-    # plots.insert(2, output_name + ".png")
-    # output_name = "FERS_Total_SciEnergyLG" + suffix
-    # DrawHistos([hist_SciEnergyLG], "", 0, xmax_total, "Sci Energy LG", 0, ymax, "Events",
-    #           output_name,
-    #           dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
-    #           outdir=outdir_plots, runNumber=runNumber)
-    # plots.insert(3, output_name + ".png")
+    output_name = "FERS_Total_CerEnergyLG" + suffix
+    DrawHistos([hist_CerEnergyLG], "", xmin_LG_total, xmax_LG_total_cer, f"Cer {xtitle_LG}", 1, ymax, "Events",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.insert(2, output_name + ".png")
+    output_name = "FERS_Total_SciEnergyLG" + suffix
+    DrawHistos([hist_SciEnergyLG], "", xmin_LG_total, xmax_LG_total, f"Sci {xtitle_LG}", 1, ymax, "Events",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.insert(3, output_name + ".png")
 
     output_html = f"{htmldir}/FERS_EnergySum{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
@@ -319,7 +338,7 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False, clip=False):
 
 
 def makeFERSCerVsSciPlots(subtractPedestal=False, calibrate=False, clip=False):
-    suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, xtitle = getRangesForFERSEnergySums(
+    suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, xtitle, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, xtitle_LG = getRangesForFERSEnergySums(
         subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
 
     plots = []
@@ -328,7 +347,7 @@ def makeFERSCerVsSciPlots(subtractPedestal=False, calibrate=False, clip=False):
     outdir_plots = f"{plotdir}/FERS_Cer_vs_Sci{suffix}"
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
-        hist_Cer_vs_Sci_name = f"hist_FERS_Board{boardNo}_Cer_vs_Sci{suffix}"
+        hist_Cer_vs_Sci_name = f"hist_FERS_Board{boardNo}_Cer_vs_Sci_HG{suffix}"
         hist_Cer_vs_Sci = infile.Get(hist_Cer_vs_Sci_name)
         if not hist_Cer_vs_Sci:
             print(
@@ -342,6 +361,21 @@ def makeFERSCerVsSciPlots(subtractPedestal=False, calibrate=False, clip=False):
                    outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
         plots.append(output_name + ".png")
 
+        # LG
+        hist_Cer_vs_Sci_LG_name = f"hist_FERS_Board{boardNo}_Cer_vs_Sci_LG{suffix}"
+        hist_Cer_vs_Sci_LG = infile.Get(hist_Cer_vs_Sci_LG_name)
+        if not hist_Cer_vs_Sci_LG:
+            print(
+                f"Warning: Histogram {hist_Cer_vs_Sci_LG_name} not found in {infile_name}")
+            continue
+
+        output_name = f"FERS_Board{boardNo}_Cer_vs_Sci_LG{suffix}"
+        DrawHistos([hist_Cer_vs_Sci_LG], "", xmin_LG_board, xmax_LG_board, f"Sci {xtitle_LG}", xmin_LG_board, xmax_LG_board_cer, f"Cer {xtitle_LG}",
+                   output_name,
+                   dology=False, drawoptions=["colz"],
+                   outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+        plots.append(output_name + ".png")
+
     # total CER vs SCI energy plot
     hist_Cer_vs_Sci_Total = infile.Get(f"hist_FERS_Cer_vs_Sci{suffix}")
     if not hist_Cer_vs_Sci_Total:
@@ -350,6 +384,23 @@ def makeFERSCerVsSciPlots(subtractPedestal=False, calibrate=False, clip=False):
     else:
         output_name = "FERS_Total_Cer_vs_Sci" + suffix
         DrawHistos([hist_Cer_vs_Sci_Total], "", xmin_total, xmax_total, f"Sci {xtitle}", xmin_total, xmax_total_cer, f"Cer {xtitle}",
+                   output_name,
+                   dology=False, drawoptions=["colz"],
+                   outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+        plots.append(output_name + ".png")
+
+    output_html = f"{htmldir}/FERS_Cer_vs_Sci{suffix}/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=4,
+                  output_html=output_html)
+
+    # LG
+    hist_Cer_vs_Sci_LG_Total = infile.Get(f"hist_FERS_Cer_vs_Sci_LG{suffix}")
+    if not hist_Cer_vs_Sci_LG_Total:
+        print(
+            f"Warning: Histogram hist_FERS_Cer_vs_Sci_LG{suffix} not found in {infile_name}")
+    else:
+        output_name = "FERS_Total_Cer_vs_Sci_LG" + suffix
+        DrawHistos([hist_Cer_vs_Sci_LG_Total], "", xmin_LG_total, xmax_LG_total, f"Sci {xtitle_LG}", xmin_LG_total, xmax_LG_total_cer, f"Cer {xtitle_LG}",
                    output_name,
                    dology=False, drawoptions=["colz"],
                    outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)

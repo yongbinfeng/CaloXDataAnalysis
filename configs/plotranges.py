@@ -1,47 +1,55 @@
 def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=False, HE=False):
     suffix = ""
-    xmin_board = 0
-    xmin_total = 0
-    xmax_board = 300e3
-    xmax_total = 100e4
-    xmax_board_cer = 100e3
-    xmax_total_cer = 250e3
-    title = "Energy (Raw)"
+    xmin_HG_board = 0
+    xmin_HG_total = 0
+    xmax_HG_board = 300e3
+    xmax_HG_total = 100e4
+    xmax_HG_board_cer = 100e3
+    xmax_HG_total_cer = 250e3
+    title = "HG ADC (Raw)"
+    xmin_LG_board = 0
+    xmin_LG_total = 5e4
+    xmax_LG_board = 1e5
+    xmax_LG_total = 5e5
+    xmax_LG_board_cer = 2e4
+    xmax_LG_total_cer = 9e4
+    title_LG = "LG ADC (Raw)"
     if HE:
-        xmax_total = 2e6
+        xmax_HG_total = 2e6
+        xmax_LG_total = 1.5e5
     if subtractPedestal:
         suffix = "_subtracted"
-        xmin_board = -1000
-        xmin_total = -5000
-        xmax_board = 300000
-        xmax_total = 1e6
-        xmax_board_cer = 90e3
-        xmax_total_cer = 200e3
-        title = "Energy (PD subtracted)"
+        xmin_HG_board = -1000
+        xmin_HG_total = -5000
+        xmax_HG_board = 300000
+        xmax_HG_total = 1e6
+        xmax_HG_board_cer = 90e3
+        xmax_HG_total_cer = 200e3
+        title = "ADC (PD subtracted)"
     if calibrate:
         suffix += "_calibrated"
-        xmin_board = -50
-        xmin_total = -100
-        xmax_board = 4000
-        xmax_total = 2.0e4
-        xmax_board_cer = 1200
-        xmax_total_cer = 2e3
+        xmin_HG_board = -50
+        xmin_HG_total = -100
+        xmax_HG_board = 4000
+        xmax_HG_total = 2.0e4
+        xmax_HG_board_cer = 1200
+        xmax_HG_total_cer = 2e3
         title = "# p.e."
         if HE:
-            xmax_board = 8000
-            xmax_total = 3e4
-            xmax_board_cer = 2000
-            xmax_total_cer = 4e3
+            xmax_HG_board = 8000
+            xmax_HG_total = 3e4
+            xmax_HG_board_cer = 2000
+            xmax_HG_total_cer = 4e3
     if clip:
         suffix += "_clipped"
-        xmin_board = -50
-        xmin_total = -100
-        xmax_board = 5000
-        xmax_total = 1.5e4
-        xmax_board_cer = 1500
-        xmax_total_cer = 3e3
+        xmin_HG_board = -50
+        xmin_HG_total = -100
+        xmax_HG_board = 5000
+        xmax_HG_total = 1.5e4
+        xmax_HG_board_cer = 1500
+        xmax_HG_total_cer = 3e3
         title = "# p.e. (clipped)"
-    return suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, title
+    return suffix, xmin_HG_board, xmax_HG_board, xmax_HG_board_cer, xmin_HG_total, xmax_HG_total, xmax_HG_total_cer, title, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, title_LG
 
 
 def getFERSSaturationValue():
