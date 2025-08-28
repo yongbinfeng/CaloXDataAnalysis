@@ -2,9 +2,11 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from CMSPLOTS.myFunction import DrawHistos
-from utils.channel_map import getPreShowerChannel, getDownStreamMuonChannel, buildHodoPosChannels
+from utils.channel_map import getPreShowerChannel, getDownStreamMuonChannel, buildHodoPosChannels, getCerenkovCounters
 from utils.html_generator import generate_html
-from utils.utils import loadRDF, loadRDF, preProcessDRSBoards
+from utils.utils import loadRDF, preProcessDRSBoards
+from utils.utils import calculateEnergySumFERS, vectorizeFERS
+from utils.channel_map import buildFERSBoards, buildDRSBoards
 from configs.plotranges import getServiceDRSProcessedInfoRanges
 from selections.selections import checkUpstreamVeto
 from utils.parser import get_args
@@ -23,10 +25,18 @@ lastEvent = parser.last_event
 def analyzePulse(channels, names):
     rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
     rdf = preProcessDRSBoards(rdf)
+
+    FERSBoards = buildFERSBoards(run=runNumber)
+    rdf = vectorizeFERS(rdf, FERSBoards)
+    rdf_old = calculateEnergySumFERS(
+        rdf, FERSBoards, calibrate=False, subtractPedestal=False, clip=False)
+    # rdf = rdf_old.Filter(f"FERS_SciEnergyHG > 7e5")
+
     hists = {}
 
     channel_preshower = getPreShowerChannel(runNumber)
     channel_muon = getDownStreamMuonChannel(runNumber)
+    channels_cerenkov = getCerenkovCounters(runNumber)
 
     rdf = rdf.Define(f"{channel_preshower}_peak_position",
                      f"ArgMinRange({channel_preshower}_subtractMedian, 100, 400)")
@@ -41,6 +51,14 @@ def analyzePulse(channels, names):
                      f"ROOT::VecOps::Min({channel_muon}_subtractMedian)")
     rdf = rdf.Define(f"{channel_muon}_sum",
                      f"ROOT::VecOps::Sum({channel_muon}_subtractMedian)")
+
+    for channel in channels_cerenkov:
+        rdf = rdf.Define(f"{channel}_peak_position",
+                         f"ROOT::VecOps::ArgMin({channel}_subtractMedian)")
+        rdf = rdf.Define(f"{channel}_peak_value",
+                         f"ROOT::VecOps::Min({channel}_subtractMedian)")
+        rdf = rdf.Define(f"{channel}_sum",
+                         f"ROOT::VecOps::Sum({channel}_subtractMedian)")
 
     for name, channel in zip(names, channels):
         hists[channel] = {}
@@ -77,6 +95,12 @@ def analyzeHodoPeak():
     rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
 
     rdf = preProcessDRSBoards(rdf)
+
+    FERSBoards = buildFERSBoards(run=runNumber)
+    rdf = vectorizeFERS(rdf, FERSBoards)
+    rdf_old = calculateEnergySumFERS(
+        rdf, FERSBoards, calibrate=False, subtractPedestal=False, clip=False)
+    rdf = rdf_old.Filter(f"FERS_SciEnergyHG > 7e5")
 
     histos1D_diff = {}
     histos1D_diff_realtive = {}
@@ -389,8 +413,10 @@ if __name__ == "__main__":
     start_time = time.time()
     chan_preshower = getPreShowerChannel(runNumber)
     chan_muon = getDownStreamMuonChannel()
-    channels = [chan_preshower, chan_muon]
-    names = ["preshower", "muon"]
+    chans_cerenkov = getCerenkovCounters(runNumber)
+    channels = [chan_preshower, chan_muon] + chans_cerenkov
+    names = ["preshower", "muon"] + ["Cerenkov" +
+                                     str(i) for i in range(1, len(chans_cerenkov) + 1)]
 
     analyzePulse(channels, names)
     analyzeHodoPeak()
