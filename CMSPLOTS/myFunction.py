@@ -74,6 +74,15 @@ def Normalize(th1, option=0):
         th1.Scale(1.0/(th1.Integral()+1e-6))
 
 
+def GetMaximum(h, addOverflow=False, addUnderflow=False):
+    vmax = h.GetMaximum()
+    if addOverflow:
+        vmax = max(vmax, h.GetBinContent(h.GetNbinsX()+1))
+    if addUnderflow:
+        vmax = max(vmax, h.GetBinContent(0))
+    return vmax
+
+
 def ScaleWithWidth(th1):
     th1.Scale(1.0, "width")
 
@@ -580,7 +589,8 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         ROOT.TGaxis.SetMaxDigits(4)
 
     if ymax == None:
-        ymax = max([h.GetMaximum() for h in myhistos])
+        ymax = max([GetMaximum(h, addOverflow=addOverflow,
+                   addUnderflow=addUnderflow) for h in myhistos])
         if not dology:
             ymax *= 1.25
         else:
