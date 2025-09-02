@@ -1067,12 +1067,12 @@ def checkFERSvsDRSSum():
     infile = ROOT.TFile(infile_name, "READ")
 
     xymax = {
-        "Cer": (1000, 4000),
-        "Sci": (9000, 9000)
+        "Cer": (20000, 8500),
+        "Sci": (30000, 8500)
     }
     xymax_LG = {
-        "Cer": (1000, 1000),
-        "Sci": (9000, 9000)
+        "Cer": (20000, 2000),
+        "Sci": (30000, 4000)
     }
 
     # for _, DRSBoard in DRSBoards.items():
