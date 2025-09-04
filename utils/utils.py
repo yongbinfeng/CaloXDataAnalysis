@@ -357,3 +357,20 @@ def loadRDF(runNumber, firstEvent=0, lastEvent=-1):
     rdf = rdf_org.Filter(f"event_n >= {firstEvent} && event_n < {lastEvent}")
 
     return rdf, rdf_org
+
+
+def getRunInfo(runNumber):
+    import json
+    f_runinfo = "data/RunlistAugust.json"
+    with open(f_runinfo, 'r') as f:
+        temp = json.load(f)
+        print("temp:   ", temp)
+        runinfo = temp
+    runNum = str(runNumber)
+    if runNum not in runinfo:
+        return None
+        # raise ValueError(f"Run number {runNum} not found in {f_runinfo}")
+    btype = runinfo[runNum]['beam type']
+    benergy = float(runinfo[runNum]['beam energy'].replace('GeV', ''))
+    print(f"Run {runNum}: beam type = {btype}, beam energy = {benergy} GeV")
+    return btype, benergy

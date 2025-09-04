@@ -579,7 +579,15 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         CMS_lumi.extraText = "Simulation"
 
     if runNumber is not None:
-        CMS_lumi.lumi_13TeV = f"Run {runNumber}"
+        from utils.utils import getRunInfo
+        btype, benergy = getRunInfo(runNumber)
+        btypes = {
+            "pion": "#pi^{+}",
+            "pions": "#pi^{+}",
+            "positron": "e^{+}",
+            "positrons": "e^{+}",
+        }
+        CMS_lumi.lumi_13TeV = f"Run {runNumber}: {btypes.get(btype.lower(), btype.lower())}, {benergy} GeV"
 
     if nMaxDigits:
         # print(f"set the maximum number of digits {nMaxDigits}")
