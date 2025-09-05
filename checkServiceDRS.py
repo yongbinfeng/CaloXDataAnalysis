@@ -76,7 +76,7 @@ def analyzePulse(channels, names):
         xmin, xmax = getServiceDRSProcessedInfoRanges(name, "sum")
         hists[channel]["sum"] = rdf.Histo1D(
             (f"{name}_sum",
-             f"Sum {channel};ADC Counts;Counts", 100, xmin, xmax),
+             f"Sum {channel};ADC Counts;Counts", 500, xmin, xmax),
             f"{channel}_sum"
         )
 
@@ -295,9 +295,9 @@ def plotPulse(channels, names):
             print(f"Histogram {name}_sum not found in {infile.GetName()}")
             return
         xmin, xmax = getServiceDRSProcessedInfoRanges(name, "sum")
-        DrawHistos([hist], [name], xmin, xmax, "Sum", 0, None, "Counts",
+        DrawHistos([hist], [name], xmin, xmax, "Sum", 1, None, "Counts",
                    outputname=f"{name}_sum", outdir=outdir,
-                   dology=False, mycolors=[1], drawashist=True, runNumber=runNumber,
+                   dology=True, mycolors=[1], drawashist=True, runNumber=runNumber,
                    addOverflow=True, addUnderflow=True)
         plots.append(f"{name}_sum.png")
 
