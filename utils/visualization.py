@@ -61,7 +61,7 @@ def visualizeFERSBoards(fers_boards, valuemaps=None, suffix="", useHG=True):
     return [h2_Cer, h2_Cer_3mm], [h2_Sci, h2_Sci_3mm]
 
 
-def visualizeDRSBoards(drs_boards, suffix=""):
+def visualizeDRSBoards(drs_boards, valuemaps=None, suffix=""):
     xmax = 14
     xmin = -14
     ymax = 10
@@ -83,6 +83,8 @@ def visualizeDRSBoards(drs_boards, suffix=""):
                 channel_Sci.groupNo * 10 + channel_Sci.channelNo
             if sci_encoded == 0:
                 sci_encoded = 0.001
+            if valuemaps and channel_Sci.GetChannelName() in valuemaps:
+                sci_encoded = valuemaps[channel_Sci.GetChannelName()]
             if not channel_Sci.is6mm:
                 h2_DRS_Sci_3mm.Fill(channel_Sci.iTowerX, channel_Sci.iTowerY,
                                     sci_encoded)
@@ -94,6 +96,8 @@ def visualizeDRSBoards(drs_boards, suffix=""):
                 channel_Cer.groupNo * 10 + channel_Cer.channelNo
             if cer_encoded == 0:
                 cer_encoded = 0.001
+            if valuemaps and channel_Cer.GetChannelName() in valuemaps:
+                cer_encoded = valuemaps[channel_Cer.GetChannelName()]
             if not channel_Cer.is6mm:
                 h2_DRS_Cer_3mm.Fill(channel_Cer.iTowerX, channel_Cer.iTowerY,
                                     cer_encoded)
