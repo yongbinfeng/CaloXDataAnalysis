@@ -168,7 +168,7 @@ def preProcessDRSBoards(rdf, debug=False):
     import re
     # Get the list of all branch names
     branches = [str(b) for b in rdf.GetColumnNames()]
-    pattern = re.compile(r"DRS.*Group.*Channel.*")
+    pattern = re.compile(r"^DRS_Board\d+_Group\d+_Channel\d+$")
     drs_branches = [b for b in branches if pattern.search(b)]
     stats = getBranchStats(rdf, drs_branches)
     print("DRS branches statistics:")
