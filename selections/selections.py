@@ -60,7 +60,7 @@ def PSDSelection(rdf, runNumber, isHadron=False):
                          f"({preshower_channel}_peak_value < -200.0)")
     else:
         rdf = rdf.Define("pass_psd_selection",
-                         f"({preshower_channel}_peak_value < -100.0) && ({preshower_channel}_peak_value > -1000.0)")
+                         f"({preshower_channel}_peak_value > -200.0)")
 
     rdf_prefilter = rdf
     rdf = rdf.Filter("pass_psd_selection == 1")

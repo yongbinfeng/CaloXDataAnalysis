@@ -570,6 +570,21 @@ def getPreShowerChannel(run=1184):
         return "DRS_Board7_Group1_Channel1"
 
 
+def getCerenkovCounters(run=1184):
+    """
+    Returns a list of Cerenkov counter channels.
+    """
+    if run < 1183:
+        return []
+    else:
+        return [
+            "DRS_Board7_Group1_Channel2",
+            "DRS_Board7_Group1_Channel3",
+            "DRS_Board7_Group1_Channel4",
+            "DRS_Board7_Group1_Channel5",
+        ]
+
+
 def getServiceDRSChannels(run=1184):
     """
     Returns a list of service DRS channels.

@@ -375,20 +375,45 @@ def makeFERSMaxValuePlots():
     plots.append(output_name + ".png")
 
     output_name = "FERS_EnergyHG_max"
+    vsat = 8000
+    frac_sci = hist_sci_HG_max.Integral(hist_sci_HG_max.FindBin(vsat), 100000) / \
+        hist_sci_HG_max.Integral(0, 100000)
+    frac_cer = hist_cer_HG_max.Integral(hist_cer_HG_max.FindBin(vsat), 100000) / \
+        hist_cer_HG_max.Integral(0, 100000)
+    extraToDraw = ROOT.TPaveText(0.20, 0.63, 0.90, 0.72, "NDC")
+    extraToDraw.SetTextAlign(11)
+    extraToDraw.SetFillColorAlpha(0, 0)
+    extraToDraw.SetBorderSize(0)
+    extraToDraw.SetTextFont(42)
+    extraToDraw.SetTextSize(0.04)
+    extraToDraw.AddText(f"Sat Frac Sci : {frac_sci:.3f}")
+    extraToDraw.AddText(f"Sat Frac Cer : {frac_cer:.3f}")
     DrawHistos([hist_cer_HG_max, hist_sci_HG_max],
                ["Cer",
                    "Sci"], xmin, xmax, f"HG Max (All Boards)", 1, None, "Events",
                output_name,
                dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.75, 0.50, 0.9])
+               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.75, 0.50, 0.9], extraToDraw=extraToDraw)
     plots.append(output_name + ".png")
     output_name = "FERS_EnergyLG_max"
+    frac_sci = hist_sci_LG_max.Integral(hist_sci_LG_max.FindBin(vsat), 100000) / \
+        hist_sci_LG_max.Integral(0, 100000)
+    frac_cer = hist_cer_LG_max.Integral(hist_cer_LG_max.FindBin(vsat), 100000) / \
+        hist_cer_LG_max.Integral(0, 100000)
+    extraToDraw = ROOT.TPaveText(0.20, 0.55, 0.90, 0.63, "NDC")
+    extraToDraw.SetTextAlign(11)
+    extraToDraw.SetFillColorAlpha(0, 0)
+    extraToDraw.SetBorderSize(0)
+    extraToDraw.SetTextFont(42)
+    extraToDraw.SetTextSize(0.04)
+    extraToDraw.AddText(f"Sat Frac Sci : {frac_sci:.3f}")
+    extraToDraw.AddText(f"Sat Frac Cer : {frac_cer:.3f}")
     DrawHistos([hist_cer_LG_max, hist_sci_LG_max],
                ["Cer",
                    "Sci"], xmin, xmax, f"LG Max (All Boards)", 1, None, "Events",
                output_name,
                dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.75, 0.50, 0.9])
+               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.75, 0.50, 0.9], extraToDraw=extraToDraw)
     plots.append(output_name + ".png")
 
     output_html = f"{htmldir}/FERS_MaxValues/index.html"
@@ -1042,12 +1067,12 @@ def checkFERSvsDRSSum():
     infile = ROOT.TFile(infile_name, "READ")
 
     xymax = {
-        "Cer": (1000, 4000),
-        "Sci": (9000, 9000)
+        "Cer": (20000, 8500),
+        "Sci": (30000, 8500)
     }
     xymax_LG = {
-        "Cer": (1000, 1000),
-        "Sci": (9000, 9000)
+        "Cer": (20000, 2000),
+        "Sci": (30000, 4000)
     }
 
     # for _, DRSBoard in DRSBoards.items():
