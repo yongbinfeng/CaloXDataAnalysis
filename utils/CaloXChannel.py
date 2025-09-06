@@ -100,6 +100,8 @@ class DRSChannel(CaloXChannel):
     def GetChannelName(self):
         return f"DRS_Board{self.boardNo}_Group{self.groupNo}_Channel{self.channelNo}"
 
+    def GetChannelTimeName(self):
+        return self.GetChannelName() + "_LP2_50"
 
 class Board(object):
     """

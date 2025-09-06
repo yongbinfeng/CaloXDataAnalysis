@@ -85,7 +85,7 @@
     "1261": "/lustre/research/hep/yofeng/HG-DREAM/CERN/ROOT/run1261_250817080234_converted.root",
     "1262": "/lustre/research/hep/yofeng/HG-DREAM/CERN/ROOT/run1262_250817113431_converted.root",
     "1263": "/lustre/research/hep/yofeng/HG-DREAM/CERN/ROOT/run1263_250817135704_converted.root",
-    "1264": "/lustre/research/hep/yofeng/HG-DREAM/CERN/ROOT/run1264_250817143432_converted.root",
+    "1264": "/Users/mad24679/Documents/TTU-Research/CaloX/PulseShapeProcesses/TimingDAQ/run1264_250817143432_TimingDAQ.root",
     "1265": "/lustre/research/hep/yofeng/HG-DREAM/CERN/ROOT/run1265_250817151002_converted.root",
     "1266": "/lustre/research/hep/yofeng/HG-DREAM/CERN/ROOT/run1266_250817154016_converted.root",
     "1267": "/lustre/research/hep/yofeng/HG-DREAM/CERN/ROOT/run1267_250817171045_converted.root",
@@ -135,5 +135,6 @@
     "1312": "/lustre/research/hep/yofeng/HG-DREAM/CERN/ROOT/run1312_250819083452_converted.root",
     "1313": "/lustre/research/hep/yofeng/HG-DREAM/CERN/ROOT/run1313_250819092737_converted.root",
     "1314": "/lustre/research/hep/yofeng/HG-DREAM/CERN/ROOT/run1314_250819100840_converted.root",
-    "1315": "/lustre/research/hep/yofeng/HG-DREAM/CERN/ROOT/run1315_250819104808_converted.root"
+    "1315": "/lustre/research/hep/yofeng/HG-DREAM/CERN/ROOT/run1315_250819104808_converted.root",
+    "1326": "/Users/mad24679/Documents/TTU-Research/CaloX/PulseShapeProcesses/TimingDAQ/run1326_250820010716_TimingDAQ.root"
 }
