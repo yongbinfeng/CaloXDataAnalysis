@@ -1,3 +1,5 @@
+from utils.channel_map import findDRSTriggerMap, findTimeReferenceDelay
+
 def number2string(n):
     s = str(n)
     return s.replace('-', 'm').replace('.', 'p')
@@ -373,3 +375,17 @@ def getRunInfo(runNumber):
     benergy = int(runinfo[runNum]['beam energy'].replace('GeV', ''))
     print(f"Run {runNum}: beam type = {btype}, beam energy = {benergy} GeV")
     return btype, benergy
+
+def preProcessTimeCorrections(rdf, DRSBoards, runNumber):
+    for _, DRSBoard in DRSBoards.items():
+        for chan in DRSBoard:
+            channelName = chan.GetChannelName()
+            triggerName = findDRSTriggerMap(channelName, run=runNumber)
+            # triggerDelay = findTimeReferenceDelay(triggerName, run=runNumber)
+            channelTimingName = chan.GetChannelTimeName()
+            triggerTimingName = f"{triggerName}_LP2_50"
+
+            # rdf = rdf.Define(f"{channelTimingName}_goodTime", f"{channelTimingName}-{triggerTimingName} - {triggerDelay}")
+            rdf = rdf.Define(f"{channelTimingName}_goodTime", f"{channelTimingName} - {triggerTimingName} + 80")
+
+    return rdf
