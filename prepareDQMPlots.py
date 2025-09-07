@@ -164,7 +164,11 @@ def collectDRSStats():
 
             stats[channelName] = (
                 rdf.Filter(f"{channelTimingName}>0").Mean(f"{channelTimingName}_goodTime"),
-                rdf.Max(f"{channelTimingName}_goodTime")
+                rdf.Max(f"{channelTimingName}_goodTime"),
+                rdf.Filter(f"{channelTimingName}>0").Mean(f"{channelName}_baseline_RMS"),
+                rdf.Filter(f"{channelTimingName}>0").Mean(f"{channelName}_integral"),
+                rdf.Filter(f"{channelTimingName}>0").Mean(f"{channelName}_amp"),
+                rdf.Filter(f"{channelTimingName}>0").Mean(f"{channelName}_risetime")
                 # rdf.Filter(f"{channelName} >= {saturation_value}").Count()
             )
 
@@ -688,8 +692,8 @@ if __name__ == "__main__":
     if 'statsDRS' in locals() and statsDRS:
         import json
         stats_results = {}
-        for channelName, (mean, max_value) in statsDRS.items():
-            stats_results[channelName] = (mean.GetValue(), max_value.GetValue())
+        for channelName, (mean, max_value, noise, integral, amp, risetime) in statsDRS.items():
+            stats_results[channelName] = (mean.GetValue(), max_value.GetValue(), noise.GetValue(), integral.GetValue(), amp.GetValue(), risetime.GetValue())
         with open(f"{rootdir}/drs_stats.json", "w") as f:
             json.dump(stats_results, f, indent=4)   
 

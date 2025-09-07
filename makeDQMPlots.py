@@ -333,11 +333,19 @@ def makeDRSStatsPlots():
     valuemaps_mean = {}
     valuemaps_max = {}
     valuemaps_satfreq = {}
+    valuemaps_noise = {}
+    valuemaps_integral = {}
+    valuemaps_amp = {}
+    valuemaps_risetime = {}
 
-    for channelName, (vmean, vmax) in stats.items():
+    for channelName, (vmean, vmax, vnoise, vintegral, vamp, vrisetime) in stats.items():
         valuemaps_mean[channelName] = vmean
         valuemaps_max[channelName] = vmax
         # valuemaps_satfreq[channelName] = vsatfreq
+        valuemaps_noise[channelName] = vnoise
+        valuemaps_integral[channelName] = vintegral
+        valuemaps_amp[channelName] = vamp
+        valuemaps_risetime[channelName] = vrisetime
 
     [h2_Cer_mean, h2_Cer_3mm_mean], [h2_Sci_mean, h2_Sci_3mm_mean] = visualizeDRSBoards(
         DRSBoards, valuemaps_mean, suffix=f"Run{runNumber}_mean")
@@ -345,6 +353,14 @@ def makeDRSStatsPlots():
         DRSBoards, valuemaps_max, suffix=f"Run{runNumber}_max")
     # [h2_Cer_HG_satfreq, h2_Cer_3mm_HG_satfreq], [h2_Sci_HG_satfreq, h2_Sci_3mm_HG_satfreq] = visualizeDRSBoards(
     #     FERSBoards, valuemaps_HG_satfreq, suffix=f"Run{runNumber}_HG_satfreq")
+    [h2_Cer_noise, h2_Cer_3mm_noise], [h2_Sci_noise, h2_Sci_3mm_noise] = visualizeDRSBoards(
+        DRSBoards, valuemaps_noise, suffix=f"Run{runNumber}_noise")
+    [h2_Cer_integral, h2_Cer_3mm_integral], [h2_Sci_integral, h2_Sci_3mm_integral] = visualizeDRSBoards(
+        DRSBoards, valuemaps_integral, suffix=f"Run{runNumber}_integral")
+    [h2_Cer_amp, h2_Cer_3mm_amp], [h2_Sci_amp, h2_Sci_3mm_amp] = visualizeDRSBoards(
+        DRSBoards, valuemaps_amp, suffix=f"Run{runNumber}_amp")
+    [h2_Cer_risetime, h2_Cer_3mm_risetime], [h2_Sci_risetime, h2_Sci_3mm_risetime] = visualizeDRSBoards(
+        DRSBoards, valuemaps_risetime, suffix=f"Run{runNumber}_risetime")
 
     output_name = f"DRS_Boards_Run{runNumber}_Stats_mean"
     DrawHistos([h2_Cer_mean, h2_Cer_3mm_mean], "", xmin, xmax, "iX", ymin,
@@ -375,6 +391,46 @@ def makeDRSStatsPlots():
     #            ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
     #            outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
     # plots.append(output_name + "_Sci.png")
+
+    output_name = f"DRS_Boards_Run{runNumber}_Stats_noise"
+    DrawHistos([h2_Cer_noise, h2_Cer_3mm_noise], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=5)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_noise, h2_Sci_3mm_noise], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=5)
+    plots.append(output_name + "_Sci.png")
+
+    output_name = f"DRS_Boards_Run{runNumber}_Stats_integral"
+    DrawHistos([h2_Cer_integral, h2_Cer_3mm_integral], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=2000)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_integral, h2_Sci_3mm_integral], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=2000)
+    plots.append(output_name + "_Sci.png")
+
+    output_name = f"DRS_Boards_Run{runNumber}_Stats_amp"
+    DrawHistos([h2_Cer_amp, h2_Cer_3mm_amp], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],   
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=200)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_amp, h2_Sci_3mm_amp], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],   
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=200)
+    plots.append(output_name + "_Sci.png")
+
+    output_name = f"DRS_Boards_Run{runNumber}_Stats_risetime"
+    DrawHistos([h2_Cer_risetime, h2_Cer_3mm_risetime], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],   
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=10)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_risetime, h2_Sci_3mm_risetime], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],   
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=10)
+    plots.append(output_name + "_Sci.png")
 
     output_html = f"{htmldir}/DRS_Stats/index.html"
     generate_html(plots, outdir_plots, plots_per_row=2,

@@ -381,11 +381,10 @@ def preProcessTimeCorrections(rdf, DRSBoards, runNumber):
         for chan in DRSBoard:
             channelName = chan.GetChannelName()
             triggerName = findDRSTriggerMap(channelName, run=runNumber)
-            # triggerDelay = findTimeReferenceDelay(triggerName, run=runNumber)
+            triggerDelay = findTimeReferenceDelay(triggerName, run=runNumber)
             channelTimingName = chan.GetChannelTimeName()
             triggerTimingName = f"{triggerName}_LP2_50"
 
-            # rdf = rdf.Define(f"{channelTimingName}_goodTime", f"{channelTimingName}-{triggerTimingName} - {triggerDelay}")
-            rdf = rdf.Define(f"{channelTimingName}_goodTime", f"{channelTimingName} - {triggerTimingName} + 80")
+            rdf = rdf.Define(f"{channelTimingName}_goodTime", f"{channelTimingName} - {triggerTimingName} + {triggerDelay} + 80")
 
     return rdf
