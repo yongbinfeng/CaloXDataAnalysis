@@ -1,5 +1,6 @@
 import argparse
 from runconfig import runNumber, firstEvent, lastEvent
+from utils.utils import getRunInfo
 
 
 def get_args():
@@ -15,4 +16,8 @@ def get_args():
     print(f"Run number: {args.run}")
     print(f"First event: {args.first_event}")
     print(f"Last event: {args.last_event}")
+
+    btype, benergy = getRunInfo(args.run)
+    print(f"Beam type: {btype}")
+    print(f"Beam energy: {benergy} GeV")
     return args

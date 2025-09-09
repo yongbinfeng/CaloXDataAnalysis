@@ -285,12 +285,12 @@ def getServiceDRSProcessedInfoRanges(channel, cat):
         "preshower": {
             # "peak_value": (-3000, 50),
             # "sum": (-7e4, 1e4)
-            "peak_value": (-300, 50),
-            "sum": (-6000, 100)
+            "peak_value": (-1000, 50),
+            "sum": (-1e4, 500)
         },
         "Cerenkov1": {
             "peak_value": (-1500, 50),
-            "sum": (-2000, 100)
+            "sum": (-1e4, 2e3)
         }
     }
     if channel in service_drs_ranges:

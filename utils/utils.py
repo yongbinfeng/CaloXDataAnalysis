@@ -371,5 +371,5 @@ def getRunInfo(runNumber):
         # raise ValueError(f"Run number {runNum} not found in {f_runinfo}")
     btype = runinfo[runNum]['beam type']
     benergy = int(runinfo[runNum]['beam energy'].replace('GeV', ''))
-    print(f"Run {runNum}: beam type = {btype}, beam energy = {benergy} GeV")
+    # print(f"Run {runNum}: beam type = {btype}, beam energy = {benergy} GeV")
     return btype, benergy
