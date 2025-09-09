@@ -730,7 +730,10 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
             # print(f"configuring z range to {zmin}, {zmax}")
             h1.GetZaxis().SetRangeUser(zmin, zmax)
             for h in myhistos:
+                h.GetZaxis().SetTitle("Events")
                 h.GetZaxis().SetRangeUser(zmin, zmax)
+                h.GetZaxis().SetLabelSize(0.04)
+                h.GetZaxis().SetTitleSize(0.05)
 
     if doth2 and ncolors != None:
         from utils.colors import colors

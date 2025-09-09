@@ -8,7 +8,7 @@ from utils.utils import loadRDF, preProcessDRSBoards
 from utils.utils import calculateEnergySumFERS, vectorizeFERS
 from utils.channel_map import buildFERSBoards, buildDRSBoards
 from configs.plotranges import getServiceDRSProcessedInfoRanges
-from selections.selections import checkUpstreamVeto, applyUpstreamVeto, getCC1SumCutValue, getPSDSumCutValue
+from selections.selections import applyUpstreamVeto, applyUpstreamVeto, getCC1SumCutValue, getPSDSumCutValue
 from utils.parser import get_args
 import time
 
@@ -173,7 +173,7 @@ def analyzeHodoPeak():
             rdf = rdf.Define(f"{channel}_peak_value",
                              f"ROOT::VecOps::Min({channel}_subtractMedian)")
 
-    rdf = checkUpstreamVeto(rdf, runNumber)
+    rdf = applyUpstreamVeto(rdf, runNumber, applyCut=False)
 
     rdfs_filtered = []
     maps_mean = {}
