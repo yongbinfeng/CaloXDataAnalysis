@@ -24,6 +24,14 @@ def filterPrefireEvents(rdf, runNumber, TS=350):
     return rdf, rdf_prefilter
 
 
+def getPSDSumCutValue():
+    return -1e3
+
+
+def getCC1SumCutValue():
+    return -1e3
+
+
 def vetoMuonCounter(rdf, TSmin=400, TSmax=600, cut=-80):
     from utils.channel_map import getDownStreamMuonChannel
     muon_channel = getDownStreamMuonChannel()
@@ -55,17 +63,66 @@ def PSDSelection(rdf, runNumber, isHadron=False):
     print("Applying PSD selection based on pre-shower channel.")
     rdf = rdf.Define(f"{preshower_channel}_peak_value",
                      f"MinRange({preshower_channel}_subtractMedian, 100, 400)")
+    rdf = rdf.Define(f"{preshower_channel}_sum",
+                     f"SumRange({preshower_channel}_subtractMedian, 100, 400)")
+
+    valCut = getPSDSumCutValue()
     if not isHadron:
         rdf = rdf.Define("pass_psd_selection",
-                         f"({preshower_channel}_peak_value < -200.0)")
+                         f"({preshower_channel}_sum < {valCut})")
     else:
         rdf = rdf.Define("pass_psd_selection",
-                         f"({preshower_channel}_peak_value > -200.0)")
+                         f"({preshower_channel}_sum > {valCut})")
+
+    # if not isHadron:
+    #    rdf = rdf.Define("pass_psd_selection",
+    #                     f"({preshower_channel}_peak_value < -200.0)")
+    # else:
+    #    rdf = rdf.Define("pass_psd_selection",
+    #                     f"({preshower_channel}_peak_value > -200.0)")
 
     rdf_prefilter = rdf
     rdf = rdf.Filter("pass_psd_selection == 1")
     print(
         f"Events before and after PSD selection: {rdf_prefilter.Count().GetValue()}, {rdf.Count().GetValue()}")
+    return rdf, rdf_prefilter
+
+
+def CC1Selection(rdf, runNumber, isHadron=False):
+    from utils.channel_map import getCerenkovCounters
+    cerenkov_channels = getCerenkovCounters(runNumber)
+    if cerenkov_channels is None or len(cerenkov_channels) == 0:
+        print("Cerenkov channels not found, skipping CC1 selection.")
+        return rdf
+
+    # Use the first Cerenkov channel for CC1 selection
+    cc1_channel = cerenkov_channels[0]
+
+    print("Applying CC1 selection based on Cerenkov1 channel.")
+    rdf = rdf.Define(f"{cc1_channel}_peak_value",
+                     f"MinRange({cc1_channel}_subtractMedian, 600, 800)")
+    rdf = rdf.Define(f"{cc1_channel}_sum",
+                     f"SumRange({cc1_channel}_subtractMedian, 600, 800)")
+
+    valCut = getCC1SumCutValue()
+    if not isHadron:
+        rdf = rdf.Define("pass_cc1_selection",
+                         f"({cc1_channel}_sum < {valCut})")
+    else:
+        rdf = rdf.Define("pass_cc1_selection",
+                         f"({cc1_channel}_sum > {valCut})")
+
+    # if not isHadron:
+    #    rdf = rdf.Define("pass_cc1_selection",
+    #                     f"({cerenkov1_channel}_peak_value > -200.0)")
+    # else:
+    #    rdf = rdf.Define("pass_cc1_selection",
+    #                     f"({cerenkov1_channel}_peak_value < -200.0)")
+
+    rdf_prefilter = rdf
+    rdf = rdf.Filter("pass_cc1_selection == 1")
+    print(
+        f"Events before and after CC1 selection: {rdf_prefilter.Count().GetValue()}, {rdf.Count().GetValue()}")
     return rdf, rdf_prefilter
 
 

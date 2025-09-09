@@ -7,7 +7,7 @@ from utils.html_generator import generate_html
 from utils.fitter import eventFit
 from utils.colors import colors
 from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters, getEventEnergyFitParameters
-from selections.selections import vetoMuonCounter, applyUpstreamVeto, PSDSelection
+from selections.selections import vetoMuonCounter, applyUpstreamVeto, PSDSelection, CC1Selection
 from utils.parser import get_args
 sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
@@ -79,9 +79,10 @@ htmldir = f"results/html/Run{runNumber}/"
 #        ("Board3_energyHG_1", f"Board3_energyHG_{chan}"))
 
 
-def makeFERSEnergySumHists(subtractPedestal=False, calibrate=False, clip=False):
-    suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, _, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, _ = getRangesForFERSEnergySums(
+def makeFERSEnergySumHists(rdf=rdf, subtractPedestal=False, calibrate=False, clip=False, suffix=""):
+    suffix_type, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, _, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, _ = getRangesForFERSEnergySums(
         subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
+    suffix += suffix_type
 
     hists_FERS_EnergySum = []
     for _, FERSBoard in FERSBoards.items():
@@ -148,9 +149,10 @@ def makeFERSEnergySumHists(subtractPedestal=False, calibrate=False, clip=False):
     return hists_FERS_EnergySum
 
 
-def makeFERSCervsSciHists(subtractPedestal=False, calibrate=False, clip=False):
-    suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, _, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, _ = getRangesForFERSEnergySums(
+def makeFERSCervsSciHists(rdf=rdf, subtractPedestal=False, calibrate=False, clip=False, suffix=""):
+    suffix_type, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, _, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, _ = getRangesForFERSEnergySums(
         subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
+    suffix += suffix_type
 
     hists_FERS_Cer_vs_Sci = []
     for _, FERSBoard in FERSBoards.items():
@@ -239,9 +241,10 @@ def makeFERSChannelComparisonHists(subtractPedestal=False, calibrate=False, clip
     return hists_FERS_ChannelComparison
 
 
-def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False, clip=False):
-    suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, xtitle, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, xtitle_LG = getRangesForFERSEnergySums(
+def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False, clip=False, suffix=""):
+    suffix_type, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, xtitle, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, xtitle_LG = getRangesForFERSEnergySums(
         subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
+    suffix += suffix_type
 
     plots = []
     infile_name = f"{rootdir}/fers_energy_sum{suffix}.root"
@@ -337,9 +340,10 @@ def makeFERSEnergySumPlots(subtractPedestal=False, calibrate=False, clip=False):
     return output_html
 
 
-def makeFERSCerVsSciPlots(subtractPedestal=False, calibrate=False, clip=False):
-    suffix, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, xtitle, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, xtitle_LG = getRangesForFERSEnergySums(
+def makeFERSCerVsSciPlots(subtractPedestal=False, calibrate=False, clip=False, suffix=""):
+    suffix_type, xmin_board, xmax_board, xmax_board_cer, xmin_total, xmax_total, xmax_total_cer, xtitle, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, xtitle_LG = getRangesForFERSEnergySums(
         subtractPedestal=subtractPedestal, calibrate=calibrate, clip=clip, HE=HE)
+    suffix += suffix_type
 
     plots = []
     infile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci{suffix}.root"
@@ -526,7 +530,7 @@ if __name__ == "__main__":
 
     if makeHists:
         hists_raw = makeFERSEnergySumHists(
-            subtractPedestal=False, calibrate=False, clip=False)
+            rdf=rdf, subtractPedestal=False, calibrate=False, clip=False)
         # hists_subtracted = makeFERSEnergySumHists(
         #    subtractPedestal=True, calibrate=False, clip=False)
         # hists_subtracted_calibrated = makeFERSEnergySumHists(

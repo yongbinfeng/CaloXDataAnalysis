@@ -8,7 +8,7 @@ from utils.utils import loadRDF, preProcessDRSBoards
 from utils.utils import calculateEnergySumFERS, vectorizeFERS
 from utils.channel_map import buildFERSBoards, buildDRSBoards
 from configs.plotranges import getServiceDRSProcessedInfoRanges
-from selections.selections import checkUpstreamVeto, applyUpstreamVeto
+from selections.selections import checkUpstreamVeto, applyUpstreamVeto, getCC1SumCutValue, getPSDSumCutValue
 from utils.parser import get_args
 import time
 
@@ -350,18 +350,19 @@ def plotPulse(channels, names):
             return
         xmin, xmax = getServiceDRSProcessedInfoRanges(name, "sum")
         extraToDraw = None
-        if name == "preshower":
+        if name == "preshower" or name == "Cerenkov1":
             ntot = hist.Integral(0, 10000)
-            nhad = hist.Integral(hist.FindBin(-1e3), 10000)
-            nele = hist.Integral(0, hist.FindBin(-1e3))
+            valCut = getPSDSumCutValue() if name == "preshower" else getCC1SumCutValue()
+            nhad = hist.Integral(hist.FindBin(valCut), 10000)
+            nele = hist.Integral(0, hist.FindBin(valCut))
             extraToDraw = ROOT.TPaveText(0.23, 0.75, 0.55, 0.85, "NDC")
             extraToDraw.SetFillColor(0)
             extraToDraw.SetBorderSize(0)
             extraToDraw.SetTextAlign(11)
             extraToDraw.SetTextFont(42)
             extraToDraw.SetTextSize(0.04)
-            extraToDraw.AddText(f"N (sum > -1k): {nhad:.0f}")
-            extraToDraw.AddText(f"N (sum < -1k): {nele:.0f}")
+            extraToDraw.AddText(f"N (sum > {valCut:.2g}): {nhad:.0f}")
+            extraToDraw.AddText(f"N (sum < {valCut:.2g}): {nele:.0f}")
         DrawHistos([hist], [name], xmin, xmax, "Sum", 1, None, "Counts",
                    outputname=f"{name}_sum", outdir=outdir,
                    dology=True, mycolors=[1], drawashist=True, runNumber=runNumber,
@@ -377,8 +378,10 @@ def plotPulse(channels, names):
             return
         xmin, xmax = getServiceDRSProcessedInfoRanges("preshower", "sum")
         ymin, ymax = getServiceDRSProcessedInfoRanges("Cerenkov1", "sum")
-        xPass = hist2d.GetXaxis().FindBin(-1e3)
-        yPass = hist2d.GetYaxis().FindBin(-2e3)
+        valCut_psd = getPSDSumCutValue()
+        valCut_cc1 = getCC1SumCutValue()
+        xPass = hist2d.GetXaxis().FindBin(valCut_psd)
+        yPass = hist2d.GetYaxis().FindBin(valCut_cc1)
         nPP = hist2d.Integral(xPass, 1000, yPass, 1000)
         nPF = hist2d.Integral(xPass, 1000, 0, yPass - 1)
         nFP = hist2d.Integral(0, xPass - 1, yPass, 1000)
@@ -389,10 +392,14 @@ def plotPulse(channels, names):
         extraToDraw.SetTextAlign(11)
         extraToDraw.SetTextFont(42)
         extraToDraw.SetTextSize(0.03)
-        extraToDraw.AddText(f"N (PSD > -1k, CC > -2k): {nPP:.0f}")
-        extraToDraw.AddText(f"N (PSD > -1k, CC < -2k): {nPF:.0f}")
-        extraToDraw.AddText(f"N (PSD < -1k, CC > -2k): {nFP:.0f}")
-        extraToDraw.AddText(f"N (PSD < -1k, CC < -2k): {nFF:.0f}")
+        extraToDraw.AddText(
+            f"N (PSD > {valCut_psd:.2g}, CC > {valCut_cc1:.2g}): {nPP:.0f}")
+        extraToDraw.AddText(
+            f"N (PSD > {valCut_psd:.2g}, CC < {valCut_cc1:.2g}): {nPF:.0f}")
+        extraToDraw.AddText(
+            f"N (PSD < {valCut_psd:.2g}, CC > {valCut_cc1:.2g}): {nFP:.0f}")
+        extraToDraw.AddText(
+            f"N (PSD < {valCut_psd:.2g}, CC < {valCut_cc1:.2g}): {nFF:.0f}")
         DrawHistos([hist2d], "", xmin, xmax, "PSD Sum", ymin, ymax, "CC1 Sum",
                    outputname="Cerenkov1_vs_preshower_sum2D", outdir=outdir,
                    drawoptions="COLz", zmin=1, zmax=None, dologz=True,
