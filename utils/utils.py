@@ -108,23 +108,25 @@ def vectorizeFERS(rdf, FERSBoards):
     return rdf
 
 
-def subtractFERSPedestal(rdf, FERSBoards, pedestals):
+def subtractFERSPedestal(rdf, FERSBoards, pedestalsHG, pedestalsLG=None):
     for _, FERSBoard in FERSBoards.items():
-        boardNo = FERSBoard.boardNo
         for channel in FERSBoard:
-            channelNo = channel.channelNo
             channelNameHG = channel.GetHGChannelName()
-            pedestal = pedestals[channelNameHG]
+            pedestal = pedestalsHG[channelNameHG]
+
             # subtract pedestal from HG and LG energies
             rdf = rdf.Define(
-                f"FERS_Board{boardNo}_energyHG_{channelNo}_subtracted",
-                f"FERS_Board{boardNo}_energyHG_{channelNo} - {pedestal}"
+                f"{channelNameHG}_subtracted",
+                f"{channelNameHG} - {pedestal}"
             )
-            # not on LG yet
-            # rdf = rdf.Define(
-            #    f"FERS_Board{boardNo}_energyLG_{channelNo}_subtracted",
-            #    f"FERS_Board{boardNo}_energyLG_{channelNo} - 0."
-            # )
+
+            if pedestalsLG is not None:
+                channelNameLG = channel.GetLGChannelName()
+                pedestal_LG = pedestalsLG[channelNameLG]
+                rdf = rdf.Define(
+                    f"{channelNameLG}_subtracted",
+                    f"{channelNameLG} - {pedestal_LG}"
+                )
     return rdf
 
 
@@ -238,13 +240,13 @@ def calculateEnergySumFERS(rdf, FERSBoards, subtractPedestal=False, calibrate=Fa
             chan.GetHGChannelName() + suffix for chan in channels_Cer
         )
         string_CerEnergyLG = "+".join(
-            chan.GetLGChannelName() for chan in channels_Cer
+            chan.GetLGChannelName() + suffix for chan in channels_Cer
         )
         string_SciEnergyHG = "+".join(
             chan.GetHGChannelName() + suffix for chan in channels_Sci
         )
         string_SciEnergyLG = "+".join(
-            chan.GetLGChannelName() for chan in channels_Sci
+            chan.GetLGChannelName() + suffix for chan in channels_Sci
         )
         # per-board energy sum
         rdf = rdf.Define(

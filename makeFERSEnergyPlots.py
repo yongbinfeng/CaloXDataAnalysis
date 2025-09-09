@@ -1,9 +1,10 @@
 import os
 import sys
 import ROOT
+import json
 from collections import OrderedDict
 from utils.channel_map import buildFERSBoards
-from utils.utils import loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrateFERSChannels, preProcessDRSBoards
+from utils.utils import loadRDF, calculateEnergySumFERS, vectorizeFERS, calibrateFERSChannels, preProcessDRSBoards, subtractFERSPedestal, getRunInfo
 from utils.html_generator import generate_html
 from utils.fitter import eventFit
 from utils.colors import colors
@@ -21,8 +22,10 @@ args = get_args()
 runNumber = args.run
 firstEvent = args.first_event
 lastEvent = args.last_event
+btype, benergy = getRunInfo(runNumber)
 
-HE = (runNumber >= 1200)
+# HE = (runNumber >= 1200)
+HE = (benergy >= 50)  # GeV
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
 ROOT.gROOT.SetBatch(True)  # Disable interactive mode for batch processing
@@ -31,6 +34,11 @@ ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 # load the gains and pedestals from SiPM fits
 # file_gains = f"results/root/Run{runNumber}/valuemaps_gain.json"
 # file_pedestals = f"results/root/Run{runNumber}/valuemaps_pedestal.json"
+file_pedestals_HG = f"results/root/Run{runNumber}/fers_pedestals_HG.json"
+file_pedestals_LG = f"results/root/Run{runNumber}/fers_pedestals_LG.json"
+
+pedestals_HG = json.load(open(file_pedestals_HG))
+pedestals_LG = json.load(open(file_pedestals_LG))
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
 rdf = preProcessDRSBoards(rdf)
@@ -45,8 +53,10 @@ rdf = vectorizeFERS(rdf, FERSBoards)
 # define energy sums with different configurations
 # rdf = calibrateFERSChannels(
 #    rdf, FERSBoards, file_gains=file_gains, file_pedestals=file_pedestals)
+rdf = subtractFERSPedestal(
+    rdf, FERSBoards, pedestals_HG, pedestalsLG=pedestals_LG)
 rdf = calculateEnergySumFERS(
-    rdf, FERSBoards, subtractPedestal=False, calibrate=False, clip=False)
+    rdf, FERSBoards, subtractPedestal=True, calibrate=False, clip=False)
 # rdf = calculateEnergySumFERS(
 #    rdf, FERSBoards, subtractPedestal=True, calibrate=False, clip=False)
 # rdf = calculateEnergySumFERS(
@@ -547,7 +557,7 @@ if __name__ == "__main__":
     for cat, rdf in rdfs.items():
         if makeHists:
             hists_raw = makeFERSEnergySumHists(
-                rdf=rdf, subtractPedestal=False, calibrate=False, clip=False, suffix=cat)
+                rdf=rdf, subtractPedestal=True, calibrate=False, clip=False, suffix=cat)
             # hists_subtracted = makeFERSEnergySumHists(
             #    subtractPedestal=True, calibrate=False, clip=False)
             # hists_subtracted_calibrated = makeFERSEnergySumHists(
@@ -556,7 +566,7 @@ if __name__ == "__main__":
             #    subtractPedestal=True, calibrate=True, clip=True)
 
             hists_cer_vs_sci_raw = makeFERSCervsSciHists(rdf=rdf,
-                                                         subtractPedestal=False, calibrate=False, clip=False, suffix=cat)
+                                                         subtractPedestal=True, calibrate=False, clip=False, suffix=cat)
             # hists_cer_vs_sci_subtracted = makeFERSCervsSciHists(
             #    subtractPedestal=True, calibrate=False, clip=False)
             # hists_cer_vs_sci_subtracted_calibrated = makeFERSCervsSciHists(
@@ -571,7 +581,7 @@ if __name__ == "__main__":
             #    subtractPedestal=False, calibrate=False)
 
             # save histograms to ROOT files
-            outfile_name = f"{rootdir}/fers_energy_sum_{cat}.root"
+            outfile_name = f"{rootdir}/fers_energy_sum_{cat}_subtracted.root"
             with ROOT.TFile(outfile_name, "RECREATE") as outfile:
                 for hist in hists_raw:
                     hist.SetDirectory(outfile)
@@ -602,7 +612,7 @@ if __name__ == "__main__":
 
             # save cer vs sci histograms
 
-            outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_{cat}.root"
+            outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_{cat}_subtracted.root"
             with ROOT.TFile(outfile_name, "RECREATE") as outfile:
                 for hist in hists_cer_vs_sci_raw:
                     hist.SetDirectory(outfile)
@@ -696,7 +706,7 @@ if __name__ == "__main__":
         # make plots
         if makePlots:
             outputs_html[f"raw_{cat}"] = makeFERSEnergySumPlots(
-                subtractPedestal=False, calibrate=False, suffix=cat)
+                subtractPedestal=True, calibrate=False, suffix=cat)
             # outputs_html["subtracted"] = makeFERSEnergySumPlots(
             #    subtractPedestal=True, calibrate=False)
             # outputs_html["subtracted_calibrated"] = makeFERSEnergySumPlots(
@@ -705,7 +715,7 @@ if __name__ == "__main__":
             #    subtractPedestal=True, calibrate=True, clip=True)
 
             outputs_html[f"cer_vs_sci_raw_{cat}"] = makeFERSCerVsSciPlots(
-                subtractPedestal=False, calibrate=False, suffix=cat)
+                subtractPedestal=True, calibrate=False, suffix=cat)
             # outputs_html["cer_vs_sci_subtracted"] = makeFERSCerVsSciPlots(
             #    subtractPedestal=True, calibrate=False)
             # outputs_html["cer_vs_sci_subtracted_calibrated"] = makeFERSCerVsSciPlots(

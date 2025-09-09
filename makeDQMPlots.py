@@ -205,7 +205,7 @@ def makeFERS1DPlots():
     return output_html
 
 
-def makeFERSStatsPlots():
+def makeFERSStatsPlots(includePedestals=False):
     plots = []
     outdir_plots = f"{plotdir}/FERS_Stats"
     # load the json file
@@ -213,6 +213,14 @@ def makeFERSStatsPlots():
     infile_name = f"{rootdir}/fers_stats.json"
     with open(infile_name, "r") as f:
         stats = json.load(f)
+
+    if includePedestals:
+        infile_name_HG = f"{rootdir}/fers_pedestals_HG.json"
+        infile_name_LG = f"{rootdir}/fers_pedestals_LG.json"
+        with open(infile_name_HG, "r") as f:
+            pedestals_HG = json.load(f)
+        with open(infile_name_LG, "r") as f:
+            pedestals_LG = json.load(f)
 
     xmax = 14
     xmin = -14
@@ -223,19 +231,25 @@ def makeFERSStatsPlots():
     valuemaps_HG_mean = {}
     valuemaps_HG_max = {}
     valuemaps_HG_satfreq = {}
+    valuemaps_HG_pedestal = {}
     valuemaps_LG_mean = {}
     valuemaps_LG_max = {}
     valuemaps_LG_satfreq = {}
+    valuemaps_LG_pedestal = {}
 
     for channelName, (vmean, vmax, vsatfreq) in stats.items():
         if "energyHG" in channelName:
             valuemaps_HG_mean[channelName] = vmean
             valuemaps_HG_max[channelName] = vmax
             valuemaps_HG_satfreq[channelName] = vsatfreq
+            valuemaps_HG_pedestal[channelName] = pedestals_HG.get(
+                channelName, None) if includePedestals else 0.
         elif "energyLG" in channelName:
             valuemaps_LG_mean[channelName] = vmean
             valuemaps_LG_max[channelName] = vmax
             valuemaps_LG_satfreq[channelName] = vsatfreq
+            valuemaps_LG_pedestal[channelName] = pedestals_LG.get(
+                channelName, None) if includePedestals else 0.
 
     [h2_Cer_HG_mean, h2_Cer_3mm_HG_mean], [h2_Sci_HG_mean, h2_Sci_3mm_HG_mean] = visualizeFERSBoards(
         FERSBoards, valuemaps_HG_mean, suffix=f"Run{runNumber}_HG_mean", useHG=True)
@@ -243,12 +257,16 @@ def makeFERSStatsPlots():
         FERSBoards, valuemaps_HG_max, suffix=f"Run{runNumber}_HG_max", useHG=True)
     [h2_Cer_HG_satfreq, h2_Cer_3mm_HG_satfreq], [h2_Sci_HG_satfreq, h2_Sci_3mm_HG_satfreq] = visualizeFERSBoards(
         FERSBoards, valuemaps_HG_satfreq, suffix=f"Run{runNumber}_HG_satfreq", useHG=True)
+    [h2_Cer_HG_pedestal, h2_Cer_3mm_HG_pedestal], [h2_Sci_HG_pedestal, h2_Sci_3mm_HG_pedestal] = visualizeFERSBoards(
+        FERSBoards, valuemaps_HG_pedestal, suffix=f"Run{runNumber}_HG_pedestal", useHG=True)
     [h2_Cer_LG_mean, h2_Cer_3mm_LG_mean], [h2_Sci_LG_mean, h2_Sci_3mm_LG_mean] = visualizeFERSBoards(
         FERSBoards, valuemaps_LG_mean, suffix=f"Run{runNumber}_LG_mean", useHG=False)
     [h2_Cer_LG_max, h2_Cer_3mm_LG_max], [h2_Sci_LG_max, h2_Sci_3mm_LG_max] = visualizeFERSBoards(
         FERSBoards, valuemaps_LG_max, suffix=f"Run{runNumber}_LG_max", useHG=False)
     [h2_Cer_LG_satfreq, h2_Cer_3mm_LG_satfreq], [h2_Sci_LG_satfreq, h2_Sci_3mm_LG_satfreq] = visualizeFERSBoards(
         FERSBoards, valuemaps_LG_satfreq, suffix=f"Run{runNumber}_LG_satfreq", useHG=False)
+    [h2_Cer_LG_pedestal, h2_Cer_3mm_LG_pedestal], [h2_Sci_LG_pedestal, h2_Sci_3mm_LG_pedestal] = visualizeFERSBoards(
+        FERSBoards, valuemaps_LG_pedestal, suffix=f"Run{runNumber}_LG_pedestal", useHG=False)
 
     output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_mean"
     DrawHistos([h2_Cer_HG_mean, h2_Cer_3mm_HG_mean], "", xmin, xmax, "iX", ymin,
@@ -280,6 +298,16 @@ def makeFERSStatsPlots():
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
     plots.append(output_name + "_Sci.png")
 
+    output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_pedestal"
+    DrawHistos([h2_Cer_HG_pedestal, h2_Cer_3mm_HG_pedestal], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=100, zmax=300, nTextDigits=0)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_HG_pedestal, h2_Sci_3mm_HG_pedestal], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=100, zmax=300, nTextDigits=0)
+    plots.append(output_name + "_Sci.png")
+
     output_name = f"FERS_Boards_Run{runNumber}_Stats_LG_mean"
     DrawHistos([h2_Cer_LG_mean, h2_Cer_3mm_LG_mean], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
@@ -308,6 +336,16 @@ def makeFERSStatsPlots():
     DrawHistos([h2_Sci_LG_satfreq, h2_Sci_3mm_LG_satfreq], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
+    plots.append(output_name + "_Sci.png")
+
+    output_name = f"FERS_Boards_Run{runNumber}_Stats_LG_pedestal"
+    DrawHistos([h2_Cer_LG_pedestal, h2_Cer_3mm_LG_pedestal], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=100, zmax=300, nTextDigits=0)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_LG_pedestal, h2_Sci_3mm_LG_pedestal], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=100, zmax=300, nTextDigits=0)
     plots.append(output_name + "_Sci.png")
 
     output_html = f"{htmldir}/FERS_Stats/index.html"
@@ -1188,7 +1226,7 @@ if __name__ == "__main__":
     output_htmls["drs mapping"] = DrawDRSBoards(run=runNumber)
 
     output_htmls["fers 1D"] = makeFERS1DPlots()
-    output_htmls["fers stats"] = makeFERSStatsPlots()
+    output_htmls["fers stats"] = makeFERSStatsPlots(includePedestals=True)
     # # makeDRS2DPlots()
     output_htmls["drs 2D"] = makeDRS2DPlots(doSubtractMedian=True)
     output_htmls["drs peak ts"] = makeDRSPeakTSPlots()

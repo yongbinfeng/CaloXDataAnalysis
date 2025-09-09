@@ -25,7 +25,14 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
         xmax_HG_total = 1e6
         xmax_HG_board_cer = 90e3
         xmax_HG_total_cer = 200e3
+        xmin_LG_total = 0
+        xmax_LG_total = 8e4
+        xmax_LG_total_cer = 2e4
         title = "ADC (PD subtracted)"
+        title_LG = "LG ADC (PD subtracted)"
+        if HE:
+            xmax_HG_total = 1.2e6
+            xmax_LG_total = 8e4
     if calibrate:
         suffix += "_calibrated"
         xmin_HG_board = -50
@@ -55,7 +62,7 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
 def getFERSSaturationValue():
     # This is the saturation value for the FERS channels
     # return 8191
-    return 8000
+    return 7800
 
 
 def getDRSPlotRanges(subtractMedian=False, isAmplified=False):

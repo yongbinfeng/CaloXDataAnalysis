@@ -75,7 +75,7 @@ def monitorConditions():
     return hists2d_Condition_vs_Event
 
 
-def makeFERS1DPlots():
+def makeFERS1DPlots(useHG=True):
     hists1d_FERS = []
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
@@ -89,16 +89,16 @@ def makeFERS1DPlots():
                     iTowerX, iTowerY, isCer=(var == "Cer"))
                 hist = rdf.Histo1D((
                     f"hist_FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
-                    f"FERS Board {boardNo} - {var} iTowerX {sTowerX} iTowerY {sTowerY};{var} Energy HG;Counts",
+                    f"FERS Board {boardNo} - {var} iTowerX {sTowerX} iTowerY {sTowerY};{var} Energy;Counts",
                     3000, 0, 9000),
-                    chan.GetHGChannelName()
+                    chan.GetChannelName(useHG=useHG)
                 )
                 hists1d_FERS.append(hist)
 
     return hists1d_FERS
 
 
-def collectFERSPedestals(hists1d_FERS):
+def collectFERSPedestals(hists1d_FERS, useHG=True):
     pedestals = {}
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
@@ -109,7 +109,7 @@ def collectFERSPedestals(hists1d_FERS):
             for var in ["Cer", "Sci"]:
                 chan = FERSBoard.GetChannelByTower(
                     iTowerX, iTowerY, isCer=(var == "Cer"))
-                channelName_HG = chan.GetHGChannelName()
+                channelName = chan.GetChannelName(useHG=useHG)
 
                 hname = f"hist_FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
                 hist = None
@@ -120,10 +120,19 @@ def collectFERSPedestals(hists1d_FERS):
                 if hist is None:
                     print(
                         f"Warning: Histogram {hname} not found in hists1d_FERS")
-                    pedestals[var][channelName_HG] = None
+                    pedestals[channelName] = None
                     continue
-                pedestal = hist.GetXaxis().GetBinCenter(hist.GetMaximumBin())
-                pedestals[channelName_HG] = pedestal
+                ibinmin = hist.GetXaxis().FindBin(100.0)
+                ibinmax = hist.GetXaxis().FindBin(500.0)
+                maxVal = -1
+                ibinPed = -1
+                for ibin in range(ibinmin, ibinmax):
+                    if hist.GetBinContent(ibin) > maxVal:
+                        maxVal = hist.GetBinContent(ibin)
+                        ibinPed = ibin
+                # pedestal = hist.GetXaxis().GetBinCenter(hist.GetMaximumBin())
+                pedestal = hist.GetXaxis().GetBinCenter(ibinPed)
+                pedestals[channelName] = pedestal
     return pedestals
 
 
@@ -592,6 +601,7 @@ if __name__ == "__main__":
     hists_conditions = monitorConditions()
 
     hists1d_FERS = makeFERS1DPlots()
+    hists1d_FRRS_LG = makeFERS1DPlots(useHG=False)
 
     # hists2d_FERS = makeFERS2DPlots()
     # hists2d_FERS_vs_Event = trackFERSPlots()
@@ -638,6 +648,10 @@ if __name__ == "__main__":
 
     stats = collectFERSStats()
 
+    # pedestals
+    pedestals_HG = collectFERSPedestals(hists1d_FERS, useHG=True)
+    pedestals_LG = collectFERSPedestals(hists1d_FRRS_LG, useHG=False)
+
     print("\033[94mSave results\033[0m")
 
     rootdir = f"results/root/Run{runNumber}"
@@ -653,6 +667,15 @@ if __name__ == "__main__":
                 sat_frequency.GetValue()) / nEvents)
         with open(f"{rootdir}/fers_stats.json", "w") as f:
             json.dump(stats_results, f, indent=4)
+
+    if 'pedestals_HG' in locals() and pedestals_HG:
+        import json
+        with open(f"{rootdir}/fers_pedestals_HG.json", "w") as f:
+            json.dump(pedestals_HG, f, indent=4)
+    if 'pedestals_LG' in locals() and pedestals_LG:
+        import json
+        with open(f"{rootdir}/fers_pedestals_LG.json", "w") as f:
+            json.dump(pedestals_LG, f, indent=4)
 
     # Save histograms to an output ROOT file
     if 'hists_conditions' in locals() and hists_conditions:
