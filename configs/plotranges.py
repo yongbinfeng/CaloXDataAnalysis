@@ -25,7 +25,14 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
         xmax_HG_total = 1e6
         xmax_HG_board_cer = 90e3
         xmax_HG_total_cer = 200e3
+        xmin_LG_total = 0
+        xmax_LG_total = 8e4
+        xmax_LG_total_cer = 2e4
         title = "ADC (PD subtracted)"
+        title_LG = "LG ADC (PD subtracted)"
+        if HE:
+            xmax_HG_total = 1.2e6
+            xmax_LG_total = 8e4
     if calibrate:
         suffix += "_calibrated"
         xmin_HG_board = -50
@@ -55,7 +62,7 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
 def getFERSSaturationValue():
     # This is the saturation value for the FERS channels
     # return 8191
-    return 8000
+    return 7800
 
 def getDRSSaturationValue():
     # This is the saturation value for the DRS channels
@@ -288,12 +295,12 @@ def getServiceDRSProcessedInfoRanges(channel, cat):
         "preshower": {
             # "peak_value": (-3000, 50),
             # "sum": (-7e4, 1e4)
-            "peak_value": (-300, 50),
-            "sum": (-6000, 100)
+            "peak_value": (-1000, 50),
+            "sum": (-1e4, 500)
         },
         "Cerenkov1": {
             "peak_value": (-1500, 50),
-            "sum": (-2000, 100)
+            "sum": (-1e4, 2e3)
         }
     }
     if channel in service_drs_ranges:

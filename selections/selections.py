@@ -24,6 +24,14 @@ def filterPrefireEvents(rdf, runNumber, TS=350):
     return rdf, rdf_prefilter
 
 
+def getPSDSumCutValue():
+    return -1e3
+
+
+def getCC1SumCutValue():
+    return -1e3
+
+
 def vetoMuonCounter(rdf, TSmin=400, TSmax=600, cut=-80):
     from utils.channel_map import getDownStreamMuonChannel
     muon_channel = getDownStreamMuonChannel()
@@ -45,7 +53,7 @@ def vetoMuonCounter(rdf, TSmin=400, TSmax=600, cut=-80):
     return rdf, rdf_prefilter
 
 
-def PSDSelection(rdf, runNumber, isHadron=False):
+def applyPSDSelection(rdf, runNumber, isHadron=False, applyCut=True):
     from utils.channel_map import getPreShowerChannel
     preshower_channel = getPreShowerChannel(runNumber)
     if preshower_channel is None:
@@ -55,21 +63,64 @@ def PSDSelection(rdf, runNumber, isHadron=False):
     print("Applying PSD selection based on pre-shower channel.")
     rdf = rdf.Define(f"{preshower_channel}_peak_value",
                      f"MinRange({preshower_channel}_subtractMedian, 100, 400)")
-    if not isHadron:
-        rdf = rdf.Define("pass_psd_selection",
-                         f"({preshower_channel}_peak_value < -200.0)")
-    else:
-        rdf = rdf.Define("pass_psd_selection",
-                         f"({preshower_channel}_peak_value > -200.0)")
+    rdf = rdf.Define(f"{preshower_channel}_sum",
+                     f"SumRange({preshower_channel}_subtractMedian, 100, 400)")
+
+    valCut = getPSDSumCutValue()
+    rdf = rdf.Define("pass_PSDEle_selection",
+                     f"({preshower_channel}_sum < {valCut})")
+
+    # rdf = rdf.Define("pass_PSDEle_selection", f"({preshower_channel}_peak_value < -200.0)")
+
+    if not applyCut:
+        return rdf
 
     rdf_prefilter = rdf
-    rdf = rdf.Filter("pass_psd_selection == 1")
+    if not isHadron:
+        rdf = rdf.Filter("pass_PSDEle_selection == 1")
+    else:
+        rdf = rdf.Filter("pass_PSDEle_selection == 0")
     print(
         f"Events before and after PSD selection: {rdf_prefilter.Count().GetValue()}, {rdf.Count().GetValue()}")
     return rdf, rdf_prefilter
 
 
-def checkUpstreamVeto(rdf, runNumber):
+def applyCC1Selection(rdf, runNumber, isHadron=False, applyCut=True):
+    from utils.channel_map import getCerenkovCounters
+    cerenkov_channels = getCerenkovCounters(runNumber)
+    if cerenkov_channels is None or len(cerenkov_channels) == 0:
+        print("Cerenkov channels not found, skipping CC1 selection.")
+        return rdf
+
+    # Use the first Cerenkov channel for CC1 selection
+    cc1_channel = cerenkov_channels[0]
+
+    print("Applying CC1 selection based on Cerenkov1 channel.")
+    rdf = rdf.Define(f"{cc1_channel}_peak_value",
+                     f"MinRange({cc1_channel}_subtractMedian, 600, 800)")
+    rdf = rdf.Define(f"{cc1_channel}_sum",
+                     f"SumRange({cc1_channel}_subtractMedian, 600, 800)")
+
+    valCut = getCC1SumCutValue()
+    rdf = rdf.Define("pass_CC1Ele_selection",
+                     f"({cc1_channel}_sum < {valCut})")
+
+    #    rdf = rdf.Define("pass_cc1_selection",
+    #                     f"({cerenkov1_channel}_peak_value > -200.0)")
+    if not applyCut:
+        return rdf
+
+    rdf_prefilter = rdf
+    if not isHadron:
+        rdf = rdf.Filter("pass_CC1Ele_selection == 1")
+    else:
+        rdf = rdf.Filter("pass_CC1Ele_selection == 0")
+    print(
+        f"Events before and after CC1 selection: {rdf_prefilter.Count().GetValue()}, {rdf.Count().GetValue()}")
+    return rdf, rdf_prefilter
+
+
+def applyUpstreamVeto(rdf, runNumber, applyCut=True):
     from utils.channel_map import getUpstreamVetoChannel
     chan_upveto = getUpstreamVetoChannel(runNumber)
 
@@ -79,14 +130,11 @@ def checkUpstreamVeto(rdf, runNumber):
                      f"ROOT::VecOps::Min({chan_upveto}_subtractMedian)")
 
     rdf = rdf.Define(f"pass_upstream_veto",
-                     f"({chan_upveto}_peak_value > -1000.0)") \
-        .Define("pass_NoSel", "1.0")
+                     f"({chan_upveto}_peak_value > -1000.0)")
+    rdf = rdf.Define("pass_NoSel", "1.0")
+    if not applyCut:
+        return rdf
 
-    return rdf
-
-
-def applyUpstreamVeto(rdf, runNumber):
-    rdf = checkUpstreamVeto(rdf, runNumber)
     rdf_prefilter = rdf
     rdf = rdf.Filter("pass_upstream_veto == 1")
     print(

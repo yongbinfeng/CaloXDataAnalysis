@@ -70,6 +70,12 @@ class FERSChannel(CaloXChannel):
     def GetLGChannelName(self):
         return f"FERS_Board{self.boardNo}_energyLG_{self.channelNo}"
 
+    def GetChannelName(self, useHG=True):
+        if useHG:
+            return self.GetHGChannelName()
+        else:
+            return self.GetLGChannelName()
+
 
 class DRSChannel(CaloXChannel):
     def __init__(self, iTowerX: float, iTowerY: float, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, groupNo: int, boardNo: int, isAmplified: bool = False, is6mm: bool = True):

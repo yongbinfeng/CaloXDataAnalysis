@@ -304,10 +304,12 @@ def IncludeOverflow2D(h2, doUnderflow=False):
         for ix in range(1, nbinsX+1):
             h2 = CombineOneBin2D(h2, ix, 1, ix, 0)
         for iy in range(1, nbinsY+1):
-            h2 = CombineOneBin2D(h2, 1, iy, 0, iy)
+            # seems to have some issues plotting x=1 bin
+            # use x=2 bin instead
+            h2 = CombineOneBin2D(h2, 2, iy, 0, iy)
         # correct the corner
-        h2 = CombineOneBin2D(h2, 1, 1, 0, 0)
-        h2 = CombineOneBin2D(h2, 1, nbinsY, 0, nbinsY+1)
+        h2 = CombineOneBin2D(h2, 2, 1, 0, 0)
+        h2 = CombineOneBin2D(h2, 2, nbinsY, 0, nbinsY+1)
         h2 = CombineOneBin2D(h2, nbinsX, 1, nbinsX+1, 0)
     return h2
 
@@ -728,7 +730,10 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
             # print(f"configuring z range to {zmin}, {zmax}")
             h1.GetZaxis().SetRangeUser(zmin, zmax)
             for h in myhistos:
+                h.GetZaxis().SetTitle("Events")
                 h.GetZaxis().SetRangeUser(zmin, zmax)
+                h.GetZaxis().SetLabelSize(0.04)
+                h.GetZaxis().SetTitleSize(0.05)
 
     if doth2 and ncolors != None:
         from utils.colors import colors
@@ -839,9 +844,10 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         else:
             # include overflow and underflow bins for 2D histograms
             if addOverflow:
-                # IncludeOverflow2D(myhistos_clone[idx], doUnderflow=addUnderflow)
-                absorb_overflow_into_edges(
-                    myhistos_clone[idx], xmin, xmax, ymin, ymax)
+                IncludeOverflow2D(
+                    myhistos_clone[idx], doUnderflow=True)
+                # absorb_overflow_into_edges(
+                #    myhistos_clone[idx], xmin, xmax, ymin, ymax)
         if idx < len(mycolors):
             myhistos_clone[idx].SetLineColor(mycolors[idx])
             myhistos_clone[idx].SetMarkerColor(mycolors[idx])
