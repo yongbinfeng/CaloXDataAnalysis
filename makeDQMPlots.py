@@ -32,6 +32,9 @@ plotdir = f"results/plots/Run{runNumber}/"
 htmldir = f"results/html/Run{runNumber}/"
 
 
+drsMin = 25
+drsMax = 35
+
 def makeConditionsPlots():
     plots = []
     outdir_plots = f"{plotdir}/Conditions_vs_Event"
@@ -365,11 +368,11 @@ def makeDRSStatsPlots():
     output_name = f"DRS_Boards_Run{runNumber}_Stats_mean"
     DrawHistos([h2_Cer_mean, h2_Cer_3mm_mean], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=50)
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=20, zmax=60)
     plots.append(output_name + "_Cer.png")
     DrawHistos([h2_Sci_mean, h2_Sci_3mm_mean], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=50)
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=20, zmax=60)
     plots.append(output_name + "_Sci.png")
 
     output_name = f"DRS_Boards_Run{runNumber}_Stats_max"
@@ -677,7 +680,7 @@ def makeDRS1DPlots():
             outdir_plots = f"{plotdir}/DRS_1D"
             DrawHistos([hist_C, hist_S], ["Cer", "Sci"], 1400, 2500, "DRS Output", 1, 1e12, "Counts",
                        output_name,
-                       dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True, extraToDraw=extraToDraw,
+                       dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True, extraToDraw=extraToDraw,
                        legendPos=(0.60, 0.78, 0.90, 0.68),
                        outdir=outdir_plots)
             plots.append(output_name + ".png")
@@ -803,24 +806,30 @@ def makeDRSPeakTSPlots():
             hists_Cer.append(hists["Cer"])
             hists_Sci.append(hists["Sci"])
 
-            DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], 0, 50, "Peak TS", 1, None, "Counts",
+            DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], drsMin-5, drsMax+5, "Time [ns]", 1, None, "Counts",
                        output_name,
-                       dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False, extraToDraw=extraToDraw,
+                       dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False, extraToDraw=extraToDraw,
                        outdir=outdir_plots, runNumber=runNumber)
             plots.append(output_name + ".png")
 
+            DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], drsMin-5, drsMax+5, "Peak TS", 1, None, "Counts",
+                       output_name + "_log",
+                       dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False, extraToDraw=extraToDraw,
+                       outdir=outdir_plots, runNumber=runNumber)
+            plots.append(output_name + "_log.png")
+
     # summary plots
     hist_Cer_Sum = ROOT.TH1F("hist_DRS_PeakTS_Cer_Sum",
-                             "DRS Peak TS Cer Sum", 1000, 0, 50)
+                             "DRS Peak TS Cer Sum", 1000, drsMin-5, drsMax+5)
     hist_Sci_Sum = ROOT.TH1F("hist_DRS_PeakTS_Sci_Sum",
-                             "DRS Peak TS Sci Sum", 1000, 0, 50)
+                             "DRS Peak TS Sci Sum", 1000, drsMin-5, drsMax+5)
     for hist in hists_Cer:
         if hist:
             hist_Cer_Sum.Add(hist)
     for hist in hists_Sci:
         if hist:
             hist_Sci_Sum.Add(hist)
-    DrawHistos([hist_Cer_Sum, hist_Sci_Sum], ["Cer", "Sci"], 0, 50, "Peak TS", 1, None, "Counts",
+    DrawHistos([hist_Cer_Sum, hist_Sci_Sum], ["Cer", "Sci"], (drsMin-5), (drsMax+5), "Time [ns]", 1, None, "Counts",
                "DRS_PeakTS_Sum",
                dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False,
                outdir=outdir_plots, runNumber=runNumber)
@@ -863,7 +872,7 @@ def makeDRSPeakTS2DPlots():
 
             hists.append(hist)
 
-            DrawHistos([hist], "", 0, 50, "Cer Peak TS", 0, 50, f"Sci Peak TS",
+            DrawHistos([hist], "", drsMin, drsMax, "Cer Time [ns]", drsMin, drsMax, f"Sci Time [ns]",
                        output_name,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
                        outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
@@ -872,13 +881,13 @@ def makeDRSPeakTS2DPlots():
 
     # summary plots
     h2 = ROOT.TH2F("hist_DRSPeak_Cer_vs_Sci_Sum",
-                   "DRS Peak TS Cer vs Sci Sum", 1000, 0, 50, 1000, 0, 50)
+                   "DRS Peak TS Cer vs Sci Sum", 1000, drsMin, drsMax, 1000, drsMin, drsMax)
     for hist in hists:
         if hist:
             h2.Add(hist)
 
     output_name = "DRS_PeakTS_Cer_vs_Sci_Sum"
-    DrawHistos([h2], "", 0, 50, "Cer Peak TS", 0, 50, f"Sci Peak TS",
+    DrawHistos([h2], "", drsMin, drsMax, "Cer Time [ns]", drsMin, drsMax, f"Sci Time [ns]",
                output_name,
                dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
                outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
