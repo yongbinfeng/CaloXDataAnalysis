@@ -1,3 +1,5 @@
+from utils.channel_map import findDRSTriggerMap, findTimeReferenceDelay
+
 def number2string(n):
     s = str(n)
     return s.replace('-', 'm').replace('.', 'p')
@@ -26,10 +28,9 @@ def IsScanRun(runNumber):
     return runNumber in scanruns
 
 
-def getDataFile(runNumber):
+def getDataFile(runNumber, jsonFile):
     runNum = str(runNumber)
     import json
-    jsonFile = "data/datafiles.json"
     with open(jsonFile, 'r') as f:
         data = json.load(f)
     if runNum in data:
@@ -170,7 +171,7 @@ def preProcessDRSBoards(rdf, debug=False):
     import re
     # Get the list of all branch names
     branches = [str(b) for b in rdf.GetColumnNames()]
-    pattern = re.compile(r"DRS.*Group.*Channel.*")
+    pattern = re.compile(r"^DRS_Board\d+_Group\d+_Channel\d+$")
     drs_branches = [b for b in branches if pattern.search(b)]
     stats = getBranchStats(rdf, drs_branches)
     print("DRS branches statistics:")
@@ -344,10 +345,10 @@ def prepareDRSStats(rdf, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
     return rdf
 
 
-def loadRDF(runNumber, firstEvent=0, lastEvent=-1):
+def loadRDF(runNumber, firstEvent=0, lastEvent=-1, jsonFile="data/datafiles.json"):
     import ROOT
     # Open the input ROOT file
-    ifile = getDataFile(runNumber)
+    ifile = getDataFile(runNumber, jsonFile)
     infile = ROOT.TFile(ifile, "READ")
     rdf_org = ROOT.RDataFrame("EventTree", infile)
     nevents = rdf_org.Count().GetValue()
@@ -375,3 +376,18 @@ def getRunInfo(runNumber):
     benergy = int(runinfo[runNum]['beam energy'].replace('GeV', ''))
     # print(f"Run {runNum}: beam type = {btype}, beam energy = {benergy} GeV")
     return btype, benergy
+
+def preProcessTimeCorrections(rdf, DRSBoards, runNumber):
+    for _, DRSBoard in DRSBoards.items():
+        for chan in DRSBoard:
+            channelName = chan.GetChannelName()
+            triggerName = findDRSTriggerMap(channelName, run=runNumber)
+            triggerDelay = findTimeReferenceDelay(triggerName, run=runNumber)
+            channelTimingName = chan.GetChannelTimeName()
+            triggerTimingName = f"{triggerName}_LP2_50"
+            # rdf = rdf.Define(f"{channelTimingName}_goodTime", f"{channelTimingName} - {triggerTimingName} + {triggerDelay}")
+            rdf = rdf.Define(f"{channelTimingName}_goodTime", f"{channelTimingName} - {triggerTimingName} + {triggerDelay} - (DRS_Board4_Group3_Channel6_LP2_50 - DRS_Board4_Group3_Channel8_LP2_50 - 1.735) + 35.0")
+
+    rdf = rdf.Filter(f"DRS_Board4_Group3_Channel6_LP2_50 > 1")
+
+    return rdf
