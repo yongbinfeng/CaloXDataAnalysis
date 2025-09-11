@@ -383,7 +383,9 @@ def preProcessTimeCorrections(rdf, DRSBoards, runNumber):
             triggerDelay = findTimeReferenceDelay(triggerName, run=runNumber)
             channelTimingName = chan.GetChannelTimeName()
             triggerTimingName = f"{triggerName}_LP2_50"
+            # rdf = rdf.Define(f"{channelTimingName}_goodTime", f"{channelTimingName} - {triggerTimingName} + {triggerDelay}")
+            rdf = rdf.Define(f"{channelTimingName}_goodTime", f"{channelTimingName} - {triggerTimingName} + {triggerDelay} - (DRS_Board4_Group3_Channel6_LP2_50 - DRS_Board4_Group3_Channel8_LP2_50 - 1.735) + 35.0")
 
-            rdf = rdf.Define(f"{channelTimingName}_goodTime", f"{channelTimingName} - {triggerTimingName} + {triggerDelay} + 80")
+    rdf = rdf.Filter(f"DRS_Board4_Group3_Channel6_LP2_50 > 1")
 
     return rdf

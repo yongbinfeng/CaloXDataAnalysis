@@ -164,12 +164,12 @@ def collectDRSStats():
             channelTimingName = chan.GetChannelTimeName()
 
             stats[channelName] = (
-                rdf.Filter(f"{channelTimingName}>0").Mean(f"{channelTimingName}_goodTime"),
+                rdf.Filter(f"{channelTimingName} > 1").Mean(f"{channelTimingName}_goodTime"),
                 rdf.Max(f"{channelTimingName}_goodTime"),
-                rdf.Filter(f"{channelTimingName}>0").Mean(f"{channelName}_baseline_RMS"),
-                rdf.Filter(f"{channelTimingName}>0").Mean(f"{channelName}_integral"),
-                rdf.Filter(f"{channelTimingName}>0").Mean(f"{channelName}_amp"),
-                rdf.Filter(f"{channelTimingName}>0").Mean(f"{channelName}_risetime")
+                rdf.Filter(f"{channelTimingName} > 1").Mean(f"{channelName}_baseline_RMS"),
+                rdf.Filter(f"{channelTimingName} > 1").Mean(f"{channelName}_integral"),
+                rdf.Filter(f"{channelTimingName} > 1").Mean(f"{channelName}_amp"),
+                rdf.Filter(f"{channelTimingName} > 1").Mean(f"{channelName}_risetime")
                 # rdf.Filter(f"{channelName} >= {saturation_value}").Count()
             )
 
@@ -342,7 +342,7 @@ def makeDRS1DPlots():
                 # hists1d_DRS.append(hist)
 
                 channelTimingName = chan.GetChannelTimeName()
-                hist_time = rdf.Histo1D((
+                hist_time = rdf.Filter(f"{channelTimingName} > 1").Histo1D((
                     f"hist_DRS_Board{boardNo}_{var}_Time_{sTowerX}_{sTowerY}",
                     f"DRS Board {boardNo} - {var} Time iTowerX {sTowerX} iTowerY {sTowerY};{var} Time (ns);Counts",
                     1000, 0.0, 100.0),
@@ -594,13 +594,14 @@ def checkDRSPeakTS():
                     continue
 
                 channelName = chan_DRS.GetChannelName()
+                channelTimingName = chan_DRS.GetChannelTimeName()
                 channelNames[var] = channelName
 
-                h1_DRS_PeakTS = rdf.Histo1D((
+                h1_DRS_PeakTS = rdf.Filter(f"{channelTimingName} > 1").Histo1D((
                     f"hist_DRS_PeakTS_Board{boardNo}_peakTS_{sTowerX}_{sTowerY}_{var}",
                     f"DRS Peak TS for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var};Peak TS;Counts",
-                    1000, 0, 300),
-                    channelName + "_LP2_50_goodTime"
+                    1000, 0, 100),
+                    channelTimingName + "_goodTime"
                 )
                 h1s_DRSPeakTS[var].append(h1_DRS_PeakTS)
 
@@ -609,12 +610,12 @@ def checkDRSPeakTS():
                     f"Warning: Not enough channels found for Board{boardNo}, Tower({sTowerX}, {sTowerY})")
                 continue
 
-            h2_DRSPeak_Cer_vs_Sci = rdf.Histo2D((
+            h2_DRSPeak_Cer_vs_Sci = rdf.Filter(f"{channelNames["Cer"]}_LP2_50_goodTime > 1 && {channelNames["Sci"]}_LP2_50_goodTime > 1").Histo2D((
                 f"hist_DRSPeak_Cer_vs_Sci_Board{boardNo}_{sTowerX}_{sTowerY}",
                 f"DRS Peak TS - CER vs SCI for Board{boardNo}, Tower({sTowerX}, {sTowerY});CER Peak TS;SCI Peak TS",
-                1000, 0, 300, 1000, 0, 300),
-                channelNames["Cer"] + "_LP2_50_goodTime",
-                channelNames["Sci"] + "_LP2_50_goodTime"
+                1000, 0, 100, 1000, 0, 100),
+                f"{channelNames["Cer"]}_LP2_50_goodTime",
+                f"{channelNames["Sci"]}_LP2_50_goodTime"
             )
             h2s_DRSPeakTS_Cer_vs_Sci.append(h2_DRSPeak_Cer_vs_Sci)
     return h1s_DRSPeakTS["Cer"], h1s_DRSPeakTS["Sci"], h2s_DRSPeakTS_Cer_vs_Sci
