@@ -20,10 +20,10 @@ def DrawFERSBoards(run=316):
     """
     Draws the FERS boards for a given run in a TH2D
     """
-    fers_boards = buildFERSBoards(run)
+    fersboards = buildFERSBoards(run)
 
     [h2_Cer, h2_Cer_3mm], [h2_Sci, h2_Sci_3mm] = visualizeFERSBoards(
-        fers_boards, suffix=f"Run{run}")
+        fersboards, suffix=f"Run{run}")
 
     output_dir = f"results/plots/Run{run}/ChannelMaps/"
     output_name = f"FERS_Boards_Run{run}"

@@ -4,7 +4,7 @@ sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
 
 
-def visualizeFERSBoards(fers_boards, valuemaps=None, suffix="", useHG=True):
+def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", useHG=True):
     xmax = 14
     xmin = -14
     ymax = 10
@@ -18,7 +18,7 @@ def visualizeFERSBoards(fers_boards, valuemaps=None, suffix="", useHG=True):
     h2_Sci_3mm = ROOT.TH2D(f"h_FERSBoards_Sci_3mm_{suffix}", f"FERS Board Sci Channels for {suffix} (3mm)",
                            int(xmax - xmin), xmin, xmax, int(ymax - ymin) * 4, ymin, ymax)
 
-    for _, FERSBoard in fers_boards.items():
+    for FERSBoard in fersboards.values():
         for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
             channel_Cer = FERSBoard.GetChannelByTower(
                 iTowerX, iTowerY, isCer=True)

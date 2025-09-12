@@ -70,11 +70,13 @@ class FERSChannel(CaloXChannel):
     def GetLGChannelName(self):
         return f"FERS_Board{self.boardNo}_energyLG_{self.channelNo}"
 
-    def GetChannelName(self, useHG=True):
-        if useHG:
-            return self.GetHGChannelName()
-        else:
-            return self.GetLGChannelName()
+    def GetChannelName(self, useHG=True, pdsub=False, calib=False):
+        channelName = self.GetHGChannelName() if useHG else self.GetLGChannelName()
+        if pdsub:
+            channelName += "_pdsub"
+        if calib:
+            channelName += "_calib"
+        return channelName
 
 
 class DRSChannel(CaloXChannel):
@@ -103,8 +105,11 @@ class DRSChannel(CaloXChannel):
             self.isAmplified, self.is6mm
         )
 
-    def GetChannelName(self):
-        return f"DRS_Board{self.boardNo}_Group{self.groupNo}_Channel{self.channelNo}"
+    def GetChannelName(self, blsubtracted=False):
+        channelName = f"DRS_Board{self.boardNo}_Group{self.groupNo}_Channel{self.channelNo}"
+        if blsubtracted:
+            channelName += "_blsub"
+        return channelName
 
 
 class Board(object):
@@ -284,6 +289,36 @@ class FERSBoard(Board):
     def Is3mm(self):
         return not self.Is6mm()
 
+    def GetEnergyMaxName(self, useHG=True, isCer=True):
+        type_str = "Cer" if isCer else "Sci"
+        hg_lg_str = "HG" if useHG else "LG"
+        # name is based on the channel name
+        # "FERS_Board{self.boardNo}_energyHG_{self.channelNo}"
+        return f"FERS_Board{self.boardNo}_energy{hg_lg_str}_{type_str}_max"
+
+    def GetEnergySumName(self, useHG=True, isCer=True, pdsub=False, calib=False):
+        type_str = "Cer" if isCer else "Sci"
+        hg_lg_str = "HG" if useHG else "LG"
+        sumname = f"FERS_Board{self.boardNo}_energy{hg_lg_str}_{type_str}"
+        if pdsub:
+            sumname += "_pdsub"
+        if calib:
+            sumname += "_calib"
+        sumname += "_sum"
+        return sumname
+
+    def GetSipmHVName(self):
+        return f"FERS_Board{self.boardNo}_SipmHV"
+
+    def GetSipmIName(self):
+        return f"FERS_Board{self.boardNo}_SipmI"
+
+    def GetTempDETName(self):
+        return f"FERS_Board{self.boardNo}_TempDET"
+
+    def GetTempFPGAName(self):
+        return f"FERS_Board{self.boardNo}_TempFPGA"
+
 
 class DRSBoard(Board):
     """
@@ -352,6 +387,55 @@ class DRSBoard(Board):
                     return
         print(
             f"\033[91mWarning: Channel Group{groupNo} Channel{chanNo} not found on board {self.boardNo}.\033[0m")
+
+
+class FERSBoards(dict):
+    """
+    A dictionary to hold multiple FERS boards.
+    Key: boardNo, Value: FERSBoard object
+    """
+
+    def __init__(self):
+        self.boards = {}
+
+    def __setitem__(self, key, value):
+        if not isinstance(value, FERSBoard):
+            raise ValueError("Value must be a FERSBoard instance.")
+        self.boards[key] = value
+
+    def __getitem__(self, key):
+        return self.boards[key]
+
+    def __delitem__(self, key):
+        del self.boards[key]
+
+    def __contains__(self, key):
+        return key in self.boards
+
+    def __iter__(self):
+        return iter(self.boards)
+
+    def __len__(self):
+        return len(self.boards)
+
+    def values(self):
+        return self.boards.values()
+
+    def GetEnergyMaxName(self, useHG=True, isCer=True):
+        type_str = "Cer" if isCer else "Sci"
+        hg_lg_str = "HG" if useHG else "LG"
+        return f"FERS_energy{hg_lg_str}_{type_str}_max"
+
+    def GetEnergySumName(self, useHG=True, isCer=True, pdsub=False, calib=False):
+        type_str = "Cer" if isCer else "Sci"
+        hg_lg_str = "HG" if useHG else "LG"
+        sumname = f"FERS_energy{hg_lg_str}_{type_str}"
+        if pdsub:
+            sumname += "_pdsub"
+        if calib:
+            sumname += "_calib"
+        sumname += "_sum"
+        return sumname
 
 
 # physical channels to the readout channel names

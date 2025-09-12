@@ -2,11 +2,11 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from myFunction import DrawHistos
-from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
+from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
 from utils.utils import number2string, round_up_to_1eN
 from utils.html_generator import generate_html
 from utils.visualization import visualizeFERSBoards
-from utils.validateMap import DrawFERSBoards, DrawDRSBoards
+from channels.validateMap import DrawFERSBoards, DrawDRSBoards
 from utils.colors import colors
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from utils.parser import get_args
@@ -20,7 +20,7 @@ args = get_args()
 runNumber = args.run
 
 DRSBoards = buildDRSBoards(run=runNumber)
-FERSBoards = buildFERSBoards(run=runNumber)
+fersboards = buildFERSBoards(run=runNumber)
 time_reference_channels = buildTimeReferenceChannels(run=runNumber)
 hodo_trigger_channels = buildHodoTriggerChannels(run=runNumber)
 hodo_pos_channels = buildHodoPosChannels(run=runNumber)
@@ -47,12 +47,12 @@ def makeConditionsPlots():
 
     legends = []
 
-    for _, FERSBoard in FERSBoards.items():
-        boardNo = FERSBoard.boardNo
-        hist_SipmHV_name = f"hist_FERS_Board{boardNo}_SipmHV_vs_Event"
-        hist_SipmI_name = f"hist_FERS_Board{boardNo}_SipmI_vs_Event"
-        hist_TempDET_name = f"hist_FERS_Board{boardNo}_TempDET_vs_Event"
-        hist_TempFPGA_name = f"hist_FERS_Board{boardNo}_TempFPGA_vs_Event"
+    for fersboard in fersboards.values():
+        boardNo = fersboard.boardNo
+        hist_SipmHV_name = f"hist_{fersboard.GetSipmHVName()}_vs_Event"
+        hist_SipmI_name = f"hist_{fersboard.GetSipmIName()}_vs_Event"
+        hist_TempDET_name = f"hist_{fersboard.GetTempDETName()}_vs_Event"
+        hist_TempFPGA_name = f"hist_{fersboard.GetTempFPGAName()}_vs_Event"
 
         hist_SipmHV = infile.Get(hist_SipmHV_name)
         hist_SipmI = infile.Get(hist_SipmI_name)
@@ -64,20 +64,21 @@ def makeConditionsPlots():
                 f"Warning: Histograms {hist_SipmHV_name}, {hist_SipmI_name}, {hist_TempDET_name}, or {hist_TempFPGA_name} not found in {infile_name}")
             continue
 
+        print("hist_SipmHV:", hist_SipmHV)
         hprofile_SipmHV = hist_SipmHV.ProfileX(
-            f"hprof_FERS_Board{boardNo}_SipmHV_vs_Event")
+            f"hprof_{fersboard.GetSipmHVName()}_vs_Event")
         hprofiles_SipmHV.append(hprofile_SipmHV)
 
         hprofile_SipmI = hist_SipmI.ProfileX(
-            f"hprof_FERS_Board{boardNo}_SipmI_vs_Event")
+            f"hprof_{fersboard.GetSipmIName()}_vs_Event")
         hprofiles_SipmI.append(hprofile_SipmI)
 
         hprofile_TempDET = hist_TempDET.ProfileX(
-            f"hprof_FERS_Board{boardNo}_TempDET_vs_Event")
+            f"hprof_{fersboard.GetTempDETName()}_vs_Event")
         hprofiles_TempDET.append(hprofile_TempDET)
 
         hprofile_TempFPGA = hist_TempFPGA.ProfileX(
-            f"hprof_FERS_Board{boardNo}_TempFPGA_vs_Event")
+            f"hprof_{fersboard.GetTempFPGAName()}_vs_Event")
         hprofiles_TempFPGA.append(hprofile_TempFPGA)
 
         legends.append(str(boardNo))
@@ -91,7 +92,7 @@ def makeConditionsPlots():
         extraToDraw.SetBorderSize(0)
         extraToDraw.SetTextFont(42)
         extraToDraw.SetTextSize(0.04)
-        extraToDraw.AddText(f"Board: {FERSBoard.boardNo}")
+        extraToDraw.AddText(f"Board: {fersboard.boardNo}")
 
         # output_name = f"Conditions_Board{boardNo}_SipmHV_vs_Event"
         # DrawHistos([hist_SipmHV], f"", 0, nEvents, "Event", 26, 29, "Voltage (V)",
@@ -122,8 +123,10 @@ def makeConditionsPlots():
         # plots.append(output_name + ".png")
 
     # Draw the profiles
+    nEvents = hprofiles_SipmHV[0].GetXaxis().GetXmax()
     legendPos = [0.3, 0.7, 0.9, 0.9]
     output_name = "Conditions_SipmHV_vs_Event"
+    print("hprofiles_SipmHV:", hprofiles_SipmHV)
     DrawHistos(hprofiles_SipmHV, legends, 0, nEvents, "Event", 26, 29, "Voltage (V)",
                output_name,
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
@@ -163,9 +166,9 @@ def makeFERS1DPlots():
     infile_name = f"{rootdir}fers_all_channels_1D.root"
     infile = ROOT.TFile(infile_name, "READ")
     outdir_plots = f"{plotdir}/FERS_1D"
-    for _, FERSBoard in FERSBoards.items():
-        boardNo = FERSBoard.boardNo
-        for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
+    for fersboard in fersboards.values():
+        boardNo = fersboard.boardNo
+        for iTowerX, iTowerY in fersboard.GetListOfTowers():
             sTowerX = number2string(iTowerX)
             sTowerY = number2string(iTowerY)
 
@@ -185,13 +188,13 @@ def makeFERS1DPlots():
             extraToDraw.SetTextFont(42)
             extraToDraw.SetTextSize(0.04)
             extraToDraw.AddText(
-                f"Board: {FERSBoard.boardNo}")
+                f"Board: {fersboard.boardNo}")
             extraToDraw.AddText(f"Tower X: {iTowerX}")
             extraToDraw.AddText(f"Tower Y: {iTowerY}")
             extraToDraw.AddText(
-                f"Cer Channel: {FERSBoard.GetChannelByTower(iTowerX, iTowerY, isCer=True).channelNo}")
+                f"Cer Channel: {fersboard.GetChannelByTower(iTowerX, iTowerY, isCer=True).channelNo}")
             extraToDraw.AddText(
-                f"Sci Channel: {FERSBoard.GetChannelByTower(iTowerX, iTowerY, isCer=False).channelNo}")
+                f"Sci Channel: {fersboard.GetChannelByTower(iTowerX, iTowerY, isCer=False).channelNo}")
 
             output_name = f"Energy_Board{boardNo}_iTowerX{sTowerX}_iTowerY{sTowerY}"
             DrawHistos([hist_C, hist_S], ["Cer", "Sci"], 0, 1000, "Energy HG", 1, 1e5, "Counts",
@@ -254,21 +257,21 @@ def makeFERSStatsPlots(includePedestals=False):
                 channelName, None) if includePedestals else 0.
 
     [h2_Cer_HG_mean, h2_Cer_3mm_HG_mean], [h2_Sci_HG_mean, h2_Sci_3mm_HG_mean] = visualizeFERSBoards(
-        FERSBoards, valuemaps_HG_mean, suffix=f"Run{runNumber}_HG_mean", useHG=True)
+        fersboards, valuemaps_HG_mean, suffix=f"Run{runNumber}_HG_mean", useHG=True)
     [h2_Cer_HG_max, h2_Cer_3mm_HG_max], [h2_Sci_HG_max, h2_Sci_3mm_HG_max] = visualizeFERSBoards(
-        FERSBoards, valuemaps_HG_max, suffix=f"Run{runNumber}_HG_max", useHG=True)
+        fersboards, valuemaps_HG_max, suffix=f"Run{runNumber}_HG_max", useHG=True)
     [h2_Cer_HG_satfreq, h2_Cer_3mm_HG_satfreq], [h2_Sci_HG_satfreq, h2_Sci_3mm_HG_satfreq] = visualizeFERSBoards(
-        FERSBoards, valuemaps_HG_satfreq, suffix=f"Run{runNumber}_HG_satfreq", useHG=True)
+        fersboards, valuemaps_HG_satfreq, suffix=f"Run{runNumber}_HG_satfreq", useHG=True)
     [h2_Cer_HG_pedestal, h2_Cer_3mm_HG_pedestal], [h2_Sci_HG_pedestal, h2_Sci_3mm_HG_pedestal] = visualizeFERSBoards(
-        FERSBoards, valuemaps_HG_pedestal, suffix=f"Run{runNumber}_HG_pedestal", useHG=True)
+        fersboards, valuemaps_HG_pedestal, suffix=f"Run{runNumber}_HG_pedestal", useHG=True)
     [h2_Cer_LG_mean, h2_Cer_3mm_LG_mean], [h2_Sci_LG_mean, h2_Sci_3mm_LG_mean] = visualizeFERSBoards(
-        FERSBoards, valuemaps_LG_mean, suffix=f"Run{runNumber}_LG_mean", useHG=False)
+        fersboards, valuemaps_LG_mean, suffix=f"Run{runNumber}_LG_mean", useHG=False)
     [h2_Cer_LG_max, h2_Cer_3mm_LG_max], [h2_Sci_LG_max, h2_Sci_3mm_LG_max] = visualizeFERSBoards(
-        FERSBoards, valuemaps_LG_max, suffix=f"Run{runNumber}_LG_max", useHG=False)
+        fersboards, valuemaps_LG_max, suffix=f"Run{runNumber}_LG_max", useHG=False)
     [h2_Cer_LG_satfreq, h2_Cer_3mm_LG_satfreq], [h2_Sci_LG_satfreq, h2_Sci_3mm_LG_satfreq] = visualizeFERSBoards(
-        FERSBoards, valuemaps_LG_satfreq, suffix=f"Run{runNumber}_LG_satfreq", useHG=False)
+        fersboards, valuemaps_LG_satfreq, suffix=f"Run{runNumber}_LG_satfreq", useHG=False)
     [h2_Cer_LG_pedestal, h2_Cer_3mm_LG_pedestal], [h2_Sci_LG_pedestal, h2_Sci_3mm_LG_pedestal] = visualizeFERSBoards(
-        FERSBoards, valuemaps_LG_pedestal, suffix=f"Run{runNumber}_LG_pedestal", useHG=False)
+        fersboards, valuemaps_LG_pedestal, suffix=f"Run{runNumber}_LG_pedestal", useHG=False)
 
     output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_mean"
     DrawHistos([h2_Cer_HG_mean, h2_Cer_3mm_HG_mean], "", xmin, xmax, "iX", ymin,
@@ -368,26 +371,30 @@ def makeFERSMaxValuePlots():
     hists_board_sci_HG_max = []
     hists_board_sci_LG_max = []
     legends = []
-    for _, FERSBoard in FERSBoards.items():
-        boardNo = FERSBoard.boardNo
+    for fersboard in fersboards.values():
+        boardNo = fersboard.boardNo
         hist_board_cer_HG_max = infile.Get(
-            f"hist_FERS_Board{boardNo}_energy_cer_HG_max")
+            f"hist_{fersboard.GetEnergyMaxName(useHG=True, isCer=True)}")
         hist_board_sci_HG_max = infile.Get(
-            f"hist_FERS_Board{boardNo}_energy_sci_HG_max")
+            f"hist_{fersboard.GetEnergyMaxName(useHG=True, isCer=False)}")
         hist_board_cer_LG_max = infile.Get(
-            f"hist_FERS_Board{boardNo}_energy_cer_LG_max")
+            f"hist_{fersboard.GetEnergyMaxName(useHG=False, isCer=True)}")
         hist_board_sci_LG_max = infile.Get(
-            f"hist_FERS_Board{boardNo}_energy_sci_LG_max")
+            f"hist_{fersboard.GetEnergyMaxName(useHG=False, isCer=False)}")
         hists_board_cer_HG_max.append(hist_board_cer_HG_max)
         hists_board_sci_HG_max.append(hist_board_sci_HG_max)
         hists_board_cer_LG_max.append(hist_board_cer_LG_max)
         hists_board_sci_LG_max.append(hist_board_sci_LG_max)
         legends.append(str(boardNo))
 
-    hist_cer_HG_max = infile.Get("hist_FERS_energy_cer_HG_max")
-    hist_sci_HG_max = infile.Get("hist_FERS_energy_sci_HG_max")
-    hist_cer_LG_max = infile.Get("hist_FERS_energy_cer_LG_max")
-    hist_sci_LG_max = infile.Get("hist_FERS_energy_sci_LG_max")
+    hist_cer_HG_max = infile.Get(
+        f"hist_{fersboards.GetEnergyMaxName(useHG=True, isCer=True)}")
+    hist_sci_HG_max = infile.Get(
+        f"hist_{fersboards.GetEnergyMaxName(useHG=True, isCer=False)}")
+    hist_cer_LG_max = infile.Get(
+        f"hist_{fersboards.GetEnergyMaxName(useHG=False, isCer=True)}")
+    hist_sci_LG_max = infile.Get(
+        f"hist_{fersboards.GetEnergyMaxName(useHG=False, isCer=False)}")
 
     output_name = "FERS_Boards_CerEnergyHG_max"
     DrawHistos(hists_board_cer_HG_max, legends, xmin, xmax, f"HG Cer Max (Board)", 1, None, "Events",
@@ -469,13 +476,13 @@ def makeFERS2DPlots():
     outdir_plots = f"{plotdir}/FERS_2D"
     infile_name = f"{rootdir}/fers_all_channels_2D.root"
     infile = ROOT.TFile(infile_name, "READ")
-    for _, FERSBoard in FERSBoards.items():
-        boardNo = FERSBoard.boardNo
-        for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
+    for fersboard in fersboards.values():
+        boardNo = fersboard.boardNo
+        for iTowerX, iTowerY in fersboard.GetListOfTowers():
             sTowerX = number2string(iTowerX)
             sTowerY = number2string(iTowerY)
             for var in ["Cer", "Sci"]:
-                chan = FERSBoard.GetChannelByTower(
+                chan = fersboard.GetChannelByTower(
                     iTowerX, iTowerY, isCer=(var == "Cer"))
                 hist_name = f"hist_FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}_hg_vs_lg"
                 hist = infile.Get(hist_name)
@@ -487,7 +494,7 @@ def makeFERS2DPlots():
                 extraToDraw.SetTextFont(42)
                 extraToDraw.SetTextSize(0.04)
                 extraToDraw.AddText(
-                    f"Board: {FERSBoard.boardNo}")
+                    f"Board: {fersboard.boardNo}")
                 extraToDraw.AddText(f"Tower X: {iTowerX}")
                 extraToDraw.AddText(f"Tower Y: {iTowerY}")
                 extraToDraw.AddText(f"{var} Channel: {chan.channelNo}")
@@ -510,13 +517,13 @@ def trackFERSPlots():
     outdir_plots = f"{plotdir}/FERS_vs_Event"
     infile_name = f"{rootdir}/fers_all_channels_2D_vs_event.root"
     infile = ROOT.TFile(infile_name, "READ")
-    for _, FERSBoard in FERSBoards.items():
-        boardNo = FERSBoard.boardNo
-        for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
+    for fersboard in fersboards.values():
+        boardNo = fersboard.boardNo
+        for iTowerX, iTowerY in fersboard.GetListOfTowers():
             sTowerX = number2string(iTowerX)
             sTowerY = number2string(iTowerY)
             for var in ["Cer", "Sci"]:
-                chan = FERSBoard.GetChannelByTower(
+                chan = fersboard.GetChannelByTower(
                     iTowerX, iTowerY, isCer=(var == "Cer"))
                 hist_name = f"hist_FERS_Board{boardNo}_{var}_vs_Event_{sTowerX}_{sTowerY}"
                 hist = infile.Get(hist_name)
@@ -533,7 +540,7 @@ def trackFERSPlots():
                 extraToDraw.SetTextFont(42)
                 extraToDraw.SetTextSize(0.04)
                 extraToDraw.AddText(
-                    f"Board: {FERSBoard.boardNo}")
+                    f"Board: {fersboard.boardNo}")
                 extraToDraw.AddText(f"Tower X: {iTowerX}")
                 extraToDraw.AddText(f"Tower Y: {iTowerY}")
                 extraToDraw.AddText(f"{var} Channel: {chan.channelNo}")
