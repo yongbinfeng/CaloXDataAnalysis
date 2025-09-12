@@ -1,5 +1,4 @@
-import numpy as np
-from utils.CaloXChannel import FERSBoard, DRSBoard
+from channels.CaloXChannel import FERSBoard, DRSBoard, DRSChannel, drs_map
 import json
 
 f_scanruns = "data/scanruns.json"
@@ -286,7 +285,6 @@ def buildDRSBoards(run=316):
 
 def buildDRSBoardTestBeam(boardNo=4):
     # hacky way to build the confusing DRS mapping for the test beam
-    from utils.CaloXChannel import DRSChannel, drs_map
     if boardNo == 4:
         channels_DRS = []
         for ix in range(0, 4):

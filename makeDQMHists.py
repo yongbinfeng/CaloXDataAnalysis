@@ -4,7 +4,7 @@ from utils.dataloader import getRunInfo, loadRDF
 from variables.fers import vectorizeFERS, getFERSBoardMax
 from variables.drs import preProcessDRSBoards, getDRSStats
 from utils.utils import number2string
-from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
+from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
 import ROOT
 import os
 from utils.timing import auto_timer  # noqa
