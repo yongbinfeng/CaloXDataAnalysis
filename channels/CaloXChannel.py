@@ -6,25 +6,21 @@ class CaloXChannel(object):
     A class to represent a channel in the FERS system.
     """
 
-    def __init__(self, iTowerX: float, iTowerY: float, iBoardX: int, iBoardY: int, isCer: bool):
+    def __init__(self, iTowerX: float, iTowerY: float, isCer: bool):
         self.iTowerX = iTowerX
         self.iTowerY = iTowerY
-        self.iBoardX = iBoardX
-        self.iBoardY = iBoardY
         self.isCer = isCer
 
     def __str__(self):
         return (f"CaloXChannel(iTowerX={self.iTowerX}, "
-                f"iTowerY={self.iTowerY}, iBoardX={self.iBoardX}, "
-                f"iBoardY={self.iBoardY}, isCer={self.isCer}")
+                f"iTowerY={self.iTowerY}, isCer={self.isCer})")
 
     def __copy__(self):
         """
         Create a shallow copy of the channel.
         """
         return CaloXChannel(
-            self.iTowerX, self.iTowerY, self.iBoardX, self.iBoardY,
-            self.isCer
+            self.iTowerX, self.iTowerY, self.isCer
         )
 
     def __eq__(self, other):
@@ -32,8 +28,6 @@ class CaloXChannel(object):
             return NotImplemented
         return (self.iTowerX == other.iTowerX and
                 self.iTowerY == other.iTowerY and
-                self.iBoardX == other.iBoardX and
-                self.iBoardY == other.iBoardY and
                 self.isCer == other.isCer)
 
     def isCer(self):
@@ -44,8 +38,8 @@ class CaloXChannel(object):
 
 
 class FERSChannel(CaloXChannel):
-    def __init__(self, iTowerX: float, iTowerY: float, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, boardNo: int):
-        super().__init__(iTowerX, iTowerY, iBoardX, iBoardY, isCer)
+    def __init__(self, iTowerX: float, iTowerY: float, isCer: bool, channelNo: int, boardNo: int):
+        super().__init__(iTowerX, iTowerY, isCer)
         self.channelNo = channelNo  # FERS channel number
         self.boardNo = boardNo  # FERS board number
 
@@ -60,7 +54,7 @@ class FERSChannel(CaloXChannel):
         Create a shallow copy of the FERS channel.
         """
         return FERSChannel(
-            self.iTowerX, self.iTowerY, self.iBoardX, self.iBoardY,
+            self.iTowerX, self.iTowerY,
             self.isCer, self.channelNo, self.boardNo
         )
 
@@ -80,8 +74,8 @@ class FERSChannel(CaloXChannel):
 
 
 class DRSChannel(CaloXChannel):
-    def __init__(self, iTowerX: float, iTowerY: float, iBoardX: int, iBoardY: int, isCer: bool, channelNo: int, groupNo: int, boardNo: int, isAmplified: bool = False, is6mm: bool = True):
-        super().__init__(iTowerX, iTowerY, iBoardX, iBoardY, isCer)
+    def __init__(self, iTowerX: float, iTowerY: float, isCer: bool, channelNo: int, groupNo: int, boardNo: int, isAmplified: bool = False, is6mm: bool = True):
+        super().__init__(iTowerX, iTowerY, isCer)
         self.channelNo = channelNo
         self.groupNo = groupNo
         self.boardNo = boardNo
@@ -100,16 +94,24 @@ class DRSChannel(CaloXChannel):
         Create a shallow copy of the DRS channel.
         """
         return DRSChannel(
-            self.iTowerX, self.iTowerY, self.iBoardX, self.iBoardY,
-            self.isCer, self.channelNo, self.groupNo, self.boardNo,
+            self.iTowerX, self.iTowerY, self.isCer, self.channelNo, self.groupNo, self.boardNo,
             self.isAmplified, self.is6mm
         )
 
-    def GetChannelName(self, blsubtracted=False):
+    def GetChannelName(self, blsub=False):
         channelName = f"DRS_Board{self.boardNo}_Group{self.groupNo}_Channel{self.channelNo}"
-        if blsubtracted:
+        if blsub:
             channelName += "_blsub"
         return channelName
+
+    def GetChannelSumName(self):
+        return self.GetChannelName(blsub=True) + "_sum"
+
+    def GetChannelPeakName(self):
+        return self.GetChannelName(blsub=True) + "_peak"
+
+    def GetChannelPeakTSName(self):
+        return self.GetChannelName(blsub=True) + "_peakTS"
 
 
 class Board(object):
@@ -120,8 +122,6 @@ class Board(object):
     def __init__(self, boardNo):
         self.boardNo = boardNo  # Board number
         self.channels = []  # List of channels on the board
-        # channels are organized as 2D list of CaloXChannel objects
-        # by (iBoardX, iBoardY)
 
     def __str__(self):
         s = f"Board Number: {self.boardNo}\n"
@@ -134,24 +134,6 @@ class Board(object):
         for row in self.channels:
             for channel in row:
                 yield channel
-
-    def __getitem__(self, idx):
-        """
-        Allow index access to the board's channels.
-        Usage: board[x, y] returns the channel at (x, y).
-        """
-        try:
-            if isinstance(idx, tuple) and len(idx) == 2:
-                iBoardX, iBoardY = idx
-                return self.channels[iBoardX][iBoardY]
-            else:
-                return self.channels[idx]
-        except IndexError:
-            if len(self.channels) == 0 or len(self.channels[0]) == 0:
-                raise IndexError("Board has no channels defined.")
-            else:
-                raise IndexError(
-                    f"Channel not found for {idx}, Range is (0-{len(self.channels)-1}, 0-{len(self.channels[0])-1})")
 
     def GetChannelByTower(self, iTowerX, iTowerY, isCer=False):
         """
@@ -234,7 +216,6 @@ class Board(object):
     def MoveTo(self, iTowerX, iTowerY):
         """
         Move the channels on the board to a new position.
-        (iBoardX=0, iBoardY=0) from the original to (iTowerX, iTowerY).
         """
         shiftX = iTowerX - self.channels[0][0].iTowerX
         shiftY = iTowerY - self.channels[0][0].iTowerY
@@ -255,7 +236,6 @@ class FERSBoard(Board):
         super().__init__(boardNo)
         self.is6mm = is6mm  # Flag for 6mm or 3mm board
         # channels is a 2D list of FERSChannel objects
-        # organized by (iBoardX, iBoardY)
         self.channels = buildFERSBase(is6mm=is6mm, boardNo=boardNo)
 
     def __str__(self):
@@ -332,7 +312,6 @@ class DRSBoard(Board):
         """
         super().__init__(boardNo)
         # channels is a 2D list of DRSChannel objects
-        # organized by (iBoardX, iBoardY)
         if channels is not None:
             self.channels = channels
         else:
@@ -503,7 +482,7 @@ def buildFERSBase(is6mm=False, boardNo=0):
             if is6mm:
                 channelNo = A5202_map[ix, iy]
                 isCer = (iy % 2 == 0)
-                channel = FERSChannel(ix, -int(iy/2), ix, iy, isCer,
+                channel = FERSChannel(ix, -int(iy/2), isCer,
                                       channelNo, boardNo)
                 channels_FERS_one_row.append(channel)
             else:
@@ -511,7 +490,7 @@ def buildFERSBase(is6mm=False, boardNo=0):
                 isCer = (ix % 2 == 0)
                 # 3mm has higher granularity in global Y
                 channel = FERSChannel(
-                    int(ix/2), -float(iy)/4, ix, iy, isCer, channelNo, boardNo)
+                    int(ix/2), -float(iy)/4, isCer, channelNo, boardNo)
                 channels_FERS_one_row.append(channel)
         channels_FERS.append(channels_FERS_one_row)
     return channels_FERS
@@ -531,7 +510,7 @@ def buildDRSBase(is6mm=True, boardNo=0):
             chanNo = (channelNo % 8)
             if is6mm:
                 isCer = (iy % 2 == 0)
-                channel = DRSChannel(ix, -int(iy/2), ix, iy, isCer,
+                channel = DRSChannel(ix, -int(iy/2), isCer,
                                      chanNo, groupNo, boardNo, is6mm=is6mm)
             else:
                 # this is INCONSISTENT with the FERS 3mm channels
@@ -539,7 +518,7 @@ def buildDRSBase(is6mm=True, boardNo=0):
                 isCer = (ix % 2 == 1)
                 # 3mm has higher granularity in global Y
                 channel = DRSChannel(
-                    int(ix/2), -float(iy)/4, ix, iy, isCer, chanNo, groupNo, boardNo, is6mm=False, isAmplified=True)
+                    int(ix/2), -float(iy)/4, isCer, chanNo, groupNo, boardNo, is6mm=False, isAmplified=True)
             channels_DRS_one_row.append(channel)
         channels_DRS.append(channels_DRS_one_row)
     return channels_DRS

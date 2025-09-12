@@ -23,16 +23,16 @@ def preProcessDRSBoards(rdf, debug=False):
     # Create an array of indices for DRS outputs
     rdf = rdf.Define("TS", "FillIndices(1024)")
 
-    # find the baseline of each DRS channel
+    # find the baseline of each DRS channel (median here)
     # and subtract it from the DRS outputs
     for varname in drs_branches:
         rdf = rdf.Define(
-            f"{varname}_median",
+            f"{varname}_bl",
             f"compute_median({varname})"
         )
         rdf = rdf.Define(
-            f"{varname}_subtractMedian",
-            f"{varname} - {varname}_median"
+            f"{varname}_blsub",
+            f"{varname} - {varname}_bl"
         )
 
     if debug:
@@ -59,15 +59,20 @@ def getDRSSum(rdf, DRSBoards, TS_start=0, TS_end=400):
     TS_end = int(TS_end)
     for _, DRSBoard in DRSBoards.items():
         for channel in DRSBoard:
-            varname = channel.GetChannelName()
+            channelName_blsub = channel.GetChannelName(blsub=True)
+            channelSumName = channel.GetChannelSumName()
             rdf = rdf.Define(
-                f"{varname}_subtractMedian_positive",
-                f"clipToZero({varname}_subtractMedian)"
+                channelSumName,
+                f"SumRange({channelName_blsub}, {TS_start}, {TS_end})"
             )
-            rdf = rdf.Define(
-                f"{varname}_sum",
-                f"SumRange({varname}_subtractMedian_positive, {TS_start}, {TS_end})"
-            )
+            # rdf = rdf.Define(
+            #    f"{varname}_subtractMedian_positive",
+            #    f"clipToZero({varname}_subtractMedian)"
+            # )
+            # rdf = rdf.Define(
+            #    f"{varname}_sum",
+            #    f"SumRange({varname}_subtractMedian_positive, {TS_start}, {TS_end})"
+            # )
     return rdf
 
 
@@ -77,10 +82,11 @@ def getDRSPeakTS(rdf, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
     TS_end = int(TS_end)
     for _, DRSBoard in DRSBoards.items():
         for channel in DRSBoard:
-            varname = channel.GetChannelName()
+            channelName_sub = channel.GetChannelName(blsub=True)
+            channelPeakTSName = channel.GetChannelPeakTSName()
             rdf = rdf.Define(
-                f"{varname}_peakTS",
-                f"ArgMaxRange({varname}_subtractMedian_positive, {TS_start}, {TS_end}, {threshold})"
+                channelPeakTSName,
+                f"ArgMaxRange({channelName_sub}, {TS_start}, {TS_end}, {threshold})"
             )
     return rdf
 
@@ -93,10 +99,11 @@ def getDRSPeak(rdf, DRSBoards, TS_start=0, TS_end=400):
     TS_end = int(TS_end)
     for _, DRSBoard in DRSBoards.items():
         for channel in DRSBoard:
-            varname = channel.GetChannelName()
+            channelName_sub = channel.GetChannelName(blsub=True)
+            channelPeakName = channel.GetChannelPeakName()
             rdf = rdf.Define(
-                f"{varname}_peak",
-                f"MaxRange({varname}_subtractMedian_positive, {TS_start}, {TS_end})"
+                channelPeakName,
+                f"MaxRange({channelName_sub}, {TS_start}, {TS_end})"
             )
     return rdf
 

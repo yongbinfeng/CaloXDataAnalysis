@@ -300,7 +300,7 @@ def buildDRSBoardTestBeam(boardNo=4):
                 groupNo = (channelNo // 8)
                 chanNo = (channelNo % 8)
                 isCer = True
-                channel = DRSChannel(base_iX + ix, base_iY - iy, ix, iy, isCer,
+                channel = DRSChannel(base_iX + ix, base_iY - iy, isCer,
                                      chanNo, groupNo, boardNo, is6mm=True, isAmplified=False)
                 channels_DRS_one_row.append(channel)
             channels_DRS.append(channels_DRS_one_row)
@@ -312,10 +312,10 @@ def buildDRSBoardTestBeam(boardNo=4):
         channels_DRS = []
         channels_DRS_one_row = []
         # two remnant channels
-        channel = DRSChannel(-0.5, 2.5, 0, 0, True, 0, 0,
+        channel = DRSChannel(-0.5, 2.5, True, 0, 0,
                              boardNo, is6mm=True, isAmplified=False)
         channels_DRS_one_row.append(channel)
-        channel = DRSChannel(-1.5, 2.5, 0, 1, True, 1, 0,
+        channel = DRSChannel(-1.5, 2.5, True, 1, 0,
                              boardNo, is6mm=True, isAmplified=False)
         channels_DRS_one_row.append(channel)
         channels_DRS.append(channels_DRS_one_row)
@@ -329,7 +329,7 @@ def buildDRSBoardTestBeam(boardNo=4):
                 groupNo = (channelNo // 8)
                 chanNo = (channelNo % 8)
                 isCer = True
-                channel = DRSChannel(base_iX + ix, base_iY - iy, ix, iy, isCer,
+                channel = DRSChannel(base_iX + ix, base_iY - iy, isCer,
                                      chanNo, groupNo, boardNo, is6mm=True, isAmplified=False)
                 channels_DRS_one_row.append(channel)
             channels_DRS.append(channels_DRS_one_row)
@@ -346,22 +346,22 @@ def buildDRSBoardTestBeam(boardNo=4):
                 groupNo = (channelNo // 8)
                 chanNo = (channelNo % 8)
                 isCer = True
-                channel = DRSChannel(base_iX + (ix % 2), base_iY + ix//2, ix, iy, isCer,
+                channel = DRSChannel(base_iX + (ix % 2), base_iY + ix//2, isCer,
                                      chanNo, groupNo, boardNo, is6mm=True, isAmplified=False)
                 channels_DRS_one_row.append(channel)
             channels_DRS.append(channels_DRS_one_row)
 
         channels_DRS_one_row = []
-        channel = DRSChannel(1.5, -2.5, 0, 0, True, 2, 3,
+        channel = DRSChannel(1.5, -2.5, True, 2, 3,
                              boardNo, is6mm=True, isAmplified=False)
         channels_DRS_one_row.append(channel)
-        channel = DRSChannel(0.5, -2.5, 0, 1, True, 3, 3,
+        channel = DRSChannel(0.5, -2.5, True, 3, 3,
                              boardNo, is6mm=True, isAmplified=False)
         channels_DRS_one_row.append(channel)
-        channel = DRSChannel(-0.5, -2.5, 0, 2, True, 4, 3,
+        channel = DRSChannel(-0.5, -2.5, True, 4, 3,
                              boardNo, is6mm=True, isAmplified=False)
         channels_DRS_one_row.append(channel)
-        channel = DRSChannel(-1.5, -2.5, 0, 3, True, 5, 3,
+        channel = DRSChannel(-1.5, -2.5, True, 5, 3,
                              boardNo, is6mm=True, isAmplified=False)
         channels_DRS_one_row.append(channel)
         channels_DRS.append(channels_DRS_one_row)
@@ -405,8 +405,8 @@ def buildDRSBoardTestBeam(boardNo=4):
 
         for (iTowerX, iTowerY), (groupNo, chanNo) in maps_board6.items():
             isCer = True
-            channel = DRSChannel(iTowerX, iTowerY, groupNo, chanNo, isCer,
-                                 chanNo, groupNo, boardNo, is6mm=True, isAmplified=False)
+            channel = DRSChannel(iTowerX, iTowerY, isCer, chanNo,
+                                 groupNo, boardNo, is6mm=True, isAmplified=False)
             channels_DRS[groupNo].append(channel)
 
         drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
