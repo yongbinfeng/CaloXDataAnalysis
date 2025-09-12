@@ -10,6 +10,8 @@ from utils.validateMap import DrawFERSBoards, DrawDRSBoards
 from utils.colors import colors
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from utils.parser import get_args
+from utils.timing import auto_timer
+auto_timer("Total Execution Time")
 
 print("Start running script")
 ROOT.gROOT.SetBatch(True)

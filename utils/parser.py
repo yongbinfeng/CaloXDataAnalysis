@@ -1,6 +1,6 @@
 import argparse
 from runconfig import runNumber, firstEvent, lastEvent
-from utils.utils import getRunInfo
+from utils.dataloader import getRunInfo
 
 
 def get_args():

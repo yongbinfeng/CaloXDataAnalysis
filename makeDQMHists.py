@@ -1,13 +1,14 @@
-import os
-import ROOT
-from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
-from utils.utils import number2string, preProcessDRSBoards, loadRDF, vectorizeFERS, prepareDRSStats, getFERSBoardMax
-from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from utils.parser import get_args
-import time
-import sys
-
-print("Start running prepareDQMPlots.py")
+from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
+from utils.dataloader import getRunInfo, loadRDF
+from variables.fers import vectorizeFERS, getFERSBoardMax
+from variables.drs import preProcessDRSBoards, getDRSStats
+from utils.utils import number2string
+from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
+import ROOT
+import os
+from utils.timing import auto_timer  # noqa
+auto_timer("Total Execution Time")
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
@@ -33,8 +34,7 @@ print(f"Total number of events to process: {nEvents} in run {runNumber}")
 
 rdf = vectorizeFERS(rdf, FERSBoards)
 rdf = preProcessDRSBoards(rdf, debug=debugDRS)
-rdf = prepareDRSStats(rdf, DRSBoards, 0, 1000, 9)
-
+rdf = getDRSStats(rdf, DRSBoards, 0, 1000, 9)
 rdf = getFERSBoardMax(rdf, FERSBoards)
 
 
@@ -75,7 +75,7 @@ def monitorConditions():
     return hists2d_Condition_vs_Event
 
 
-def makeFERS1DPlots(useHG=True):
+def makeFERS1DHists(useHG=True):
     hists1d_FERS = []
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
@@ -229,7 +229,7 @@ def makeFERSMaxValueHists():
     return hists_board_cer_HG_max + hists_board_cer_LG_max + hists_board_sci_HG_max + hists_board_sci_LG_max + [hist_cer_HG_max, hist_cer_LG_max, hist_sci_HG_max, hist_sci_LG_max]
 
 
-def trackFERSPlots():
+def trackFERSHists():
     hists2d_FERS_vs_Event = []
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
@@ -250,7 +250,7 @@ def trackFERSPlots():
     return hists2d_FERS_vs_Event
 
 
-def makeFERS2DPlots():
+def makeFERS2DHists():
     hists2d_FERS = []
     for _, FERSBoard in FERSBoards.items():
         boardNo = FERSBoard.boardNo
@@ -302,7 +302,7 @@ def makeFERS2DPlots():
     return hists2d_FERS
 
 
-def makeDRS1DPlots():
+def makeDRS1DHists():
     hists1d_DRS = []
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
@@ -328,7 +328,7 @@ def makeDRS1DPlots():
     return hists1d_DRS
 
 
-def makeDRS2DPlots(debug=False):
+def makeDRS2DHists(debug=False):
     hists2d_DRS_vs_TS = []
     if debug:
         hists2d_DRS_vs_RTSpos = []
@@ -377,7 +377,7 @@ def makeDRS2DPlots(debug=False):
     return hists2d_DRS_vs_TS
 
 
-def trackDRSPlots():
+def trackDRSHists():
     hists2d_DRS_vs_Event = []
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
@@ -596,25 +596,25 @@ def checkDRSPeakTS():
 
 
 if __name__ == "__main__":
-    start_time = time.time()
+    # start_time = time.time()
 
     hists_conditions = monitorConditions()
 
-    hists1d_FERS = makeFERS1DPlots()
-    hists1d_FRRS_LG = makeFERS1DPlots(useHG=False)
+    hists1d_FERS = makeFERS1DHists()
+    hists1d_FRRS_LG = makeFERS1DHists(useHG=False)
 
-    # hists2d_FERS = makeFERS2DPlots()
-    # hists2d_FERS_vs_Event = trackFERSPlots()
+    # hists2d_FERS = makeFERS2DHists()
+    # hists2d_FERS_vs_Event = trackFERSHists()
 
-    # hists1d_DRS = makeDRS1DPlots()
+    # hists1d_DRS = makeDRS1DHists()
     hists2d_DRS_vs_RTSpos = None
     hists2d_DRS_vs_RTSneg = None
     if debugDRS:
-        hists2d_DRS_vs_TS, hists2d_DRS_vs_RTSpos, hists2d_DRS_vs_RTSneg = makeDRS2DPlots(
+        hists2d_DRS_vs_TS, hists2d_DRS_vs_RTSpos, hists2d_DRS_vs_RTSneg = makeDRS2DHists(
             debug=True)
     else:
-        hists2d_DRS_vs_TS = makeDRS2DPlots(debug=False)
-    # hists2d_DRS_vs_Event = trackDRSPlots()
+        hists2d_DRS_vs_TS = makeDRS2DHists(debug=False)
+    # hists2d_DRS_vs_Event = trackDRSHists()
 
     hists2d_DRSPeak_vs_FERS = checkDRSPeakvsFERS()
 
@@ -810,6 +810,3 @@ if __name__ == "__main__":
         hist.SetDirectory(outfile_FERS_max)
         hist.Write()
     outfile_FERS_max.Close()
-
-    time_taken = time.time() - start_time
-    print(f"Finished running script in {time_taken:.2f} seconds")

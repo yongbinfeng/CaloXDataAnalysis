@@ -581,7 +581,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         CMS_lumi.extraText = "Simulation"
 
     if runNumber is not None:
-        from utils.utils import getRunInfo
+        from utils.dataloader import getRunInfo
         btype, benergy = getRunInfo(runNumber)
         btypes = {
             "pion": "#pi^{+}",
