@@ -265,38 +265,38 @@ def makeFERS2DHists():
             # high gain
             hist = rdf.Histo2D((
                 f"hist_FERS_Board{boardNo}_Cer_VS_Sci_{sTowerX}_{sTowerY}",
-                f"CER {iCer} VS SCI {iSci} in iTowerX {sTowerX} iTowerY {sTowerY};CER Energy HG;SCI Energy HG",
+                f"CER {iCer} VS SCI {iSci} in iTowerX {sTowerX} iTowerY {sTowerY};Sci Energy HG;Cer Energy HG",
                 300, 0, 9000, 300, 0, 9000),
-                chan_Cer.GetChannelName(useHG=True),
-                chan_Sci.GetChannelName(useHG=True)
+                chan_Sci.GetChannelName(useHG=True),
+                chan_Cer.GetChannelName(useHG=True)
             )
             hist_zoomed = rdf.Histo2D((
                 f"hist_FERS_Board{boardNo}_Cer_VS_Sci_{sTowerX}_{sTowerY}_zoom",
-                f"CER {iCer} VS SCI {iSci} in iTowerX {sTowerX} iTowerY {sTowerY} (zoomed);CER Energy HG;SCI Energy HG",
+                f"CER {iCer} VS SCI {iSci} in iTowerX {sTowerX} iTowerY {sTowerY} (zoomed);SCI Energy HG;CER Energy HG",
                 300, 0, 1000, 200, 0, 2000),
-                chan_Cer.GetChannelName(useHG=True),
-                chan_Sci.GetChannelName(useHG=True)
+                chan_Sci.GetChannelName(useHG=True),
+                chan_Cer.GetChannelName(useHG=True)
             )
             hists2d_FERS.append(hist)
             hists2d_FERS.append(hist_zoomed)
 
-            # high gain VS low gain for Sci
-            hist_sci_hg_VS_lg = rdf.Histo2D((
+            # low gain (Y) VS high gain (X) for Sci
+            hist_sci_lg_vs_hg = rdf.Histo2D((
                 f"hist_FERS_Board{boardNo}_Sci_{sTowerX}_{sTowerY}_hg_VS_lg",
-                f"SCI {iSci} HG VS LG;SCI Energy HG;SCI Energy LG",
+                f"SCI {iSci} LG VS HG;SCI Energy HG;SCI Energy LG",
                 300, 0, 9000, 300, 0, 3000),
                 chan_Sci.GetChannelName(useHG=True),
                 chan_Sci.GetChannelName(useHG=False)
             )
-            hists2d_FERS.append(hist_sci_hg_VS_lg)
-            hist_cer_hg_VS_lg = rdf.Histo2D((
+            hists2d_FERS.append(hist_sci_lg_vs_hg)
+            hist_cer_lg_vs_hg = rdf.Histo2D((
                 f"hist_FERS_Board{boardNo}_Cer_{sTowerX}_{sTowerY}_hg_VS_lg",
-                f"CER {iCer} HG VS LG;CER Energy HG;CER Energy LG",
+                f"CER {iCer} LG VS HG;CER Energy HG;CER Energy LG",
                 300, 0, 9000, 300, 0, 3000),
                 chan_Cer.GetChannelName(useHG=True),
                 chan_Cer.GetChannelName(useHG=False)
             )
-            hists2d_FERS.append(hist_cer_hg_VS_lg)
+            hists2d_FERS.append(hist_cer_lg_vs_hg)
     return hists2d_FERS
 
 
@@ -362,7 +362,7 @@ def compareDRSChannels(channels_to_compare, isServiceDRS=False):
     return hists_trigger
 
 
-def checkFERSVSDRSSum():
+def checkDRSSumVSFERS():
     xymax = {
         "Cer": (20000, 8500),
         "Sci": (30000, 8500)
@@ -372,9 +372,8 @@ def checkFERSVSDRSSum():
         "Sci": (30000, 4000)
     }
 
-    # correlate  FERS and DRS outputs
-    h2s_FERS_VS_DRS = []
-    h2s_FERSLG_VS_DRS = []
+    # correlate DRS sum and FERS outputs
+    h2s_DRSSum_VS_FERS = []
     for _, DRSBoard in DRSBoards.items():
         boardNo = DRSBoard.boardNo
         for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
@@ -399,46 +398,27 @@ def checkFERSVSDRSSum():
                         f"Warning: FERS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
                     continue
 
-                h2_FERS_VS_DRS = rdf.Histo2D((
-                    f"hist_FERS_VS_DRSSum_{var}_{sTowerX}_{sTowerY}",
-                    f"FERS VS DRS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}",
-                    100, 0, xymax[var][0], 100, 0, xymax[var][1]
+                h2_DRSSum_VS_FERS = rdf.Histo2D((
+                    f"hist_DRSSum_VS_FERS_{var}_{sTowerX}_{sTowerY}",
+                    f"DRS sum VS FERS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}; FERS Energy HG; DRS Sum",
+                    100, 0, xymax[var][1], 100, 0, xymax[var][0]
                 ),
-                    chan_DRS.GetChannelSumName(),
                     chan_FERS.GetChannelName(useHG=True),
-                )
-                h2s_FERS_VS_DRS.append(h2_FERS_VS_DRS)
-
-                h2_FERSLG_VS_DRS = rdf.Histo2D((
-                    f"hist_FERSLG_VS_DRSSum_{var}_{sTowerX}_{sTowerY}",
-                    f"FERS LG VS DRS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}",
-                    100, 0, xymax_LG[var][0], 100, 0, xymax_LG[var][1]
-                ),
                     chan_DRS.GetChannelSumName(),
-                    chan_FERS.GetChannelName(useHG=False),
                 )
-                h2s_FERSLG_VS_DRS.append(h2_FERSLG_VS_DRS)
+                h2s_DRSSum_VS_FERS.append(h2_DRSSum_VS_FERS)
 
-    # sum of FERS and DRS outputs
-    for var in ["Cer", "Sci"]:
-        h2_FERS_VS_DRS_Sum = ROOT.TH2F(
-            f"hist_FERS_VS_DRSSum_{var}",
-            f"FERS VS DRS energy correlation for {var}",
-            100, 0, xymax[var][0], 100, 0, xymax[var][1]
-        )
-        for h2 in h2s_FERS_VS_DRS:
-            if f"{var}" in h2.GetName():
-                h2_FERS_VS_DRS_Sum.Add(h2.GetValue())
+                h2_DRSSum_VS_FERSLG = rdf.Histo2D((
+                    f"hist_DRSSum_VS_FERSLG_{var}_{sTowerX}_{sTowerY}",
+                    f"DRS sum VS FERS LG energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}",
+                    100, 0, xymax_LG[var][1], 100, 0, xymax_LG[var][0]
+                ),
+                    chan_FERS.GetChannelName(useHG=False),
+                    chan_DRS.GetChannelSumName(),
+                )
+                h2s_DRSSum_VS_FERS.append(h2_DRSSum_VS_FERSLG)
 
-        h2_FERSLG_VS_DRS_Sum = ROOT.TH2F(
-            f"hist_FERSLG_VS_DRSSum_{var}",
-            f"FERS LG VS DRS energy correlation for {var}",
-            100, 0, xymax_LG[var][0], 100, 0, xymax_LG[var][1]
-        )
-        for h2 in h2s_FERSLG_VS_DRS:
-            if f"{var}" in h2.GetName():
-                h2_FERSLG_VS_DRS_Sum.Add(h2.GetValue())
-    return [h2_FERS_VS_DRS_Sum] + [h2_FERSLG_VS_DRS_Sum] + h2s_FERS_VS_DRS + h2s_FERSLG_VS_DRS
+    return h2s_DRSSum_VS_FERS
 
 
 def checkDRSPeakVSFERS():
@@ -471,13 +451,23 @@ def checkDRSPeakVSFERS():
                     subtractMedian=True, isAmplified=chan_DRS.isAmplified)
                 h2_DRSPeak_VS_FERS = rdf.Histo2D((
                     f"hist_DRSPeak_VS_FERS_{var}_{sTowerX}_{sTowerY}",
-                    f"DRS Peak VS FERS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}",
+                    f"DRS Peak VS FERS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}; FERS Energy HG; DRS Peak",
                     100, 0, 9000, 100, 0, ymax
                 ),
                     chan_FERS.GetChannelName(useHG=True),
                     chan_DRS.GetChannelPeakName(),
                 )
                 h2s_DRSPeak_VS_FERS.append(h2_DRSPeak_VS_FERS)
+
+                h2_DRSPeak_VS_FERSLG = rdf.Histo2D((
+                    f"hist_DRSPeak_VS_FERSLG_{var}_{sTowerX}_{sTowerY}",
+                    f"DRS Peak VS FERS LG energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}; FERS Energy LG; DRS Peak",
+                    100, 0, 3000, 100, 0, ymax
+                ),
+                    chan_FERS.GetChannelName(useHG=False),
+                    chan_DRS.GetChannelPeakName(),
+                )
+                h2s_DRSPeak_VS_FERS.append(h2_DRSPeak_VS_FERSLG)
 
     return h2s_DRSPeak_VS_FERS
 
@@ -521,10 +511,10 @@ def checkDRSPeakTS():
 
             h2_DRSPeak_Cer_VS_Sci = rdf.Histo2D((
                 f"hist_DRSPeakTS_Cer_VS_Sci_{sTowerX}_{sTowerY}",
-                f"DRS Peak TS - CER VS SCI for Board{boardNo}, Tower({sTowerX}, {sTowerY});CER Peak TS;SCI Peak TS",
+                f"DRS Peak TS - CER VS SCI for Board{boardNo}, Tower({sTowerX}, {sTowerY});SCI Peak TS;CER Peak TS",
                 1000, 0, 1000, 1000, 0, 1000),
-                channelNames["Cer"],
                 channelNames["Sci"],
+                channelNames["Cer"],
             )
             h2s_DRSPeakTS_Cer_VS_Sci.append(h2_DRSPeak_Cer_VS_Sci)
     return h1s_DRSPeakTS["Cer"], h1s_DRSPeakTS["Sci"], h2s_DRSPeakTS_Cer_VS_Sci
@@ -569,7 +559,7 @@ if __name__ == "__main__":
                 for channel in channels]
     hists2d_hodo_pos = compareDRSChannels(channels)
 
-    hists2d_FERS_VS_DRSs = checkFERSVSDRSSum()
+    hists2d_DRSSum_VS_FERS = checkDRSSumVSFERS()
 
     hists_FERS_max = makeFERSMaxValueHists()
 
@@ -597,16 +587,16 @@ if __name__ == "__main__":
 
     if 'pedestals_HG' in locals() and pedestals_HG:
         import json
-        with open(f"{rootdir}/fers_pedestals_HG.json", "w") as f:
+        with open(f"{rootdir}/fers_pedestals_hg.json", "w") as f:
             json.dump(pedestals_HG, f, indent=4)
     if 'pedestals_LG' in locals() and pedestals_LG:
         import json
-        with open(f"{rootdir}/fers_pedestals_LG.json", "w") as f:
+        with open(f"{rootdir}/fers_pedestals_lg.json", "w") as f:
             json.dump(pedestals_LG, f, indent=4)
 
     # Save histograms to an output ROOT file
     if 'hists_conditions' in locals() and hists_conditions:
-        outfile = ROOT.TFile(f"{rootdir}/conditions_VS_event.root", "RECREATE")
+        outfile = ROOT.TFile(f"{rootdir}/conditions_vs_event.root", "RECREATE")
         for hist in hists_conditions:
             hist.SetDirectory(outfile)
             hist.Write()
@@ -614,7 +604,7 @@ if __name__ == "__main__":
 
     if 'hists1d_FERS' in locals() and hists1d_FERS:
         outfile = ROOT.TFile(
-            f"{rootdir}/fers_all_channels_1D.root", "RECREATE")
+            f"{rootdir}/fers_all_channels_1d.root", "RECREATE")
         for hist in hists1d_FERS:
             hist.Write()
         outfile.Close()
@@ -628,7 +618,7 @@ if __name__ == "__main__":
     #    hist.Write()
     # outfile.Close()
     #
-    outfile_DRS = ROOT.TFile(f"{rootdir}/drs_VS_TS.root", "RECREATE")
+    outfile_DRS = ROOT.TFile(f"{rootdir}/drs_vs_ts.root", "RECREATE")
     for hist in hists2d_DRS_VS_TS:
         hist.SetDirectory(outfile_DRS)
         hist.Write()
@@ -649,13 +639,13 @@ if __name__ == "__main__":
         outfile_DRS_RTSneg.Close()
 
     outfile_DRSPeak_VS_FERS = ROOT.TFile(
-        f"{rootdir}/drs_peak_VS_fers.root", "RECREATE")
+        f"{rootdir}/drspeak_vs_fers.root", "RECREATE")
     for hist in hists2d_DRSPeak_VS_FERS:
         hist.SetDirectory(outfile_DRSPeak_VS_FERS)
         hist.Write()
     outfile_DRSPeak_VS_FERS.Close()
 
-    outfile_DRSPeakTS = ROOT.TFile(f"{rootdir}/drs_peak_ts.root", "RECREATE")
+    outfile_DRSPeakTS = ROOT.TFile(f"{rootdir}/drspeakts.root", "RECREATE")
     for hist in hists1d_DRSPeakTS_Cer:
         hist.SetDirectory(outfile_DRSPeakTS)
         hist.Write()
@@ -697,12 +687,12 @@ if __name__ == "__main__":
         hist.Write()
     outfile_hodo_pos.Close()
 
-    outfile_FERS_DRS = ROOT.TFile(
-        f"{rootdir}/fers_VS_drs.root", "RECREATE")
-    for hist in hists2d_FERS_VS_DRSs:
-        hist.SetDirectory(outfile_FERS_DRS)
+    outfile_DRSSum_VS_FERS = ROOT.TFile(
+        f"{rootdir}/drssum_vs_fers.root", "RECREATE")
+    for hist in hists2d_DRSSum_VS_FERS:
+        hist.SetDirectory(outfile_DRSSum_VS_FERS)
         hist.Write()
-    outfile_FERS_DRS.Close()
+    outfile_DRSSum_VS_FERS.Close()
 
     outfile_FERS_max = ROOT.TFile(
         f"{rootdir}/fers_max_values.root", "RECREATE")

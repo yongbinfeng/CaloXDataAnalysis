@@ -489,6 +489,8 @@ def LHistos2Hist(hs, hname):
     for h in hs:
         if not h_added:
             h_added = h.Clone(hname)
+            h_added.SetName(hname)
+            h_added.SetDirectory(0)
         else:
             h_added.Add(h)
     return h_added

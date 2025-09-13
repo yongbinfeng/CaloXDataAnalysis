@@ -1,7 +1,7 @@
 import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
-from myFunction import DrawHistos
+from myFunction import DrawHistos, LHistos2Hist
 from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
 from utils.utils import number2string, round_up_to_1eN
 from utils.html_generator import generate_html
@@ -37,7 +37,7 @@ htmldir = f"results/html/Run{runNumber}/"
 def makeConditionsPlots():
     plots = []
     outdir_plots = f"{plotdir}/Conditions_VS_Event"
-    infile_name = f"{rootdir}/conditions_VS_event.root"
+    infile_name = f"{rootdir}/conditions_vs_event.root"
     infile = ROOT.TFile(infile_name, "READ")
 
     hprofiles_SipmHV = []
@@ -161,7 +161,7 @@ def makeConditionsPlots():
 def makeFERS1DPlots():
     plots = []
 
-    infile_name = f"{rootdir}fers_all_channels_1D.root"
+    infile_name = f"{rootdir}fers_all_channels_1d.root"
     infile = ROOT.TFile(infile_name, "READ")
     outdir_plots = f"{plotdir}/FERS_1D"
     for fersboard in fersboards.values():
@@ -218,8 +218,8 @@ def makeFERSStatsPlots(includePedestals=False):
         stats = json.load(f)
 
     if includePedestals:
-        infile_name_HG = f"{rootdir}/fers_pedestals_HG.json"
-        infile_name_LG = f"{rootdir}/fers_pedestals_LG.json"
+        infile_name_HG = f"{rootdir}/fers_pedestals_hg.json"
+        infile_name_LG = f"{rootdir}/fers_pedestals_lg.json"
         with open(infile_name_HG, "r") as f:
             pedestals_HG = json.load(f)
         with open(infile_name_LG, "r") as f:
@@ -472,7 +472,7 @@ def makeFERSMaxValuePlots():
 def makeFERS2DPlots():
     plots = []
     outdir_plots = f"{plotdir}/FERS_2D"
-    infile_name = f"{rootdir}/fers_all_channels_2D.root"
+    infile_name = f"{rootdir}/fers_all_channels_2d.root"
     infile = ROOT.TFile(infile_name, "READ")
     for fersboard in fersboards.values():
         boardNo = fersboard.boardNo
@@ -559,16 +559,10 @@ def trackFERSPlots():
 
 
 # DRS VS TS
-def makeDRS2DPlots(doRTS=0):
-    varTS = "TS"
-    if doRTS == 1:
-        varTS = "RTSpos"
-    elif doRTS == 2:
-        varTS = "RTSneg"
-
+def makeDRSVSTSPlots():
     plots = []
-    outdir_plots = f"{plotdir}/DRS_VS_{varTS}"
-    infile_name = f"{rootdir}/drs_VS_{varTS}.root"
+    outdir_plots = f"{plotdir}/DRS_VS_TS"
+    infile_name = f"{rootdir}/drs_vs_ts.root"
     infile = ROOT.TFile(infile_name, "READ")
     for _, DRSBoard in DRSBoards.items():
         for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
@@ -582,7 +576,7 @@ def makeDRS2DPlots(doRTS=0):
                         f"Warning: No channel found for Board {DRSBoard.boardNo}, Tower ({iTowerX}, {iTowerY}), Var {var}")
                     continue
                 channelName = chan.GetChannelName(blsub=True)
-                hist_name = f"hist_{channelName}_VS_{varTS}"
+                hist_name = f"hist_{channelName}_VS_TS"
                 hist = infile.Get(hist_name)
 
                 if not hist:
@@ -590,7 +584,7 @@ def makeDRS2DPlots(doRTS=0):
                         f"Warning: Histogram {hist_name} not found in {infile_name}")
                     continue
 
-                output_name = f"DRS_{var}_VS_{varTS}_{sTowerX}_{sTowerY}"
+                output_name = f"DRS_{var}_VS_TS_{sTowerX}_{sTowerY}"
                 plots.append(output_name + ".png")
 
                 ymin_tmp, ymax_tmp = getDRSPlotRanges(
@@ -612,7 +606,7 @@ def makeDRS2DPlots(doRTS=0):
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                            extraToDraw=extraToDraw,
                            outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
-    output_html = f"{htmldir}/DRS_VS_{varTS}/index.html"
+    output_html = f"{htmldir}/DRS_VS_TS/index.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
@@ -621,7 +615,7 @@ def makeDRS2DPlots(doRTS=0):
 def makeDRSPeakTSPlots():
     plots = []
     outdir_plots = f"{plotdir}/DRSPeakTS"
-    infile_name = f"{rootdir}/drs_peak_ts.root"
+    infile_name = f"{rootdir}/drspeakts.root"
     infile = ROOT.TFile(infile_name, "READ")
     hists_Cer = []
     hists_Sci = []
@@ -638,7 +632,6 @@ def makeDRSPeakTSPlots():
                     iTowerX, iTowerY, isCer=(var == "Cer"))
                 hist_name = f"hist_DRSPeakTS_{var}_{sTowerX}_{sTowerY}"
                 hist = infile.Get(hist_name)
-                output_name = hist_name[5:-4]
 
                 if not hist:
                     print(
@@ -648,6 +641,8 @@ def makeDRSPeakTSPlots():
                 else:
                     hists[var] = hist
                     channelNos[var] = chan.channelNo
+
+                output_name = f"hist_DRSPeakTS_{sTowerX}_{sTowerY}"
 
             if not hists["Cer"] or not hists["Sci"]:
                 print(
@@ -679,21 +674,13 @@ def makeDRSPeakTSPlots():
             plots.append(output_name + ".png")
 
     # summary plots
-    hist_Cer_Sum = ROOT.TH1F("hist_DRSPeakTS_Cer_Sum",
-                             "DRS Peak TS Cer Sum", 1000, 0, 1000)
-    hist_Sci_Sum = ROOT.TH1F("hist_DRSPeakTS_Sci_Sum",
-                             "DRS Peak TS Sci Sum", 1000, 0, 1000)
-    for hist in hists_Cer:
-        if hist:
-            hist_Cer_Sum.Add(hist)
-    for hist in hists_Sci:
-        if hist:
-            hist_Sci_Sum.Add(hist)
-    DrawHistos([hist_Cer_Sum, hist_Sci_Sum], ["Cer", "Sci"], 0, 1000, "Peak TS", 1, None, "Counts",
-               "DRS_PeakTS_Sum",
+    hist_Cer_Combined = LHistos2Hist(hists_Cer, "hist_DRSPeakTS_Cer_Combined")
+    hist_Sci_Combined = LHistos2Hist(hists_Sci, "hist_DRSPeakTS_Sci_Combined")
+    DrawHistos([hist_Cer_Combined, hist_Sci_Combined], ["Cer", "Sci"], 0, 1000, "Peak TS", 1, None, "Counts",
+               "DRS_PeakTS_Combined",
                dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False,
                outdir=outdir_plots, runNumber=runNumber)
-    plots.insert(0, "DRS_PeakTS_Sum.png")
+    plots.insert(0, "DRS_PeakTS_Combined.png")
 
     output_html = f"{htmldir}/DRSPeakTS/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
@@ -701,11 +688,11 @@ def makeDRSPeakTSPlots():
     return output_html
 
 
-def makeDRSPeakTS2DPlots():
+def makeDRSPeakTSCerVSSciPlots():
     plots = []
     hists = []
-    outdir_plots = f"{plotdir}/DRSPeakTS2D"
-    infile_name = f"{rootdir}/drs_peak_ts.root"
+    outdir_plots = f"{plotdir}/DRSPeakTSCerVSSci"
+    infile_name = f"{rootdir}/drspeakts.root"
     infile = ROOT.TFile(infile_name, "READ")
 
     # Create a dashed diagonal line from (0,0) to (1000,1000)
@@ -720,7 +707,7 @@ def makeDRSPeakTS2DPlots():
             sTowerX = number2string(iTowerX)
             sTowerY = number2string(iTowerY)
 
-            hist_name = f"hist_DRSPeak_Cer_VS_Sci_{sTowerX}_{sTowerY}"
+            hist_name = f"hist_DRSPeakTS_Cer_VS_Sci_{sTowerX}_{sTowerY}"
             hist = infile.Get(hist_name)
             output_name = hist_name[5:]
 
@@ -731,7 +718,7 @@ def makeDRSPeakTS2DPlots():
 
             hists.append(hist)
 
-            DrawHistos([hist], "", 0, 1000, "Cer Peak TS", 0, 1000, f"Sci Peak TS",
+            DrawHistos([hist], "", 0, 1000, "Sci Peak TS", 0, 1000, f"Cer Peak TS",
                        output_name,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
                        outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
@@ -739,20 +726,15 @@ def makeDRSPeakTS2DPlots():
             plots.append(output_name + ".png")
 
     # summary plots
-    h2 = ROOT.TH2F("hist_DRSPeak_Cer_VS_Sci_Sum",
-                   "DRS Peak TS Cer VS Sci Sum", 1000, 0, 1000, 1000, 0, 1000)
-    for hist in hists:
-        if hist:
-            h2.Add(hist)
-
-    output_name = "DRS_PeakTS_Cer_VS_Sci_Sum"
-    DrawHistos([h2], "", 0, 1000, "Cer Peak TS", 0, 1000, f"Sci Peak TS",
+    hcombined = LHistos2Hist(hists, "hist_DRSPeakTS_Cer_VS_Sci_Combined")
+    output_name = "DRS_PeakTS_Cer_VS_Sci_Combined"
+    DrawHistos([hcombined], "", 0, 1000, "Sci Peak TS", 0, 1000, f"Cer Peak TS",
                output_name,
                dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
                outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
     plots.insert(0, output_name + ".png")
 
-    output_html = f"{htmldir}/DRSPeakTS2D/index.html"
+    output_html = f"{htmldir}/DRSPeakTSCerVSSci/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -837,13 +819,13 @@ def compareServiceDRSPlots():
     return output_html
 
 
-def checkFERSVSDRSSum():
+def makeDRSSumVSFERSPlots():
     """
     Check if the sum of FERS and DRS energies are consistent.
     """
     plots = []
-    outdir_plots = f"{plotdir}/FERS_VS_DRS_Sum"
-    infile_name = f"{rootdir}/fers_VS_drs.root"
+    outdir_plots = f"{plotdir}/DRSSum_VS_FERS"
+    infile_name = f"{rootdir}/drssum_vs_fers.root"
     infile = ROOT.TFile(infile_name, "READ")
 
     xymax = {
@@ -855,69 +837,68 @@ def checkFERSVSDRSSum():
         "Sci": (30000, 4000)
     }
 
-    # for _, DRSBoard in DRSBoards.items():
-    #    boardNo = DRSBoard.boardNo
-    #    for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
-    #        sTowerX = number2string(iTowerX)
-    #        sTowerY = number2string(iTowerY)
+    hists = []
+    for _, DRSBoard in DRSBoards.items():
+        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
 
-    #        for var in ["Cer", "Sci"]:
-    #            for gain in ["FERS", "FERSLG"]:
-    #                histname = f"hist_{gain}_VS_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
-    #                output_name = histname.replace("hist_", "")
-    #                plots.append(output_name + ".png")
+            for var in ["Cer", "Sci"]:
+                for gain in ["FERS", "FERSLG"]:
+                    histname = f"hist_DRSSum_VS_{gain}_{var}_{sTowerX}_{sTowerY}"
+                    hist = infile.Get(histname)
+                    if not hist:
+                        print(
+                            f"Warning: Histogram {histname} not found in {infile_name}")
+                        continue
 
-    #                hist = infile.Get(histname)
-    #                if not hist:
-    #                    print(
-    #                        f"Warning: Histogram {histname} not found in {infile_name}")
-    #                    continue
+                    zmax = hist.Integral(0, 10000, 0, 10000)
+                    zmax = round_up_to_1eN(zmax)
 
-    #                zmax = hist.Integral(0, 10000, 0, 10000)
-    #                zmax = round_up_to_1eN(zmax)
+                    tmp = xymax[var] if gain == "FERS" else xymax_LG[var]
 
-    #                tmp = xymax[var] if gain == "FERS" else xymax_LG[var]
+                    hists.append(hist)
 
-    #                DrawHistos([hist], "", 0, tmp[0], "DRS Energy", 0, tmp[1], gain,
-    #                           output_name,
-    #                           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True,
-    #                           outdir=outdir_plots, addOverflow=True, runNumber=runNumber, extraText=f"{var}")
+                    output_name = histname.replace("hist_", "")
+                    DrawHistos([hist], "", 0, tmp[1], gain, 0, tmp[0], "DRSSum",
+                               output_name,
+                               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True,
+                               outdir=outdir_plots, addOverflow=True, runNumber=runNumber, extraText=f"{var}")
+                    plots.append(output_name + ".png")
 
     # summary plots
     for var in ["Cer", "Sci"]:
         for gain in ["FERS", "FERSLG"]:
-            histname = f"hist_{gain}_VS_DRSSum_{var}"
+            histname = f"hist_DRSSum_VS_{gain}_{var}_Combined"
+            hists_to_combine = [
+                h for h in hists if f"_{gain}_{var}_" in h.GetName()]
+            hist_combined = LHistos2Hist(hists_to_combine, histname)
+            print("Combining histograms for", histname, " is ",
+                  hist_combined, " len ", len(hists_to_combine))
             output_name = histname.replace("hist_", "")
-            # append to plots no matter what
-            plots.append(output_name + ".png")
 
-            hist = infile.Get(histname)
-            if not hist:
-                print(
-                    f"Warning: Histogram {histname} not found in {infile_name}")
-                continue
-
-            zmax = hist.Integral(0, 10000, 0, 10000)
+            zmax = hist_combined.Integral(0, 10000, 0, 10000)
             zmax = round_up_to_1eN(zmax)
 
             output_name = histname.replace("hist_", "")
 
             tmp = xymax[var] if gain == "FERS" else xymax_LG[var]
-            DrawHistos([hist], "", 0, tmp[0], "DRS Energy", 0, tmp[1], gain,
+            DrawHistos([hist_combined], "", 0, tmp[1], gain, 0, tmp[0], "DRSSum",
                        output_name,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True,
                        outdir=outdir_plots, addOverflow=True, runNumber=runNumber, extraText=f"{var}")
+            plots.insert(0, output_name + ".png")
 
-    output_html = f"{htmldir}/FERS_VS_DRSSum/index.html"
+    output_html = f"{htmldir}/DRSSum_VS_FERS/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
 
 
-def checkDRSPeakVSFERS():
+def makeDRSPeakVSFERSPlots():
     plots = []
     outdir_plots = f"{plotdir}/DRSPeak_VS_FERS"
-    infile_name = f"{rootdir}/drs_peak_VS_fers.root"
+    infile_name = f"{rootdir}/drspeak_vs_fers.root"
     infile = ROOT.TFile(infile_name, "READ")
 
     for _, DRSBoard in DRSBoards.items():
@@ -961,16 +942,17 @@ if __name__ == "__main__":
 
     output_htmls["conditions plots"] = makeConditionsPlots()
 
-    # # validate DRS and FERS boards
+    # validate DRS and FERS boards
     output_htmls["fers mapping"] = DrawFERSBoards(run=runNumber)
     output_htmls["drs mapping"] = DrawDRSBoards(run=runNumber)
 
     output_htmls["fers 1D"] = makeFERS1DPlots()
     output_htmls["fers stats"] = makeFERSStatsPlots(includePedestals=True)
-    # # makeDRS2DPlots()
-    output_htmls["drs 2D"] = makeDRS2DPlots()
+
+    output_htmls["drs vs ts"] = makeDRSVSTSPlots()
     output_htmls["drs peak ts"] = makeDRSPeakTSPlots()
-    output_htmls["drs peak ts 2D"] = makeDRSPeakTS2DPlots()
+
+    output_htmls["drs peak ts cer vs ts"] = makeDRSPeakTSCerVSSciPlots()
 
     output_htmls["drs services"] = compareServiceDRSPlots()
 
@@ -978,9 +960,9 @@ if __name__ == "__main__":
 
     output_htmls["fers max values"] = makeFERSMaxValuePlots()
 
-    output_htmls["fers VS drs sum"] = checkFERSVSDRSSum()
+    output_htmls["drs sum vs fers"] = makeDRSSumVSFERSPlots()
 
-    output_htmls["drs peak VS fers"] = checkDRSPeakVSFERS()
+    output_htmls["drs peak VS fers"] = makeDRSPeakVSFERSPlots()
 
     print("\n\n\n")
     print("*" * 30)
