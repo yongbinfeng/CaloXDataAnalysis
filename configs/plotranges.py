@@ -1,4 +1,4 @@
-def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=False, HE=False):
+def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False):
     suffix = ""
     xmin_HG_board = 0
     xmin_HG_total = 0
@@ -17,8 +17,8 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
     if HE:
         xmax_HG_total = 2e6
         xmax_LG_total = 1.5e5
-    if subtractPedestal:
-        suffix = "_subtracted"
+    if pdsub:
+        suffix = "_pdsub"
         xmin_HG_board = -1000
         xmin_HG_total = -5000
         xmax_HG_board = 300000
@@ -33,8 +33,8 @@ def getRangesForFERSEnergySums(subtractPedestal=False, calibrate=False, clip=Fal
         if HE:
             xmax_HG_total = 1.2e6
             xmax_LG_total = 8e4
-    if calibrate:
-        suffix += "_calibrated"
+    if calib:
+        suffix += "_calib"
         xmin_HG_board = -50
         xmin_HG_total = -100
         xmax_HG_board = 4000

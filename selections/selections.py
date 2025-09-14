@@ -1,7 +1,7 @@
 def filterPrefireEvents(rdf, runNumber, TS=350):
     # use the hodo trigger to filter prefire events
     # in cosmic runs
-    from utils.channel_map import buildHodoTriggerChannels
+    from channels.channel_map import buildHodoTriggerChannels
     trigger_names = buildHodoTriggerChannels(runNumber)
     if not trigger_names:
         return rdf, rdf  # No hodo trigger channels available for this run
@@ -33,7 +33,7 @@ def getCC1SumCutValue():
 
 
 def vetoMuonCounter(rdf, TSmin=400, TSmax=600, cut=-80):
-    from utils.channel_map import getDownStreamMuonChannel
+    from channels.channel_map import getDownStreamMuonChannel
     muon_channel = getDownStreamMuonChannel()
     if muon_channel is None:
         print("Muon counter channel not found, skipping veto.")
@@ -42,7 +42,7 @@ def vetoMuonCounter(rdf, TSmin=400, TSmax=600, cut=-80):
     print(
         f"Vetoing events with muon counter signal between {TSmin} and {TSmax} with cut {cut}")
     rdf = rdf.Define("MuonCounterMin",
-                     f"MinRange({muon_channel}_subtractMedian, {TSmin}, {TSmax})")
+                     f"MinRange({muon_channel}_blsub, {TSmin}, {TSmax})")
     rdf = rdf.Define("HasMuonCounterSignal",
                      f"MuonCounterMin < {cut}")
 
@@ -54,7 +54,7 @@ def vetoMuonCounter(rdf, TSmin=400, TSmax=600, cut=-80):
 
 
 def applyPSDSelection(rdf, runNumber, isHadron=False, applyCut=True):
-    from utils.channel_map import getPreShowerChannel
+    from channels.channel_map import getPreShowerChannel
     preshower_channel = getPreShowerChannel(runNumber)
     if preshower_channel is None:
         print("Pre-shower channel not found, skipping PSD selection.")
@@ -62,9 +62,9 @@ def applyPSDSelection(rdf, runNumber, isHadron=False, applyCut=True):
 
     print("Applying PSD selection based on pre-shower channel.")
     rdf = rdf.Define(f"{preshower_channel}_peak_value",
-                     f"MinRange({preshower_channel}_subtractMedian, 100, 400)")
+                     f"MinRange({preshower_channel}_blsub, 100, 400)")
     rdf = rdf.Define(f"{preshower_channel}_sum",
-                     f"SumRange({preshower_channel}_subtractMedian, 100, 400)")
+                     f"SumRange({preshower_channel}_blsub, 100, 400)")
 
     valCut = getPSDSumCutValue()
     rdf = rdf.Define("pass_PSDEle_selection",
@@ -86,7 +86,7 @@ def applyPSDSelection(rdf, runNumber, isHadron=False, applyCut=True):
 
 
 def applyCC1Selection(rdf, runNumber, isHadron=False, applyCut=True):
-    from utils.channel_map import getCerenkovCounters
+    from channels.channel_map import getCerenkovCounters
     cerenkov_channels = getCerenkovCounters(runNumber)
     if cerenkov_channels is None or len(cerenkov_channels) == 0:
         print("Cerenkov channels not found, skipping CC1 selection.")
@@ -97,9 +97,9 @@ def applyCC1Selection(rdf, runNumber, isHadron=False, applyCut=True):
 
     print("Applying CC1 selection based on Cerenkov1 channel.")
     rdf = rdf.Define(f"{cc1_channel}_peak_value",
-                     f"MinRange({cc1_channel}_subtractMedian, 600, 800)")
+                     f"MinRange({cc1_channel}_blsub, 600, 800)")
     rdf = rdf.Define(f"{cc1_channel}_sum",
-                     f"SumRange({cc1_channel}_subtractMedian, 600, 800)")
+                     f"SumRange({cc1_channel}_blsub, 600, 800)")
 
     valCut = getCC1SumCutValue()
     rdf = rdf.Define("pass_CC1Ele_selection",
@@ -121,13 +121,13 @@ def applyCC1Selection(rdf, runNumber, isHadron=False, applyCut=True):
 
 
 def applyUpstreamVeto(rdf, runNumber, applyCut=True):
-    from utils.channel_map import getUpstreamVetoChannel
+    from channels.channel_map import getUpstreamVetoChannel
     chan_upveto = getUpstreamVetoChannel(runNumber)
 
     rdf = rdf.Define(f"{chan_upveto}_peak_position",
-                     f"ROOT::VecOps::ArgMin({chan_upveto}_subtractMedian)")
+                     f"ROOT::VecOps::ArgMin({chan_upveto}_blsub)")
     rdf = rdf.Define(f"{chan_upveto}_peak_value",
-                     f"ROOT::VecOps::Min({chan_upveto}_subtractMedian)")
+                     f"ROOT::VecOps::Min({chan_upveto}_blsub)")
 
     rdf = rdf.Define(f"pass_upstream_veto",
                      f"({chan_upveto}_peak_value > -1000.0)")
