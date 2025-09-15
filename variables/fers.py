@@ -19,6 +19,23 @@ def vectorizeFERS(rdf, fersboards):
     return rdf
 
 
+def addFERSPosXY(rdf, fersboards):
+    """
+    Add iTowerX and iTowerY for each FERS channel
+    """
+    for fersboard in fersboards.values():
+        for channel in fersboard:
+            rdf = rdf.Define(
+                channel.GetPosName(isX=True),
+                f"{channel.iTowerX}"
+            )
+            rdf = rdf.Define(
+                channel.GetPosName(isX=False),
+                f"{channel.iTowerY}"
+            )
+    return rdf
+
+
 def subtractFERSPedestal(rdf, fersboards, pedestalsHG: dict = None, pedestalsLG: dict = None):
     for fersboard in fersboards.values():
         for channel in fersboard:

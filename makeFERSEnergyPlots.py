@@ -5,7 +5,7 @@ import json
 from collections import OrderedDict
 from channels.channel_map import buildFERSBoards
 from utils.dataloader import loadRDF, getRunInfo
-from variables.fers import getFERSEnergySum, vectorizeFERS, calibrateFERSChannels, subtractFERSPedestal, getFERSEnergyWeightedCenter
+from variables.fers import getFERSEnergySum, vectorizeFERS, calibrateFERSChannels, subtractFERSPedestal, getFERSEnergyWeightedCenter, addFERSPosXY
 from variables.drs import preProcessDRSBoards
 from utils.html_generator import generate_html
 from utils.fitter import eventFit
@@ -14,7 +14,7 @@ from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitPara
 from selections.selections import vetoMuonCounter, applyUpstreamVeto, applyPSDSelection, applyCC1Selection
 from utils.parser import get_args
 sys.path.append("CMSPLOTS")  # noqa
-from myFunction import DrawHistos
+from myFunction import DrawHistos, LHistos2Hist
 from utils.timing import auto_timer
 
 auto_timer("Total Execution Time")
@@ -48,6 +48,7 @@ rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber)
 
 fersboards = buildFERSBoards(run=runNumber)
 
+
 rdf = vectorizeFERS(rdf, fersboards)
 # define energy sums with different configurations
 # rdf = calibrateFERSChannels(
@@ -61,6 +62,8 @@ rdf = getFERSEnergySum(
 
 rdf = getFERSEnergyWeightedCenter(
     rdf, fersboards, pdsub=True, calib=False)
+
+rdf = addFERSPosXY(rdf, fersboards)
 
 rootdir = f"results/root/Run{runNumber}/"
 plotdir = f"results/plots/Run{runNumber}/"
@@ -191,6 +194,40 @@ def makeFERSEnergyWeightedCenterHists(pdsub=False, calib=False, clip=False, suff
     return hists_FERS_EnergyWeightedCenter
 
 
+def makeFERSShowerShapeHists(pdsub=False, calib=False, clip=False, suffix=""):
+    hists_X = []
+    hists_Y = []
+    for gain in ["HG", "LG"]:
+        for cat in ["cer", "sci"]:
+            hists_tmp_X = []
+            hists_tmp_Y = []
+            for fersboard in fersboards.values():
+                for channel in fersboard.GetListOfChannels(isCer=(cat == "cer")):
+                    channelName = channel.GetChannelName(
+                        useHG=(gain == "HG"), pdsub=pdsub, calib=calib)
+                    hist = rdf.Histo1D((
+                        f"hist_iTowerX_{channelName}_{suffix}",
+                        f"hist_iTowerX_{channelName}_{suffix}",
+                        300, -15, 15),
+                        channel.GetPosName(isX=True), channelName
+                    )
+                    hists_tmp_X.append(hist)
+                    hist = rdf.Histo1D((
+                        f"hist_iTowerY_{channelName}_{suffix}",
+                        f"hist_iTowerY_{channelName}_{suffix}",
+                        300, -15, 15),
+                        channel.GetPosName(isX=False), channelName
+                    )
+                    hists_tmp_Y.append(hist)
+
+            hists_X.append(
+                (hists_tmp_X, f"hist_iTowerX_{gain}_{cat}_{suffix}"))
+            hists_Y.append(
+                (hists_tmp_Y, f"hist_iTowerY_{gain}_{cat}_{suffix}"))
+
+    return hists_X, hists_Y
+
+
 def makeFERSEnergySumPlots(pdsub=False, calib=False, clip=False, suffix=""):
     config = getRangesForFERSEnergySums(
         pdsub=pdsub, calib=calib, clip=clip, HE=HE)
@@ -316,7 +353,7 @@ def makeFERSEnergyWeightedCenterPlots(pdsub=False, calib=False, clip=False, suff
             varname_Y = fersboards.GetEnergyWeightedCenterName(
                 useHG=(gain == "HG"), isCer=(cat == "cer"), pdsub=pdsub, calib=calib, isX=False)
 
-            extraToDrawBase = ROOT.TPaveText(0.20, 0.65, 0.60, 0.90, "NDC")
+            extraToDrawBase = ROOT.TPaveText(0.20, 0.85, 0.60, 0.90, "NDC")
             extraToDrawBase.SetTextAlign(11)
             extraToDrawBase.SetFillColorAlpha(0, 0)
             extraToDrawBase.SetBorderSize(0)
@@ -372,6 +409,46 @@ def makeFERSEnergyWeightedCenterPlots(pdsub=False, calib=False, clip=False, suff
 
     output_html = f"{htmldir}/FERS_EnergyWeightedCenter{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=3,
+                  output_html=output_html)
+    return output_html
+
+
+def makeFERSShowerShapePlots(pdsub=False, calib=False, clip=False, suffix=""):
+    plots = []
+    infile_name = f"{rootdir}/fers_shower_shape_{suffix}.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    outdir_plots = f"{plotdir}/FERS_ShowerShape_{suffix}"
+
+    for gain in ["HG", "LG"]:
+        for cat in ["cer", "sci"]:
+            hist_X_name = f"hist_iTowerX_{gain}_{cat}_{suffix}"
+            hist_X = infile.Get(hist_X_name)
+            if hist_X:
+                output_name = f"FERS_ShowerShape_iTowerX_{gain}_{cat}_{suffix}"
+                DrawHistos([hist_X], "", -15, 15, f"iTowerX {cat.capitalize()} {gain}", 1e-4, 1, "Events",
+                           output_name,
+                           dology=True, drawoptions="HIST", mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
+                           outdir=outdir_plots, runNumber=runNumber, donormalize=True)
+                plots.append(output_name + ".png")
+            else:
+                print(
+                    f"Warning: Histogram {hist_X_name} not found in {infile_name}")
+
+            hist_Y_name = f"hist_iTowerY_{gain}_{cat}_{suffix}"
+            hist_Y = infile.Get(hist_Y_name)
+            if hist_Y:
+                output_name = f"FERS_ShowerShape_iTowerY_{gain}_{cat}_{suffix}"
+                DrawHistos([hist_Y], "", -15, 15, f"iTowerY {cat.capitalize()} {gain}", 1e-4, 1, "Events",
+                           output_name,
+                           dology=True, drawoptions="HIST", mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
+                           outdir=outdir_plots, runNumber=runNumber, donormalize=True)
+                plots.append(output_name + ".png")
+            else:
+                print(
+                    f"Warning: Histogram {hist_Y_name} not found in {infile_name}")
+
+    output_html = f"{htmldir}/FERS_ShowerShape{suffix}/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
 
@@ -437,6 +514,9 @@ if __name__ == "__main__":
             hists_energy_weighted_center = makeFERSEnergyWeightedCenterHists(
                 pdsub=True, calib=False, clip=False, suffix=cat)
 
+            hists_shower_shapes_X, hists_shower_shapes_Y = makeFERSShowerShapeHists(
+                pdsub=True, calib=False, clip=False, suffix=cat)
+
             # save histograms to ROOT files
             outfile_name = f"{rootdir}/fers_energy_sum_{cat}.root"
             with ROOT.TFile(outfile_name, "RECREATE") as outfile:
@@ -462,6 +542,25 @@ if __name__ == "__main__":
                     hist.Write()
             print(f"Saved energy weighted center histograms to {outfile_name}")
 
+            # save shower shape histograms
+            # process the shower shape histograms to merge per-channel histograms
+            hists_shower_shape = []
+            for hists_X, hname_X in hists_shower_shapes_X:
+                hists_X_new = [h.GetValue() for h in hists_X]
+                hists_shower_shape.append(
+                    LHistos2Hist(hists_X_new, hname_X))
+            for hists_Y, hname_Y in hists_shower_shapes_Y:
+                hists_Y_new = [h.GetValue() for h in hists_Y]
+                hists_shower_shape.append(
+                    LHistos2Hist(hists_Y_new, hname_Y))
+            outfile_name = f"{rootdir}/fers_shower_shape_{cat}.root"
+            with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+                for hist in hists_shower_shape:
+                    hist = hist.Clone()
+                    hist.SetDirectory(outfile)
+                    hist.Write()
+            print(f"Saved shower shape histograms to {outfile_name}")
+
         # make plots
         if makePlots:
             outputs_html[f"raw_{cat}"] = makeFERSEnergySumPlots(
@@ -479,6 +578,9 @@ if __name__ == "__main__":
             #     pdsub=True, calib=True)
 
             outputs_html[f"energy_weighted_center_{cat}"] = makeFERSEnergyWeightedCenterPlots(
+                pdsub=True, calib=False, suffix=cat)
+
+            outputs_html[f"shower_shape_{cat}"] = makeFERSShowerShapePlots(
                 pdsub=True, calib=False, suffix=cat)
 
     print("Generated HTML files:")

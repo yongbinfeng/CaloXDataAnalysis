@@ -72,6 +72,9 @@ class FERSChannel(CaloXChannel):
             channelName += "_calib"
         return channelName
 
+    def GetPosName(self, isX=True):
+        return f"FERS_Board{self.boardNo}_{self.channelNo}_iTower{'X' if isX else 'Y'}"
+
 
 class DRSChannel(CaloXChannel):
     def __init__(self, iTowerX: float, iTowerY: float, isCer: bool, channelNo: int, groupNo: int, boardNo: int, isAmplified: bool = False, is6mm: bool = True):
