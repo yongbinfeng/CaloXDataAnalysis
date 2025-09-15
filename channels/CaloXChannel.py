@@ -116,6 +116,8 @@ class DRSChannel(CaloXChannel):
     def GetChannelPeakTSName(self):
         return self.GetChannelName(blsub=True) + "_peakTS"
 
+    def GetChannelTimeName(self):
+        return self.GetChannelName() + "_LP2_50"
 
 class Board(object):
     """

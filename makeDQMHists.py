@@ -1,3 +1,8 @@
+import os
+import ROOT
+from utils.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels, findDRSTriggerMap, findTimeReferenceDelay
+from utils.utils import number2string, preProcessDRSBoards, loadRDF, vectorizeFERS, prepareDRSStats, getFERSBoardMax, preProcessTimeCorrections
+from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from utils.parser import get_args
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from utils.dataloader import getRunInfo, loadRDF
@@ -11,7 +16,7 @@ from utils.timing import auto_timer  # noqa
 auto_timer("Total Execution Time")
 
 # multi-threading support
-ROOT.ROOT.EnableImplicitMT(10)
+ROOT.ROOT.EnableImplicitMT(2)
 ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
 debugDRS = False
@@ -20,8 +25,9 @@ args = get_args()
 runNumber = args.run
 firstEvent = args.first_event
 lastEvent = args.last_event
+jsonFile = args.jsonFile
 
-rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
+rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
 
 DRSBoards = buildDRSBoards(run=runNumber)
 fersboards = buildFERSBoards(run=runNumber)
@@ -37,6 +43,10 @@ rdf = getFERSEnergyMax(rdf, fersboards)
 rdf = preProcessDRSBoards(rdf, debug=debugDRS)
 rdf = getDRSStats(rdf, DRSBoards, 0, 1000, 9)
 
+rdf = prepareDRSStats(rdf, DRSBoards, 0, 1000, 9)
+
+rdf = getFERSBoardMax(rdf, FERSBoards)
+rdf = preProcessTimeCorrections(rdf, DRSBoards, runNumber)
 
 def monitorConditions():
     # monitor the V, I, T conditions
@@ -158,6 +168,29 @@ def collectFERSStats():
 
     return stats
 
+def collectDRSStats():
+    from configs.plotranges import getDRSSaturationValue
+    saturation_value = getDRSSaturationValue()
+    stats = {}
+    # mean, max,
+    # and how frequent the saturation value is reached
+
+    for _, DRSBoard in DRSBoards.items():
+        for chan in DRSBoard:
+            channelName = chan.GetChannelName()
+            channelTimingName = chan.GetChannelTimeName()
+
+            stats[channelName] = (
+                rdf.Filter(f"{channelTimingName} > 1").Mean(f"{channelTimingName}_goodTime"),
+                rdf.Max(f"{channelTimingName}_goodTime"),
+                rdf.Filter(f"{channelTimingName} > 1").Mean(f"{channelName}_baseline_RMS"),
+                rdf.Filter(f"{channelTimingName} > 1").Mean(f"{channelName}_integral"),
+                rdf.Filter(f"{channelTimingName} > 1").Mean(f"{channelName}_amp"),
+                rdf.Filter(f"{channelTimingName} > 1").Mean(f"{channelName}_risetime")
+                # rdf.Filter(f"{channelName} >= {saturation_value}").Count()
+            )
+
+    return stats
 
 def makeFERSMaxValueHists():
     """
@@ -300,8 +333,44 @@ def makeFERS2DHists():
     return hists2d_FERS
 
 
-def makeDRS2DHists(debug=False):
-    hists2d_DRS_VS_TS = []
+def makeDRS1DPlots():
+    hists1d_DRS = []
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+
+            for var in ["Cer", "Sci"]:
+                chan = DRSBoard.GetChannelByTower(
+                    iTowerX, iTowerY, isCer=(var == "Cer"))
+
+                if chan is None:
+                    continue
+                # channelName = chan.GetChannelName()
+                # value_mean = stats[channelName]['mean']
+                # hist = rdf.Histo1D((
+                #     f"hist_DRS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
+                #     f"DRS Board {boardNo} - {var} iTowerX {sTowerX} iTowerY {sTowerY};{var} Variable;Counts",
+                #     200, value_mean - 100, value_mean + 100),
+                #     channelName
+                # )
+                # hists1d_DRS.append(hist)
+
+                channelTimingName = chan.GetChannelTimeName()
+                hist_time = rdf.Filter(f"{channelTimingName} > 1").Histo1D((
+                    f"hist_DRS_Board{boardNo}_{var}_Time_{sTowerX}_{sTowerY}",
+                    f"DRS Board {boardNo} - {var} Time iTowerX {sTowerX} iTowerY {sTowerY};{var} Time (ns);Counts",
+                    1000, 0.0, 100.0),
+                    f"{channelTimingName}_goodTime"
+                )
+                hists1d_DRS.append(hist_time)
+
+    return hists1d_DRS
+
+
+def makeDRS2DPlots(debug=False):
+    hists2d_DRS_vs_TS = []
     if debug:
         hists2d_DRS_VS_RTSpos = []
         hists2d_DRS_VS_RTSneg = []
@@ -494,13 +563,14 @@ def checkDRSPeakTS():
                     continue
 
                 channelName = chan_DRS.GetChannelPeakTSName()
+                channelTimingName = chan_DRS.GetChannelTimeName()
                 channelNames[var] = channelName
 
-                h1_DRSPeakTS = rdf.Histo1D((
+                h1_DRSPeakTS = rdf.Filter(f"{channelTimingName} > 1").Histo1D((
                     f"hist_DRSPeakTS_{var}_{sTowerX}_{sTowerY}",
                     f"DRS Peak TS for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var};Peak TS;Counts",
-                    1000, 0, 1000),
-                    channelName
+                    1000, 0, 100),
+                    channelTimingName + "_goodTime"
                 )
                 h1s_DRSPeakTS[var].append(h1_DRSPeakTS)
 
@@ -509,12 +579,12 @@ def checkDRSPeakTS():
                     f"Warning: Not enough channels found for Board{boardNo}, Tower({sTowerX}, {sTowerY})")
                 continue
 
-            h2_DRSPeak_Cer_VS_Sci = rdf.Histo2D((
+            h2_DRSPeak_Cer_VS_Sci = rdf.Filter(f"{channelNames["Cer"]}_LP2_50_goodTime > 1 && {channelNames["Sci"]}_LP2_50_goodTime > 1").Histo2D((
                 f"hist_DRSPeakTS_Cer_VS_Sci_{sTowerX}_{sTowerY}",
                 f"DRS Peak TS - CER VS SCI for Board{boardNo}, Tower({sTowerX}, {sTowerY});SCI Peak TS;CER Peak TS",
-                1000, 0, 1000, 1000, 0, 1000),
-                channelNames["Sci"],
-                channelNames["Cer"],
+                1000, 0, 100, 1000, 0, 100),
+                f"{channelNames["Cer"]}_LP2_50_goodTime",
+                f"{channelNames["Sci"]}_LP2_50_goodTime",
             )
             h2s_DRSPeakTS_Cer_VS_Sci.append(h2_DRSPeak_Cer_VS_Sci)
     return h1s_DRSPeakTS["Cer"], h1s_DRSPeakTS["Sci"], h2s_DRSPeakTS_Cer_VS_Sci
@@ -531,8 +601,9 @@ if __name__ == "__main__":
     # hists2d_FERS = makeFERS2DHists()
     # hists2d_FERS_VS_Event = trackFERSHists()
 
-    hists2d_DRS_VS_RTSpos = None
-    hists2d_DRS_VS_RTSneg = None
+    hists1d_DRS = makeDRS1DPlots()
+    hists2d_DRS_vs_RTSpos = None
+    hists2d_DRS_vs_RTSneg = None
     if debugDRS:
         hists2d_DRS_VS_TS, hists2d_DRS_VS_RTSpos, hists2d_DRS_VS_RTSneg = makeDRS2DHists(
             debug=True)
@@ -564,6 +635,7 @@ if __name__ == "__main__":
     hists_FERS_max = makeFERSMaxValueHists()
 
     stats = collectFERSStats()
+    statsDRS = collectDRSStats()
 
     # pedestals
     pedestals_HG = collectFERSPedestals(hists1d_FERS, useHG=True)
@@ -585,6 +657,15 @@ if __name__ == "__main__":
         with open(f"{rootdir}/fers_stats.json", "w") as f:
             json.dump(stats_results, f, indent=4)
 
+     # dump stats into a json file
+    if 'statsDRS' in locals() and statsDRS:
+        import json
+        stats_results = {}
+        for channelName, (mean, max_value, noise, integral, amp, risetime) in statsDRS.items():
+            stats_results[channelName] = (mean.GetValue(), max_value.GetValue(), noise.GetValue(), integral.GetValue(), amp.GetValue(), risetime.GetValue())
+        with open(f"{rootdir}/drs_stats.json", "w") as f:
+            json.dump(stats_results, f, indent=4)
+            
     if 'pedestals_HG' in locals() and pedestals_HG:
         import json
         with open(f"{rootdir}/fers_pedestals_hg.json", "w") as f:
@@ -618,8 +699,14 @@ if __name__ == "__main__":
     #    hist.Write()
     # outfile.Close()
     #
+        
+    outfile_DRS = ROOT.TFile(f"{rootdir}/drs_all_channels_1D.root", "RECREATE")
+    for hist in hists1d_DRS:
+       hist.SetDirectory(outfile_DRS)
+       hist.Write()
+    outfile_DRS.Close()
     outfile_DRS = ROOT.TFile(f"{rootdir}/drs_vs_ts.root", "RECREATE")
-    for hist in hists2d_DRS_VS_TS:
+    for hist in hists2d_DRS_vs_TS:
         hist.SetDirectory(outfile_DRS)
         hist.Write()
     outfile_DRS.Close()

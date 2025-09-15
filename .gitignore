@@ -9,4 +9,4 @@ backup*
 *.so
 *.pcm
 .DS_Store
-*png
+*.png

@@ -5,7 +5,7 @@ from myFunction import DrawHistos, LHistos2Hist
 from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
 from utils.utils import number2string, round_up_to_1eN
 from utils.html_generator import generate_html
-from utils.visualization import visualizeFERSBoards
+from utils.visualization import visualizeFERSBoards, visualizeDRSBoards
 from channels.validateMap import DrawFERSBoards, DrawDRSBoards
 from utils.colors import colors
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
@@ -33,6 +33,9 @@ rootdir = f"results/root/Run{runNumber}/"
 plotdir = f"results/plots/Run{runNumber}/"
 htmldir = f"results/html/Run{runNumber}/"
 
+
+drsMin = 25
+drsMax = 35
 
 def makeConditionsPlots():
     plots = []
@@ -356,6 +359,128 @@ def makeFERSStatsPlots(includePedestals=False):
                   output_html=output_html)
     return output_html
 
+def makeDRSStatsPlots():
+    plots = []
+    outdir_plots = f"{plotdir}/DRS_Stats"
+    # load the json file
+    import json
+    infile_name = f"{rootdir}/DRS_stats.json"
+    with open(infile_name, "r") as f:
+        stats = json.load(f)
+
+    xmax = 14
+    xmin = -14
+    ymax = 10
+    ymin = -10
+    W_ref = 1000
+    H_ref = 1100
+    valuemaps_mean = {}
+    valuemaps_max = {}
+    valuemaps_satfreq = {}
+    valuemaps_noise = {}
+    valuemaps_integral = {}
+    valuemaps_amp = {}
+    valuemaps_risetime = {}
+
+    for channelName, (vmean, vmax, vnoise, vintegral, vamp, vrisetime) in stats.items():
+        valuemaps_mean[channelName] = vmean
+        valuemaps_max[channelName] = vmax
+        # valuemaps_satfreq[channelName] = vsatfreq
+        valuemaps_noise[channelName] = vnoise
+        valuemaps_integral[channelName] = vintegral
+        valuemaps_amp[channelName] = vamp
+        valuemaps_risetime[channelName] = vrisetime
+
+    [h2_Cer_mean, h2_Cer_3mm_mean], [h2_Sci_mean, h2_Sci_3mm_mean] = visualizeDRSBoards(
+        DRSBoards, valuemaps_mean, suffix=f"Run{runNumber}_mean")
+    [h2_Cer_max, h2_Cer_3mm_max], [h2_Sci_max, h2_Sci_3mm_max] = visualizeDRSBoards(
+        DRSBoards, valuemaps_max, suffix=f"Run{runNumber}_max")
+    # [h2_Cer_HG_satfreq, h2_Cer_3mm_HG_satfreq], [h2_Sci_HG_satfreq, h2_Sci_3mm_HG_satfreq] = visualizeDRSBoards(
+    #     FERSBoards, valuemaps_HG_satfreq, suffix=f"Run{runNumber}_HG_satfreq")
+    [h2_Cer_noise, h2_Cer_3mm_noise], [h2_Sci_noise, h2_Sci_3mm_noise] = visualizeDRSBoards(
+        DRSBoards, valuemaps_noise, suffix=f"Run{runNumber}_noise")
+    [h2_Cer_integral, h2_Cer_3mm_integral], [h2_Sci_integral, h2_Sci_3mm_integral] = visualizeDRSBoards(
+        DRSBoards, valuemaps_integral, suffix=f"Run{runNumber}_integral")
+    [h2_Cer_amp, h2_Cer_3mm_amp], [h2_Sci_amp, h2_Sci_3mm_amp] = visualizeDRSBoards(
+        DRSBoards, valuemaps_amp, suffix=f"Run{runNumber}_amp")
+    [h2_Cer_risetime, h2_Cer_3mm_risetime], [h2_Sci_risetime, h2_Sci_3mm_risetime] = visualizeDRSBoards(
+        DRSBoards, valuemaps_risetime, suffix=f"Run{runNumber}_risetime")
+
+    output_name = f"DRS_Boards_Run{runNumber}_Stats_mean"
+    DrawHistos([h2_Cer_mean, h2_Cer_3mm_mean], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=20, zmax=60)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_mean, h2_Sci_3mm_mean], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=20, zmax=60)
+    plots.append(output_name + "_Sci.png")
+
+    output_name = f"DRS_Boards_Run{runNumber}_Stats_max"
+    DrawHistos([h2_Cer_max, h2_Cer_3mm_max], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=8000)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_max, h2_Sci_3mm_max], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
+    plots.append(output_name + "_Sci.png")
+
+    # output_name = f"DRS_Boards_Run{runNumber}_Stats_satfreq"
+    # DrawHistos([h2_Cer_HG_satfreq, h2_Cer_3mm_HG_satfreq], "", xmin, xmax, "iX", ymin,
+    #            ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+    #            outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
+    # plots.append(output_name + "_Cer.png")
+    # DrawHistos([h2_Sci_HG_satfreq, h2_Sci_3mm_HG_satfreq], "", xmin, xmax, "iX", ymin,
+    #            ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+    #            outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
+    # plots.append(output_name + "_Sci.png")
+
+    output_name = f"DRS_Boards_Run{runNumber}_Stats_noise"
+    DrawHistos([h2_Cer_noise, h2_Cer_3mm_noise], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=5)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_noise, h2_Sci_3mm_noise], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=5)
+    plots.append(output_name + "_Sci.png")
+
+    output_name = f"DRS_Boards_Run{runNumber}_Stats_integral"
+    DrawHistos([h2_Cer_integral, h2_Cer_3mm_integral], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=2000)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_integral, h2_Sci_3mm_integral], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=2000)
+    plots.append(output_name + "_Sci.png")
+
+    output_name = f"DRS_Boards_Run{runNumber}_Stats_amp"
+    DrawHistos([h2_Cer_amp, h2_Cer_3mm_amp], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],   
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=200)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_amp, h2_Sci_3mm_amp], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],   
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=200)
+    plots.append(output_name + "_Sci.png")
+
+    output_name = f"DRS_Boards_Run{runNumber}_Stats_risetime"
+    DrawHistos([h2_Cer_risetime, h2_Cer_3mm_risetime], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],   
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=10)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_risetime, h2_Sci_3mm_risetime], "", xmin, xmax, "iX", ymin,
+                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],   
+                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=10)
+    plots.append(output_name + "_Sci.png")
+
+    output_html = f"{htmldir}/DRS_Stats/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=2,
+                  output_html=output_html)
+    return output_html
+
 
 def makeFERSMaxValuePlots():
     plots = []
@@ -565,6 +690,70 @@ def makeDRSVSTSPlots():
     infile_name = f"{rootdir}/drs_vs_ts.root"
     infile = ROOT.TFile(infile_name, "READ")
     for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
+        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
+            sTowerX = number2string(iTowerX)
+            sTowerY = number2string(iTowerY)
+
+            chan_Cer = DRSBoard.GetChannelByTower(iTowerX, iTowerY, isCer=True)
+            chan_Sci = DRSBoard.GetChannelByTower(
+                iTowerX, iTowerY, isCer=False)
+
+            hist_C_name = f"hist_DRS_Board{boardNo}_Cer_{sTowerX}_{sTowerY}"
+            hist_S_name = f"hist_DRS_Board{boardNo}_Sci_{sTowerX}_{sTowerY}"
+            hist_C = infile.Get(hist_C_name)
+            hist_S = infile.Get(hist_S_name)
+            if not hist_C or not hist_S:
+                print(
+                    f"Warning: Histograms {hist_C_name} or {hist_S_name} not found in {infile_name}")
+                continue
+
+            extraToDraw = ROOT.TPaveText(0.20, 0.65, 0.60, 0.90, "NDC")
+            extraToDraw.SetTextAlign(11)
+            extraToDraw.SetFillColorAlpha(0, 0)
+            extraToDraw.SetBorderSize(0)
+            extraToDraw.SetTextFont(42)
+            extraToDraw.SetTextSize(0.04)
+            extraToDraw.AddText(f"Board: {DRSBoard.boardNo}")
+            extraToDraw.AddText(f"iTowerX: {iTowerX}")
+            extraToDraw.AddText(f"iTowerY: {iTowerY}")
+            extraToDraw.AddText(
+                f"Cer Channel: ({chan_Cer.groupNo}, {chan_Cer.channelNo})")
+            extraToDraw.AddText(
+                f"Sci Channel: ({chan_Sci.groupNo}, {chan_Sci.channelNo})")
+
+            output_name = f"DRS_Variable_Board{boardNo}_iTowerX{sTowerX}_iTowerY{sTowerY}"
+            outdir_plots = f"{plotdir}/DRS_1D"
+            DrawHistos([hist_C, hist_S], ["Cer", "Sci"], 1400, 2500, "DRS Output", 1, 1e12, "Counts",
+                       output_name,
+                       dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True, extraToDraw=extraToDraw,
+                       legendPos=(0.60, 0.78, 0.90, 0.68),
+                       outdir=outdir_plots)
+            plots.append(output_name + ".png")
+
+    output_html = f"{htmldir}/DRS_1D/index.html"
+    generate_html(plots, outdir_plots,
+                  output_html=output_html)
+    return output_html
+
+
+# DRS vs TS
+def makeDRS2DPlots(doSubtractMedian=False, doRTS=0):
+    suffix = ""
+    if doSubtractMedian:
+        suffix = "_subtractMedian"
+    varTS = "TS"
+    if doRTS == 1:
+        varTS = "RTSpos"
+    elif doRTS == 2:
+        varTS = "RTSneg"
+
+    plots = []
+    outdir_plots = f"{plotdir}/DRS_vs_{varTS}"
+    infile_name = f"{rootdir}/drs_vs_{varTS}.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    for _, DRSBoard in DRSBoards.items():
+        boardNo = DRSBoard.boardNo
         for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
             sTowerX = number2string(iTowerX)
             sTowerY = number2string(iTowerY)
@@ -667,11 +856,17 @@ def makeDRSPeakTSPlots():
             hists_Cer.append(hists["Cer"])
             hists_Sci.append(hists["Sci"])
 
-            DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], 0, 1000, "Peak TS", 1, None, "Counts",
+            DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], drsMin-5, drsMax+5, "Time [ns]", 1, None, "Counts",
                        output_name,
                        dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False, extraToDraw=extraToDraw,
                        outdir=outdir_plots, runNumber=runNumber)
             plots.append(output_name + ".png")
+
+            DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], drsMin-5, drsMax+5, "Peak TS", 1, None, "Counts",
+                       output_name + "_log",
+                       dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False, extraToDraw=extraToDraw,
+                       outdir=outdir_plots, runNumber=runNumber)
+            plots.append(output_name + "_log.png")
 
     # summary plots
     hist_Cer_Combined = LHistos2Hist(hists_Cer, "hist_DRSPeakTS_Cer_Combined")
@@ -718,7 +913,7 @@ def makeDRSPeakTSCerVSSciPlots():
 
             hists.append(hist)
 
-            DrawHistos([hist], "", 0, 1000, "Sci Peak TS", 0, 1000, f"Cer Peak TS",
+            DrawHistos([hist], "", drsMin, drsMax, "Cer Time [ns]", drsMin, drsMax, f"Sci Time [ns]",
                        output_name,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
                        outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
@@ -729,6 +924,14 @@ def makeDRSPeakTSCerVSSciPlots():
     hcombined = LHistos2Hist(hists, "hist_DRSPeakTS_Cer_VS_Sci_Combined")
     output_name = "DRS_PeakTS_Cer_VS_Sci_Combined"
     DrawHistos([hcombined], "", 0, 1000, "Sci Peak TS", 0, 1000, f"Cer Peak TS",
+    h2 = ROOT.TH2F("hist_DRSPeak_Cer_vs_Sci_Sum",
+                   "DRS Peak TS Cer vs Sci Sum", 1000, drsMin, drsMax, 1000, drsMin, drsMax)
+    for hist in hists:
+        if hist:
+            h2.Add(hist)
+
+    output_name = "DRS_PeakTS_Cer_vs_Sci_Sum"
+    DrawHistos([h2], "", drsMin, drsMax, "Cer Time [ns]", drsMin, drsMax, f"Sci Time [ns]",
                output_name,
                dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
                outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
@@ -948,6 +1151,11 @@ if __name__ == "__main__":
 
     output_htmls["fers 1D"] = makeFERS1DPlots()
     output_htmls["fers stats"] = makeFERSStatsPlots(includePedestals=True)
+    output_htmls["drs stats"] = makeDRSStatsPlots()
+    # # makeDRS2DPlots()
+    output_htmls["drs 2D"] = makeDRS2DPlots(doSubtractMedian=True)
+    output_htmls["drs peak ts"] = makeDRSPeakTSPlots()
+    output_htmls["drs peak ts 2D"] = makeDRSPeakTS2DPlots()
 
     output_htmls["drs vs ts"] = makeDRSVSTSPlots()
     output_htmls["drs peak ts"] = makeDRSPeakTSPlots()

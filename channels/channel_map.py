@@ -12,6 +12,9 @@ f_triggerdelay = "data/triggerdelay.json"
 with open(f_triggerdelay, 'r') as f:
     triggerdelay = json.load(f)
 
+f_drstriggermap = "data/drstriggermap.json"
+with open(f_drstriggermap, 'r') as f:
+    triggermap = json.load(f)
 
 def buildFERSBoards(run=316):
     """
@@ -538,11 +541,18 @@ def buildHodoPosChannels(run=316):
 
 
 def findTimeReferenceDelay(channel, run=1040):
-    if str(run) not in triggerdelay.keys:
+    if str(run) not in triggerdelay.keys():
         return triggerdelay["default"][channel]
     else:
         return triggerdelay[str(run)][channel]
 
+def findDRSTriggerMap(channel, run=1040):
+    result = "_".join(channel.split("_")[:3])
+    print(triggermap.keys())
+    if str(run) not in triggermap.keys():
+        return triggermap["default"][result]
+    else:
+        return triggermap[str(run)][result]
 
 def getUpstreamVetoChannel(run=1184):
     if run < 1183:

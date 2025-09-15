@@ -72,6 +72,9 @@ def getFERSSaturationValue():
     # return 8191
     return 7800
 
+def getDRSSaturationValue():
+    # This is the saturation value for the DRS channels
+    return 4095
 
 def getDRSPlotRanges(subtractMedian=False, isAmplified=False):
     xmin = -50
