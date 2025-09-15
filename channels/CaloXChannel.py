@@ -170,8 +170,16 @@ class Board(object):
                     scichannels.append(channel)
         return scichannels
 
-    def GetListOfChannels(self):
-        return [channel for row in self.channels for channel in row]
+    def GetListOfChannels(self, isCer=None):
+        """
+        isCer can be True, False, or None (for all channels).
+        """
+        channels = []
+        for row in self.channels:
+            for channel in row:
+                if isCer is None or channel.isCer == isCer:
+                    channels.append(channel)
+        return channels
 
     def GetListOfTowers(self):
         """
@@ -286,6 +294,18 @@ class FERSBoard(Board):
             sumname += "_calib"
         sumname += "_sum"
         return sumname
+
+    def GetEnergyWeightedCenterName(self, useHG=True, isCer=True, pdsub=False, calib=False, isX=True):
+        type_str = "Cer" if isCer else "Sci"
+        hg_lg_str = "HG" if useHG else "LG"
+        centername = f"FERS_Board{self.boardNo}_energy{hg_lg_str}_{type_str}"
+        if pdsub:
+            centername += "_pdsub"
+        if calib:
+            centername += "_calib"
+        centername += "_weighted_center"
+        centername += "_X" if isX else "_Y"
+        return centername
 
     def GetSipmHVName(self):
         return f"FERS_Board{self.boardNo}_SipmHV"
@@ -415,6 +435,18 @@ class FERSBoards(dict):
             sumname += "_calib"
         sumname += "_sum"
         return sumname
+
+    def GetEnergyWeightedCenterName(self, useHG=True, isCer=True, pdsub=False, calib=False, isX=True):
+        type_str = "Cer" if isCer else "Sci"
+        hg_lg_str = "HG" if useHG else "LG"
+        centername = f"FERS_energy{hg_lg_str}_{type_str}"
+        if pdsub:
+            centername += "_pdsub"
+        if calib:
+            centername += "_calib"
+        centername += "_weighted_center"
+        centername += "_X" if isX else "_Y"
+        return centername
 
 
 # physical channels to the readout channel names

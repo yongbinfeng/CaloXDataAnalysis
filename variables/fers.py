@@ -142,3 +142,26 @@ def getFERSEnergySum(rdf, fersboards, pdsub=False, calib=False):
     rdf = rdf.Define(fersboards.GetEnergySumName(useHG=False, isCer=False, pdsub=pdsub, calib=calib),
                      f"({' + '.join(fersboard.GetEnergySumName(useHG=False, isCer=False, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
     return rdf
+
+
+def getFERSEnergyWeightedCenter(rdf, fersboards, pdsub=False, calib=False):
+    """
+    Calculate the weighted center of the energy distribution for FERS boards.
+    """
+    for gain in ["HG", "LG"]:
+        for var in ["Cer", "Sci"]:
+            x_center = "0."
+            y_center = "0."
+            for fersboard in fersboards.values():
+                for channel in fersboard.GetListOfChannels(isCer=(var == "Cer")):
+                    channelName = channel.GetChannelName(
+                        useHG=(gain == "HG"), pdsub=pdsub, calib=calib)
+                    x_center += f"+ {channel.iTowerX} * {channelName}"
+                    y_center += f"+ {channel.iTowerY} * {channelName}"
+
+            rdf = rdf.Define(fersboards.GetEnergyWeightedCenterName(useHG=(gain == "HG"), isCer=(var == "Cer"), pdsub=pdsub, calib=calib, isX=True),
+                             f"({x_center}) / ({fersboards.GetEnergySumName(useHG=(gain == 'HG'), isCer=(var == 'Cer'), pdsub=pdsub, calib=calib)} + 1e-9)")
+            rdf = rdf.Define(fersboards.GetEnergyWeightedCenterName(useHG=(gain == "HG"), isCer=(var == "Cer"), pdsub=pdsub, calib=calib, isX=False),
+                             f"({y_center}) / ({fersboards.GetEnergySumName(useHG=(gain == 'HG'), isCer=(var == 'Cer'), pdsub=pdsub, calib=calib)} + 1e-9)")
+
+    return rdf

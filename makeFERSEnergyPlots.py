@@ -5,7 +5,7 @@ import json
 from collections import OrderedDict
 from channels.channel_map import buildFERSBoards
 from utils.dataloader import loadRDF, getRunInfo
-from variables.fers import getFERSEnergySum, vectorizeFERS, calibrateFERSChannels, subtractFERSPedestal
+from variables.fers import getFERSEnergySum, vectorizeFERS, calibrateFERSChannels, subtractFERSPedestal, getFERSEnergyWeightedCenter
 from variables.drs import preProcessDRSBoards
 from utils.html_generator import generate_html
 from utils.fitter import eventFit
@@ -59,6 +59,9 @@ rdf = getFERSEnergySum(
 # rdf = getFERSEnergySum(
 #    rdf, fersboards, pdsub=True, calib=True, clip=False)
 
+rdf = getFERSEnergyWeightedCenter(
+    rdf, fersboards, pdsub=True, calib=False)
+
 rootdir = f"results/root/Run{runNumber}/"
 plotdir = f"results/plots/Run{runNumber}/"
 htmldir = f"results/html/Run{runNumber}/"
@@ -68,15 +71,15 @@ rdfs = OrderedDict()
 rdf = applyPSDSelection(rdf, runNumber, applyCut=False)
 rdf = applyCC1Selection(rdf, runNumber, applyCut=False)
 
-rdfs["inc"] = rdf
+# rdfs["inc"] = rdf
 rdfs["passPSDEle_passCC1Ele"] = rdf.Filter(
     "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 1")
-rdfs["passPSDEle_failCC1Ele"] = rdf.Filter(
-    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 0")
-rdfs["failPSDEle_passCC1Ele"] = rdf.Filter(
-    "pass_PSDEle_selection == 0 && pass_CC1Ele_selection == 1")
-rdfs["failPSDEle_failCC1Ele"] = rdf.Filter(
-    "pass_PSDEle_selection == 0 && pass_CC1Ele_selection == 0")
+# rdfs["passPSDEle_failCC1Ele"] = rdf.Filter(
+#    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 0")
+# rdfs["failPSDEle_passCC1Ele"] = rdf.Filter(
+#    "pass_PSDEle_selection == 0 && pass_CC1Ele_selection == 1")
+# rdfs["failPSDEle_failCC1Ele"] = rdf.Filter(
+#    "pass_PSDEle_selection == 0 && pass_CC1Ele_selection == 0")
 
 
 def makeFERSEnergySumHists(rdf=rdf, pdsub=False, calib=False, clip=False, suffix=""):
@@ -149,6 +152,43 @@ def makeFERSCervsSciHists(rdf=rdf, pdsub=False, calib=False, clip=False, suffix=
         hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci_Event)
 
     return hists_FERS_Cer_vs_Sci
+
+
+def makeFERSEnergyWeightedCenterHists(pdsub=False, calib=False, clip=False, suffix=""):
+    hists_FERS_EnergyWeightedCenter = []
+    for gain in ["HG", "LG"]:
+        for cat in ["cer", "sci"]:
+            # per-event
+            varname_X = fersboards.GetEnergyWeightedCenterName(
+                useHG=(gain == "HG"), isCer=(cat == "cer"), pdsub=pdsub, calib=calib, isX=True)
+            varname_Y = fersboards.GetEnergyWeightedCenterName(
+                useHG=(gain == "HG"), isCer=(cat == "cer"), pdsub=pdsub, calib=calib, isX=False)
+
+            histX = rdf.Histo1D((
+                f"hist_{varname_X}_{suffix}",
+                f"hist_{varname_X}_{suffix}",
+                100, -15, 15),
+                varname_X
+            )
+            hists_FERS_EnergyWeightedCenter.append(histX)
+            histY = rdf.Histo1D((
+                f"hist_{varname_Y}_{suffix}",
+                f"hist_{varname_Y}_{suffix}",
+                100, -15, 15),
+                varname_Y
+            )
+            hists_FERS_EnergyWeightedCenter.append(histY)
+            hist2D = rdf.Histo2D((
+                f"hist_{varname_X}_VS_{varname_Y}_{suffix}",
+                f"hist_{varname_X}_VS_{varname_Y}_{suffix}",
+                100, -15, 15,
+                100, -15, 15),
+                varname_X,
+                varname_Y
+            )
+            hists_FERS_EnergyWeightedCenter.append(hist2D)
+
+    return hists_FERS_EnergyWeightedCenter
 
 
 def makeFERSEnergySumPlots(pdsub=False, calib=False, clip=False, suffix=""):
@@ -263,6 +303,79 @@ def makeFERSCerVsSciPlots(pdsub=False, calib=False, clip=False, suffix=""):
     return output_html
 
 
+def makeFERSEnergyWeightedCenterPlots(pdsub=False, calib=False, clip=False, suffix=""):
+    plots = []
+    infile_name = f"{rootdir}/fers_energy_weighted_center_{suffix}.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    outdir_plots = f"{plotdir}/FERS_EnergyWeightedCenter_{suffix}"
+
+    for gain in ["HG", "LG"]:
+        for cat in ["cer", "sci"]:
+            varname_X = fersboards.GetEnergyWeightedCenterName(
+                useHG=(gain == "HG"), isCer=(cat == "cer"), pdsub=pdsub, calib=calib, isX=True)
+            varname_Y = fersboards.GetEnergyWeightedCenterName(
+                useHG=(gain == "HG"), isCer=(cat == "cer"), pdsub=pdsub, calib=calib, isX=False)
+
+            extraToDrawBase = ROOT.TPaveText(0.20, 0.65, 0.60, 0.90, "NDC")
+            extraToDrawBase.SetTextAlign(11)
+            extraToDrawBase.SetFillColorAlpha(0, 0)
+            extraToDrawBase.SetBorderSize(0)
+            extraToDrawBase.SetTextFont(42)
+            extraToDrawBase.SetTextSize(0.04)
+
+            histX_name = f"hist_{varname_X}_{suffix}"
+            histX = infile.Get(histX_name)
+            if histX:
+                valcenter = histX.GetMean()
+                rms = histX.GetRMS()
+                extraToDraw = extraToDrawBase.Clone()
+                extraToDraw.AddText(f"Center = {valcenter:.2f} +/- {rms:.2f}")
+                output_name = f"FERS_Total_{gain}_{cat}_EWC_X{suffix}"
+                DrawHistos([histX], "", -15, 15, f"{cat.capitalize()} {gain} EWC X", 1, None, "Events",
+                           output_name,
+                           dology=False, drawoptions="HIST", mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
+                           outdir=outdir_plots, runNumber=runNumber, extraToDraw=extraToDraw)
+                plots.append(output_name + ".png")
+            else:
+                print(
+                    f"Warning: Histogram {histX_name} not found in {infile_name}")
+
+            histY_name = f"hist_{varname_Y}_{suffix}"
+            histY = infile.Get(histY_name)
+            if histY:
+                valcenter = histY.GetMean()
+                rms = histY.GetRMS()
+                extraToDraw = extraToDrawBase.Clone()
+                extraToDraw.AddText(f"Center = {valcenter:.2f} +/- {rms:.2f}")
+                output_name = f"FERS_Total_{gain}_{cat}_EWC_Y{suffix}"
+                DrawHistos([histY], "", -15, 15, f"{cat.capitalize()} {gain} EWC Y", 1, None, "Events",
+                           output_name,
+                           dology=False, drawoptions="HIST", mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
+                           outdir=outdir_plots, runNumber=runNumber, extraToDraw=extraToDraw)
+                plots.append(output_name + ".png")
+            else:
+                print(
+                    f"Warning: Histogram {histY_name} not found in {infile_name}")
+
+            hist2D_name = f"hist_{varname_X}_VS_{varname_Y}_{suffix}"
+            hist2D = infile.Get(hist2D_name)
+            if hist2D:
+                output_name = f"FERS_Total_{gain}_{cat}_EWC_X_vs_Y{suffix}"
+                DrawHistos([hist2D], "", -15, 15, f"{cat.capitalize()} {gain} EWC X", -15, 15, f"{cat.capitalize()} {gain} EWC Y",
+                           output_name,
+                           dology=False, drawoptions=["colz"], addOverflow=True, addUnderflow=True,
+                           outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None)
+                plots.append(output_name + ".png")
+            else:
+                print(
+                    f"Warning: Histogram {hist2D_name} not found in {infile_name}")
+
+    output_html = f"{htmldir}/FERS_EnergyWeightedCenter{suffix}/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=3,
+                  output_html=output_html)
+    return output_html
+
+
 def makeBoardFits():
     suffix = "subtracted_calibd"
     filename = f"{rootdir}/fers_energy_sum_{suffix}.root"
@@ -321,6 +434,9 @@ if __name__ == "__main__":
             # hists_cer_vs_sci_subtracted_calibd = makeFERSCervsSciHists(
             #    pdsub=True, calib=True, clip=False)
 
+            hists_energy_weighted_center = makeFERSEnergyWeightedCenterHists(
+                pdsub=True, calib=False, clip=False, suffix=cat)
+
             # save histograms to ROOT files
             outfile_name = f"{rootdir}/fers_energy_sum_{cat}.root"
             with ROOT.TFile(outfile_name, "RECREATE") as outfile:
@@ -338,6 +454,14 @@ if __name__ == "__main__":
                     hist.Write()
             print(f"Saved CER vs SCI histograms to {outfile_name}")
 
+            # save energy weighted center histograms
+            outfile_name = f"{rootdir}/fers_energy_weighted_center_{cat}.root"
+            with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+                for hist in hists_energy_weighted_center:
+                    hist.SetDirectory(outfile)
+                    hist.Write()
+            print(f"Saved energy weighted center histograms to {outfile_name}")
+
         # make plots
         if makePlots:
             outputs_html[f"raw_{cat}"] = makeFERSEnergySumPlots(
@@ -353,6 +477,9 @@ if __name__ == "__main__":
             #    pdsub=True, calib=False)
             # outputs_html["cer_vs_sci_subtracted_calibd"] = makeFERSCerVsSciPlots(
             #     pdsub=True, calib=True)
+
+            outputs_html[f"energy_weighted_center_{cat}"] = makeFERSEnergyWeightedCenterPlots(
+                pdsub=True, calib=False, suffix=cat)
 
     print("Generated HTML files:")
     for key, html in outputs_html.items():
