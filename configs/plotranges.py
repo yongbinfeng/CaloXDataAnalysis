@@ -1,62 +1,70 @@
-def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False):
-    suffix = ""
-    xmin_HG_board = 0
-    xmin_HG_total = 0
-    xmax_HG_board = 300e3
-    xmax_HG_total = 100e4
-    xmax_HG_board_cer = 100e3
-    xmax_HG_total_cer = 250e3
-    title = "HG ADC (Raw)"
-    xmin_LG_board = 0
-    xmin_LG_total = 5e4
-    xmax_LG_board = 1e5
-    xmax_LG_total = 5e5
-    xmax_LG_board_cer = 2e4
-    xmax_LG_total_cer = 9e4
-    title_LG = "LG ADC (Raw)"
-    if HE:
-        xmax_HG_total = 2e6
-        xmax_LG_total = 1.5e5
+def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False) -> dict:
+    configs = {}
+    configs["raw"] = {
+        "suffix": "raw",
+        "title": "ADC (Raw)",
+        "xmin_board": {
+            "HG_cer": 0,
+            "LG_cer": 0,
+            "HG_sci": 0,
+            "LG_sci": 0,
+        },
+        "xmax_board": {
+            "HG_cer": 1e5,
+            "LG_cer": 2e4,
+            "HG_sci": 3e5,
+            "LG_sci": 1e5,
+        },
+        "xmin_total": {
+            "HG_cer": 0,
+            "LG_cer": 0,
+            "HG_sci": 0,
+            "LG_sci": 0,
+        },
+        "xmax_total": {
+            "HG_cer": 2.5e5,
+            "LG_cer": 9e4,
+            "HG_sci": 1e6,
+            "LG_sci": 5e5
+        },
+    }
+    configs["pbsub"] = {
+        "suffix": "pbsub",
+        "title": "ADC (Pedestal subtracted)",
+        "xmin_board": {
+            "HG_cer": -1e3,
+            "LG_cer": -1e3,
+            "HG_sci": -1e3,
+            "LG_sci": -1e3,
+        },
+        "xmax_board": {
+            "HG_cer": 9e4,
+            "LG_cer": 3e4,
+            "HG_sci": 4e5,
+            "LG_sci": 2e5,
+        },
+        "xmin_total": {
+            "HG_cer": -5e3,
+            "LG_cer": -5e3,
+            "HG_sci": -5e3,
+            "LG_sci": -5e3,
+        },
+        "xmax_total": {
+            "HG_cer": 2e5,
+            "LG_cer": 8e4,
+            "HG_sci": 8e5,
+            "LG_sci": 4e5
+        }
+    }
+    config = configs["raw"]
     if pdsub:
-        suffix = "_pdsub"
-        xmin_HG_board = -1000
-        xmin_HG_total = -5000
-        xmax_HG_board = 300000
-        xmax_HG_total = 1e6
-        xmax_HG_board_cer = 90e3
-        xmax_HG_total_cer = 200e3
-        xmin_LG_total = 0
-        xmax_LG_total = 8e4
-        xmax_LG_total_cer = 2e4
-        title = "ADC (PD subtracted)"
-        title_LG = "LG ADC (PD subtracted)"
-        if HE:
-            xmax_HG_total = 1.2e6
-            xmax_LG_total = 8e4
-    if calib:
-        suffix += "_calib"
-        xmin_HG_board = -50
-        xmin_HG_total = -100
-        xmax_HG_board = 4000
-        xmax_HG_total = 2.0e4
-        xmax_HG_board_cer = 1200
-        xmax_HG_total_cer = 2e3
-        title = "# p.e."
-        if HE:
-            xmax_HG_board = 8000
-            xmax_HG_total = 3e4
-            xmax_HG_board_cer = 2000
-            xmax_HG_total_cer = 4e3
-    if clip:
-        suffix += "_clipped"
-        xmin_HG_board = -50
-        xmin_HG_total = -100
-        xmax_HG_board = 5000
-        xmax_HG_total = 1.5e4
-        xmax_HG_board_cer = 1500
-        xmax_HG_total_cer = 3e3
-        title = "# p.e. (clipped)"
-    return suffix, xmin_HG_board, xmax_HG_board, xmax_HG_board_cer, xmin_HG_total, xmax_HG_total, xmax_HG_total_cer, title, xmin_LG_board, xmax_LG_board, xmax_LG_board_cer, xmin_LG_total, xmax_LG_total, xmax_LG_total_cer, title_LG
+        config = configs["pbsub"]
+    if HE:
+        config["xmax_total"]["HG_cer"] = 4e5
+        config["xmax_total"]["LG_cer"] = 1.5e5
+        config["xmax_total"]["HG_sci"] = 2e6
+        config["xmax_total"]["LG_sci"] = 1.5e5
+    return config
 
 
 def getFERSSaturationValue():

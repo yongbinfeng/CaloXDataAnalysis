@@ -60,11 +60,11 @@ def filterDarkCountEvents(rdf):
 
 
 def filterElePeakEvents(rdf):
-    return rdf.Filter(f"FERS_SciEnergyHG{suffix} > 5000 && FERS_SciEnergyHG{suffix} < 7000")
+    return rdf.Filter(f"FERS_SciEnergyHG{suffix} > 4e5 && FERS_SciEnergyHG{suffix} < 5e5")
 
 
 def filterHEEvents(rdf):
-    return rdf.Filter(f"FERS_SciEnergyHG{suffix} > 12000")
+    return rdf.Filter(f"FERS_SciEnergyHG{suffix} > 7e5")
 
 
 def fillInValueMap(rdf, event_numbers):
@@ -172,15 +172,16 @@ def DrawEventDisplay(values_FERS_events, suffix="MIP", applyScaling=False, zmax=
         extraToDraw.SetBorderSize(0)
         extraToDraw.SetTextFont(42)
         extraToDraw.SetTextSize(0.04)
+        unit = "p.e." if "calibrated" in suffix else "ADC"
         extraToDraw.AddText(
-            f"E_{{Cer}} = {values_FERS['FERS_CerEnergyHG']:.0f} p.e.")
+            f"E_{{Cer}} = {values_FERS['FERS_CerEnergyHG']:.0f} {unit}")
         makeEventDisplay(h2_Cer_HG_mean, h2_Cer_3mm_HG_mean, output_name +
                          "_Cer", outdir_plots, runNumber, zmin, zmax, isCer=True, extraToDraw=extraToDraw)
         plots.append(output_name + "_Cer.png")
 
         extraToDraw.Clear()
         extraToDraw.AddText(
-            f"E_{{Sci}} = {values_FERS['FERS_SciEnergyHG']:.0f} p.e.")
+            f"E_{{Sci}} = {values_FERS['FERS_SciEnergyHG']:.0f} {unit}")
         # make the event display for Sci
         makeEventDisplay(h2_Sci_HG_mean, h2_Sci_3mm_HG_mean, output_name +
                          "_Sci", outdir_plots, runNumber, zmin, zmax, isCer=False, extraToDraw=extraToDraw)
@@ -250,9 +251,9 @@ def makeDRS2DPlots(hists_DRS_events):
 
 
 rdfs_filtered = {}
-rdfs_filtered["Inc"] = rdf
-# rdfs_filtered["ElePeak"] = filterElePeakEvents(rdf)
-# rdfs_filtered["HE"] = filterHEEvents(rdf)
+# rdfs_filtered["Inc"] = rdf
+rdfs_filtered["ElePeak"] = filterElePeakEvents(rdf)
+rdfs_filtered["HE"] = filterHEEvents(rdf)
 # rdfs_filtered["Band"] = filterBandEvents(rdf)
 # rdfs_filtered["DarkCount"] = filterDarkCountEvents(rdf)
 
@@ -276,7 +277,7 @@ output_htmls = {}
 random.seed(42)  # for reproducibility
 for cat in event_numbers:
     selected_events = random.sample(
-        event_numbers[cat], min(2, len(event_numbers[cat])))
+        event_numbers[cat], min(5, len(event_numbers[cat])))
     print(f"selected {cat} events: {selected_events}")
 
     values_FERS_events, values_DRS_events = fillInValueMap(
