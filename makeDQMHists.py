@@ -33,7 +33,8 @@ nbins_Event = min(max(int(nEvents / 100), 1), 500)
 print(f"Total number of events to process: {nEvents} in run {runNumber}")
 
 rdf = vectorizeFERS(rdf, fersboards)
-rdf = getFERSEnergyMax(rdf, fersboards)
+rdf = getFERSEnergyMax(rdf, fersboards, gain="HG")
+rdf = getFERSEnergyMax(rdf, fersboards, gain="LG")
 rdf = preProcessDRSBoards(rdf, debug=debugDRS)
 rdf = getDRSStats(rdf, DRSBoards, 0, 1000, 9)
 
@@ -74,7 +75,7 @@ def monitorConditions():
     return hists2d_Condition_VS_Event
 
 
-def makeFERS1DHists(useHG=True):
+def makeFERS1DHists(gain="HG"):
     hists1d_FERS = []
     for fersboard in fersboards.values():
         boardNo = fersboard.boardNo
@@ -90,14 +91,14 @@ def makeFERS1DHists(useHG=True):
                     f"hist_FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}",
                     f"FERS Board {boardNo} - {var} iTowerX {sTowerX} iTowerY {sTowerY};{var} Energy;Counts",
                     3000, 0, 9000),
-                    chan.GetChannelName(useHG=useHG)
+                    chan.GetChannelName(gain=gain)
                 )
                 hists1d_FERS.append(hist)
 
     return hists1d_FERS
 
 
-def collectFERSPedestals(hists1d_FERS, useHG=True):
+def collectFERSPedestals(hists1d_FERS, gain="HG"):
     pedestals = {}
     for fersboard in fersboards.values():
         boardNo = fersboard.boardNo
@@ -108,7 +109,7 @@ def collectFERSPedestals(hists1d_FERS, useHG=True):
             for var in ["Cer", "Sci"]:
                 chan = fersboard.GetChannelByTower(
                     iTowerX, iTowerY, isCer=(var == "Cer"))
-                channelName = chan.GetChannelName(useHG=useHG)
+                channelName = chan.GetChannelName(gain=gain)
 
                 hname = f"hist_FERS_Board{boardNo}_{var}_{sTowerX}_{sTowerY}"
                 hist = None
@@ -143,13 +144,13 @@ def collectFERSStats():
     # and how frequent the saturation value is reached
     for fersboard in fersboards.values():
         for chan in fersboard:
-            channelName_HG = chan.GetChannelName(useHG=True)
+            channelName_HG = chan.GetChannelName(gain="HG")
             stats[channelName_HG] = (
                 rdf.Mean(channelName_HG),
                 rdf.Max(channelName_HG),
                 rdf.Filter(f"{channelName_HG} >= {saturation_value}").Count()
             )
-            channelName_LG = chan.GetChannelName(useHG=False)
+            channelName_LG = chan.GetChannelName(gain="LG")
             stats[channelName_LG] = (
                 rdf.Mean(channelName_LG),
                 rdf.Max(channelName_LG),
@@ -172,28 +173,28 @@ def makeFERSMaxValueHists():
     xmax = 8500
     for fersboard in fersboards.values():
         hist_board_cer_HG_max = rdf.Histo1D((
-            f"hist_{fersboard.GetEnergyMaxName(useHG=True, isCer=True)}",
+            f"hist_{fersboard.GetEnergyMaxName(gain='HG', isCer=True)}",
             f"FERS Board - CER Energy HG max;CER Energy HG max per board;Counts",
             nbins, xmin, xmax),
-            fersboard.GetEnergyMaxName(useHG=True, isCer=True)
+            fersboard.GetEnergyMaxName(gain='HG', isCer=True)
         )
         hist_board_cer_LG_max = rdf.Histo1D((
-            f"hist_{fersboard.GetEnergyMaxName(useHG=False, isCer=True)}",
+            f"hist_{fersboard.GetEnergyMaxName(gain='LG', isCer=True)}",
             f"FERS Board - CER Energy LG max;CER Energy LG max per board;Counts",
             nbins, xmin, xmax),
-            fersboard.GetEnergyMaxName(useHG=False, isCer=True)
+            fersboard.GetEnergyMaxName(gain='LG', isCer=True)
         )
         hist_board_sci_HG_max = rdf.Histo1D((
-            f"hist_{fersboard.GetEnergyMaxName(useHG=True, isCer=False)}",
+            f"hist_{fersboard.GetEnergyMaxName(gain='HG', isCer=False)}",
             f"FERS Board - SCI Energy HG max;SCI Energy HG max per board;Counts",
             nbins, xmin, xmax),
-            fersboard.GetEnergyMaxName(useHG=True, isCer=False)
+            fersboard.GetEnergyMaxName(gain='HG', isCer=False)
         )
         hist_board_sci_LG_max = rdf.Histo1D((
-            f"hist_{fersboard.GetEnergyMaxName(useHG=False, isCer=False)}",
+            f"hist_{fersboard.GetEnergyMaxName(gain='LG', isCer=False)}",
             f"FERS Board - SCI Energy LG max;SCI Energy LG max per board;Counts",
             nbins, xmin, xmax),
-            fersboard.GetEnergyMaxName(useHG=False, isCer=False)
+            fersboard.GetEnergyMaxName(gain='LG', isCer=False)
         )
         hists_board_cer_HG_max.append(hist_board_cer_HG_max)
         hists_board_cer_LG_max.append(hist_board_cer_LG_max)
@@ -201,28 +202,28 @@ def makeFERSMaxValueHists():
         hists_board_sci_LG_max.append(hist_board_sci_LG_max)
 
     hist_cer_HG_max = rdf.Histo1D((
-        f"hist_{fersboards.GetEnergyMaxName(useHG=True, isCer=True)}",
+        f"hist_{fersboards.GetEnergyMaxName(gain='HG', isCer=True)}",
         "FERS - CER Energy HG max;CER Energy HG max;Counts",
         nbins, xmin, xmax),
-        fersboards.GetEnergyMaxName(useHG=True, isCer=True)
+        fersboards.GetEnergyMaxName(gain='HG', isCer=True)
     )
     hist_cer_LG_max = rdf.Histo1D((
-        f"hist_{fersboards.GetEnergyMaxName(useHG=False, isCer=True)}",
+        f"hist_{fersboards.GetEnergyMaxName(gain='LG', isCer=True)}",
         "FERS - CER Energy LG max;CER Energy LG max;Counts",
         nbins, xmin, xmax),
-        fersboards.GetEnergyMaxName(useHG=False, isCer=True)
+        fersboards.GetEnergyMaxName(gain='LG', isCer=True)
     )
     hist_sci_HG_max = rdf.Histo1D((
-        f"hist_{fersboards.GetEnergyMaxName(useHG=True, isCer=False)}",
+        f"hist_{fersboards.GetEnergyMaxName(gain='HG', isCer=False)}",
         "FERS - SCI Energy HG max;SCI Energy HG max;Counts",
         nbins, xmin, xmax),
-        fersboards.GetEnergyMaxName(useHG=True, isCer=False)
+        fersboards.GetEnergyMaxName(gain='HG', isCer=False)
     )
     hist_sci_LG_max = rdf.Histo1D((
-        f"hist_{fersboards.GetEnergyMaxName(useHG=False, isCer=False)}",
+        f"hist_{fersboards.GetEnergyMaxName(gain='LG', isCer=False)}",
         "FERS - SCI Energy LG max;SCI Energy LG max;Counts",
         nbins, xmin, xmax),
-        fersboards.GetEnergyMaxName(useHG=False, isCer=False)
+        fersboards.GetEnergyMaxName(gain='LG', isCer=False)
     )
     return hists_board_cer_HG_max + hists_board_cer_LG_max + hists_board_sci_HG_max + hists_board_sci_LG_max + [hist_cer_HG_max, hist_cer_LG_max, hist_sci_HG_max, hist_sci_LG_max]
 
@@ -242,7 +243,7 @@ def trackFERSHists():
                     f"hist_FERS_Board{boardNo}_{var}_VS_Event_{sTowerX}_{sTowerY}",
                     f"FERS Board {boardNo} - Event VS {var} {chan.channelNo} in iTowerX {sTowerX} iTowerY {sTowerY};Event;{var} Energy HG",
                     nbins_Event, 0, nEvents, 1000, 0, 9000),
-                    "event_n", chan.GetChannelName(useHG=True)
+                    "event_n", chan.GetChannelName(gain="HG")
                 )
                 hists2d_FERS_VS_Event.append(hist)
     return hists2d_FERS_VS_Event
@@ -267,15 +268,15 @@ def makeFERS2DHists():
                 f"hist_FERS_Board{boardNo}_Cer_VS_Sci_{sTowerX}_{sTowerY}",
                 f"CER {iCer} VS SCI {iSci} in iTowerX {sTowerX} iTowerY {sTowerY};Sci Energy HG;Cer Energy HG",
                 300, 0, 9000, 300, 0, 9000),
-                chan_Sci.GetChannelName(useHG=True),
-                chan_Cer.GetChannelName(useHG=True)
+                chan_Sci.GetChannelName(gain="HG"),
+                chan_Cer.GetChannelName(gain="HG")
             )
             hist_zoomed = rdf.Histo2D((
                 f"hist_FERS_Board{boardNo}_Cer_VS_Sci_{sTowerX}_{sTowerY}_zoom",
                 f"CER {iCer} VS SCI {iSci} in iTowerX {sTowerX} iTowerY {sTowerY} (zoomed);SCI Energy HG;CER Energy HG",
                 300, 0, 1000, 200, 0, 2000),
-                chan_Sci.GetChannelName(useHG=True),
-                chan_Cer.GetChannelName(useHG=True)
+                chan_Sci.GetChannelName(gain="HG"),
+                chan_Cer.GetChannelName(gain="HG")
             )
             hists2d_FERS.append(hist)
             hists2d_FERS.append(hist_zoomed)
@@ -285,16 +286,16 @@ def makeFERS2DHists():
                 f"hist_FERS_Board{boardNo}_Sci_{sTowerX}_{sTowerY}_hg_VS_lg",
                 f"SCI {iSci} LG VS HG;SCI Energy HG;SCI Energy LG",
                 300, 0, 9000, 300, 0, 3000),
-                chan_Sci.GetChannelName(useHG=True),
-                chan_Sci.GetChannelName(useHG=False)
+                chan_Sci.GetChannelName(gain="HG"),
+                chan_Sci.GetChannelName(gain="LG")
             )
             hists2d_FERS.append(hist_sci_lg_vs_hg)
             hist_cer_lg_vs_hg = rdf.Histo2D((
                 f"hist_FERS_Board{boardNo}_Cer_{sTowerX}_{sTowerY}_hg_VS_lg",
                 f"CER {iCer} LG VS HG;CER Energy HG;CER Energy LG",
                 300, 0, 9000, 300, 0, 3000),
-                chan_Cer.GetChannelName(useHG=True),
-                chan_Cer.GetChannelName(useHG=False)
+                chan_Cer.GetChannelName(gain="HG"),
+                chan_Cer.GetChannelName(gain="LG")
             )
             hists2d_FERS.append(hist_cer_lg_vs_hg)
     return hists2d_FERS
@@ -403,7 +404,7 @@ def checkDRSSumVSFERS():
                     f"DRS sum VS FERS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}; FERS Energy HG; DRS Sum",
                     100, 0, xymax[var][1], 100, 0, xymax[var][0]
                 ),
-                    chan_FERS.GetChannelName(useHG=True),
+                    chan_FERS.GetChannelName(gain="HG"),
                     chan_DRS.GetChannelSumName(),
                 )
                 h2s_DRSSum_VS_FERS.append(h2_DRSSum_VS_FERS)
@@ -413,7 +414,7 @@ def checkDRSSumVSFERS():
                     f"DRS sum VS FERS LG energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}",
                     100, 0, xymax_LG[var][1], 100, 0, xymax_LG[var][0]
                 ),
-                    chan_FERS.GetChannelName(useHG=False),
+                    chan_FERS.GetChannelName(gain="LG"),
                     chan_DRS.GetChannelSumName(),
                 )
                 h2s_DRSSum_VS_FERS.append(h2_DRSSum_VS_FERSLG)
@@ -454,7 +455,7 @@ def checkDRSPeakVSFERS():
                     f"DRS Peak VS FERS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}; FERS Energy HG; DRS Peak",
                     100, 0, 9000, 100, 0, ymax
                 ),
-                    chan_FERS.GetChannelName(useHG=True),
+                    chan_FERS.GetChannelName(gain="HG"),
                     chan_DRS.GetChannelPeakName(),
                 )
                 h2s_DRSPeak_VS_FERS.append(h2_DRSPeak_VS_FERS)
@@ -464,7 +465,7 @@ def checkDRSPeakVSFERS():
                     f"DRS Peak VS FERS LG energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}; FERS Energy LG; DRS Peak",
                     100, 0, 3000, 100, 0, ymax
                 ),
-                    chan_FERS.GetChannelName(useHG=False),
+                    chan_FERS.GetChannelName(gain="LG"),
                     chan_DRS.GetChannelPeakName(),
                 )
                 h2s_DRSPeak_VS_FERS.append(h2_DRSPeak_VS_FERSLG)
@@ -526,7 +527,7 @@ if __name__ == "__main__":
     hists_conditions = monitorConditions()
 
     hists1d_FERS = makeFERS1DHists()
-    hists1d_FRRS_LG = makeFERS1DHists(useHG=False)
+    hists1d_FRRS_LG = makeFERS1DHists(gain="LG")
 
     # hists2d_FERS = makeFERS2DHists()
     # hists2d_FERS_VS_Event = trackFERSHists()
@@ -566,8 +567,8 @@ if __name__ == "__main__":
     stats = collectFERSStats()
 
     # pedestals
-    pedestals_HG = collectFERSPedestals(hists1d_FERS, useHG=True)
-    pedestals_LG = collectFERSPedestals(hists1d_FRRS_LG, useHG=False)
+    pedestals_HG = collectFERSPedestals(hists1d_FERS, gain="HG")
+    pedestals_LG = collectFERSPedestals(hists1d_FRRS_LG, gain="LG")
 
     print("\033[94mSave results\033[0m")
 

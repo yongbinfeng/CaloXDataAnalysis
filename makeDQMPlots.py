@@ -255,21 +255,21 @@ def makeFERSStatsPlots(includePedestals=False):
                 channelName, None) if includePedestals else 0.
 
     [h2_Cer_HG_mean, h2_Cer_3mm_HG_mean], [h2_Sci_HG_mean, h2_Sci_3mm_HG_mean] = visualizeFERSBoards(
-        fersboards, valuemaps_HG_mean, suffix=f"Run{runNumber}_HG_mean", useHG=True)
+        fersboards, valuemaps_HG_mean, suffix=f"Run{runNumber}_HG_mean", gain="HG")
     [h2_Cer_HG_max, h2_Cer_3mm_HG_max], [h2_Sci_HG_max, h2_Sci_3mm_HG_max] = visualizeFERSBoards(
-        fersboards, valuemaps_HG_max, suffix=f"Run{runNumber}_HG_max", useHG=True)
+        fersboards, valuemaps_HG_max, suffix=f"Run{runNumber}_HG_max", gain="HG")
     [h2_Cer_HG_satfreq, h2_Cer_3mm_HG_satfreq], [h2_Sci_HG_satfreq, h2_Sci_3mm_HG_satfreq] = visualizeFERSBoards(
-        fersboards, valuemaps_HG_satfreq, suffix=f"Run{runNumber}_HG_satfreq", useHG=True)
+        fersboards, valuemaps_HG_satfreq, suffix=f"Run{runNumber}_HG_satfreq", gain="HG")
     [h2_Cer_HG_pedestal, h2_Cer_3mm_HG_pedestal], [h2_Sci_HG_pedestal, h2_Sci_3mm_HG_pedestal] = visualizeFERSBoards(
-        fersboards, valuemaps_HG_pedestal, suffix=f"Run{runNumber}_HG_pedestal", useHG=True)
+        fersboards, valuemaps_HG_pedestal, suffix=f"Run{runNumber}_HG_pedestal", gain="HG")
     [h2_Cer_LG_mean, h2_Cer_3mm_LG_mean], [h2_Sci_LG_mean, h2_Sci_3mm_LG_mean] = visualizeFERSBoards(
-        fersboards, valuemaps_LG_mean, suffix=f"Run{runNumber}_LG_mean", useHG=False)
+        fersboards, valuemaps_LG_mean, suffix=f"Run{runNumber}_LG_mean", gain="LG")
     [h2_Cer_LG_max, h2_Cer_3mm_LG_max], [h2_Sci_LG_max, h2_Sci_3mm_LG_max] = visualizeFERSBoards(
-        fersboards, valuemaps_LG_max, suffix=f"Run{runNumber}_LG_max", useHG=False)
+        fersboards, valuemaps_LG_max, suffix=f"Run{runNumber}_LG_max", gain="LG")
     [h2_Cer_LG_satfreq, h2_Cer_3mm_LG_satfreq], [h2_Sci_LG_satfreq, h2_Sci_3mm_LG_satfreq] = visualizeFERSBoards(
-        fersboards, valuemaps_LG_satfreq, suffix=f"Run{runNumber}_LG_satfreq", useHG=False)
+        fersboards, valuemaps_LG_satfreq, suffix=f"Run{runNumber}_LG_satfreq", gain="LG")
     [h2_Cer_LG_pedestal, h2_Cer_3mm_LG_pedestal], [h2_Sci_LG_pedestal, h2_Sci_3mm_LG_pedestal] = visualizeFERSBoards(
-        fersboards, valuemaps_LG_pedestal, suffix=f"Run{runNumber}_LG_pedestal", useHG=False)
+        fersboards, valuemaps_LG_pedestal, suffix=f"Run{runNumber}_LG_pedestal", gain="LG")
 
     output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_mean"
     DrawHistos([h2_Cer_HG_mean, h2_Cer_3mm_HG_mean], "", xmin, xmax, "iX", ymin,
@@ -372,13 +372,13 @@ def makeFERSMaxValuePlots():
     for fersboard in fersboards.values():
         boardNo = fersboard.boardNo
         hist_board_cer_HG_max = infile.Get(
-            f"hist_{fersboard.GetEnergyMaxName(useHG=True, isCer=True)}")
+            f"hist_{fersboard.GetEnergyMaxName(gain="HG", isCer=True)}")
         hist_board_sci_HG_max = infile.Get(
-            f"hist_{fersboard.GetEnergyMaxName(useHG=True, isCer=False)}")
+            f"hist_{fersboard.GetEnergyMaxName(gain="HG", isCer=False)}")
         hist_board_cer_LG_max = infile.Get(
-            f"hist_{fersboard.GetEnergyMaxName(useHG=False, isCer=True)}")
+            f"hist_{fersboard.GetEnergyMaxName(gain="LG", isCer=True)}")
         hist_board_sci_LG_max = infile.Get(
-            f"hist_{fersboard.GetEnergyMaxName(useHG=False, isCer=False)}")
+            f"hist_{fersboard.GetEnergyMaxName(gain="LG", isCer=False)}")
         hists_board_cer_HG_max.append(hist_board_cer_HG_max)
         hists_board_sci_HG_max.append(hist_board_sci_HG_max)
         hists_board_cer_LG_max.append(hist_board_cer_LG_max)
@@ -386,13 +386,13 @@ def makeFERSMaxValuePlots():
         legends.append(str(boardNo))
 
     hist_cer_HG_max = infile.Get(
-        f"hist_{fersboards.GetEnergyMaxName(useHG=True, isCer=True)}")
+        f"hist_{fersboards.GetEnergyMaxName(gain="HG", isCer=True)}")
     hist_sci_HG_max = infile.Get(
-        f"hist_{fersboards.GetEnergyMaxName(useHG=True, isCer=False)}")
+        f"hist_{fersboards.GetEnergyMaxName(gain="HG", isCer=False)}")
     hist_cer_LG_max = infile.Get(
-        f"hist_{fersboards.GetEnergyMaxName(useHG=False, isCer=True)}")
+        f"hist_{fersboards.GetEnergyMaxName(gain="LG", isCer=True)}")
     hist_sci_LG_max = infile.Get(
-        f"hist_{fersboards.GetEnergyMaxName(useHG=False, isCer=False)}")
+        f"hist_{fersboards.GetEnergyMaxName(gain="LG", isCer=False)}")
 
     output_name = "FERS_Boards_CerEnergyHG_max"
     DrawHistos(hists_board_cer_HG_max, legends, xmin, xmax, f"HG Cer Max (Board)", 1, None, "Events",

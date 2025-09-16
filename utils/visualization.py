@@ -4,7 +4,7 @@ sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
 
 
-def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", useHG=True):
+def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", gain="HG"):
     xmax = 14
     xmin = -14
     ymax = 10
@@ -25,10 +25,8 @@ def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", useHG=True):
             channel_Sci = FERSBoard.GetChannelByTower(
                 iTowerX, iTowerY, isCer=False)
 
-            channel_Cer_name = channel_Cer.GetHGChannelName(
-            ) if useHG else channel_Cer.GetLGChannelName()
-            channel_Sci_name = channel_Sci.GetHGChannelName(
-            ) if useHG else channel_Sci.GetLGChannelName()
+            channel_Cer_name = channel_Cer.GetChannelName(gain=gain)
+            channel_Sci_name = channel_Sci.GetChannelName(gain=gain)
 
             # default encoding based on board and channel numbers
             cer_encoded = channel_Cer.boardNo * 100 + channel_Cer.channelNo
