@@ -38,6 +38,9 @@ ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 file_pedestals_HG = f"results/root/Run{runNumber}/fers_pedestals_hg.json"
 file_pedestals_LG = f"results/root/Run{runNumber}/fers_pedestals_lg.json"
 
+file_gains = "data/fers/FERS_response.json"
+file_HG2LG = "data/fers/FERS_HG2LG.json"
+
 pedestals_HG = json.load(open(file_pedestals_HG))
 pedestals_LG = json.load(open(file_pedestals_LG))
 
@@ -51,14 +54,13 @@ fersboards = buildFERSBoards(run=runNumber)
 
 rdf = vectorizeFERS(rdf, fersboards)
 # define energy sums with different configurations
-# rdf = calibrateFERSChannels(
-#    rdf, fersboards, file_gains=file_gains, file_pedestals=file_pedestals)
-rdf = subtractFERSPedestal(
-    rdf, fersboards, pedestals_HG, pedestalsLG=pedestals_LG)
-rdf = getFERSEnergySum(
-    rdf, fersboards, pdsub=True, calib=False)
-# rdf = getFERSEnergySum(
-#    rdf, fersboards, pdsub=True, calib=True, clip=False)
+rdf = calibrateFERSChannels(
+    rdf, fersboards, file_gains=file_gains, file_pedestals=file_pedestals_HG, file_pedestals_LG=file_pedestals_LG, useMix=True, file_HG2LG=file_HG2LG)
+# rdf = subtractFERSPedestal(
+#    rdf, fersboards, pedestals_HG, pedestalsLG=pedestals_LG)
+for useHG, calib in [(True, False), (False, False), (None, True)]:
+    rdf = getFERSEnergySum(rdf, fersboards, pdsub=False,
+                           calib=calib, useHG=useHG)
 
 rdf = getFERSEnergyWeightedCenter(
     rdf, fersboards, pdsub=True, calib=False)
