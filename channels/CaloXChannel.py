@@ -1,4 +1,5 @@
 import numpy as np
+from channels.gainvalidator import enforce_gain
 
 
 class CaloXChannel(object):
@@ -58,31 +59,21 @@ class FERSChannel(CaloXChannel):
             self.isCer, self.channelNo, self.boardNo
         )
 
-    def GetHGChannelName(self):
-        return f"FERS_Board{self.boardNo}_energyHG_{self.channelNo}"
-
-    def GetLGChannelName(self):
-        return f"FERS_Board{self.boardNo}_energyLG_{self.channelNo}"
-
-    def GetMixChannelName(self):
-        return f"FERS_Board{self.boardNo}_energyMix_{self.channelNo}"
-
-    def GetChannelName(self, useHG=True, pdsub=False, calib=False):
-        if useHG == None:
-            channelName = self.GetMixChannelName()
-        elif useHG:
-            channelName = self.GetHGChannelName()
-        else:
-            channelName = self.GetLGChannelName()
-        if pdsub and useHG != None:
+    @enforce_gain
+    def GetChannelName(self, gain="HG", pdsub=False, calib=False):
+        channelName = f"FERS_Board{self.boardNo}_energy{gain}_{self.channelNo}"
+        if pdsub and gain != "Mix":
             # mix channels always have pedestal subtracted
             channelName += "_pdsub"
         if calib:
             channelName += "_calib"
         return channelName
 
-    def GetPosName(self, isX=True):
+    def GetTowerPosName(self, isX=True):
         return f"FERS_Board{self.boardNo}_{self.channelNo}_iTower{'X' if isX else 'Y'}"
+
+    def GetRealPosName(self, isX=True):
+        return f"FERS_Board{self.boardNo}_{self.channelNo}_Real{'X' if isX else 'Y'}"
 
 
 class DRSChannel(CaloXChannel):
@@ -289,38 +280,28 @@ class FERSBoard(Board):
     def Is3mm(self):
         return not self.Is6mm()
 
-    def GetEnergyMaxName(self, useHG=True, isCer=True):
-        type_str = "Cer" if isCer else "Sci"
-        hg_lg_str = "HG" if useHG else "LG"
+    @enforce_gain
+    def GetEnergyMaxName(self, gain="HG", isCer=True):
+        cat = "Cer" if isCer else "Sci"
         # name is based on the channel name
         # "FERS_Board{self.boardNo}_energyHG_{self.channelNo}"
-        return f"FERS_Board{self.boardNo}_energy{hg_lg_str}_{type_str}_max"
+        return f"FERS_Board{self.boardNo}_energy{gain}_{cat}_max"
 
-    def GetEnergySumName(self, useHG=True, isCer=True, pdsub=False, calib=False):
-        type_str = "Cer" if isCer else "Sci"
-        if useHG == None:
-            hg_lg_str = "Mix"
-        elif useHG:
-            hg_lg_str = "HG"
-        else:
-            hg_lg_str = "LG"
-        sumname = f"FERS_Board{self.boardNo}_energy{hg_lg_str}_{type_str}"
-        if pdsub:
+    @enforce_gain
+    def GetEnergySumName(self, gain="HG", isCer=True, pdsub=False, calib=False):
+        cat = "Cer" if isCer else "Sci"
+        sumname = f"FERS_Board{self.boardNo}_energy{gain}_{cat}"
+        if pdsub and gain != "Mix":
             sumname += "_pdsub"
         if calib:
             sumname += "_calib"
         sumname += "_sum"
         return sumname
 
-    def GetEnergyWeightedCenterName(self, useHG=True, isCer=True, pdsub=False, calib=False, isX=True):
-        type_str = "Cer" if isCer else "Sci"
-        if useHG == None:
-            hg_lg_str = "Mix"
-        elif useHG:
-            hg_lg_str = "HG"
-        else:
-            hg_lg_str = "LG"
-        centername = f"FERS_Board{self.boardNo}_energy{hg_lg_str}_{type_str}"
+    @enforce_gain
+    def GetEnergyWeightedCenterName(self, gain="HG", isCer=True, pdsub=False, calib=False, isX=True):
+        cat = "Cer" if isCer else "Sci"
+        centername = f"FERS_Board{self.boardNo}_energy{gain}_{cat}"
         if pdsub:
             centername += "_pdsub"
         if calib:
@@ -442,27 +423,27 @@ class FERSBoards(dict):
     def values(self):
         return self.boards.values()
 
-    def GetEnergyMaxName(self, useHG=True, isCer=True):
-        type_str = "Cer" if isCer else "Sci"
-        hg_lg_str = "HG" if useHG else "LG"
-        return f"FERS_energy{hg_lg_str}_{type_str}_max"
+    @enforce_gain
+    def GetEnergyMaxName(self, gain="HG", isCer=True):
+        cat = "Cer" if isCer else "Sci"
+        return f"FERS_energy{gain}_{cat}_max"
 
-    def GetEnergySumName(self, useHG=True, isCer=True, pdsub=False, calib=False):
-        type_str = "Cer" if isCer else "Sci"
-        hg_lg_str = "Mix" if useHG == None else ("HG" if useHG else "LG")
-        sumname = f"FERS_energy{hg_lg_str}_{type_str}"
-        if pdsub:
+    @enforce_gain
+    def GetEnergySumName(self, gain="HG", isCer=True, pdsub=False, calib=False):
+        cat = "Cer" if isCer else "Sci"
+        sumname = f"FERS_energy{gain}_{cat}"
+        if pdsub and gain != "Mix":
             sumname += "_pdsub"
         if calib:
             sumname += "_calib"
         sumname += "_sum"
         return sumname
 
-    def GetEnergyWeightedCenterName(self, useHG=True, isCer=True, pdsub=False, calib=False, isX=True):
-        type_str = "Cer" if isCer else "Sci"
-        hg_lg_str = "Mix" if useHG == None else ("HG" if useHG else "LG")
-        centername = f"FERS_energy{hg_lg_str}_{type_str}"
-        if pdsub:
+    @enforce_gain
+    def GetEnergyWeightedCenterName(self, gain="HG", isCer=True, pdsub=False, calib=False, isX=True):
+        cat = "Cer" if isCer else "Sci"
+        centername = f"FERS_energy{gain}_{cat}"
+        if pdsub and gain != "Mix":
             centername += "_pdsub"
         if calib:
             centername += "_calib"

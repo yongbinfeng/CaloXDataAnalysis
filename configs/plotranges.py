@@ -2,68 +2,88 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False) -
     configs = {}
     configs["raw"] = {
         "suffix": "raw",
-        "title": "ADC (Raw)",
+        "title_LG": "ADC (Raw)",
+        "title_HG": "ADC (Raw)",
+        "title_Mix": "GeV",
         "xmin_board": {
             "HG_cer": 0,
             "LG_cer": 0,
             "HG_sci": 0,
             "LG_sci": 0,
+            "Mix_cer": 0,
+            "Mix_sci": 0,
         },
         "xmax_board": {
             "HG_cer": 1e5,
             "LG_cer": 2e4,
             "HG_sci": 3e5,
             "LG_sci": 1e5,
+            "Mix_cer": 80,
+            "Mix_sci": 80,
         },
         "xmin_total": {
             "HG_cer": 0,
             "LG_cer": 0,
             "HG_sci": 0,
             "LG_sci": 0,
+            "Mix_cer": 0,
+            "Mix_sci": 0,
         },
         "xmax_total": {
             "HG_cer": 2.5e5,
             "LG_cer": 9e4,
             "HG_sci": 1e6,
-            "LG_sci": 5e5
+            "LG_sci": 5e5,
+            "Mix_cer": 140,
+            "Mix_sci": 140
         },
     }
     configs["pbsub"] = {
         "suffix": "pbsub",
-        "title": "ADC (Pedestal subtracted)",
+        "title_LG": "ADC (PD sub)",
+        "title_HG": "ADC (PD sub)",
+        "title_Mix": "GeV",
         "xmin_board": {
             "HG_cer": -1e3,
             "LG_cer": -1e3,
             "HG_sci": -1e3,
             "LG_sci": -1e3,
+            "Mix_cer": -10,
+            "Mix_sci": -10,
         },
         "xmax_board": {
             "HG_cer": 9e4,
             "LG_cer": 3e4,
             "HG_sci": 4e5,
             "LG_sci": 2e5,
+            "Mix_cer": 40,
+            "Mix_sci": 40,
         },
         "xmin_total": {
             "HG_cer": -5e3,
             "LG_cer": -5e3,
             "HG_sci": -5e3,
             "LG_sci": -5e3,
+            "Mix_cer": -10,
+            "Mix_sci": -10,
         },
         "xmax_total": {
             "HG_cer": 2e5,
             "LG_cer": 8e4,
             "HG_sci": 8e5,
-            "LG_sci": 4e5
+            "LG_sci": 4e5,
+            "Mix_cer": 140,
+            "Mix_sci": 140
         }
     }
     config = configs["raw"]
     if pdsub:
         config = configs["pbsub"]
     if HE:
-        config["xmax_total"]["HG_cer"] = 4e5
-        config["xmax_total"]["LG_cer"] = 1.5e5
-        config["xmax_total"]["HG_sci"] = 2e6
-        config["xmax_total"]["LG_sci"] = 1.5e5
+        config["xmax_total"]["HG_cer"] = 2e5
+        config["xmax_total"]["LG_cer"] = 5e4
+        config["xmax_total"]["HG_sci"] = 1e6
+        config["xmax_total"]["LG_sci"] = 1e5
     return config
 
 
