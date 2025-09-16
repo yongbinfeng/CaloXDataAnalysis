@@ -64,9 +64,18 @@ class FERSChannel(CaloXChannel):
     def GetLGChannelName(self):
         return f"FERS_Board{self.boardNo}_energyLG_{self.channelNo}"
 
+    def GetMixChannelName(self):
+        return f"FERS_Board{self.boardNo}_energyMix_{self.channelNo}"
+
     def GetChannelName(self, useHG=True, pdsub=False, calib=False):
-        channelName = self.GetHGChannelName() if useHG else self.GetLGChannelName()
-        if pdsub:
+        if useHG == None:
+            channelName = self.GetMixChannelName()
+        elif useHG:
+            channelName = self.GetHGChannelName()
+        else:
+            channelName = self.GetLGChannelName()
+        if pdsub and useHG != None:
+            # mix channels always have pedestal subtracted
             channelName += "_pdsub"
         if calib:
             channelName += "_calib"
@@ -289,7 +298,12 @@ class FERSBoard(Board):
 
     def GetEnergySumName(self, useHG=True, isCer=True, pdsub=False, calib=False):
         type_str = "Cer" if isCer else "Sci"
-        hg_lg_str = "HG" if useHG else "LG"
+        if useHG == None:
+            hg_lg_str = "Mix"
+        elif useHG:
+            hg_lg_str = "HG"
+        else:
+            hg_lg_str = "LG"
         sumname = f"FERS_Board{self.boardNo}_energy{hg_lg_str}_{type_str}"
         if pdsub:
             sumname += "_pdsub"
@@ -300,7 +314,12 @@ class FERSBoard(Board):
 
     def GetEnergyWeightedCenterName(self, useHG=True, isCer=True, pdsub=False, calib=False, isX=True):
         type_str = "Cer" if isCer else "Sci"
-        hg_lg_str = "HG" if useHG else "LG"
+        if useHG == None:
+            hg_lg_str = "Mix"
+        elif useHG:
+            hg_lg_str = "HG"
+        else:
+            hg_lg_str = "LG"
         centername = f"FERS_Board{self.boardNo}_energy{hg_lg_str}_{type_str}"
         if pdsub:
             centername += "_pdsub"
@@ -430,7 +449,7 @@ class FERSBoards(dict):
 
     def GetEnergySumName(self, useHG=True, isCer=True, pdsub=False, calib=False):
         type_str = "Cer" if isCer else "Sci"
-        hg_lg_str = "HG" if useHG else "LG"
+        hg_lg_str = "Mix" if useHG == None else ("HG" if useHG else "LG")
         sumname = f"FERS_energy{hg_lg_str}_{type_str}"
         if pdsub:
             sumname += "_pdsub"
@@ -441,7 +460,7 @@ class FERSBoards(dict):
 
     def GetEnergyWeightedCenterName(self, useHG=True, isCer=True, pdsub=False, calib=False, isX=True):
         type_str = "Cer" if isCer else "Sci"
-        hg_lg_str = "HG" if useHG else "LG"
+        hg_lg_str = "Mix" if useHG == None else ("HG" if useHG else "LG")
         centername = f"FERS_energy{hg_lg_str}_{type_str}"
         if pdsub:
             centername += "_pdsub"

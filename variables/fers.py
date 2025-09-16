@@ -1,4 +1,6 @@
 # collect all the FERS variables on the fly
+from configs.plotranges import getFERSSaturationValue
+
 
 def vectorizeFERS(rdf, fersboards):
     """
@@ -69,7 +71,35 @@ def subtractFERSPedestal(rdf, fersboards, pedestalsHG: dict = None, pedestalsLG:
     return rdf
 
 
-def calibrateFERSChannels(rdf, fersboards, file_gains: str, file_pedestals: str):
+def mixFERSHGLG(rdf, fersboards, file_HG2LG: str):
+    """
+    Mix FERS HG and LG channels using HG2LG ratios from the provided file.
+    """
+    import json
+    with open(file_HG2LG, 'r') as f:
+        HG2LG_ratios = json.load(f)
+
+    for fersboard in fersboards.values():
+        for channel in fersboard:
+            channelName_HG = channel.GetChannelName(useHG=True, pdsub=True)
+            channelName_LG = channel.GetChannelName(useHG=False, pdsub=True)
+            channelName_Mixed = channel.GetChannelName(
+                useHG=None)  # None for mixed
+            channelName_key = f"FERS_Board{fersboard.boardNo}_{channel.channelNo}"
+            if f"{channelName_Mixed}" in rdf.GetColumnNames():
+                # already defined
+                continue
+            if channelName_key not in HG2LG_ratios:
+                raise ValueError(
+                    f"HG2LG ratio for channel {channelName_HG} not found in {file_HG2LG}.")
+            incep, ratio = HG2LG_ratios[channelName_key]
+            rdf = rdf.Define(channelName_Mixed,
+                             f"({channelName_HG} < {getFERSSaturationValue() - 150.0}) ? {channelName_HG} : ({channelName_LG} - {incep})/{ratio}")
+
+    return rdf
+
+
+def calibrateFERSChannels(rdf, fersboards, file_gains: str, file_pedestals: str, useMix=False, file_HG2LG: str = None, file_pedestals_LG: str = None):
     """
     Calibrate FERS channels using gains and pedestals from the provided files.
     """
@@ -78,32 +108,59 @@ def calibrateFERSChannels(rdf, fersboards, file_gains: str, file_pedestals: str)
         gains = json.load(f)
     with open(file_pedestals, 'r') as f:
         pedestals = json.load(f)
+    pedestals_LG = None
+    if file_pedestals_LG is not None:
+        with open(file_pedestals_LG, 'r') as f:
+            pedestals_LG = json.load(f)
 
-    # Subtract pedestal and apply gain calibration
-    rdf = subtractFERSPedestal(rdf, fersboards, pedestals)
+    # Subtract pedestal
+    rdf = subtractFERSPedestal(rdf, fersboards, pedestals, pedestals_LG)
+
+    if useMix:
+        if file_HG2LG is None:
+            raise ValueError(
+                "file_HG2LG must be provided when useMix is True.")
+        rdf = mixFERSHGLG(rdf, fersboards, file_HG2LG)
 
     for fersboard in fersboards.values():
         for channel in fersboard:
-            channelName = channel.GetChannelName(useHG=True)
-            channelNamePDSub = channel.GetChannelName(
-                useHG=True, pdsub=True)
-            channelNamePDSubCal = channel.GetChannelName(
-                useHG=True, pdsub=True, calib=True)
-            if f"{channelNamePDSubCal}" in rdf.GetColumnNames():
-                # already defined
-                continue
-            if channelName not in gains:
-                raise ValueError(
-                    f"Gain for channel {channelName} not found in gains.")
-            gain = gains[channelName]
-            rdf = rdf.Define(channelNamePDSubCal,
-                             f"{channelNamePDSub} / {gain}")
-            # rdf = rdf.Define(
-            #    f"FERS_Board{boardNo}_energyHG_{channelNo}_subtracted_calib_clipped",
-            #    f"FERS_Board{boardNo}_energyHG_{channelNo}_subtracted_calib > 0.8 ? FERS_Board{boardNo}_energyHG_{channelNo}_subtracted_calib : 0"
-            # )
-            # Not calibrating LG yet
-
+            if not useMix:
+                channelName = channel.GetChannelName(useHG=True)
+                channelNamePDSub = channel.GetChannelName(
+                    useHG=True, pdsub=True)
+                channelNamePDSubCal = channel.GetChannelName(
+                    useHG=True, pdsub=True, calib=True)
+                if f"{channelNamePDSubCal}" in rdf.GetColumnNames():
+                    # already defined
+                    continue
+                if channelName not in gains:
+                    raise ValueError(
+                        f"Gain for channel {channelName} not found in gains.")
+                gain = gains[channelName]
+                rdf = rdf.Define(channelNamePDSubCal,
+                                 f"{channelNamePDSub} / {gain}")
+                # rdf = rdf.Define(
+                #    f"FERS_Board{boardNo}_energyHG_{channelNo}_subtracted_calib_clipped",
+                #    f"FERS_Board{boardNo}_energyHG_{channelNo}_subtracted_calib > 0.8 ? FERS_Board{boardNo}_energyHG_{channelNo}_subtracted_calib : 0"
+                # )
+            else:
+                channelName = channel.GetChannelName(useHG=None)
+                channelNamePDSubCal = channel.GetChannelName(
+                    useHG=None, pdsub=True, calib=True)
+                if f"{channelNamePDSubCal}" in rdf.GetColumnNames():
+                    # already defined
+                    continue
+                if channelName not in gains:
+                    # raise ValueError(
+                    #    f"Gain for channel {channelName} not found in gains.")
+                    # masked
+                    print(
+                        f"\033[93mGain for channel {channelName} not found in gains. Channel Masked.\033[0m")
+                    rdf = rdf.Define(channelNamePDSubCal, f"0.")
+                else:
+                    gain = gains[channelName]["response"]
+                    rdf = rdf.Define(channelNamePDSubCal,
+                                     f"{channelName} * {gain}")
     return rdf
 
 
@@ -134,30 +191,22 @@ def getFERSEnergyMax(rdf, fersboards):
     return rdf
 
 
-def getFERSEnergySum(rdf, fersboards, pdsub=False, calib=False):
+def getFERSEnergySum(rdf, fersboards, useHG=True, pdsub=False, calib=False):
     """
     Calculate the Sci and Cer energy sum for FERS boards, per board and per event.
     """
     # per-board energy sum
     for fersboard in fersboards.values():
-        rdf = rdf.Define(fersboard.GetEnergySumName(useHG=True, isCer=True, pdsub=pdsub, calib=calib),
-                         f"({' + '.join(chan.GetChannelName(useHG=True, pdsub=pdsub, calib=calib) for chan in fersboard.GetCerChannels())})")
-        rdf = rdf.Define(fersboard.GetEnergySumName(useHG=False, isCer=True, pdsub=pdsub, calib=calib),
-                         f"({' + '.join(chan.GetChannelName(useHG=False, pdsub=pdsub, calib=calib) for chan in fersboard.GetCerChannels())})")
-        rdf = rdf.Define(fersboard.GetEnergySumName(useHG=True, isCer=False, pdsub=pdsub, calib=calib),
-                         f"({' + '.join(chan.GetChannelName(useHG=True, pdsub=pdsub, calib=calib) for chan in fersboard.GetSciChannels())})")
-        rdf = rdf.Define(fersboard.GetEnergySumName(useHG=False, isCer=False, pdsub=pdsub, calib=calib),
-                         f"({' + '.join(chan.GetChannelName(useHG=False, pdsub=pdsub, calib=calib) for chan in fersboard.GetSciChannels())})")
+        rdf = rdf.Define(fersboard.GetEnergySumName(useHG=useHG, isCer=True, pdsub=pdsub, calib=calib),
+                         f"({' + '.join(chan.GetChannelName(useHG=useHG, pdsub=pdsub, calib=calib) for chan in fersboard.GetCerChannels())})")
+        rdf = rdf.Define(fersboard.GetEnergySumName(useHG=useHG, isCer=False, pdsub=pdsub, calib=calib),
+                         f"({' + '.join(chan.GetChannelName(useHG=useHG, pdsub=pdsub, calib=calib) for chan in fersboard.GetSciChannels())})")
 
     # per-event energy sum
-    rdf = rdf.Define(fersboards.GetEnergySumName(useHG=True, isCer=True, pdsub=pdsub, calib=calib),
-                     f"({' + '.join(fersboard.GetEnergySumName(useHG=True, isCer=True, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
-    rdf = rdf.Define(fersboards.GetEnergySumName(useHG=False, isCer=True, pdsub=pdsub, calib=calib),
-                     f"({' + '.join(fersboard.GetEnergySumName(useHG=False, isCer=True, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
-    rdf = rdf.Define(fersboards.GetEnergySumName(useHG=True, isCer=False, pdsub=pdsub, calib=calib),
-                     f"({' + '.join(fersboard.GetEnergySumName(useHG=True, isCer=False, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
-    rdf = rdf.Define(fersboards.GetEnergySumName(useHG=False, isCer=False, pdsub=pdsub, calib=calib),
-                     f"({' + '.join(fersboard.GetEnergySumName(useHG=False, isCer=False, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
+    rdf = rdf.Define(fersboards.GetEnergySumName(useHG=useHG, isCer=True, pdsub=pdsub, calib=calib),
+                     f"({' + '.join(fersboard.GetEnergySumName(useHG=useHG, isCer=True, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
+    rdf = rdf.Define(fersboards.GetEnergySumName(useHG=useHG, isCer=False, pdsub=pdsub, calib=calib),
+                     f"({' + '.join(fersboard.GetEnergySumName(useHG=useHG, isCer=False, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
     return rdf
 
 
