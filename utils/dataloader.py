@@ -7,22 +7,21 @@ def IsScanRun(runNumber):
     return runNumber in scanruns
 
 
-def getDataFile(runNumber):
+def getDataFile(runNumber, jsonFile):
     runNum = str(runNumber)
     import json
-    jsonFile = "data/datafiles.json"
     with open(jsonFile, 'r') as f:
         data = json.load(f)
     if runNum in data:
         return data[runNum]
     else:
-        raise ValueError(f"Run number {runNum} not found in datafiles.json")
+        raise ValueError(f"Run number {runNum} not found in {jsonFile}")
 
 
-def loadRDF(runNumber, firstEvent=0, lastEvent=-1):
+def loadRDF(runNumber, firstEvent=0, lastEvent=-1, jsonFile="data/datafiles.json"):
     import ROOT
     # Open the input ROOT file
-    ifile = getDataFile(runNumber)
+    ifile = getDataFile(runNumber, jsonFile)
     infile = ROOT.TFile(ifile, "READ")
     rdf_org = ROOT.RDataFrame("EventTree", infile)
     nevents = rdf_org.Count().GetValue()

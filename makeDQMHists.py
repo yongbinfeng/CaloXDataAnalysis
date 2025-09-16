@@ -20,8 +20,9 @@ args = get_args()
 runNumber = args.run
 firstEvent = args.first_event
 lastEvent = args.last_event
+jsonFile = args.jsonFile
 
-rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
+rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
 
 DRSBoards = buildDRSBoards(run=runNumber)
 fersboards = buildFERSBoards(run=runNumber)
