@@ -70,7 +70,8 @@ def applyPSDSelection(rdf, runNumber, isHadron=False, applyCut=True):
     rdf = rdf.Define("pass_PSDEle_selection",
                      f"({preshower_channel}_sum < {valCut})")
 
-    # rdf = rdf.Define("pass_PSDEle_selection", f"({preshower_channel}_peak_value < -200.0)")
+    # rdf = rdf.Define("pass_PSDEle_selection",
+    #                 f"({preshower_channel}_peak_value < -1000.0)")
 
     if not applyCut:
         return rdf

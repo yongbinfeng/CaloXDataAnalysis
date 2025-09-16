@@ -68,10 +68,20 @@ def GetHisto(myfile, lhistos, *args):
 
 
 def Normalize(th1, option=0):
-    if option == 0:
-        th1.Scale(1.0/(th1.Integral(0, th1.GetNbinsX()+1)+1e-6))
-    elif option == 1:
-        th1.Scale(1.0/(th1.Integral()+1e-6))
+    if isinstance(th1, ROOT.TH2):
+        if option == 0:
+            th1.Scale(
+                1.0/(th1.Integral(0, th1.GetNbinsX()+1, 0, th1.GetNbinsY()+1)+1e-6))
+        elif option == 1:
+            th1.Scale(1.0/(th1.Integral()+1e-6))
+    elif isinstance(th1, ROOT.TH1):
+        if option == 0:
+            th1.Scale(1.0/(th1.Integral(0, th1.GetNbinsX()+1)+1e-6))
+        elif option == 1:
+            th1.Scale(1.0/(th1.Integral()+1e-6))
+    else:
+        print("input must be a ROOT.TH1 or ROOT.TH2 for normalization")
+        sys.exit(1)
 
 
 def GetMaximum(h, addOverflow=False, addUnderflow=False):
@@ -542,7 +552,7 @@ def TH2ToTH1s(h2, projY=False, label="X"):
     return hs, labels
 
 
-def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outputname, dology=True, showratio=False, dologx=False, lheader=None, donormalize=False, binomialratio=False, yrmax=2.0, yrmin=0.0, yrlabel=None, MCOnly=False, leftlegend=False, mycolors=None, legendPos=None, legendNCols=1, linestyles=None, markerstyles=None, showpull=False, doNewman=False, doPearson=False, ignoreHistError=False, ypullmin=-3.99, ypullmax=3.99, drawashist=False, padsize=(2, 0.9, 1.1), setGridx=False, setGridy=False, drawoptions=None, legendoptions=None, ratiooptions=None, dologz=False, doth2=False, ratiobase=0, redrawihist=-1, extraText=None, noCMS=False, noLumi=False, nMaxDigits=None, nTextDigits=0, addOverflow=False, addUnderflow=False, plotdiff=False, hratiopanel=None, doratios=None, hpulls=None, W_ref=600, H_ref=600, is5TeV=False, outdir="plots", savepdf=True, zmin=0, zmax=2, extralabels=None, extralheader=None, extraToDraw=None, exlegoffset=0.08, runNumber=None, ncolors=None):
+def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outputname, dology=True, showratio=False, dologx=False, lheader=None, donormalize=False, binomialratio=False, yrmax=2.0, yrmin=0.0, yrlabel=None, MCOnly=False, leftlegend=False, mycolors=None, legendPos=None, legendNCols=1, linestyles=None, markerstyles=None, showpull=False, doNewman=False, doPearson=False, ignoreHistError=False, ypullmin=-3.99, ypullmax=3.99, drawashist=False, padsize=(2, 0.9, 1.1), setGridx=False, setGridy=False, drawoptions=None, legendoptions=None, ratiooptions=None, dologz=False, doth2=False, ratiobase=0, redrawihist=-1, extraText=None, noCMS=False, noLumi=False, nMaxDigits=None, nTextDigits=0, addOverflow=False, addUnderflow=False, plotdiff=False, hratiopanel=None, doratios=None, hpulls=None, W_ref=600, H_ref=600, is5TeV=False, outdir="plots", savepdf=True, zmin=0, zmax=2, extralabels=None, extralheader=None, extraToDraw=None, exlegoffset=0.08, runNumber=None, ncolors=None, zlabel="Events"):
     """
     draw histograms with the CMS tdr style
     """
@@ -733,7 +743,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
             # print(f"configuring z range to {zmin}, {zmax}")
             h1.GetZaxis().SetRangeUser(zmin, zmax)
             for h in myhistos:
-                h.GetZaxis().SetTitle("Events")
+                h.GetZaxis().SetTitle(zlabel)
                 h.GetZaxis().SetRangeUser(zmin, zmax)
                 h.GetZaxis().SetLabelSize(0.04)
                 h.GetZaxis().SetTitleSize(0.05)

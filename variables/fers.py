@@ -45,7 +45,7 @@ def addFERSPosXY(rdf, fersboards):
             # unit cm
             rdf = rdf.Define(
                 channel.GetRealPosName(isX=False),
-                f"{channel.iTowerY * 1.4}"
+                f"{channel.iTowerY * 1.6}"
             )
     return rdf
 
@@ -98,7 +98,7 @@ def mixFERSHGLG(rdf, fersboards, file_HG2LG: str):
                     f"HG2LG ratio for channel {channelName_HG} not found in {file_HG2LG}.")
             incep, ratio = HG2LG_ratios[channelName_key]
             rdf = rdf.Define(channelName_Mix,
-                             f"({channelName_HG} < {getFERSSaturationValue() - 150.0}) ? {channelName_HG} : ({channelName_LG} - {incep})/{ratio}")
+                             f"({channelName_HG} < {getFERSSaturationValue()}) ? {channelName_HG} : ({channelName_LG} - {incep})/{ratio}")
 
     return rdf
 
@@ -169,10 +169,12 @@ def getFERSEnergySum(rdf, fersboards, gain="HG", pdsub=False, calib=False):
     return rdf
 
 
-def getFERSEnergyWeightedCenter(rdf, fersboards, gain="HG", pdsub=False, calib=False):
+def getFERSEnergyWeightedCenter(rdf, fersboards, gain="HG", pdsub=False, calib=False, useRealPos=True):
     """
     Calculate the weighted center of the energy distribution for FERS boards.
     """
+    scaleX = 1.2 if useRealPos else 1.0
+    scaleY = 1.6 if useRealPos else 1.0
     for var in ["Cer", "Sci"]:
         x_center = "0."
         y_center = "0."
@@ -180,8 +182,8 @@ def getFERSEnergyWeightedCenter(rdf, fersboards, gain="HG", pdsub=False, calib=F
             for channel in fersboard.GetListOfChannels(isCer=(var == "Cer")):
                 channelName = channel.GetChannelName(
                     gain=gain, pdsub=pdsub, calib=calib)
-                x_center += f"+ {channel.iTowerX} * {channelName}"
-                y_center += f"+ {channel.iTowerY} * {channelName}"
+                x_center += f"+ {channel.iTowerX * scaleX} * {channelName}"
+                y_center += f"+ {channel.iTowerY * scaleY} * {channelName}"
 
         rdf = rdf.Define(fersboards.GetEnergyWeightedCenterName(gain=gain, isCer=(var == "Cer"), pdsub=pdsub, calib=calib, isX=True),
                          f"({x_center}) / ({fersboards.GetEnergySumName(gain=gain, isCer=(var == 'Cer'), pdsub=pdsub, calib=calib)} + 1e-9)")
