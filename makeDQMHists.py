@@ -20,8 +20,9 @@ args = get_args()
 runNumber = args.run
 firstEvent = args.first_event
 lastEvent = args.last_event
+jsonFile = args.jsonFile
 
-rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
+rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
 
 DRSBoards = buildDRSBoards(run=runNumber)
 fersboards = buildFERSBoards(run=runNumber)
@@ -35,7 +36,7 @@ print(f"Total number of events to process: {nEvents} in run {runNumber}")
 rdf = vectorizeFERS(rdf, fersboards)
 rdf = getFERSEnergyMax(rdf, fersboards)
 rdf = preProcessDRSBoards(rdf, debug=debugDRS)
-rdf = getDRSStats(rdf, DRSBoards, 0, 1000, 9)
+rdf = getDRSStats(rdf, runNumber, DRSBoards, 0, 1000, 9)
 
 
 def monitorConditions():
@@ -499,8 +500,8 @@ def checkDRSPeakTS():
                 h1_DRSPeakTS = rdf.Histo1D((
                     f"hist_DRSPeakTS_{var}_{sTowerX}_{sTowerY}",
                     f"DRS Peak TS for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var};Peak TS;Counts",
-                    1000, 0, 1000),
-                    channelName
+                    1000,0,1000),
+                    f"{channelName}_good"
                 )
                 h1s_DRSPeakTS[var].append(h1_DRSPeakTS)
 
@@ -512,9 +513,9 @@ def checkDRSPeakTS():
             h2_DRSPeak_Cer_VS_Sci = rdf.Histo2D((
                 f"hist_DRSPeakTS_Cer_VS_Sci_{sTowerX}_{sTowerY}",
                 f"DRS Peak TS - CER VS SCI for Board{boardNo}, Tower({sTowerX}, {sTowerY});SCI Peak TS;CER Peak TS",
-                1000, 0, 1000, 1000, 0, 1000),
-                channelNames["Sci"],
-                channelNames["Cer"],
+                1000,0,1000, 1000,0,1000),
+                f"{channelNames["Sci"]}_good",
+                f"{channelNames["Cer"]}_good",
             )
             h2s_DRSPeakTS_Cer_VS_Sci.append(h2_DRSPeak_Cer_VS_Sci)
     return h1s_DRSPeakTS["Cer"], h1s_DRSPeakTS["Sci"], h2s_DRSPeakTS_Cer_VS_Sci
