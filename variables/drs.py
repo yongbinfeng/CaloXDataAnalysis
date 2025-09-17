@@ -1,6 +1,6 @@
 # collect all functions related to DRS here
 from utils.utils import getBranchStats
-
+from channels.channel_map import findFanoutTimeReferenceDelay, findDRSTriggerMap
 
 def preProcessDRSBoards(rdf, debug=False):
     import re
@@ -76,7 +76,7 @@ def getDRSSum(rdf, DRSBoards, TS_start=0, TS_end=400):
     return rdf
 
 
-def getDRSPeakTS(rdf, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
+def getDRSPeakTS(rdf, run, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
     # get the peak TS of DRS outputs per channel
     TS_start = int(TS_start)
     TS_end = int(TS_end)
@@ -84,9 +84,26 @@ def getDRSPeakTS(rdf, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
         for channel in DRSBoard:
             channelName_sub = channel.GetChannelName(blsub=True)
             channelPeakTSName = channel.GetChannelPeakTSName()
+
+            # find the trigger channel for this DRS channel
+            channelName = channel.GetChannelName(blsub=False)
+            triggerName = findDRSTriggerMap(channelName, run=run)
+            triggerPeakTSName = triggerName + "_peakTS"
+            triggerDelay = findFanoutTimeReferenceDelay(triggerName, run=run)
+            triggerDelayTS = int((triggerDelay / 0.2) + 800.0) # convert to time samples
+
             rdf = rdf.Define(
                 channelPeakTSName,
                 f"ArgMaxRange({channelName_sub}, {TS_start}, {TS_end}, {threshold})"
+            )
+            if(not rdf.HasColumn(triggerPeakTSName)):
+                rdf = rdf.Define(
+                    triggerPeakTSName,
+                    f"ArgMinRange({triggerName}_blsub, 500, 1024)"
+                )
+            rdf = rdf.Define(
+                f"{channelPeakTSName}_good",
+                f"({channelPeakTSName} - {triggerPeakTSName}) + {triggerDelayTS}"
             )
     return rdf
 
@@ -108,11 +125,11 @@ def getDRSPeak(rdf, DRSBoards, TS_start=0, TS_end=400):
     return rdf
 
 
-def getDRSStats(rdf, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
+def getDRSStats(rdf, run, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
     """
     Get the statistics of DRS outputs per channel.
     """
     rdf = getDRSSum(rdf, DRSBoards, TS_start, TS_end)
-    rdf = getDRSPeakTS(rdf, DRSBoards, TS_start, TS_end, threshold)
+    rdf = getDRSPeakTS(rdf, run, DRSBoards, TS_start, TS_end, threshold)
     rdf = getDRSPeak(rdf, DRSBoards, TS_start, TS_end)
     return rdf

@@ -667,7 +667,7 @@ def makeDRSPeakTSPlots():
             hists_Cer.append(hists["Cer"])
             hists_Sci.append(hists["Sci"])
 
-            DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], 0, 1000, "Peak TS", 1, None, "Counts",
+            DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], 400, 600, "Peak TS", 1, None, "Counts",
                        output_name,
                        dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False, extraToDraw=extraToDraw,
                        outdir=outdir_plots, runNumber=runNumber)
@@ -676,7 +676,7 @@ def makeDRSPeakTSPlots():
     # summary plots
     hist_Cer_Combined = LHistos2Hist(hists_Cer, "hist_DRSPeakTS_Cer_Combined")
     hist_Sci_Combined = LHistos2Hist(hists_Sci, "hist_DRSPeakTS_Sci_Combined")
-    DrawHistos([hist_Cer_Combined, hist_Sci_Combined], ["Cer", "Sci"], 0, 1000, "Peak TS", 1, None, "Counts",
+    DrawHistos([hist_Cer_Combined, hist_Sci_Combined], ["Cer", "Sci"], 400, 600, "Peak TS", 1, None, "Counts",
                "DRS_PeakTS_Combined",
                dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False,
                outdir=outdir_plots, runNumber=runNumber)
@@ -718,7 +718,7 @@ def makeDRSPeakTSCerVSSciPlots():
 
             hists.append(hist)
 
-            DrawHistos([hist], "", 0, 1000, "Sci Peak TS", 0, 1000, f"Cer Peak TS",
+            DrawHistos([hist], "", 400, 600, "Sci Peak TS", 400, 600, f"Cer Peak TS",
                        output_name,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
                        outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
@@ -728,7 +728,7 @@ def makeDRSPeakTSCerVSSciPlots():
     # summary plots
     hcombined = LHistos2Hist(hists, "hist_DRSPeakTS_Cer_VS_Sci_Combined")
     output_name = "DRS_PeakTS_Cer_VS_Sci_Combined"
-    DrawHistos([hcombined], "", 0, 1000, "Sci Peak TS", 0, 1000, f"Cer Peak TS",
+    DrawHistos([hcombined], "", 400, 600, "Sci Peak TS", 400, 600, f"Cer Peak TS",
                output_name,
                dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
                outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
