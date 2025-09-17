@@ -87,8 +87,8 @@ rdf = applyCC1Selection(rdf, runNumber, applyCut=False)
 # rdfs["inc"] = rdf
 rdfs["passPSDEle_passCC1Ele"] = rdf.Filter(
     "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 1")
-# rdfs["passPSDEle_failCC1Ele"] = rdf.Filter(
-#    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 0")
+rdfs["passPSDEle_failCC1Ele"] = rdf.Filter(
+    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 0")
 # rdfs["failPSDEle_passCC1Ele"] = rdf.Filter(
 #    "pass_PSDEle_selection == 0 && pass_CC1Ele_selection == 1")
 # rdfs["failPSDEle_failCC1Ele"] = rdf.Filter(
@@ -178,22 +178,22 @@ def makeFERSEnergyWeightedCenterHists(rdf=rdf, suffix=""):
             histX = rdf.Histo1D((
                 f"hist_{varname_X}_{suffix}",
                 f"hist_{varname_X}_{suffix}",
-                400, -20, 20),
+                100, -20, 20),
                 varname_X
             )
             hists_FERS_EnergyWeightedCenter.append(histX)
             histY = rdf.Histo1D((
                 f"hist_{varname_Y}_{suffix}",
                 f"hist_{varname_Y}_{suffix}",
-                400, -20, 20),
+                100, -20, 20),
                 varname_Y
             )
             hists_FERS_EnergyWeightedCenter.append(histY)
             hist2D = rdf.Histo2D((
                 f"hist_{varname_X}_VS_{varname_Y}_{suffix}",
                 f"hist_{varname_X}_VS_{varname_Y}_{suffix}",
-                400, -20, 20,
-                400, -20, 20),
+                100, -20, 20,
+                100, -20, 20),
                 varname_X,
                 varname_Y
             )
@@ -207,6 +207,7 @@ def makeFERSShowerShapeHists(rdf=rdf, suffix=""):
     hists_Y = []
     hists_R = []
     hists_Y_VS_X = []
+
     for gain, calib in GainCalibs:
         for cat in ["cer", "sci"]:
             hists_tmp_X = []
@@ -220,14 +221,14 @@ def makeFERSShowerShapeHists(rdf=rdf, suffix=""):
                     hist = rdf.Histo1D((
                         f"hist_RealX_{channelName}_{suffix}",
                         f"hist_RealX_{channelName}_{suffix}",
-                        400, -20, 20),
+                        100, -20, 20),
                         channel.GetRealPosName(isX=True), channelName
                     )
                     hists_tmp_X.append(hist)
                     hist = rdf.Histo1D((
                         f"hist_RealY_{channelName}_{suffix}",
                         f"hist_RealY_{channelName}_{suffix}",
-                        400, -20, 20),
+                        100, -20, 20),
                         channel.GetRealPosName(isX=False), channelName
                     )
                     hists_tmp_Y.append(hist)
@@ -237,15 +238,15 @@ def makeFERSShowerShapeHists(rdf=rdf, suffix=""):
                     hist = rdf.Histo1D((
                         f"hist_RealR_{channelName}_{suffix}",
                         f"hist_RealR_{channelName}_{suffix}",
-                        50, 0, 25),
+                        25, 0, 25),
                         "RealR_" + channelName, channelName
                     )
                     hists_tmp_R.append(hist)
                     hist = rdf.Histo2D((
                         f"hist_RealY_VS_RealX_{channelName}_{suffix}",
                         f"hist_RealY_VS_RealX_{channelName}_{suffix}",
-                        400, -20, 20,
-                        400, -20, 20),
+                        100, -20, 20,
+                        100, -20, 20),
                         channel.GetRealPosName(isX=True), channel.GetRealPosName(
                             isX=False), channelName
                     )
@@ -260,7 +261,9 @@ def makeFERSShowerShapeHists(rdf=rdf, suffix=""):
             hists_Y_VS_X.append(
                 (hists_tmp_Y_VS_X, f"hist_RealY_VS_RealX_{gain}_{cat}_{suffix}"))
 
-    return hists_X, hists_Y,  hists_R, hists_Y_VS_X
+    nEvents = rdf.Count()
+
+    return hists_X, hists_Y,  hists_R, hists_Y_VS_X, nEvents
 
 
 def makeFERSEnergySumPlots(suffix=""):
@@ -457,14 +460,15 @@ def makeFERSShowerShapePlots(suffix=""):
     outdir_plots = f"{plotdir}/FERS_ShowerShape_{suffix}"
 
     for gain, calib in GainCalibs:
+        hists_R = []
         for cat in ["cer", "sci"]:
             hist_X_name = f"hist_RealX_{gain}_{cat}_{suffix}"
             hist_X = infile.Get(hist_X_name)
             if hist_X:
                 output_name = f"FERS_ShowerShape_RealX_{gain}_{cat}_{suffix}"
                 DrawHistos([hist_X], "", -20, 20, f"X {cat.capitalize()} {gain} [cm]", 1e-4, 1, "Frac. of Energy",
-                           output_name,
-                           dology=True, drawoptions="HIST", mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
+                           output_name, drawoptions="HIST",
+                           dology=True, mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
                            outdir=outdir_plots, runNumber=runNumber, donormalize=True)
                 plots.append(output_name + ".png")
             else:
@@ -476,8 +480,8 @@ def makeFERSShowerShapePlots(suffix=""):
             if hist_Y:
                 output_name = f"FERS_ShowerShape_RealY_{gain}_{cat}_{suffix}"
                 DrawHistos([hist_Y], "", -20, 20, f"Y {cat.capitalize()} {gain} [cm]", 1e-4, 1, "Frac. of Energy",
-                           output_name,
-                           dology=True, drawoptions="HIST", mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
+                           output_name, drawoptions="HIST",
+                           dology=True, mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
                            outdir=outdir_plots, runNumber=runNumber, donormalize=True)
                 plots.append(output_name + ".png")
             else:
@@ -487,31 +491,49 @@ def makeFERSShowerShapePlots(suffix=""):
             hist_R_name = f"hist_RealR_{gain}_{cat}_{suffix}"
             hist_R = infile.Get(hist_R_name)
             if hist_R:
-                output_name = f"FERS_ShowerShape_RealR_{gain}_{cat}_{suffix}"
-                DrawHistos([hist_R], "", 0, 25, f"R {cat.capitalize()} {gain} [cm]", 1e-4, 1, "Frac. of Energy",
-                           output_name,
-                           dology=True, drawoptions="HIST", mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
-                           outdir=outdir_plots, runNumber=runNumber, donormalize=True)
-                plots.append(output_name + ".png")
+                hists_R.append(hist_R)
             else:
                 print(
                     f"Warning: Histogram {hist_R_name} not found in {infile_name}")
 
-            hist_Y_VS_X_name = f"hist_RealY_VS_RealX_{gain}_{cat}_{suffix}"
-            hist_Y_VS_X = infile.Get(hist_Y_VS_X_name)
-            if hist_Y_VS_X:
-                output_name = f"FERS_ShowerShape_RealY_VS_RealX_{gain}_{cat}_{suffix}"
-                DrawHistos([hist_Y_VS_X], "", -20, 20, f"X {cat.capitalize()} {gain} [cm]", -20, 20, f"Y {cat.capitalize()} {gain} [cm]",
-                           output_name,
-                           dology=False, drawoptions=["colz"], addOverflow=True, addUnderflow=True, dologz=True,
-                           outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1e-4, zmax=1, donormalize=True, zlabel="Frac. of Energy")
-                plots.append(output_name + ".png")
-            else:
-                print(
-                    f"Warning: Histogram {hist_Y_VS_X_name} not found in {infile_name}")
+            # hist_Y_VS_X_name = f"hist_RealY_VS_RealX_{gain}_{cat}_{suffix}"
+            # hist_Y_VS_X = infile.Get(hist_Y_VS_X_name)
+            # if hist_Y_VS_X:
+            #    output_name = f"FERS_ShowerShape_RealY_VS_RealX_{gain}_{cat}_{suffix}"
+            #    DrawHistos([hist_Y_VS_X], "", -20, 20, f"X {cat.capitalize()} {gain} [cm]", -20, 20, f"Y {cat.capitalize()} {gain} [cm]",
+            #               output_name,
+            #               dology=False, drawoptions=["colz"], addOverflow=True, addUnderflow=True, dologz=True,
+            #               outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1e-4, zmax=1, donormalize=True, zlabel="Frac. of Energy")
+            #    plots.append(output_name + ".png")
+            # else:
+            #    print(
+            #        f"Warning: Histogram {hist_Y_VS_X_name} not found in {infile_name}")
+
+        output_name = f"FERS_ShowerShape_RealR_{gain}_{suffix}"
+        ymax = max([h.GetMaximum() for h in hists_R]) * 1.2 if hists_R else 1
+        DrawHistos(hists_R, ["Cer", "Sci"], 0, 25, f"R [cm]", 1e-4, 1, "Frac. of Energy",
+                   output_name,
+                   dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True,
+                   outdir=outdir_plots, runNumber=runNumber, donormalize=True)
+        plots.append(output_name + ".png")
+
+        if len(hists_R) == 2:
+            # plot ratio of Cer/Sci
+            hists_R[0].Scale(1.0 / hists_R[0].Integral(0,
+                             hists_R[0].GetNbinsX() + 1))
+            hists_R[1].Scale(1.0 / hists_R[1].Integral(0,
+                             hists_R[1].GetNbinsX() + 1))
+            hist_ratio = hists_R[1].Clone()
+            hist_ratio.Divide(hists_R[0])
+            output_name = f"FERS_ShowerShape_RealR_Cer_over_Sci_{gain}_{suffix}"
+            DrawHistos([hist_ratio], "", 0, 25, f"R [cm]", 0, 1.5, "Cer/Sci",
+                       output_name,
+                       dology=False, drawoptions="HIST", mycolors=[1], addOverflow=True, addUnderflow=True,
+                       outdir=outdir_plots, runNumber=runNumber)
+            plots.append(output_name + ".png")
 
     output_html = f"{htmldir}/FERS_ShowerShape{suffix}/index.html"
-    generate_html(plots, outdir_plots, plots_per_row=4,
+    generate_html(plots, outdir_plots, plots_per_row=6,
                   output_html=output_html)
     return output_html
 
@@ -567,7 +589,7 @@ if __name__ == "__main__":
             hists_energy_weighted_center = makeFERSEnergyWeightedCenterHists(
                 rdf=rdf, suffix=cat)
 
-            hists_shower_shapes_X, hists_shower_shapes_Y, hists_shower_shapes_R, hists_shower_shapes_Y_VS_X = makeFERSShowerShapeHists(
+            hists_shower_shapes_X, hists_shower_shapes_Y, hists_shower_shapes_R, hists_shower_shapes_Y_VS_X, nEvents = makeFERSShowerShapeHists(
                 rdf=rdf, suffix=cat)
 
             # save histograms to ROOT files
@@ -595,25 +617,31 @@ if __name__ == "__main__":
                     hist.Write()
             print(f"Saved energy weighted center histograms to {outfile_name}")
 
+            nEvts = nEvents.GetValue()
             # save shower shape histograms
             # process the shower shape histograms to merge per-channel histograms
             hists_shower_shape = []
             for hists_X, hname_X in hists_shower_shapes_X:
                 hists_X_new = [h.GetValue() for h in hists_X]
-                hists_shower_shape.append(
-                    LHistos2Hist(hists_X_new, hname_X))
+                hist_combined = LHistos2Hist(hists_X_new, hname_X)
+                # normalize to number of events
+                hist_combined.Scale(1.0 / nEvts)
+                hists_shower_shape.append(hist_combined)
             for hists_Y, hname_Y in hists_shower_shapes_Y:
                 hists_Y_new = [h.GetValue() for h in hists_Y]
-                hists_shower_shape.append(
-                    LHistos2Hist(hists_Y_new, hname_Y))
+                hist_combined = LHistos2Hist(hists_Y_new, hname_Y)
+                hist_combined.Scale(1.0 / nEvts)
+                hists_shower_shape.append(hist_combined)
             for hists_R, hname_R in hists_shower_shapes_R:
                 hists_R_new = [h.GetValue() for h in hists_R]
-                hists_shower_shape.append(
-                    LHistos2Hist(hists_R_new, hname_R))
+                hist_combined = LHistos2Hist(hists_R_new, hname_R)
+                hist_combined.Scale(1.0 / nEvts)
+                hists_shower_shape.append(hist_combined)
             for hists_Y_VS_X, hname_Y_VS_X in hists_shower_shapes_Y_VS_X:
                 hists_Y_VS_X_new = [h.GetValue() for h in hists_Y_VS_X]
-                hists_shower_shape.append(
-                    LHistos2Hist(hists_Y_VS_X_new, hname_Y_VS_X))
+                hist_combined = LHistos2Hist(hists_Y_VS_X_new, hname_Y_VS_X)
+                hist_combined.Scale(1.0 / nEvts)
+                hists_shower_shape.append(hist_combined)
             outfile_name = f"{rootdir}/fers_shower_shape_{cat}.root"
             with ROOT.TFile(outfile_name, "RECREATE") as outfile:
                 for hist in hists_shower_shape:
