@@ -103,13 +103,20 @@ def mixFERSHGLG(rdf, fersboards, file_HG2LG: str):
     return rdf
 
 
-def calibrateFERSChannels(rdf, fersboards, file_calibrations: str, gain="HG"):
+def calibrateFERSChannels(rdf, fersboards, file_calibrations: str, gain="HG", file_deadchannels: str = None):
     """
     Calibrate FERS channels using gains and pedestals from the provided files.
     """
     import json
     with open(file_calibrations, 'r') as f:
         calibrations = json.load(f)
+
+    deadchannels = {}
+    if file_deadchannels is not None:
+        with open(file_deadchannels, 'r') as f:
+            deadchannels = json.load(f)
+        print(
+            f"\033[93mThe following channels are marked as dead and will be set to 0:\033[0m")
 
     for fersboard in fersboards.values():
         for channel in fersboard:
@@ -120,14 +127,18 @@ def calibrateFERSChannels(rdf, fersboards, file_calibrations: str, gain="HG"):
             if f"{channelNamePDSubCal}" in rdf.GetColumnNames():
                 # already defined
                 continue
-            if channelNamePDSub not in calibrations:
+            if str(fersboard.boardNo) in deadchannels and str(channel.channelNo) in deadchannels[str(fersboard.boardNo)]:
+                print(
+                    f"\033[93mChannel {channelNamePDSub} is marked as dead. Channel Masked.\033[0m")
+                rdf = rdf.Define(channelNamePDSubCal, "0.")
+            elif channelNamePDSub not in calibrations:
                 print(
                     f"\033[93mGain for channel {channelNamePDSub} not found in gains. Channel Masked.\033[0m")
-                rdf = rdf.Define(channelNamePDSubCal, f"0.")
+                rdf = rdf.Define(channelNamePDSubCal, "0.")
             else:
                 calibration = calibrations[channelNamePDSub]["response"]
                 rdf = rdf.Define(channelNamePDSubCal,
-                                 f"{channelNamePDSub} * {calibration}")
+                                 f"({channelNamePDSub} * {calibration})")
     return rdf
 
 
