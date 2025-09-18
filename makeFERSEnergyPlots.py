@@ -34,15 +34,13 @@ ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
 # load the gains and pedestals from SiPM fits
 # file_gains = f"results/root/Run{runNumber}/valuemaps_gain.json"
-# file_pedestals = f"results/root/Run{runNumber}/valuemaps_pedestal.json"
-file_pedestals_HG = f"results/root/Run{runNumber}/fers_pedestals_hg.json"
-file_pedestals_LG = f"results/root/Run{runNumber}/fers_pedestals_lg.json"
+file_pedestals = f"data/fers/FERS_pedestals_run1259.json"
+# file_pedestals_HG = f"results/root/Run{runNumber}/fers_pedestals_hg.json"
+# file_pedestals_LG = f"results/root/Run{runNumber}/fers_pedestals_lg.json"
 
 file_calibrations = "data/fers/FERS_response.json"
 file_HG2LG = "data/fers/FERS_HG2LG.json"
-
-pedestals_HG = json.load(open(file_pedestals_HG))
-pedestals_LG = json.load(open(file_pedestals_LG))
+file_deadchannels = f"data/fers/deadchannels.json"
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
 rdf = preProcessDRSBoards(rdf)
@@ -54,15 +52,15 @@ fersboards = buildFERSBoards(run=runNumber)
 rdf = vectorizeFERS(rdf, fersboards)
 # subtract pedestals
 rdf = subtractFERSPedestal(
-    rdf, fersboards, gain="HG", file_pedestals=file_pedestals_HG)
+    rdf, fersboards, gain="HG", file_pedestals=file_pedestals)
 rdf = subtractFERSPedestal(
-    rdf, fersboards, gain="LG", file_pedestals=file_pedestals_LG)
+    rdf, fersboards, gain="LG", file_pedestals=file_pedestals)
 # mix HG and LG
 rdf = mixFERSHGLG(
     rdf, fersboards, file_HG2LG=file_HG2LG)
 # calibrate Mix gain
 rdf = calibrateFERSChannels(
-    rdf, fersboards, file_calibrations=file_calibrations, gain="Mix")
+    rdf, fersboards, file_calibrations=file_calibrations, gain="Mix", file_deadchannels=file_deadchannels)
 
 GainCalibs = [("HG", False), ("LG", False), ("Mix", True)]
 
@@ -79,6 +77,13 @@ rootdir = f"results/root/Run{runNumber}/"
 plotdir = f"results/plots/Run{runNumber}/"
 htmldir = f"results/html/Run{runNumber}/"
 
+if not os.path.exists(rootdir):
+    os.makedirs(rootdir)
+if not os.path.exists(plotdir):
+    os.makedirs(plotdir)
+if not os.path.exists(htmldir):
+    os.makedirs(htmldir)
+
 # study PSD and CC1 selections
 rdfs = OrderedDict()
 rdf = applyPSDSelection(rdf, runNumber, applyCut=False)
@@ -86,9 +91,9 @@ rdf = applyCC1Selection(rdf, runNumber, applyCut=False)
 
 # rdfs["inc"] = rdf
 rdfs["passPSDEle_passCC1Ele"] = rdf.Filter(
-    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 1")
-rdfs["passPSDEle_failCC1Ele"] = rdf.Filter(
-    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 0")
+    "pass_PSDEle_selection == 1")
+# rdfs["passPSDEle_failCC1Ele"] = rdf.Filter(
+#    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 0")
 # rdfs["failPSDEle_passCC1Ele"] = rdf.Filter(
 #    "pass_PSDEle_selection == 0 && pass_CC1Ele_selection == 1")
 # rdfs["failPSDEle_failCC1Ele"] = rdf.Filter(
@@ -178,22 +183,22 @@ def makeFERSEnergyWeightedCenterHists(rdf=rdf, suffix=""):
             histX = rdf.Histo1D((
                 f"hist_{varname_X}_{suffix}",
                 f"hist_{varname_X}_{suffix}",
-                100, -20, 20),
+                300, -15, 15),
                 varname_X
             )
             hists_FERS_EnergyWeightedCenter.append(histX)
             histY = rdf.Histo1D((
                 f"hist_{varname_Y}_{suffix}",
                 f"hist_{varname_Y}_{suffix}",
-                100, -20, 20),
+                300, -15, 15),
                 varname_Y
             )
             hists_FERS_EnergyWeightedCenter.append(histY)
             hist2D = rdf.Histo2D((
                 f"hist_{varname_X}_VS_{varname_Y}_{suffix}",
                 f"hist_{varname_X}_VS_{varname_Y}_{suffix}",
-                100, -20, 20,
-                100, -20, 20),
+                300, -15, 15,
+                300, -15, 15),
                 varname_X,
                 varname_Y
             )
@@ -408,7 +413,7 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
                 extraToDraw = extraToDrawBase.Clone()
                 extraToDraw.AddText(f"Center = {valcenter:.2f} +/- {rms:.2f}")
                 output_name = f"FERS_Total_{gain}_{cat}_EWC_X{suffix}"
-                DrawHistos([histX], "", -20, 20, f"{cat.capitalize()} {gain} EWC X [cm]", 1, None, "Events",
+                DrawHistos([histX], "", -15, 15, f"{cat.capitalize()} {gain} EWC X [cm]", 1, None, "Events",
                            output_name,
                            dology=False, drawoptions="HIST", mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
                            outdir=outdir_plots, runNumber=runNumber, extraToDraw=extraToDraw)
@@ -425,7 +430,7 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
                 extraToDraw = extraToDrawBase.Clone()
                 extraToDraw.AddText(f"Center = {valcenter:.2f} +/- {rms:.2f}")
                 output_name = f"FERS_Total_{gain}_{cat}_EWC_Y{suffix}"
-                DrawHistos([histY], "", -20, 20, f"{cat.capitalize()} {gain} EWC Y [cm]", 1, None, "Events",
+                DrawHistos([histY], "", -15, 15, f"{cat.capitalize()} {gain} EWC Y [cm]", 1, None, "Events",
                            output_name,
                            dology=False, drawoptions="HIST", mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
                            outdir=outdir_plots, runNumber=runNumber, extraToDraw=extraToDraw)
@@ -438,7 +443,7 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
             hist2D = infile.Get(hist2D_name)
             if hist2D:
                 output_name = f"FERS_Total_{gain}_{cat}_EWC_X_vs_Y{suffix}"
-                DrawHistos([hist2D], "", -20, 20, f"{cat.capitalize()} {gain} EWC X [cm]", -20, 20, f"{cat.capitalize()} {gain} EWC Y [cm]",
+                DrawHistos([hist2D], "", -15, 15, f"{cat.capitalize()} {gain} EWC X [cm]", -15, 15, f"{cat.capitalize()} {gain} EWC Y [cm]",
                            output_name,
                            dology=False, drawoptions=["colz"], addOverflow=True, addUnderflow=True,
                            outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None)
