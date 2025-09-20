@@ -49,97 +49,47 @@ def makeConditionsPlots():
 
     for fersboard in fersboards.values():
         boardNo = fersboard.boardNo
-        hist_SipmHV_name = f"hist_{fersboard.GetSipmHVName()}_VS_Event"
-        hist_SipmI_name = f"hist_{fersboard.GetSipmIName()}_VS_Event"
-        hist_TempDET_name = f"hist_{fersboard.GetTempDETName()}_VS_Event"
-        hist_TempFPGA_name = f"hist_{fersboard.GetTempFPGAName()}_VS_Event"
+        hprof_SipmHV_name = f"hprof_{fersboard.GetSipmHVName()}_VS_Event"
+        hprof_SipmI_name = f"hprof_{fersboard.GetSipmIName()}_VS_Event"
+        hprof_TempDET_name = f"hprof_{fersboard.GetTempDETName()}_VS_Event"
+        hprof_TempFPGA_name = f"hprof_{fersboard.GetTempFPGAName()}_VS_Event"
 
-        hist_SipmHV = infile.Get(hist_SipmHV_name)
-        hist_SipmI = infile.Get(hist_SipmI_name)
-        hist_TempDET = infile.Get(hist_TempDET_name)
-        hist_TempFPGA = infile.Get(hist_TempFPGA_name)
+        hprof_SipmHV = infile.Get(hprof_SipmHV_name)
+        hprof_SipmI = infile.Get(hprof_SipmI_name)
+        hprof_TempDET = infile.Get(hprof_TempDET_name)
+        hprof_TempFPGA = infile.Get(hprof_TempFPGA_name)
 
-        if not (hist_SipmHV and hist_SipmI and hist_TempDET and hist_TempFPGA):
+        if not (hprof_SipmHV and hprof_SipmI and hprof_TempDET and hprof_TempFPGA):
             print(
-                f"Warning: Histograms {hist_SipmHV_name}, {hist_SipmI_name}, {hist_TempDET_name}, or {hist_TempFPGA_name} not found in {infile_name}")
+                f"Warning: Profiles {hprof_SipmHV_name}, {hprof_SipmI_name}, {hprof_TempDET_name}, or {hprof_TempFPGA_name} not found in {infile_name}")
             continue
 
-        hprofile_SipmHV = hist_SipmHV.ProfileX(
-            f"hprof_{fersboard.GetSipmHVName()}_VS_Event")
-        hprofiles_SipmHV.append(hprofile_SipmHV)
-
-        hprofile_SipmI = hist_SipmI.ProfileX(
-            f"hprof_{fersboard.GetSipmIName()}_VS_Event")
-        hprofiles_SipmI.append(hprofile_SipmI)
-
-        hprofile_TempDET = hist_TempDET.ProfileX(
-            f"hprof_{fersboard.GetTempDETName()}_VS_Event")
-        hprofiles_TempDET.append(hprofile_TempDET)
-
-        hprofile_TempFPGA = hist_TempFPGA.ProfileX(
-            f"hprof_{fersboard.GetTempFPGAName()}_VS_Event")
-        hprofiles_TempFPGA.append(hprofile_TempFPGA)
+        hprofiles_SipmHV.append(hprof_SipmHV)
+        hprofiles_SipmI.append(hprof_SipmI)
+        hprofiles_TempDET.append(hprof_TempDET)
+        hprofiles_TempFPGA.append(hprof_TempFPGA)
 
         legends.append(str(boardNo))
-
-        nEvents = hist_SipmHV.GetXaxis().GetXmax()
-        zmax = nEvents * 10
-
-        extraToDraw = ROOT.TPaveText(0.20, 0.80, 0.60, 0.90, "NDC")
-        extraToDraw.SetTextAlign(11)
-        extraToDraw.SetFillColorAlpha(0, 0)
-        extraToDraw.SetBorderSize(0)
-        extraToDraw.SetTextFont(42)
-        extraToDraw.SetTextSize(0.04)
-        extraToDraw.AddText(f"Board: {fersboard.boardNo}")
-
-        # output_name = f"Conditions_Board{boardNo}_SipmHV_VS_Event"
-        # DrawHistos([hist_SipmHV], f"", 0, nEvents, "Event", 26, 29, "Voltage (V)",
-        #           output_name,
-        #           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
-        #           outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
-        # plots.append(output_name + ".png")
-
-        # output_name = f"Conditions_Board{boardNo}_SipmI_VS_Event"
-        # DrawHistos([hist_SipmI], f"", 0, nEvents, "Event", 0.02, 0.2, "Current (mA)",
-        #           output_name,
-        #           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
-        #           outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
-        # plots.append(output_name + ".png")
-
-        # output_name = f"Conditions_Board{boardNo}_TempDET_VS_Event"
-        # DrawHistos([hist_TempDET], f"", 0, nEvents, "Event", 10, 30, "Temperature (C)",
-        #           output_name,
-        #           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
-        #           outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
-        # plots.append(output_name + ".png")
-
-        # output_name = f"Conditions_Board{boardNo}_TempFPGA_VS_Event"
-        # DrawHistos([hist_TempFPGA], f"", 0, nEvents, "Event", 30, 50, "Temperature (C)",
-        #           output_name,
-        #           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True, extraToDraw=extraToDraw,
-        #           outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
-        # plots.append(output_name + ".png")
 
     # Draw the profiles
     nEvents = hprofiles_SipmHV[0].GetXaxis().GetXmax()
     legendPos = [0.3, 0.7, 0.9, 0.9]
     output_name = "Conditions_SipmHV_VS_Event"
-    DrawHistos(hprofiles_SipmHV, legends, 0, nEvents, "Event", 26, 29, "Voltage (V)",
+    DrawHistos(hprofiles_SipmHV, legends, 0, nEvents, "Event", 26, 30, "Voltage (V)",
                output_name,
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
     plots.insert(0, output_name + ".png")
 
     output_name = "Conditions_SipmI_VS_Event"
-    DrawHistos(hprofiles_SipmI, legends, 0, nEvents, "Event", 0.02, 0.2, "Current (mA)",
+    DrawHistos(hprofiles_SipmI, legends, 0, nEvents, "Event", 0.01, 0.24, "Current (mA)",
                output_name,
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
     plots.insert(1, output_name + ".png")
 
     output_name = "Conditions_TempDET_VS_Event"
-    DrawHistos(hprofiles_TempDET, legends, 0, nEvents, "Event", 15, 30, "Temperature (C)",
+    DrawHistos(hprofiles_TempDET, legends, 0, nEvents, "Event", 14, 35, "Temperature (C)",
                output_name,
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
@@ -155,6 +105,101 @@ def makeConditionsPlots():
     output_html = f"{htmldir}/Conditions_VS_Event/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
+    return output_html
+
+
+def makeFERSSumPlots():
+    plots = []
+    outdir_plots = f"{plotdir}/FERS_EnergySum_VS_Event"
+    infile_name = f"{rootdir}/fers_energysum_vs_event.root"
+    infile = ROOT.TFile(infile_name, "READ")
+
+    hprofiles_Cer_HG_sum = []
+    hprofiles_Sci_HG_sum = []
+    hprofiles_Cer_LG_sum = []
+    hprofiles_Sci_LG_sum = []
+
+    legends = []
+
+    for fersboard in fersboards.values():
+        boardNo = fersboard.boardNo
+        hprof_Cer_HG_sum_name = f"hprof_{fersboard.GetEnergySumName(gain='HG', isCer=True)}_VS_Event"
+        hprof_Sci_HG_sum_name = f"hprof_{fersboard.GetEnergySumName(gain='HG', isCer=False)}_VS_Event"
+        hprof_Cer_LG_sum_name = f"hprof_{fersboard.GetEnergySumName(gain='LG', isCer=True)}_VS_Event"
+        hprof_Sci_LG_sum_name = f"hprof_{fersboard.GetEnergySumName(gain='LG', isCer=False)}_VS_Event"
+
+        hprof_Cer_HG_sum = infile.Get(hprof_Cer_HG_sum_name)
+        hprof_Sci_HG_sum = infile.Get(hprof_Sci_HG_sum_name)
+        hprof_Cer_LG_sum = infile.Get(hprof_Cer_LG_sum_name)
+        hprof_Sci_LG_sum = infile.Get(hprof_Sci_LG_sum_name)
+
+        if not (hprof_Cer_HG_sum and hprof_Sci_HG_sum and hprof_Cer_LG_sum and hprof_Sci_LG_sum):
+            print(
+                f"Warning: Profiles {hprof_Cer_HG_sum_name}, {hprof_Sci_HG_sum_name}, {hprof_Cer_LG_sum_name}, or {hprof_Sci_LG_sum_name} not found in {infile_name}")
+            continue
+
+        hprofiles_Cer_HG_sum.append(hprof_Cer_HG_sum)
+        hprofiles_Sci_HG_sum.append(hprof_Sci_HG_sum)
+        hprofiles_Cer_LG_sum.append(hprof_Cer_LG_sum)
+        hprofiles_Sci_LG_sum.append(hprof_Sci_LG_sum)
+
+        legends.append(str(boardNo))
+
+    nEvents = hprofiles_Cer_HG_sum[0].GetXaxis().GetXmax()
+    legendPos = [0.3, 0.7, 0.9, 0.9]
+    output_name = "FERS_Cer_HG_EnergySum_VS_Event"
+    DrawHistos(hprofiles_Cer_HG_sum, legends, 0, nEvents, "Event", 0, 5e4, "Cer FERS Sum HG (ADC)",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
+    plots.insert(0, output_name + ".png")
+
+    output_name = "FERS_Sci_HG_EnergySum_VS_Event"
+    DrawHistos(hprofiles_Sci_HG_sum, legends, 0, nEvents, "Event", 0, 1.6e5, "Sci FERS Sum HG (ADC)",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
+    plots.insert(1, output_name + ".png")
+
+    output_name = "FERS_Cer_LG_EnergySum_VS_Event"
+    DrawHistos(hprofiles_Cer_LG_sum, legends, 0, nEvents, "Event", 0, 1.4e4, "Cer FERS Sum LG (ADC)",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
+    plots.insert(2, output_name + ".png")
+
+    output_name = "FERS_Sci_LG_EnergySum_VS_Event"
+    DrawHistos(hprofiles_Sci_LG_sum, legends, 0, nEvents, "Event", 0, 5e4, "Sci FERS Sum LG (ADC)",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
+    plots.insert(3, output_name + ".png")
+
+    # total sum
+    hprof_Cer_HG_sum = infile.Get(
+        f"hprof_{fersboards.GetEnergySumName(gain='HG', isCer=True)}_VS_Event")
+    hprof_Sci_HG_sum = infile.Get(
+        f"hprof_{fersboards.GetEnergySumName(gain='HG', isCer=False)}_VS_Event")
+    hprof_Cer_LG_sum = infile.Get(
+        f"hprof_{fersboards.GetEnergySumName(gain='LG', isCer=True)}_VS_Event")
+    hprof_Sci_LG_sum = infile.Get(
+        f"hprof_{fersboards.GetEnergySumName(gain='LG', isCer=False)}_VS_Event")
+
+    DrawHistos([hprof_Cer_HG_sum, hprof_Sci_HG_sum], ["Cer", "Sci"], 0, nEvents, "Event", 0, 7e5, "FERS Total Sum HG (ADC)",
+               "FERS_Total_HG_EnergySum_VS_Event",
+               dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=2, legendPos=[0.6, 0.85, 0.9, 0.9])
+    plots.insert(0, "FERS_Total_HG_EnergySum_VS_Event.png")
+    DrawHistos([hprof_Cer_LG_sum, hprof_Sci_LG_sum], ["Cer", "Sci"], 0, nEvents, "Event", 0, 2e5, "FERS Total Sum LG (ADC)",
+               "FERS_Total_LG_EnergySum_VS_Event",
+               dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, legendNCols=2, legendPos=[0.6, 0.85, 0.9, 0.9])
+    plots.insert(1, "FERS_Total_LG_EnergySum_VS_Event.png")
+
+    output_html = f"{htmldir}/FERS_EnergySum_VS_Event/index.html"
+    generate_html(plots, outdir_plots,
+                  output_html=output_html, plots_per_row=6)
+
     return output_html
 
 
@@ -372,13 +417,13 @@ def makeFERSMaxValuePlots():
     for fersboard in fersboards.values():
         boardNo = fersboard.boardNo
         hist_board_cer_HG_max = infile.Get(
-            f"hist_{fersboard.GetEnergyMaxName(gain="HG", isCer=True)}")
+            f'hist_{fersboard.GetEnergyMaxName(gain="HG", isCer=True)}')
         hist_board_sci_HG_max = infile.Get(
-            f"hist_{fersboard.GetEnergyMaxName(gain="HG", isCer=False)}")
+            f'hist_{fersboard.GetEnergyMaxName(gain="HG", isCer=False)}')
         hist_board_cer_LG_max = infile.Get(
-            f"hist_{fersboard.GetEnergyMaxName(gain="LG", isCer=True)}")
+            f'hist_{fersboard.GetEnergyMaxName(gain="LG", isCer=True)}')
         hist_board_sci_LG_max = infile.Get(
-            f"hist_{fersboard.GetEnergyMaxName(gain="LG", isCer=False)}")
+            f'hist_{fersboard.GetEnergyMaxName(gain="LG", isCer=False)}')
         hists_board_cer_HG_max.append(hist_board_cer_HG_max)
         hists_board_sci_HG_max.append(hist_board_sci_HG_max)
         hists_board_cer_LG_max.append(hist_board_cer_LG_max)
@@ -386,13 +431,13 @@ def makeFERSMaxValuePlots():
         legends.append(str(boardNo))
 
     hist_cer_HG_max = infile.Get(
-        f"hist_{fersboards.GetEnergyMaxName(gain="HG", isCer=True)}")
+        f'hist_{fersboards.GetEnergyMaxName(gain="HG", isCer=True)}')
     hist_sci_HG_max = infile.Get(
-        f"hist_{fersboards.GetEnergyMaxName(gain="HG", isCer=False)}")
+        f'hist_{fersboards.GetEnergyMaxName(gain="HG", isCer=False)}')
     hist_cer_LG_max = infile.Get(
-        f"hist_{fersboards.GetEnergyMaxName(gain="LG", isCer=True)}")
+        f'hist_{fersboards.GetEnergyMaxName(gain="LG", isCer=True)}')
     hist_sci_LG_max = infile.Get(
-        f"hist_{fersboards.GetEnergyMaxName(gain="LG", isCer=False)}")
+        f'hist_{fersboards.GetEnergyMaxName(gain="LG", isCer=False)}')
 
     output_name = "FERS_Boards_CerEnergyHG_max"
     DrawHistos(hists_board_cer_HG_max, legends, xmin, xmax, f"HG Cer Max (Board)", 1, None, "Events",
@@ -941,6 +986,7 @@ if __name__ == "__main__":
     output_htmls = {}
 
     output_htmls["conditions plots"] = makeConditionsPlots()
+    output_htmls["fers sum"] = makeFERSSumPlots()
 
     # validate DRS and FERS boards
     output_htmls["fers mapping"] = DrawFERSBoards(run=runNumber)

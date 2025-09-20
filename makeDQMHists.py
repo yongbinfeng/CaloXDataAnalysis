@@ -1,7 +1,7 @@
 from utils.parser import get_args
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from utils.dataloader import getRunInfo, loadRDF
-from variables.fers import vectorizeFERS, getFERSEnergyMax
+from variables.fers import vectorizeFERS, getFERSEnergyMax, getFERSEnergySum
 from variables.drs import preProcessDRSBoards, getDRSStats
 from utils.utils import number2string
 from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
@@ -39,41 +39,73 @@ rdf = getFERSEnergyMax(rdf, fersboards, gain="LG")
 rdf = preProcessDRSBoards(rdf, debug=debugDRS)
 rdf = getDRSStats(rdf, runNumber, DRSBoards, 0, 1000, 9)
 
+rdf = getFERSEnergySum(rdf, fersboards, gain="HG")
+rdf = getFERSEnergySum(rdf, fersboards, gain="LG")
+
 
 def monitorConditions():
     # monitor the V, I, T conditions
-    hists2d_Condition_VS_Event = []
+    hprofs_Condition_VS_Event = []
     for fersboard in fersboards.values():
-        hist_SipmHV = rdf.Histo2D((
-            f"hist_{fersboard.GetSipmHVName()}_VS_Event",
+        hprof_SipmHV = rdf.Profile1D((
+            f"hprof_{fersboard.GetSipmHVName()}_VS_Event",
             f"FERS Board - SipmHV VS Event;Event;SipmHV (V)",
-            nbins_Event, 0, nEvents, 40, 26, 29),
+            nbins_Event, 0, nEvents),
             "event_n", fersboard.GetSipmHVName()
         )
-        hist_SipmI = rdf.Histo2D((
-            f"hist_{fersboard.GetSipmIName()}_VS_Event",
+        hprof_SipmI = rdf.Profile1D((
+            f"hprof_{fersboard.GetSipmIName()}_VS_Event",
             f"FERS Board - SipmI VS Event;Event;SipmI (mA)",
-            nbins_Event, 0, nEvents, 50, 0.02, 0.2),
+            nbins_Event, 0, nEvents),
             "event_n", fersboard.GetSipmIName()
         )
-        hist_TempDET = rdf.Histo2D((
-            f"hist_{fersboard.GetTempDETName()}_VS_Event",
+        hprof_TempDET = rdf.Profile1D((
+            f"hprof_{fersboard.GetTempDETName()}_VS_Event",
             f"FERS Board - TempDET VS Event;Event;TempDET (C)",
-            nbins_Event, 0, nEvents, 100, 10, 30),
+            nbins_Event, 0, nEvents),
             "event_n", fersboard.GetTempDETName()
         )
-        hist_TempFPGA = rdf.Histo2D((
-            f"hist_{fersboard.GetTempFPGAName()}_VS_Event",
+        hprof_TempFPGA = rdf.Profile1D((
+            f"hprof_{fersboard.GetTempFPGAName()}_VS_Event",
             f"FERS Board - TempFPGA VS Event;Event;TempFPGA (C)",
-            nbins_Event, 0, nEvents, 100, 30, 50),
+            nbins_Event, 0, nEvents),
             "event_n", fersboard.GetTempFPGAName()
         )
-        hists2d_Condition_VS_Event.append(hist_SipmHV)
-        hists2d_Condition_VS_Event.append(hist_SipmI)
-        hists2d_Condition_VS_Event.append(hist_TempDET)
-        hists2d_Condition_VS_Event.append(hist_TempFPGA)
+        hprofs_Condition_VS_Event.append(hprof_SipmHV)
+        hprofs_Condition_VS_Event.append(hprof_SipmI)
+        hprofs_Condition_VS_Event.append(hprof_TempDET)
+        hprofs_Condition_VS_Event.append(hprof_TempFPGA)
 
-    return hists2d_Condition_VS_Event
+    return hprofs_Condition_VS_Event
+
+
+def monitorFERSEnergySum():
+    hprofs_EnergySum_VS_Event = []
+    for fersboard in fersboards.values():
+        # monitor FERS energy sum
+        for var in ["Cer", "Sci"]:
+            for gain in ["HG", "LG"]:
+                hprof_EnergySum = rdf.Profile1D((
+                    f'hprof_{fersboard.GetEnergySumName(gain=gain, isCer=(var=="Cer"))}_VS_Event',
+                    f"FERS Board - {var} Energy {gain} sum VS Event;Event;{var} Energy {gain} sum",
+                    nbins_Event, 0, nEvents),
+                    "event_n", fersboard.GetEnergySumName(
+                        gain=gain, isCer=(var == "Cer"))
+                )
+                hprofs_EnergySum_VS_Event.append(hprof_EnergySum)
+
+    for var in ["Cer", "Sci"]:
+        for gain in ["HG", "LG"]:
+            hprof_EnergySum = rdf.Profile1D((
+                f'hprof_{fersboards.GetEnergySumName(gain=gain, isCer=(var=="Cer"))}_VS_Event',
+                f"FERS - {var} Energy {gain} sum VS Event;Event;{var} Energy {gain} sum",
+                nbins_Event, 0, nEvents),
+                "event_n", fersboards.GetEnergySumName(
+                    gain=gain, isCer=(var == "Cer"))
+            )
+            hprofs_EnergySum_VS_Event.append(hprof_EnergySum)
+
+    return hprofs_EnergySum_VS_Event
 
 
 def makeFERS1DHists(gain="HG"):
@@ -525,7 +557,8 @@ def checkDRSPeakTS():
 if __name__ == "__main__":
     # start_time = time.time()
 
-    hists_conditions = monitorConditions()
+    hprofs_conditions = monitorConditions()
+    hprofs_energysum = monitorFERSEnergySum()
 
     hists1d_FERS = makeFERS1DHists()
     hists1d_FRRS_LG = makeFERS1DHists(gain="LG")
@@ -597,9 +630,17 @@ if __name__ == "__main__":
             json.dump(pedestals_LG, f, indent=4)
 
     # Save histograms to an output ROOT file
-    if 'hists_conditions' in locals() and hists_conditions:
+    if 'hprofs_conditions' in locals() and hprofs_conditions:
         outfile = ROOT.TFile(f"{rootdir}/conditions_vs_event.root", "RECREATE")
-        for hist in hists_conditions:
+        for hist in hprofs_conditions:
+            hist.SetDirectory(outfile)
+            hist.Write()
+        outfile.Close()
+
+    if 'hprofs_energysum' in locals() and hprofs_energysum:
+        outfile = ROOT.TFile(
+            f"{rootdir}/fers_energysum_vs_event.root", "RECREATE")
+        for hist in hprofs_energysum:
             hist.SetDirectory(outfile)
             hist.Write()
         outfile.Close()
