@@ -150,9 +150,9 @@ def getFERSEnergyMax(rdf, fersboards, gain="HG"):
     """
     for fersboard in fersboards.values():
         rdf = rdf.Define(fersboard.GetEnergyMaxName(gain=gain, isCer=True),
-                         f"std::max({{{', '.join(chan.GetChannelName(gain=gain) for chan in fersboard.GetCerChannels())}}})")
+                         f"std::max({{{', '.join(chan.GetChannelName(gain=gain) for chan in fersboard.GetListOfChannels(isCer=True))}}})")
         rdf = rdf.Define(fersboard.GetEnergyMaxName(gain=gain, isCer=False),
-                         f"std::max({{{', '.join(chan.GetChannelName(gain=gain) for chan in fersboard.GetSciChannels())}}})")
+                         f"std::max({{{', '.join(chan.GetChannelName(gain=gain) for chan in fersboard.GetListOfChannels(isCer=False))}}})")
 
     rdf = rdf.Define(fersboards.GetEnergyMaxName(gain=gain, isCer=True),
                      f"std::max({{{', '.join(fersboard.GetEnergyMaxName(gain=gain, isCer=True) for fersboard in fersboards.values())}}})")
@@ -168,9 +168,9 @@ def getFERSEnergySum(rdf, fersboards, gain="HG", pdsub=False, calib=False):
     # per-board energy sum
     for fersboard in fersboards.values():
         rdf = rdf.Define(fersboard.GetEnergySumName(gain=gain, isCer=True, pdsub=pdsub, calib=calib),
-                         f"({' + '.join(chan.GetChannelName(gain=gain, pdsub=pdsub, calib=calib) for chan in fersboard.GetCerChannels())})")
+                         f"({' + '.join(chan.GetChannelName(gain=gain, pdsub=pdsub, calib=calib) for chan in fersboard.GetListOfChannels(isCer=True))})")
         rdf = rdf.Define(fersboard.GetEnergySumName(gain=gain, isCer=False, pdsub=pdsub, calib=calib),
-                         f"({' + '.join(chan.GetChannelName(gain=gain, pdsub=pdsub, calib=calib) for chan in fersboard.GetSciChannels())})")
+                         f"({' + '.join(chan.GetChannelName(gain=gain, pdsub=pdsub, calib=calib) for chan in fersboard.GetListOfChannels(isCer=False))})")
 
     # per-event energy sum
     rdf = rdf.Define(fersboards.GetEnergySumName(gain=gain, isCer=True, pdsub=pdsub, calib=calib),

@@ -291,7 +291,6 @@ def buildDRSBoardTestBeam(boardNo=4):
     if boardNo == 4:
         channels_DRS = []
         for ix in range(0, 4):
-            channels_DRS_one_row = []
             for iy in range(0, 8):
                 if iy < 4:
                     base_iX = -5.5
@@ -305,26 +304,22 @@ def buildDRSBoardTestBeam(boardNo=4):
                 isCer = True
                 channel = DRSChannel(base_iX + ix, base_iY - iy, isCer,
                                      chanNo, groupNo, boardNo, is6mm=True, isAmplified=False)
-                channels_DRS_one_row.append(channel)
-            channels_DRS.append(channels_DRS_one_row)
+                channels_DRS.append(channel)
             drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
             drsboard.RemoveChannelByGroupChannel(3, 7)
             drsboard.RemoveChannelByGroupChannel(3, 6)
         return drsboard
     elif boardNo == 5:
         channels_DRS = []
-        channels_DRS_one_row = []
         # two remnant channels
         channel = DRSChannel(-0.5, 2.5, True, 0, 0,
                              boardNo, is6mm=True, isAmplified=False)
-        channels_DRS_one_row.append(channel)
+        channels_DRS.append(channel)
         channel = DRSChannel(-1.5, 2.5, True, 1, 0,
                              boardNo, is6mm=True, isAmplified=False)
-        channels_DRS_one_row.append(channel)
-        channels_DRS.append(channels_DRS_one_row)
+        channels_DRS.append(channel)
 
         for ix in range(0, 4):
-            channels_DRS_one_row = []
             for iy in range(0, 4):
                 base_iX = 2.5
                 base_iY = 3.5
@@ -334,11 +329,9 @@ def buildDRSBoardTestBeam(boardNo=4):
                 isCer = True
                 channel = DRSChannel(base_iX + ix, base_iY - iy, isCer,
                                      chanNo, groupNo, boardNo, is6mm=True, isAmplified=False)
-                channels_DRS_one_row.append(channel)
-            channels_DRS.append(channels_DRS_one_row)
+                channels_DRS.append(channel)
 
         for ix in range(0, 4):
-            channels_DRS_one_row = []
             for iy in range(4, 6):
                 base_iX = -3.5
                 if iy == 4:
@@ -351,23 +344,20 @@ def buildDRSBoardTestBeam(boardNo=4):
                 isCer = True
                 channel = DRSChannel(base_iX + (ix % 2), base_iY + ix//2, isCer,
                                      chanNo, groupNo, boardNo, is6mm=True, isAmplified=False)
-                channels_DRS_one_row.append(channel)
-            channels_DRS.append(channels_DRS_one_row)
+                channels_DRS.append(channel)
 
-        channels_DRS_one_row = []
         channel = DRSChannel(1.5, -2.5, True, 2, 3,
                              boardNo, is6mm=True, isAmplified=False)
-        channels_DRS_one_row.append(channel)
+        channels_DRS.append(channel)
         channel = DRSChannel(0.5, -2.5, True, 3, 3,
                              boardNo, is6mm=True, isAmplified=False)
-        channels_DRS_one_row.append(channel)
+        channels_DRS.append(channel)
         channel = DRSChannel(-0.5, -2.5, True, 4, 3,
                              boardNo, is6mm=True, isAmplified=False)
-        channels_DRS_one_row.append(channel)
+        channels_DRS.append(channel)
         channel = DRSChannel(-1.5, -2.5, True, 5, 3,
                              boardNo, is6mm=True, isAmplified=False)
-        channels_DRS_one_row.append(channel)
-        channels_DRS.append(channels_DRS_one_row)
+        channels_DRS.append(channel)
 
         drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
 
@@ -402,15 +392,12 @@ def buildDRSBoardTestBeam(boardNo=4):
             (base_iX_T + 0, base_iY_T - 3): (2, 1),
         }
         channels_DRS = []
-        for iX in range(0, 4):
-            channels_DRS_one_row = []
-            channels_DRS.append(channels_DRS_one_row)
 
         for (iTowerX, iTowerY), (groupNo, chanNo) in maps_board6.items():
             isCer = True
             channel = DRSChannel(iTowerX, iTowerY, isCer, chanNo,
                                  groupNo, boardNo, is6mm=True, isAmplified=False)
-            channels_DRS[groupNo].append(channel)
+            channels_DRS.append(channel)
 
         drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
         return drsboard
@@ -639,6 +626,43 @@ def getServiceDRSChannels(run=1184):
             "DRS_Board7_Group2_Channel0",
             "DRS_Board7_Group2_Channel1",
         ]
+
+
+def getQuartzChannelList():
+    channels_quartz = []
+    # fmt off
+    # 3mm region
+    channels_quartz += [
+        (-1.5, 1.875),
+        (-1.5, 1.625), (-0.5, 1.625), (0.5, 1.625), (1.5, 1.625),
+        (-1.5, 1.125), (-0.5, 1.125), (0.5, 1.125), (1.5, 1.125),
+        (-1.5, 0.625), (-0.5, 0.625), (0.5, 0.625), (1.5, 0.625),
+        (-0.5, 0.375),
+        (-1.5, 0.125), (-0.5, 0.125), (0.5, 0.125), (1.5, 0.125),
+        (-1.5, -0.375), (-0.5, -0.375), (0.5, -0.375), (1.5, -0.375),
+        (-1.5, -0.875), (-0.5, -0.875), (0.5, -0.875), (1.5, -0.875),
+        (-1.5, -1.375), (-0.5, -1.375), (0.5, -1.375), (1.5, -1.375),
+        (-1.5, -1.875), (-0.5, -1.875), (0.5, -1.875), (1.5, -1.875),
+    ]
+    # 6mm region
+    channels_quartz += [
+        (-3.5, 5.5), (-2.5, 5.5), (-1.5, 5.5), (-0.5, 5.5), (0.5, 5.5), (1.5, 5.5), (2.5, 5.5), (3.5, 5.5),  # noqa
+        (-5.5, 4.5), (-4.5, 4.5), (-3.5, 4.5), (-2.5, 4.5), (-1.5, 4.5), (-0.5, 4.5), (0.5, 4.5), (1.5, 4.5), (2.5, 4.5), (3.5, 4.5), (4.5, 4.5), (5.5, 4.5),  # noqa
+        (-6.5, 3.5), (-5.5, 3.5), (-4.5, 3.5), (-3.5, 3.5), (-2.5, 3.5), (-1.5, 3.5), (-0.5, 3.5), (0.5, 3.5), (1.5, 3.5), (2.5, 3.5), (3.5, 3.5), (4.5, 3.5), (5.5, 3.5), (6.5, 3.5),  # noqa
+        (-7.5, 2.5), (-6.5, 2.5), (-5.5, 2.5), (-4.5, 2.5), (-3.5, 2.5), (-2.5, 2.5), (-1.5, 2.5), (-0.5, 2.5), (0.5, 2.5), (1.5, 2.5), (2.5, 2.5), (3.5, 2.5), (4.5, 2.5), (5.5, 2.5), (6.5, 2.5), (7.5, 2.5),  # noqa
+        (-7.5, 1.5), (-6.5, 1.5), (-5.5, 1.5), (-4.5, 1.5), (-3.5, 1.5), (-2.5, 1.5), (-1.5, 1.5), (-0.5, 1.5), (0.5, 1.5), (1.5, 1.5), (2.5, 1.5), (3.5, 1.5), (4.5, 1.5), (5.5, 1.5), (6.5, 1.5), (7.5, 1.5),  # noqa
+        (-7.5, 0.5), (-6.5, 0.5), (-5.5, 0.5), (-4.5, 0.5), (-3.5, 0.5), (-2.5, 0.5), (-1.5, 0.5), (-0.5, 0.5), (0.5, 0.5), (1.5, 0.5), (2.5, 0.5), (3.5, 0.5), (4.5, 0.5), (5.5, 0.5), (6.5, 0.5), (7.5, 0.5),  # noqa
+        (-7.5, -0.5), (-6.5, -0.5), (-5.5, -0.5), (-4.5, -0.5), (-3.5, -0.5), (-2.5, -0.5), (-1.5, -0.5), (-0.5, -0.5), (0.5, -0.5), (1.5, -0.5), (2.5, -0.5), (3.5, -0.5), (4.5, -0.5), (5.5, -0.5), (6.5, -0.5), (7.5, -0.5),  # noqa
+        (-7.5, -1.5), (-6.5, -1.5), (-5.5, -1.5), (-4.5, -1.5), (-3.5, -1.5), (-2.5, -1.5), (-1.5, -1.5), (-0.5, -1.5), (0.5, -1.5), (1.5, -1.5), (2.5, -1.5), (3.5, -1.5), (4.5, -1.5), (5.5, -1.5), (6.5, -1.5), (7.5, -1.5),  # noqa
+        (-7.5, -2.5), (-6.5, -2.5), (-5.5, -2.5), (-4.5, -2.5), (-3.5, -2.5), (-2.5, -2.5), (-1.5, -2.5), (-0.5, -2.5), (0.5, -2.5), (1.5, -2.5), (2.5, -2.5), (3.5, -2.5), (4.5, -2.5), (5.5, -2.5), (6.5, -2.5), (7.5, -2.5),  # noqa
+        (-6.5, -3.5), (-5.5, -3.5), (-4.5, -3.5), (-3.5, -3.5), (-2.5, -3.5), (-1.5, -3.5), (-0.5, -3.5), (0.5, -3.5), (1.5, -3.5), (2.5, -3.5), (3.5, -3.5), (4.5, -3.5), (5.5, -3.5), (6.5, -3.5),  # noqa
+        (-5.5, -4.5), (-4.5, -4.5), (-3.5, -4.5), (-2.5, -4.5), (-1.5, -4.5), (-0.5, -4.5), (0.5, -4.5), (1.5, -4.5), (2.5, -4.5), (3.5, -4.5), (4.5, -4.5), (5.5, -4.5),  # noqa
+        (-3.5, -5.5), (-2.5, -5.5), (-1.5, -5.5), (-0.5, -5.5), (0.5, -5.5), (1.5, -5.5), (2.5, -5.5), (3.5, -5.5),  # noqa
+
+    ]
+    # fmt on
+
+    return channels_quartz
 
 
 if __name__ == "__main__":

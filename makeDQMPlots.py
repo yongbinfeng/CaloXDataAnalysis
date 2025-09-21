@@ -82,7 +82,7 @@ def makeConditionsPlots():
     plots.insert(0, output_name + ".png")
 
     output_name = "Conditions_SipmI_VS_Event"
-    DrawHistos(hprofiles_SipmI, legends, 0, nEvents, "Event", 0.01, 0.24, "Current (mA)",
+    DrawHistos(hprofiles_SipmI, legends, 0, nEvents, "Event", 0.0, 0.3, "Current (mA)",
                output_name,
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
@@ -96,7 +96,7 @@ def makeConditionsPlots():
     plots.insert(2, output_name + ".png")
 
     output_name = "Conditions_TempFPGA_VS_Event"
-    DrawHistos(hprofiles_TempFPGA, legends, 0, nEvents, "Event", 30, 50, "Temperature (C)",
+    DrawHistos(hprofiles_TempFPGA, legends, 0, nEvents, "Event", 32, 50, "Temperature (C)",
                output_name,
                dology=False, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)

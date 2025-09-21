@@ -76,7 +76,7 @@ def visualizeDRSBoards(drs_boards, valuemaps=None, suffix=""):
                                int(xmax - xmin), xmin, xmax, int(ymax - ymin) * 4, ymin, ymax)
 
     for _, DRSBoard in drs_boards.items():
-        for channel_Sci in DRSBoard.GetSciChannels():
+        for channel_Sci in DRSBoard.GetListOfChannels(isCer=False):
             sci_encoded = channel_Sci.boardNo * 100 + \
                 channel_Sci.groupNo * 10 + channel_Sci.channelNo
             if sci_encoded == 0:
@@ -89,7 +89,7 @@ def visualizeDRSBoards(drs_boards, valuemaps=None, suffix=""):
             else:
                 h2_DRS_Sci.Fill(channel_Sci.iTowerX, channel_Sci.iTowerY,
                                 sci_encoded)
-        for channel_Cer in DRSBoard.GetCerChannels():
+        for channel_Cer in DRSBoard.GetListOfChannels(isCer=True):
             cer_encoded = channel_Cer.boardNo * 100 + \
                 channel_Cer.groupNo * 10 + channel_Cer.channelNo
             if cer_encoded == 0:
