@@ -4,7 +4,8 @@ sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos
 
 
-def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", gain="HG"):
+def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", gain="HG", quartzOnly=0):
+    # quartzOnly: 0 use both quartz and plastic channels; 1 use only quartz channels; 2 use only plastic channels
     xmax = 14
     xmin = -14
     ymax = 10
@@ -24,6 +25,11 @@ def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", gain="HG"):
                 iTowerX, iTowerY, isCer=True)
             channel_Sci = FERSBoard.GetChannelByTower(
                 iTowerX, iTowerY, isCer=False)
+
+            if quartzOnly == 1 and not channel_Cer.isQuartz:
+                continue
+            if quartzOnly == 2 and channel_Cer.isQuartz:
+                continue
 
             channel_Cer_name = channel_Cer.GetChannelName(gain=gain)
             channel_Sci_name = channel_Sci.GetChannelName(gain=gain)
@@ -59,7 +65,7 @@ def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", gain="HG"):
     return [h2_Cer, h2_Cer_3mm], [h2_Sci, h2_Sci_3mm]
 
 
-def visualizeDRSBoards(drs_boards, valuemaps=None, suffix=""):
+def visualizeDRSBoards(drs_boards, valuemaps=None, suffix="", quartzOnly=0):
     xmax = 14
     xmin = -14
     ymax = 10
@@ -92,6 +98,10 @@ def visualizeDRSBoards(drs_boards, valuemaps=None, suffix=""):
         for channel_Cer in DRSBoard.GetListOfChannels(isCer=True):
             cer_encoded = channel_Cer.boardNo * 100 + \
                 channel_Cer.groupNo * 10 + channel_Cer.channelNo
+            if quartzOnly == 1 and not channel_Cer.isQuartz:
+                continue
+            if quartzOnly == 2 and channel_Cer.isQuartz:
+                continue
             if cer_encoded == 0:
                 cer_encoded = 0.001
             if valuemaps and channel_Cer.GetChannelName() in valuemaps:

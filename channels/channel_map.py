@@ -180,6 +180,7 @@ def buildFERSBoards(run=316):
 
     else:
         raise ValueError(f"Unsupported run number {run} for FERS boards.")
+    updateQuartzChannels(fersboards)
     return fersboards
 
 
@@ -283,6 +284,7 @@ def buildDRSBoards(run=316):
         DRSBoards["Board6"] = buildDRSBoardTestBeam(boardNo=6)
     else:
         raise ValueError(f"Unsupported run number {run} for DRS boards.")
+    updateQuartzChannels(DRSBoards)
     return DRSBoards
 
 
@@ -663,6 +665,17 @@ def getQuartzChannelList():
     # fmt on
 
     return channels_quartz
+
+
+def updateQuartzChannels(boards):
+    """
+    Update the quartz channels to match the FERS/DRS board positions.
+    """
+    channels_quartz = getQuartzChannelList()
+    for board in boards.values():
+        for channel in board.GetListOfChannels(isCer=True):
+            if (channel.iTowerX, channel.iTowerY) in channels_quartz:
+                channel.isQuartz = True
 
 
 if __name__ == "__main__":
