@@ -34,8 +34,8 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False) -
             "LG_cer": 9e4,
             "HG_sci": 1e6,
             "LG_sci": 5e5,
-            "Mix_cer": 140,
-            "Mix_sci": 140
+            "Mix_cer": 90,
+            "Mix_sci": 90
         },
     }
     configs["pbsub"] = {
@@ -72,8 +72,8 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False) -
             "LG_cer": 8e4,
             "HG_sci": 8e5,
             "LG_sci": 4e5,
-            "Mix_cer": 140,
-            "Mix_sci": 140
+            "Mix_cer": 90,
+            "Mix_sci": 90
         }
     }
     config = configs["raw"]
@@ -84,6 +84,8 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False) -
         config["xmax_total"]["LG_cer"] = 5e4
         config["xmax_total"]["HG_sci"] = 1e6
         config["xmax_total"]["LG_sci"] = 1e5
+        config["xmax_total"]["Mix_cer"] = 150
+        config["xmax_total"]["Mix_sci"] = 150
     return config
 
 
