@@ -7,6 +7,7 @@ from channels.channel_map import buildFERSBoards
 from utils.dataloader import loadRDF, getRunInfo
 from variables.fers import getFERSEnergySum, vectorizeFERS, calibrateFERSChannels, subtractFERSPedestal, getFERSEnergyWeightedCenter, addFERSPosXY, mixFERSHGLG
 from variables.drs import preProcessDRSBoards
+from utils.visualization import visualizeFERSBoards
 from utils.html_generator import generate_html
 from utils.fitter import eventFit
 from utils.colors import colors
@@ -269,6 +270,33 @@ def makeFERSShowerShapeHists(rdf=rdf, suffix=""):
     nEvents = rdf.Count()
 
     return hists_X, hists_Y,  hists_R, hists_Y_VS_X, nEvents
+
+
+def collectFERSStats(rdf):
+    stats = {}
+    # mean
+    # and how frequent the saturation value is reached
+    for fersboard in fersboards.values():
+        for iTowerX, iTowerY in fersboard.GetListOfTowers():
+            channel_cer = fersboard.GetChannelByTower(
+                iTowerX, iTowerY, isCer=True)
+            channel_sci = fersboard.GetChannelByTower(
+                iTowerX, iTowerY, isCer=False)
+
+            for gain, calib in GainCalibs:
+                varname_cer = channel_cer.GetChannelName(
+                    gain=gain, pdsub=True, calib=calib)
+                varname_sci = channel_sci.GetChannelName(
+                    gain=gain, pdsub=True, calib=calib)
+                # rdf = rdf.Define(
+                #    f"{varname_cer}_over_{varname_sci}", f"{varname_cer} / ({varname_sci} + 1e-6)")
+
+                stats[channel_cer.GetChannelName(gain=gain)] = rdf.Mean(
+                    f"{varname_cer}")
+                stats[channel_sci.GetChannelName(gain=gain)] = rdf.Mean(
+                    f"{varname_sci}")
+
+    return stats
 
 
 def makeFERSEnergySumPlots(suffix=""):
@@ -543,6 +571,53 @@ def makeFERSShowerShapePlots(suffix=""):
     return output_html
 
 
+def makeFERSStatsPlots():
+    plots = []
+    outdir_plots = f"{plotdir}/FERS_Stats_Cer_ovs_Sci"
+    # load the json file
+    import json
+    infile_name = f"{rootdir}/fers_stats_cer_ovs_sci.json"
+    with open(infile_name, "r") as f:
+        stats = json.load(f)
+
+    xmax = 14
+    xmin = -14
+    ymax = 10
+    ymin = -10
+    W_ref = 1000
+    H_ref = 1100
+
+    for gain, calib in GainCalibs:
+        [h2_Cer, h2_Cer_3mm], [h2_Sci, h2_Sci_3mm] = visualizeFERSBoards(
+            fersboards, stats, suffix=f"Run{runNumber}_{gain}_mean", gain=gain)
+
+        h2_Cer_Over_Sci = h2_Cer.Clone(f"h2_Cer_over_Sci_{gain}")
+        h2_Cer_Over_Sci.Divide(h2_Sci)
+        h2_Cer_3mm_Over_Sci = h2_Cer_3mm.Clone(f"h2_Cer_3mm_over_Sci_{gain}")
+        h2_Cer_3mm_Over_Sci.Divide(h2_Sci_3mm)
+
+        output_name = f"FERS_Boards_Run{runNumber}_Stats_Cer_{gain}"
+        DrawHistos([h2_Cer, h2_Cer_3mm], "", xmin, xmax, "iX", ymin,
+                   ymax, "iY", output_name, dology=False, drawoptions=["col,text", "col,text"],
+                   outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=None)
+        plots.append(output_name + ".png")
+        output_name = f"FERS_Boards_Run{runNumber}_Stats_Sci_{gain}"
+        DrawHistos([h2_Sci, h2_Sci_3mm], "", xmin, xmax, "iX", ymin,
+                   ymax, "iY", output_name, dology=False, drawoptions=["col,text", "col,text"],
+                   outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=None)
+        plots.append(output_name + ".png")
+        output_name = f"FERS_Boards_Run{runNumber}_Stats_Cer_over_Sci_{gain}"
+        DrawHistos([h2_Cer_Over_Sci, h2_Cer_3mm_Over_Sci], "", xmin, xmax, "iX", ymin,
+                   ymax, "iY", output_name, dology=False, drawoptions=["col,text", "col,text"],
+                   outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer / Sci", runNumber=runNumber, zmin=0, zmax=1.5)
+        plots.append(output_name + ".png")
+
+    output_html = f"{htmldir}/FERS_Stats_Cer_over_Sci/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=3,
+                  output_html=output_html)
+    return output_html
+
+
 def makeBoardFits():
     suffix = "subtracted_calibd"
     filename = f"{rootdir}/fers_energy_sum_{suffix}.root"
@@ -596,6 +671,15 @@ if __name__ == "__main__":
 
             hists_shower_shapes_X, hists_shower_shapes_Y, hists_shower_shapes_R, hists_shower_shapes_Y_VS_X, nEvents = makeFERSShowerShapeHists(
                 rdf=rdf, suffix=cat)
+
+            stats = collectFERSStats(rdf=rdf)
+
+            import json
+            stats_results = {}
+            for channelName, mean in stats.items():
+                stats_results[channelName] = mean.GetValue()
+            with open(f"{rootdir}/fers_stats_cer_ovs_sci.json", "w") as f:
+                json.dump(stats_results, f, indent=4)
 
             # save histograms to ROOT files
             outfile_name = f"{rootdir}/fers_energy_sum_{cat}.root"
@@ -667,6 +751,8 @@ if __name__ == "__main__":
 
             outputs_html[f"shower_shape_{cat}"] = makeFERSShowerShapePlots(
                 suffix=cat)
+
+            outputs_html[f"stats_cer_ovs_sci"] = makeFERSStatsPlots()
 
     print("Generated HTML files:")
     for key, html in outputs_html.items():
