@@ -16,6 +16,7 @@ f_drstriggermap = "data/drstriggermap.json"
 with open(f_drstriggermap, 'r') as f:
     triggermap = json.load(f)
 
+
 def buildFERSBoards(run=316):
     """
     Build a map for ixy and FERS channels for both boards.
@@ -144,7 +145,7 @@ def buildFERSBoards(run=316):
 
         fersboards["Board3"].MoveTo(-1.5, 1.875)
         fersboards["Board11"].MoveTo(0.5, 1.875)
-    elif run >= 1173:
+    elif run >= 1173 and run < 1327:
         # test beam
         fersboards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
         fersboards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
@@ -177,6 +178,40 @@ def buildFERSBoards(run=316):
 
         fersboards["Board7"].MoveTo(-1.5, 1.875)
         fersboards["Board8"].MoveTo(0.5, 1.875)
+
+    elif run >= 1342:
+        fersboards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
+        fersboards["Board3"] = base_FERSBoard_6mm.copy(boardNo=3)
+        fersboards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
+        fersboards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
+        fersboards["Board6"] = base_FERSBoard_6mm.copy(boardNo=6)
+        fersboards["Board7"] = base_FERSBoard_6mm.copy(boardNo=7)
+        fersboards["Board8"] = base_FERSBoard_6mm.copy(boardNo=8)
+        fersboards["Board11"] = base_FERSBoard_6mm.copy(boardNo=11)
+        fersboards["Board12"] = base_FERSBoard_6mm.copy(boardNo=12)
+        fersboards["Board13"] = base_FERSBoard_6mm.copy(boardNo=13)
+        fersboards["Board14"] = base_FERSBoard_6mm.copy(boardNo=14)
+        fersboards["Board15"] = base_FERSBoard_6mm.copy(boardNo=15)
+
+        fersboards["Board9"] = base_FERSBoard_3mm.copy(boardNo=9)
+        fersboards["Board10"] = base_FERSBoard_3mm.copy(boardNo=10)
+
+        fersboards["Board2"].MoveTo(-13.5, 3.5)
+        fersboards["Board3"].MoveTo(-9.5, 7.5)
+        fersboards["Board4"].MoveTo(-5.5, 7.5)
+        fersboards["Board5"].MoveTo(-1.5, 9.5)
+        fersboards["Board6"].MoveTo(2.5, 7.5)
+        fersboards["Board7"].MoveTo(6.5, 7.5)
+        fersboards["Board8"].MoveTo(10.5, 3.5)
+        fersboards["Board11"].MoveTo(-9.5, -0.5)
+        fersboards["Board12"].MoveTo(-5.5, -0.5)
+        fersboards["Board13"].MoveTo(-1.5, -2.5)
+        fersboards["Board14"].MoveTo(2.5, -0.5)
+        fersboards["Board15"].MoveTo(6.5, -0.5)
+
+        # 3mm
+        fersboards["Board9"].MoveTo(-1.5, 1.875)
+        fersboards["Board10"].MoveTo(0.5, 1.875)
 
     else:
         raise ValueError(f"Unsupported run number {run} for FERS boards.")
@@ -535,6 +570,7 @@ def findFanoutTimeReferenceDelay(channel, run=1040):
     else:
         return triggerdelay[str(run)][channel]
 
+
 def findDRSTriggerMap(channel, run=1040):
     result = "_".join(channel.split("_")[:3])
     print(triggermap.keys())
@@ -543,9 +579,12 @@ def findDRSTriggerMap(channel, run=1040):
     else:
         return triggermap[str(run)][result]
 
+
 def getUpstreamVetoChannel(run=1184):
     if run < 1183:
         return None
+    elif run < 1327:
+        return "DRS_Board7_Group1_Channel6"
     else:
         return "DRS_Board7_Group1_Channel6"
 
@@ -553,8 +592,19 @@ def getUpstreamVetoChannel(run=1184):
 def getDownStreamMuonChannel(run=1184):
     if run < 1183:
         return None
+    elif run < 1327:
+        return "DRS_Board7_Group1_Channel0"
     else:
         return "DRS_Board7_Group1_Channel0"
+
+
+def getDownStreamTTUMuonChannel(run=1184):
+    if run < 1183:
+        return None
+    elif run < 1327:
+        return None
+    else:
+        return "DRS_Board7_Group2_Channel4"
 
 
 def getPreShowerChannel(run=1184):
@@ -563,6 +613,8 @@ def getPreShowerChannel(run=1184):
     """
     if run < 1183:
         return None
+    elif run < 1327:
+        return "DRS_Board7_Group1_Channel1"
     else:
         return "DRS_Board7_Group1_Channel1"
 
@@ -573,12 +625,18 @@ def getCerenkovCounters(run=1184):
     """
     if run < 1183:
         return []
-    else:
+    elif run < 1327:
         return [
             "DRS_Board7_Group1_Channel2",
             "DRS_Board7_Group1_Channel3",
             "DRS_Board7_Group1_Channel4",
             "DRS_Board7_Group1_Channel5",
+        ]
+    else:
+        return [
+            "DRS_Board7_Group2_Channel5",
+            "DRS_Board7_Group2_Channel6",
+            "DRS_Board7_Group2_Channel7",
         ]
 
 
@@ -627,6 +685,14 @@ def getServiceDRSChannels(run=1184):
             "DRS_Board7_Group1_Channel7",
             "DRS_Board7_Group2_Channel0",
             "DRS_Board7_Group2_Channel1",
+            "DRS_Board7_Group2_Channel2",
+            "DRS_Board7_Group2_Channel3",
+            "DRS_Board7_Group2_Channel4",
+            "DRS_Board7_Group2_Channel5",
+            "DRS_Board7_Group2_Channel6",
+            "DRS_Board7_Group2_Channel7",
+            "DRS_Board7_Group3_Channel0",
+            "DRS_Board7_Group3_Channel1",
         ]
 
 
