@@ -43,7 +43,8 @@ def getRunInfo(runNumber):
         runinfo = temp
     runNum = str(runNumber)
     if runNum not in runinfo:
-        return None
+        # default is positrons 80 GeV
+        return "positrons", 80
         # raise ValueError(f"Run number {runNum} not found in {f_runinfo}")
     btype = runinfo[runNum]['beam type']
     benergy = int(runinfo[runNum]['beam energy'].replace('GeV', ''))

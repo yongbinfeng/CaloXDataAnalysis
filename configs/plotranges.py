@@ -1,4 +1,8 @@
-def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False) -> dict:
+def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False, runNumber=1230) -> dict:
+    scale = 1.0
+    if runNumber >= 1350:
+        scaleHG = 0.6
+        scaleLG = 0.2
     configs = {}
     configs["raw"] = {
         "suffix": "raw",
@@ -14,10 +18,10 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False) -
             "Mix_sci": 0,
         },
         "xmax_board": {
-            "HG_cer": 1e5,
-            "LG_cer": 2e4,
-            "HG_sci": 3e5,
-            "LG_sci": 1e5,
+            "HG_cer": 1e5 * scaleHG,
+            "LG_cer": 2e4 * scaleLG,
+            "HG_sci": 3e5 * scaleHG,
+            "LG_sci": 1e5 * scaleLG,
             "Mix_cer": 80,
             "Mix_sci": 80,
         },
@@ -30,10 +34,10 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False) -
             "Mix_sci": 0,
         },
         "xmax_total": {
-            "HG_cer": 2.5e5,
-            "LG_cer": 9e4,
-            "HG_sci": 1e6,
-            "LG_sci": 5e5,
+            "HG_cer": 2.5e5 * scaleHG,
+            "LG_cer": 9e4 * scaleLG,
+            "HG_sci": 1e6 * scaleHG,
+            "LG_sci": 5e5 * scaleLG,
             "Mix_cer": 90,
             "Mix_sci": 90
         },
@@ -52,10 +56,10 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False) -
             "Mix_sci": -10,
         },
         "xmax_board": {
-            "HG_cer": 9e4,
-            "LG_cer": 3e4,
-            "HG_sci": 4e5,
-            "LG_sci": 2e5,
+            "HG_cer": 9e4 * scaleHG,
+            "LG_cer": 3e4 * scaleLG,
+            "HG_sci": 4e5 * scaleHG,
+            "LG_sci": 2e5 * scaleLG,
             "Mix_cer": 40,
             "Mix_sci": 40,
         },
@@ -68,10 +72,10 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False) -
             "Mix_sci": -10,
         },
         "xmax_total": {
-            "HG_cer": 2e5,
-            "LG_cer": 8e4,
-            "HG_sci": 8e5,
-            "LG_sci": 4e5,
+            "HG_cer": 2e5 * scaleHG,
+            "LG_cer": 8e4 * scaleLG,
+            "HG_sci": 8e5 * scaleHG,
+            "LG_sci": 4e5 * scaleLG,
             "Mix_cer": 90,
             "Mix_sci": 90
         }
@@ -80,10 +84,10 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False) -
     if pdsub:
         config = configs["pbsub"]
     if HE:
-        config["xmax_total"]["HG_cer"] = 2e5
-        config["xmax_total"]["LG_cer"] = 5e4
-        config["xmax_total"]["HG_sci"] = 1e6
-        config["xmax_total"]["LG_sci"] = 1e5
+        config["xmax_total"]["HG_cer"] = 2e5 * scaleHG
+        config["xmax_total"]["LG_cer"] = 5e4 * scaleLG
+        config["xmax_total"]["HG_sci"] = 1e6 * scaleHG
+        config["xmax_total"]["LG_sci"] = 1e5 * scaleLG
         config["xmax_total"]["Mix_cer"] = 150
         config["xmax_total"]["Mix_sci"] = 150
     return config

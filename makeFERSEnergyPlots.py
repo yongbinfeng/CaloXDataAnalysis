@@ -358,7 +358,7 @@ def makeFERSEnergySumPlots(suffix=""):
                        outdir=outdir_plots, runNumber=runNumber)
             plots.insert(0, output_name + ".png")
 
-    output_html = f"{htmldir}/FERS_EnergySum{suffix}/index.html"
+    output_html = f"{htmldir}/FERS_EnergySum_{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=6,
                   output_html=output_html)
     return output_html
@@ -413,7 +413,7 @@ def makeFERSCerVsSciPlots(suffix=""):
                    outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
         plots.insert(0, output_name + ".png")
 
-    output_html = f"{htmldir}/FERS_Cer_VS_Sci{suffix}/index.html"
+    output_html = f"{htmldir}/FERS_Cer_VS_Sci_{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=3,
                   output_html=output_html)
     return output_html
@@ -486,7 +486,7 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
                 print(
                     f"Warning: Histogram {hist2D_name} not found in {infile_name}")
 
-    output_html = f"{htmldir}/FERS_EnergyWeightedCenter{suffix}/index.html"
+    output_html = f"{htmldir}/FERS_EnergyWeightedCenter_{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=3,
                   output_html=output_html)
     return output_html
@@ -571,7 +571,7 @@ def makeFERSShowerShapePlots(suffix=""):
                        outdir=outdir_plots, runNumber=runNumber)
             plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/FERS_ShowerShape{suffix}/index.html"
+    output_html = f"{htmldir}/FERS_ShowerShape_{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=6,
                   output_html=output_html)
     return output_html
