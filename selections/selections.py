@@ -24,12 +24,15 @@ def filterPrefireEvents(rdf, runNumber, TS=350):
     return rdf, rdf_prefilter
 
 
-def getPSDSumCutValue():
-    return -1e3
-
-
-def getCC1SumCutValue():
-    return -1e3
+def getServiceDRSSumCutValue(channel):
+    values = {
+        "preshower": -1e3,
+        "Cerenkov1": -1e3,
+        "Cerenkov2": -1e3,
+        "Cerenkov3": -1e3,
+        "muon": -1e3
+    }
+    return values.get(channel, -1e3)
 
 
 def vetoMuonCounter(rdf, TSmin=400, TSmax=600, cut=-80):

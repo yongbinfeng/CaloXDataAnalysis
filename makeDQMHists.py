@@ -378,6 +378,8 @@ def makeDRS2DHists(debug=False):
 
 
 def compareDRSChannels(channels_to_compare, isServiceDRS=False):
+    if isinstance(channels_to_compare, dict):
+        channels_to_compare = list(channels_to_compare.values())
     hists_trigger = []
     for chan_name in channels_to_compare:
         ymin = -2500
@@ -533,7 +535,7 @@ def checkDRSPeakTS():
                 h1_DRSPeakTS = rdf.Histo1D((
                     f"hist_DRSPeakTS_{var}_{sTowerX}_{sTowerY}",
                     f"DRS Peak TS for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var};Peak TS;Counts",
-                    1000,0,1000),
+                    1000, 0, 1000),
                     f"{channelName}_good"
                 )
                 h1s_DRSPeakTS[var].append(h1_DRSPeakTS)
@@ -546,9 +548,9 @@ def checkDRSPeakTS():
             h2_DRSPeak_Cer_VS_Sci = rdf.Histo2D((
                 f"hist_DRSPeakTS_Cer_VS_Sci_{sTowerX}_{sTowerY}",
                 f"DRS Peak TS - CER VS SCI for Board{boardNo}, Tower({sTowerX}, {sTowerY});SCI Peak TS;CER Peak TS",
-                1000,0,1000, 1000,0,1000),
-                f"{channelNames["Sci"]}_good",
-                f"{channelNames["Cer"]}_good",
+                1000, 0, 1000, 1000, 0, 1000),
+                f'{channelNames["Sci"]}_good',
+                f'{channelNames["Cer"]}_good',
             )
             h2s_DRSPeakTS_Cer_VS_Sci.append(h2_DRSPeak_Cer_VS_Sci)
     return h1s_DRSPeakTS["Cer"], h1s_DRSPeakTS["Sci"], h2s_DRSPeakTS_Cer_VS_Sci

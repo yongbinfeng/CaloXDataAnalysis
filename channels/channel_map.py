@@ -547,16 +547,36 @@ def buildHodoPosChannels(run=316):
             "DRS_Board0_Group0_Channel7",
         ]
 
-    if run >= 1170:
+    if run >= 1170 and run < 1327:
         # test beam
         # Left and right; top and bottom for Hodoscope2
         # 1170 is not exactly the first run number
         hodoscope_channels = {}
-        hodoscope_channels["LR"] = [
+        hodoscope_channels["LR1"] = [
             "DRS_Board7_Group0_Channel4",
             "DRS_Board7_Group0_Channel5",
         ]
-        hodoscope_channels["UD"] = [
+        hodoscope_channels["UD1"] = [
+            "DRS_Board7_Group0_Channel6",
+            "DRS_Board7_Group0_Channel7",
+        ]
+
+    if run >= 1342:
+        # Left and right; top and bottom for Hodoscope2
+        hodoscope_channels = {}
+        hodoscope_channels["LR1"] = [
+            "DRS_Board7_Group0_Channel0",
+            "DRS_Board7_Group0_Channel1",
+        ]
+        hodoscope_channels["UD1"] = [
+            "DRS_Board7_Group0_Channel2",
+            "DRS_Board7_Group0_Channel3",
+        ]
+        hodoscope_channels["LR2"] = [
+            "DRS_Board7_Group0_Channel4",
+            "DRS_Board7_Group0_Channel5",
+        ]
+        hodoscope_channels["UD2"] = [
             "DRS_Board7_Group0_Channel6",
             "DRS_Board7_Group0_Channel7",
         ]
@@ -666,34 +686,28 @@ def getServiceDRSChannels(run=1184):
             "DRS_Board7_Group1_Channel7",
         ]
     else:
-        return [
-            "DRS_Board7_Group0_Channel0",
-            "DRS_Board7_Group0_Channel1",
-            "DRS_Board7_Group0_Channel2",
-            "DRS_Board7_Group0_Channel3",
-            "DRS_Board7_Group0_Channel4",
-            "DRS_Board7_Group0_Channel5",
-            "DRS_Board7_Group0_Channel6",
-            "DRS_Board7_Group0_Channel7",
-            "DRS_Board7_Group1_Channel0",
-            "DRS_Board7_Group1_Channel1",
-            "DRS_Board7_Group1_Channel2",
-            "DRS_Board7_Group1_Channel3",
-            "DRS_Board7_Group1_Channel4",
-            "DRS_Board7_Group1_Channel5",
-            "DRS_Board7_Group1_Channel6",
-            "DRS_Board7_Group1_Channel7",
-            "DRS_Board7_Group2_Channel0",
-            "DRS_Board7_Group2_Channel1",
-            "DRS_Board7_Group2_Channel2",
-            "DRS_Board7_Group2_Channel3",
-            "DRS_Board7_Group2_Channel4",
-            "DRS_Board7_Group2_Channel5",
-            "DRS_Board7_Group2_Channel6",
-            "DRS_Board7_Group2_Channel7",
-            "DRS_Board7_Group3_Channel0",
-            "DRS_Board7_Group3_Channel1",
-        ]
+        return {
+            "DWC1Left": "DRS_Board7_Group0_Channel0",
+            "DWC1Right": "DRS_Board7_Group0_Channel1",
+            "DWC1Up": "DRS_Board7_Group0_Channel2",
+            "DWC1Down": "DRS_Board7_Group0_Channel3",
+            "DWC2Left": "DRS_Board7_Group0_Channel4",
+            "DWC2Right": "DRS_Board7_Group0_Channel5",
+            "DWC2Up": "DRS_Board7_Group0_Channel6",
+            "DWC2Down": "DRS_Board7_Group0_Channel7",
+            "MuonVeto": "DRS_Board7_Group1_Channel0",
+            "PSD": "DRS_Board7_Group1_Channel1",
+            "HaloVeto": "DRS_Board7_Group1_Channel6",
+            "NC": "DRS_Board7_Group1_Channel7",
+            "T3": "DRS_Board7_Group2_Channel0",
+            "T4": "DRS_Board7_Group2_Channel1",
+            "KT1": "DRS_Board7_Group2_Channel2",
+            "KT2": "DRS_Board7_Group2_Channel3",
+            "TTUMuonVeto": "DRS_Board7_Group2_Channel4",
+            "Cer474": "DRS_Board7_Group2_Channel5",
+            "Cer519": "DRS_Board7_Group2_Channel6",
+            "Cer537": "DRS_Board7_Group2_Channel7",
+        }
 
 
 def getQuartzChannelList():

@@ -833,19 +833,19 @@ def compareServiceDRSPlots():
     infile = ROOT.TFile(infile_name, "READ")
     outdir_plots = f"{plotdir}/ServiceDRS"
 
-    for chan_name in service_drs_channels:
+    for det_name, chan_name in service_drs_channels.items():
         hist_name = f"hist_{chan_name}_blsub"
         hist = infile.Get(hist_name)
         if not hist:
             print(f"Warning: Histogram {hist_name} not found in {infile_name}")
             continue
-        extraToDraw = ROOT.TPaveText(0.20, 0.70, 0.60, 0.90, "NDC")
+        extraToDraw = ROOT.TPaveText(0.60, 0.20, 0.90, 0.30, "NDC")
         extraToDraw.SetTextAlign(11)
         extraToDraw.SetFillColorAlpha(0, 0)
         extraToDraw.SetBorderSize(0)
         extraToDraw.SetTextFont(42)
         extraToDraw.SetTextSize(0.04)
-        extraToDraw.AddText(f"{chan_name}")
+        extraToDraw.AddText(f"{det_name}")
         output_name = f"ServiceDRS_{chan_name}"
 
         ymin, ymax = getServiceDRSPlotRanges(

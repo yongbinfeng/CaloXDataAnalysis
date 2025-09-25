@@ -2,15 +2,16 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from CMSPLOTS.myFunction import DrawHistos
-from utils.channel_map import getPreShowerChannel, getDownStreamMuonChannel, buildHodoPosChannels, getCerenkovCounters
+from channels.channel_map import getPreShowerChannel, getDownStreamMuonChannel, buildHodoPosChannels, getCerenkovCounters, buildFERSBoards, buildDRSBoards, getDownStreamTTUMuonChannel
 from utils.html_generator import generate_html
-from utils.utils import loadRDF, preProcessDRSBoards
-from utils.utils import calculateEnergySumFERS, vectorizeFERS
-from utils.channel_map import buildFERSBoards, buildDRSBoards
+from utils.dataloader import loadRDF
+from variables.drs import preProcessDRSBoards
+from variables.fers import vectorizeFERS
 from configs.plotranges import getServiceDRSProcessedInfoRanges
-from selections.selections import applyUpstreamVeto, applyUpstreamVeto, getCC1SumCutValue, getPSDSumCutValue
+from selections.selections import applyUpstreamVeto, applyUpstreamVeto, getServiceDRSSumCutValue
 from utils.parser import get_args
-import time
+from utils.timing import auto_timer  # noqa
+auto_timer("Total Execution Time")
 
 ROOT.gROOT.SetBatch(True)  # Run in batch mode
 ROOT.ROOT.EnableImplicitMT(10)
@@ -29,38 +30,36 @@ def analyzePulse(channels, names):
 
     FERSBoards = buildFERSBoards(run=runNumber)
     rdf = vectorizeFERS(rdf, FERSBoards)
-    rdf_old = calculateEnergySumFERS(
-        rdf, FERSBoards, calibrate=False, subtractPedestal=False, clip=False)
-    # rdf = rdf_old.Filter(f"FERS_SciEnergyHG > 7e5")
 
     hists = {}
     hists2d = {}
 
     channel_preshower = getPreShowerChannel(runNumber)
-    channel_muon = getDownStreamMuonChannel(runNumber)
+    # channel_muon = getDownStreamMuonChannel(runNumber)
+    channel_muon = getDownStreamTTUMuonChannel(runNumber)
     channels_cerenkov = getCerenkovCounters(runNumber)
 
     rdf = rdf.Define(f"{channel_preshower}_peak_position",
-                     f"ArgMinRange({channel_preshower}_subtractMedian, 100, 400)")
+                     f"ArgMinRange({channel_preshower}_blsub, 100, 400)")
     rdf = rdf.Define(f"{channel_preshower}_peak_value",
-                     f"MinRange({channel_preshower}_subtractMedian, 100, 400)")
+                     f"MinRange({channel_preshower}_blsub, 100, 400)")
     rdf = rdf.Define(f"{channel_preshower}_sum",
-                     f"SumRange({channel_preshower}_subtractMedian, 100, 400)")
+                     f"SumRange({channel_preshower}_blsub, 100, 400)")
 
     rdf = rdf.Define(f"{channel_muon}_peak_position",
-                     f"ROOT::VecOps::ArgMin({channel_muon}_subtractMedian)")
+                     f"ROOT::VecOps::ArgMin({channel_muon}_blsub)")
     rdf = rdf.Define(f"{channel_muon}_peak_value",
-                     f"ROOT::VecOps::Min({channel_muon}_subtractMedian)")
+                     f"ROOT::VecOps::Min({channel_muon}_blsub)")
     rdf = rdf.Define(f"{channel_muon}_sum",
-                     f"ROOT::VecOps::Sum({channel_muon}_subtractMedian)")
+                     f"SumRange({channel_muon}_blsub, {channel_muon}_peak_position - 50, {channel_muon}_peak_position + 50)")
 
     for channel in channels_cerenkov:
         rdf = rdf.Define(f"{channel}_peak_position",
-                         f"ROOT::VecOps::ArgMin({channel}_subtractMedian)")
+                         f"ROOT::VecOps::ArgMin({channel}_blsub)")
         rdf = rdf.Define(f"{channel}_peak_value",
-                         f"ROOT::VecOps::Min({channel}_subtractMedian)")
+                         f"ROOT::VecOps::Min({channel}_blsub)")
         rdf = rdf.Define(f"{channel}_sum",
-                         f"SumRange({channel}_subtractMedian, 600, 800)")
+                         f"SumRange({channel}_blsub, 0, 1000)")
 
     for name, channel in zip(names, channels):
         hists[channel] = {}
@@ -82,53 +81,22 @@ def analyzePulse(channels, names):
             f"{channel}_sum"
         )
 
-    if "Cerenkov1" in names and "preshower" in names:
-        idx_cer1 = names.index("Cerenkov1")
-        idx_pre = names.index("preshower")
-        channel_cer1 = channels[idx_cer1]
-        channel_pre = channels[idx_pre]
-        hists2d["Cerenkov1_vs_preshower"] = {}
-        xmin, xmax = getServiceDRSProcessedInfoRanges("preshower", "sum")
-        ymin, ymax = getServiceDRSProcessedInfoRanges("Cerenkov1", "sum")
-        hists2d["Cerenkov1_vs_preshower"]["sum2D"] = rdf.Histo2D(
-            ("Cerenkov1_sum_vs_preshower_sum",
-             "Cerenkov1 vs Preshower Sum;Preshower Sum;Cerenkov1 Sum;Counts",
-             500, xmin, xmax, 500, ymin, ymax),
-            f"{channel_pre}_sum",
-            f"{channel_cer1}_sum"
-        )
-
-    if "muon" in names and "preshower" in names:
-        idx_muon = names.index("muon")
-        idx_pre = names.index("preshower")
-        channel_muon = channels[idx_muon]
-        channel_pre = channels[idx_pre]
-        hists2d["muon_vs_preshower"] = {}
-        xmin, xmax = getServiceDRSProcessedInfoRanges("preshower", "sum")
-        ymin, ymax = getServiceDRSProcessedInfoRanges("muon", "sum")
-        hists2d["muon_vs_preshower"]["sum2D"] = rdf.Histo2D(
-            ("muon_sum_vs_preshower_sum",
-             "muon vs preshower Sum;preshower Sum;muon Sum;Counts",
-             500, xmin, xmax, 500, ymin, ymax),
-            f"{channel_pre}_sum",
-            f"{channel_muon}_sum"
-        )
-
-    if "muon" in names and "Cerenkov1" in names:
-        idx_muon = names.index("muon")
-        idx_cer1 = names.index("Cerenkov1")
-        channel_muon = channels[idx_muon]
-        channel_cer1 = channels[idx_cer1]
-        hists2d["muon_vs_Cerenkov1"] = {}
-        xmin, xmax = getServiceDRSProcessedInfoRanges("Cerenkov1", "sum")
-        ymin, ymax = getServiceDRSProcessedInfoRanges("muon", "sum")
-        hists2d["muon_vs_Cerenkov1"]["sum2D"] = rdf.Histo2D(
-            ("muon_sum_vs_Cerenkov1_sum",
-             "muon vs Cerenkov1 Sum;Cerenkov1 Sum;muon Sum;Counts",
-             500, xmin, xmax, 500, ymin, ymax),
-            f"{channel_cer1}_sum",
-            f"{channel_muon}_sum"
-        )
+    for idx1, name1 in enumerate(names):
+        for idx2, name2 in enumerate(names):
+            if idx2 <= idx1:
+                continue
+            channel1 = channels[idx1]
+            channel2 = channels[idx2]
+            hists2d[f"{name1}_vs_{name2}"] = {}
+            xmin, xmax = getServiceDRSProcessedInfoRanges(name1, "sum")
+            ymin, ymax = getServiceDRSProcessedInfoRanges(name2, "sum")
+            hists2d[f"{name1}_vs_{name2}"]["sum2D"] = rdf.Histo2D(
+                (f"{name1}_sum_vs_{name2}_sum",
+                 f"{name1} vs {name2} Sum;{name1} Sum;{name2} Sum;Counts",
+                 500, xmin, xmax, 500, ymin, ymax),
+                f"{channel1}_sum",
+                f"{channel2}_sum"
+            )
 
     print("Writing histograms to output file...")
     ofile = ROOT.TFile(
@@ -152,9 +120,6 @@ def analyzeHodoPeak():
 
     FERSBoards = buildFERSBoards(run=runNumber)
     rdf = vectorizeFERS(rdf, FERSBoards)
-    rdf_old = calculateEnergySumFERS(
-        rdf, FERSBoards, calibrate=False, subtractPedestal=False, clip=False)
-    # rdf = rdf_old.Filter(f"FERS_SciEnergyHG > 7e5")
 
     histos1D_diff = {}
     histos1D_diff_realtive = {}
@@ -164,31 +129,35 @@ def analyzeHodoPeak():
     histos2D_left_vs_right = {}
     histos1D_left_peak = {}
     histos1D_right_peak = {}
+    histos2D_LR_vs_UD = {}
 
     for group, channels in hodo_pos_channels.items():
         for channel in channels:
             # find the minimum index of the pulse shape
             rdf = rdf.Define(f"{channel}_peak_position",
-                             f"ROOT::VecOps::ArgMin({channel}_subtractMedian)")
+                             f"ROOT::VecOps::ArgMin({channel}_blsub)")
             rdf = rdf.Define(f"{channel}_peak_value",
-                             f"ROOT::VecOps::Min({channel}_subtractMedian)")
+                             f"ROOT::VecOps::Min({channel}_blsub)")
 
     rdf = applyUpstreamVeto(rdf, runNumber, applyCut=False)
 
-    rdfs_filtered = []
+    conditions = ["pass_upstream_veto", "pass_NoSel"]
+
+    # rdfs_filtered = []
+    rdf_filtered = rdf
     maps_mean = {}
     map_means_normalized = {}
     for group, channels in hodo_pos_channels.items():
-        rdf_filtered = rdf.Filter(
-            f"({channels[0]}_peak_value < -100.0 ) && ({channels[1]}_peak_value < -100.0 )"
-        )
+        # rdf_filtered = rdf.Filter(
+        #    f"({channels[0]}_peak_value < -100.0 ) && ({channels[1]}_peak_value < -100.0 )"
+        # )
 
         for channel in channels:
             # normalize the pulse shape
             rdf_filtered = rdf_filtered.Define(f"{channel}_subtracted_sum",
-                                               f"ROOT::VecOps::Sum({channel}_subtractMedian) + 1e-6")
+                                               f"ROOT::VecOps::Sum({channel}_blsub) + 1e-6")
             rdf_filtered = rdf_filtered.Define(f"{channel}_subtracted_norm",
-                                               f"{channel}_subtractMedian / {channel}_subtracted_sum")
+                                               f"{channel}_blsub / {channel}_subtracted_sum")
         # calculate the difference between left and right peaks
         rdf_filtered = rdf_filtered.Define(f"{group}_delta_peak",
                                            f"(int){channels[1]}_peak_position - (int){channels[0]}_peak_position")
@@ -196,9 +165,9 @@ def analyzeHodoPeak():
                                            f"(int){channels[0]}_peak_position + (int){channels[1]}_peak_position")
         rdf_filtered = rdf_filtered.Define(f"{group}_delta_peak_relative",
                                            f"{group}_delta_peak / ({group}_sum_peak + 1e-6)")
-        rdfs_filtered.append((group, rdf_filtered))
+        # rdfs_filtered.append((group, rdf_filtered))
 
-        for sel in ["pass_upstream_veto", "pass_NoSel"]:
+        for sel in conditions:
             cat = f"{group}_{sel}"
 
             histos1D_diff[cat] = rdf_filtered.Histo1D(
@@ -250,13 +219,25 @@ def analyzeHodoPeak():
             for i in range(0, 1024):
                 mean_normalized = rdf_filtered.Define(f"{channel}_subtracted_norm_{i}", f"{channel}_subtracted_norm[{i}]").Mean(
                     f"{channel}_subtracted_norm_{i}")
-                mean = rdf_filtered.Define(f"{channel}_subtractMedian_{i}", f"{channel}_subtractMedian[{i}]").Mean(
-                    f"{channel}_subtractMedian_{i}")
+                mean = rdf_filtered.Define(f"{channel}_blsub_{i}", f"{channel}_blsub[{i}]").Mean(
+                    f"{channel}_blsub_{i}")
                 means.append(mean)
                 means_normalized.append(mean_normalized)
 
             maps_mean[channel] = means
             map_means_normalized[channel] = means_normalized
+
+    # LR vs UD
+    for sel in conditions:
+        for dwc in ["LR1_vs_UD1", "LR2_vs_UD2"]:
+            if dwc[:3] not in hodo_pos_channels:
+                continue
+            cat = f"{dwc}_{sel}"
+            histos2D_LR_vs_UD[cat] = rdf_filtered.Histo2D(
+                (f"{cat}", f"LR vs UD", 256, -1, 1, 256, -1, 1),
+                f"{dwc.split('_vs_')[0]}_delta_peak_relative",
+                f"{dwc.split('_vs_')[1]}_delta_peak_relative", sel
+            )
 
     print("Average channel normalized pulse shapes calculated.")
 
@@ -299,6 +280,10 @@ def analyzeHodoPeak():
         histos1D_left_peak[cat].Write()
         histos1D_right_peak[cat].SetDirectory(ofile)
         histos1D_right_peak[cat].Write()
+
+    for cat, hist in histos2D_LR_vs_UD.items():
+        hist.SetDirectory(ofile)
+        hist.Write()
 
     for group, hist in histos1D_means.items():
         histos1D_means[group].SetDirectory(ofile)
@@ -349,20 +334,18 @@ def plotPulse(channels, names):
             print(f"Histogram {name}_sum not found in {infile.GetName()}")
             return
         xmin, xmax = getServiceDRSProcessedInfoRanges(name, "sum")
-        extraToDraw = None
-        if name == "preshower" or name == "Cerenkov1":
-            ntot = hist.Integral(0, 10000)
-            valCut = getPSDSumCutValue() if name == "preshower" else getCC1SumCutValue()
-            nhad = hist.Integral(hist.FindBin(valCut), 10000)
-            nele = hist.Integral(0, hist.FindBin(valCut))
-            extraToDraw = ROOT.TPaveText(0.23, 0.75, 0.55, 0.85, "NDC")
-            extraToDraw.SetFillColor(0)
-            extraToDraw.SetBorderSize(0)
-            extraToDraw.SetTextAlign(11)
-            extraToDraw.SetTextFont(42)
-            extraToDraw.SetTextSize(0.04)
-            extraToDraw.AddText(f"N (sum > {valCut:.2g}): {nhad:.0f}")
-            extraToDraw.AddText(f"N (sum < {valCut:.2g}): {nele:.0f}")
+        ntot = hist.Integral(0, 10000)
+        valCut = getServiceDRSSumCutValue(name)
+        nhad = hist.Integral(hist.FindBin(valCut), 10000)
+        nele = hist.Integral(0, hist.FindBin(valCut))
+        extraToDraw = ROOT.TPaveText(0.23, 0.75, 0.55, 0.85, "NDC")
+        extraToDraw.SetFillColor(0)
+        extraToDraw.SetBorderSize(0)
+        extraToDraw.SetTextAlign(11)
+        extraToDraw.SetTextFont(42)
+        extraToDraw.SetTextSize(0.04)
+        extraToDraw.AddText(f"N (sum > {valCut:.2g}): {nhad:.0f}")
+        extraToDraw.AddText(f"N (sum < {valCut:.2g}): {nele:.0f}")
         DrawHistos([hist], [name], xmin, xmax, "Sum", 1, None, "Counts",
                    outputname=f"{name}_sum", outdir=outdir,
                    dology=True, mycolors=[1], drawashist=True, runNumber=runNumber,
@@ -370,71 +353,47 @@ def plotPulse(channels, names):
         plots.append(f"{name}_sum.png")
 
     # 2D plots
-    if "Cerenkov1" in names and "preshower" in names:
-        hist2d = infile.Get("Cerenkov1_sum_vs_preshower_sum")
-        if not hist2d:
-            print(
-                f"Histogram Cerenkov1_sum_vs_preshower_sum not found in {infile.GetName()}")
-            return
-        xmin, xmax = getServiceDRSProcessedInfoRanges("preshower", "sum")
-        ymin, ymax = getServiceDRSProcessedInfoRanges("Cerenkov1", "sum")
-        valCut_psd = getPSDSumCutValue()
-        valCut_cc1 = getCC1SumCutValue()
-        xPass = hist2d.GetXaxis().FindBin(valCut_psd)
-        yPass = hist2d.GetYaxis().FindBin(valCut_cc1)
-        nPP = hist2d.Integral(xPass, 1000, yPass, 1000)
-        nPF = hist2d.Integral(xPass, 1000, 0, yPass - 1)
-        nFP = hist2d.Integral(0, xPass - 1, yPass, 1000)
-        nFF = hist2d.Integral(0, xPass - 1, 0, yPass - 1)
-        extraToDraw = ROOT.TPaveText(0.23, 0.20, 0.5, 0.40, "NDC")
-        extraToDraw.SetFillColorAlpha(0, 0.0)
-        extraToDraw.SetBorderSize(0)
-        extraToDraw.SetTextAlign(11)
-        extraToDraw.SetTextFont(42)
-        extraToDraw.SetTextSize(0.03)
-        extraToDraw.AddText(
-            f"N (PSD > {valCut_psd:.2g}, CC > {valCut_cc1:.2g}): {nPP:.0f}")
-        extraToDraw.AddText(
-            f"N (PSD > {valCut_psd:.2g}, CC < {valCut_cc1:.2g}): {nPF:.0f}")
-        extraToDraw.AddText(
-            f"N (PSD < {valCut_psd:.2g}, CC > {valCut_cc1:.2g}): {nFP:.0f}")
-        extraToDraw.AddText(
-            f"N (PSD < {valCut_psd:.2g}, CC < {valCut_cc1:.2g}): {nFF:.0f}")
-        DrawHistos([hist2d], "", xmin, xmax, "PSD Sum", ymin, ymax, "CC1 Sum",
-                   outputname="Cerenkov1_vs_preshower_sum2D", outdir=outdir,
-                   drawoptions="COLz", zmin=1, zmax=None, dologz=True,
-                   dology=False, runNumber=runNumber, addOverflow=True, doth2=True, extraToDraw=extraToDraw
-                   )
-        plots.append("Cerenkov1_vs_preshower_sum2D.png")
-    if "muon" in names and "preshower" in names:
-        hist2d = infile.Get("muon_sum_vs_preshower_sum")
-        if not hist2d:
-            print(
-                f"Histogram muon_sum_vs_preshower_sum not found in {infile.GetName()}")
-            return
-        xmin, xmax = getServiceDRSProcessedInfoRanges("preshower", "sum")
-        ymin, ymax = getServiceDRSProcessedInfoRanges("muon", "sum")
-        DrawHistos([hist2d], "", xmin, xmax, "PSD Sum", ymin, ymax, "MuonVeto Sum",
-                   outputname="Muon_vs_preshower_sum2D", outdir=outdir,
-                   drawoptions="COLz", zmin=1, zmax=None, dologz=True,
-                   dology=False, runNumber=runNumber, addOverflow=True, doth2=True,
-                   )
-        plots.append("Muon_vs_preshower_sum2D.png")
-
-    if "muon" in names and "Cerenkov1" in names:
-        hist2d = infile.Get("muon_sum_vs_Cerenkov1_sum")
-        if not hist2d:
-            print(
-                f"Histogram muon_sum_vs_Cerenkov1_sum not found in {infile.GetName()}")
-            return
-        xmin, xmax = getServiceDRSProcessedInfoRanges("Cerenkov1", "sum")
-        ymin, ymax = getServiceDRSProcessedInfoRanges("muon", "sum")
-        DrawHistos([hist2d], "", xmin, xmax, "CC1 Sum", ymin, ymax, "MuonVeto Sum",
-                   outputname="Muon_vs_Cerenkov1_sum2D", outdir=outdir,
-                   drawoptions="COLz", zmin=1, zmax=None, dologz=True,
-                   dology=False, runNumber=runNumber, addOverflow=True, doth2=True,
-                   )
-        plots.append("Muon_vs_Cerenkov1_sum2D.png")
+    for idx1, name1 in enumerate(names):
+        for idx2, name2 in enumerate(names):
+            if idx2 <= idx1:
+                continue
+            hist2d = infile.Get(f"{name1}_sum_vs_{name2}_sum")
+            if not hist2d:
+                print(
+                    f"Histogram {name1}_sum_vs_{name2}_sum not found in {infile.GetName()}")
+                return
+            xmin, xmax = getServiceDRSProcessedInfoRanges(name1, "sum")
+            ymin, ymax = getServiceDRSProcessedInfoRanges(name2, "sum")
+            valCut1 = getServiceDRSSumCutValue(name1)
+            valCut2 = getServiceDRSSumCutValue(name2)
+            xPass = hist2d.GetXaxis().FindBin(valCut1)
+            yPass = hist2d.GetYaxis().FindBin(valCut2)
+            nPP = hist2d.Integral(xPass, 1000, yPass, 1000)
+            nPF = hist2d.Integral(xPass, 1000, 0, yPass - 1)
+            nFP = hist2d.Integral(0, xPass - 1, yPass, 1000)
+            nFF = hist2d.Integral(0, xPass - 1, 0, yPass - 1)
+            extraToDraw = ROOT.TPaveText(0.23, 0.20, 0.5, 0.40, "NDC")
+            extraToDraw.SetFillColorAlpha(0, 0.0)
+            extraToDraw.SetBorderSize(0)
+            extraToDraw.SetTextAlign(11)
+            extraToDraw.SetTextFont(42)
+            extraToDraw.SetTextSize(0.03)
+            name1_txt = name1.replace("Cerenkov", "Cer")
+            name2_txt = name2.replace("Cerenkov", "Cer")
+            extraToDraw.AddText(
+                f"N ({name1_txt} > {valCut1:.2g}, {name2_txt} > {valCut2:.2g}): {nPP:.0f}")
+            extraToDraw.AddText(
+                f"N ({name1_txt} > {valCut1:.2g}, {name2_txt} < {valCut2:.2g}): {nPF:.0f}")
+            extraToDraw.AddText(
+                f"N ({name1_txt} < {valCut1:.2g}, {name2_txt} > {valCut2:.2g}): {nFP:.0f}")
+            extraToDraw.AddText(
+                f"N ({name1_txt} < {valCut1:.2g}, {name2_txt} < {valCut2:.2g}): {nFF:.0f}")
+            DrawHistos([hist2d], "", xmin, xmax, f"{name1} Sum", ymin, ymax, f"{name2} Sum",
+                       outputname=f"{name1}_vs_{name2}_sum2D", outdir=outdir,
+                       drawoptions="COLz", zmin=1, zmax=None, dologz=True,
+                       dology=False, runNumber=runNumber, addOverflow=True, doth2=True,
+                       extraToDraw=extraToDraw)
+            plots.append(f"{name1}_vs_{name2}_sum2D.png")
 
     output_html = f"results/html/Run{runNumber}/drs_service/viewer.html"
     generate_html(plots, f"results/plots/Run{runNumber}/drs_service/", plots_per_row=3,
@@ -452,7 +411,7 @@ def plotHodoPeak():
     hodo_pos_channels = buildHodoPosChannels(run=runNumber)
 
     plots = []
-    outdir = f"results/plots/Run{runNumber}/HodoPos/"
+    outdir = f"results/plots/Run{runNumber}/DWC/"
     for group, channels in hodo_pos_channels.items():
         histos1D_diff = []
         histos1D_diff_realtive = []
@@ -537,31 +496,44 @@ def plotHodoPeak():
         )
         plots.append(outputname + ".png")
 
-    output_html = f"results/html/Run{runNumber}/HodoPos/viewer.html"
-    generate_html(plots, f"results/plots/Run{runNumber}/HodoPos/", plots_per_row=7,
+    # LR vs UD
+    for sel in ["pass_NoSel", "pass_upstream_veto"]:
+        for dwc in ["LR1_vs_UD1", "LR2_vs_UD2"]:
+            cat = f"{dwc}_{sel}"
+            hist2d = infile.Get(f"{cat}")
+            if hist2d:
+                outputname = f"DWC_{dwc}_{sel}"
+                DrawHistos(
+                    [hist2d], "", -0.4, 0.4, "LR Delta Peak Relative",
+                    -0.4, 0.4, "UD Delta Peak Relative",
+                    outputname=outputname, outdir=outdir,
+                    drawoptions="COLz", zmin=1, zmax=None, dologz=True,
+                    dology=False, runNumber=runNumber, addOverflow=True, doth2=True,
+                )
+            plots.append(outputname + ".png")
+
+    output_html = f"results/html/Run{runNumber}/DWC/viewer.html"
+    generate_html(plots, outdir, plots_per_row=7,
                   output_html=output_html)
 
     return output_html
 
 
 if __name__ == "__main__":
-    start_time = time.time()
     chan_preshower = getPreShowerChannel(runNumber)
-    chan_muon = getDownStreamMuonChannel()
+    # chan_muon = getDownStreamMuonChannel()
+    chan_muon = getDownStreamTTUMuonChannel(runNumber)
     chans_cerenkov = getCerenkovCounters(runNumber)
     channels = [chan_preshower, chan_muon] + chans_cerenkov
     names = ["preshower", "muon"] + ["Cerenkov" +
                                      str(i) for i in range(1, len(chans_cerenkov) + 1)]
 
     analyzePulse(channels, names)
-    # analyzeHodoPeak()
+    analyzeHodoPeak()
 
     outputs = {}
     outputs["PSD_Muon"] = plotPulse(channels, names)
-    # outputs["hodo"] = plotHodoPeak()
+    outputs["DWC"] = plotHodoPeak()
 
     for key, value in outputs.items():
         print(f"Output for {key}: {value}")
-
-    end_time = time.time()
-    print(f"Total execution time: {end_time - start_time:.2f} seconds")

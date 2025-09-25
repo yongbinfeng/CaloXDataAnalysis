@@ -3173,5 +3173,30 @@
         "Shifter(s)": "EV, HB, MO",
         "Notes": "Position #1, 80 GeV positrons, to test hodoscope,  FERS 0,1 are the hodoscope, then the rest",
         "": ""
+    },
+    "1350": {
+        "RunNumber": "1350",
+        "Date": "Sep 24",
+        "Start Time": "3:50 PM",
+        "End Time": "4:00 PM",
+        "Total Time (min)": "",
+        "# of spills": "",
+        "part per spill": "",
+        "beam type": "positrons",
+        "beam file": "DRC.008",
+        "beam energy": "80 GeV",
+        "number of evt.": "1699",
+        "Table position X": "83.8 mm",
+        "Table position Y": "1053 mm",
+        "Table Degree": "-0.55",
+        "SiPM Temp Start ": "25",
+        "SiPM Temp End": "25",
+        "cc1 (519) (bars)": "0.05",
+        "cc2 (537) (bars)": "0.11",
+        "SiPM HV": "27",
+        "edited by": "CT",
+        "Shifter(s)": "MH, XD, CT",
+        "Notes": "JD fixed it",
+        "": ""
     }
 }

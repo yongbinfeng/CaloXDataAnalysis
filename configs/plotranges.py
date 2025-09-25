@@ -287,24 +287,30 @@ def getEventEnergyFitParameters(runNumber, isCer=False, clip=False):
 def getServiceDRSPlotRanges(channel, subtractMedian=True):
 
     service_drs_ranges = {
-        "DRS_Board7_Group0_Channel0": (2000, -2500),
-        "DRS_Board7_Group0_Channel1": (2000, -2500),
-        "DRS_Board7_Group0_Channel2": (2000, -2500),
-        "DRS_Board7_Group0_Channel3": (2000, -2500),
-        "DRS_Board7_Group0_Channel4": (1000, -2500),
-        "DRS_Board7_Group0_Channel5": (1000, -2500),
-        "DRS_Board7_Group0_Channel6": (1000, -2500),
-        "DRS_Board7_Group0_Channel7": (1000, -2500),
+        "DRS_Board7_Group0_Channel0": (2000, -3000),
+        "DRS_Board7_Group0_Channel1": (2000, -3000),
+        "DRS_Board7_Group0_Channel2": (2000, -3000),
+        "DRS_Board7_Group0_Channel3": (2000, -3000),
+        "DRS_Board7_Group0_Channel4": (1000, -3000),
+        "DRS_Board7_Group0_Channel5": (1000, -3000),
+        "DRS_Board7_Group0_Channel6": (1000, -3000),
+        "DRS_Board7_Group0_Channel7": (1000, -3000),
         "DRS_Board7_Group1_Channel0": (200, -500),
-        "DRS_Board7_Group1_Channel1": (200, -2000),
+        "DRS_Board7_Group1_Channel1": (200, -3000),
         "DRS_Board7_Group1_Channel2": (200, -500),
         "DRS_Board7_Group1_Channel3": (100, -200),
         "DRS_Board7_Group1_Channel4": (100, -200),
         "DRS_Board7_Group1_Channel5": (100, -200),
-        "DRS_Board7_Group1_Channel6": (500, -2500),
+        "DRS_Board7_Group1_Channel6": (500, -3000),
         "DRS_Board7_Group1_Channel7": (100, -200),
-        "DRS_Board7_Group2_Channel0": (500, -2500),
-        "DRS_Board7_Group2_Channel1": (500, -2500),
+        "DRS_Board7_Group2_Channel0": (500, -3000),
+        "DRS_Board7_Group2_Channel1": (500, -3000),
+        "DRS_Board7_Group2_Channel2": (500, -3000),
+        "DRS_Board7_Group2_Channel3": (500, -3000),
+        "DRS_Board7_Group2_Channel4": (500, -3000),
+        "DRS_Board7_Group2_Channel5": (500, -3000),
+        "DRS_Board7_Group2_Channel6": (500, -3000),
+        "DRS_Board7_Group2_Channel7": (500, -3000),
     }
     xmin = -50
     xmax = 50
@@ -317,8 +323,8 @@ def getServiceDRSPlotRanges(channel, subtractMedian=True):
 def getServiceDRSProcessedInfoRanges(channel, cat):
     service_drs_ranges = {
         "muon": {
-            "peak_value": (-100, 10),
-            "sum": (-2000, 1500)
+            "peak_value": (-500, 50),
+            "sum": (-2e3, 500)
         },
         "preshower": {
             # "peak_value": (-3000, 50),
@@ -329,7 +335,15 @@ def getServiceDRSProcessedInfoRanges(channel, cat):
         "Cerenkov1": {
             "peak_value": (-1500, 50),
             "sum": (-1e4, 2e3)
-        }
+        },
+        "Cerenkov2": {
+            "peak_value": (-1500, 50),
+            "sum": (-1e4, 2e3)
+        },
+        "Cerenkov3": {
+            "peak_value": (-1500, 50),
+            "sum": (-1e4, 2e3)
+        },
     }
     if channel in service_drs_ranges:
         if cat in service_drs_ranges[channel]:
