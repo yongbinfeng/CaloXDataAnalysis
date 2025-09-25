@@ -18,6 +18,9 @@ sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos, LHistos2Hist
 from utils.timing import auto_timer
 
+ROOT.TH1.AddDirectory(False)  # prevents auto-registration in gDirectory
+
+
 auto_timer("Total Execution Time")
 
 args = get_args()
@@ -35,9 +38,9 @@ ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
 # load the gains and pedestals from SiPM fits
 # file_gains = f"results/root/Run{runNumber}/valuemaps_gain.json"
-file_pedestals = f"data/fers/FERS_pedestals_run1259.json"
-# file_pedestals_HG = f"results/root/Run{runNumber}/fers_pedestals_hg.json"
-# file_pedestals_LG = f"results/root/Run{runNumber}/fers_pedestals_lg.json"
+# file_pedestals = f"data/fers/FERS_pedestals_run1259.json"
+file_pedestals_HG = f"results/root/Run{runNumber}/fers_pedestals_hg.json"
+file_pedestals_LG = f"results/root/Run{runNumber}/fers_pedestals_lg.json"
 
 file_calibrations = "data/fers/FERS_response.json"
 file_HG2LG = "data/fers/FERS_HG2LG.json"
@@ -45,25 +48,27 @@ file_deadchannels = f"data/fers/deadchannels.json"
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
 rdf = preProcessDRSBoards(rdf)
-rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
-rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber)
+# rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
+# rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber, applyCut=False)
+rdf = applyUpstreamVeto(rdf, runNumber, applyCut=False)
 
 fersboards = buildFERSBoards(run=runNumber)
 
 rdf = vectorizeFERS(rdf, fersboards)
 # subtract pedestals
 rdf = subtractFERSPedestal(
-    rdf, fersboards, gain="HG", file_pedestals=file_pedestals)
+    rdf, fersboards, gain="HG", file_pedestals=file_pedestals_HG)
 rdf = subtractFERSPedestal(
-    rdf, fersboards, gain="LG", file_pedestals=file_pedestals)
+    rdf, fersboards, gain="LG", file_pedestals=file_pedestals_LG)
 # mix HG and LG
-rdf = mixFERSHGLG(
-    rdf, fersboards, file_HG2LG=file_HG2LG)
+# rdf = mixFERSHGLG(
+#    rdf, fersboards, file_HG2LG=file_HG2LG)
 # calibrate Mix gain
-rdf = calibrateFERSChannels(
-    rdf, fersboards, file_calibrations=file_calibrations, gain="Mix", file_deadchannels=file_deadchannels)
+# rdf = calibrateFERSChannels(
+#    rdf, fersboards, file_calibrations=file_calibrations, gain="Mix", file_deadchannels=file_deadchannels)
 
-GainCalibs = [("HG", False), ("LG", False), ("Mix", True)]
+# GainCalibs = [("HG", False), ("LG", False), ("Mix", True)]
+GainCalibs = [("HG", False), ("LG", False)]
 
 # calculate energy sums
 for gain, calib in GainCalibs:
@@ -90,9 +95,10 @@ rdfs = OrderedDict()
 rdf = applyPSDSelection(rdf, runNumber, applyCut=False)
 rdf = applyCC1Selection(rdf, runNumber, applyCut=False)
 
-# rdfs["inc"] = rdf
-rdfs["passPSDEle_passCC1Ele"] = rdf.Filter(
-    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 1")
+rdfs["inc"] = rdf
+rdfs["passHaloVeto"] = rdf.Filter("pass_upstream_veto == 1")
+rdfs["passHaloVeto_passPSDEle_passCC1Ele"] = rdf.Filter(
+    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 1 && pass_upstream_veto == 1")
 # rdfs["passPSDEle_failCC1Ele"] = rdf.Filter(
 #    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 0")
 # rdfs["failPSDEle_passCC1Ele"] = rdf.Filter(
@@ -105,7 +111,7 @@ def makeFERSEnergySumHists(rdf=rdf, suffix=""):
     hists_FERS_EnergySum = []
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE)
+            pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
         for cat in ["cer", "sci"]:
             # per-board sum
             for fersboard in fersboards.values():
@@ -136,7 +142,7 @@ def makeFERSCervsSciHists(rdf=rdf, suffix=""):
     hists_FERS_Cer_vs_Sci = []
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE)
+            pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
         # per-board Cer vs Sci
         for fersboard in fersboards.values():
             var_cer = fersboard.GetEnergySumName(
@@ -308,7 +314,7 @@ def makeFERSEnergySumPlots(suffix=""):
     # per-board energy sum plots
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE)
+            pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
         for cat in ["cer", "sci"]:
             hists = []
             legends = []
@@ -335,7 +341,7 @@ def makeFERSEnergySumPlots(suffix=""):
     # per-event energy sum plot ranges
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE)
+            pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
         for cat in ["cer", "sci"]:
             varname = fersboards.GetEnergySumName(
                 gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib)
@@ -366,7 +372,7 @@ def makeFERSCerVsSciPlots(suffix=""):
 
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE)
+            pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
         for fersboard in fersboards.values():
             boardNo = fersboard.boardNo
             var_cer = fersboard.GetEnergySumName(
@@ -389,7 +395,7 @@ def makeFERSCerVsSciPlots(suffix=""):
 
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE)
+            pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
         var_cer = fersboards.GetEnergySumName(
             gain=gain, isCer=True, pdsub=True, calib=calib)
         var_sci = fersboards.GetEnergySumName(
@@ -672,14 +678,14 @@ if __name__ == "__main__":
             hists_shower_shapes_X, hists_shower_shapes_Y, hists_shower_shapes_R, hists_shower_shapes_Y_VS_X, nEvents = makeFERSShowerShapeHists(
                 rdf=rdf, suffix=cat)
 
-            stats = collectFERSStats(rdf=rdf)
+            # stats = collectFERSStats(rdf=rdf)
 
-            import json
-            stats_results = {}
-            for channelName, mean in stats.items():
-                stats_results[channelName] = mean.GetValue()
-            with open(f"{rootdir}/fers_stats_cer_ovs_sci.json", "w") as f:
-                json.dump(stats_results, f, indent=4)
+            # import json
+            # stats_results = {}
+            # for channelName, mean in stats.items():
+            #     stats_results[channelName] = mean.GetValue()
+            # with open(f"{rootdir}/fers_stats_cer_ovs_sci.json", "w") as f:
+            #     json.dump(stats_results, f, indent=4)
 
             # save histograms to ROOT files
             outfile_name = f"{rootdir}/fers_energy_sum_{cat}.root"
@@ -734,9 +740,11 @@ if __name__ == "__main__":
             outfile_name = f"{rootdir}/fers_shower_shape_{cat}.root"
             with ROOT.TFile(outfile_name, "RECREATE") as outfile:
                 for hist in hists_shower_shape:
-                    hist = hist.Clone()
-                    hist.SetDirectory(outfile)
-                    hist.Write()
+                    # Python won't try to delete
+                    ROOT.SetOwnership(hist, False)
+                    histC = hist.Clone()
+                    histC.SetDirectory(outfile)
+                    histC.Write()
             print(f"Saved shower shape histograms to {outfile_name}")
 
         # make plots
@@ -752,7 +760,7 @@ if __name__ == "__main__":
             outputs_html[f"shower_shape_{cat}"] = makeFERSShowerShapePlots(
                 suffix=cat)
 
-            outputs_html[f"stats_cer_ovs_sci"] = makeFERSStatsPlots()
+            # outputs_html[f"stats_cer_ovs_sci"] = makeFERSStatsPlots()
 
     print("Generated HTML files:")
     for key, html in outputs_html.items():

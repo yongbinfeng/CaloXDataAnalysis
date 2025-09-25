@@ -69,7 +69,7 @@ def applyPSDSelection(rdf, runNumber, isHadron=False, applyCut=True):
     rdf = rdf.Define(f"{preshower_channel}_sum",
                      f"SumRange({preshower_channel}_blsub, 100, 400)")
 
-    valCut = getPSDSumCutValue()
+    valCut = getServiceDRSSumCutValue("preshower")
     rdf = rdf.Define("pass_PSDEle_selection",
                      f"({preshower_channel}_sum < {valCut})")
 
@@ -101,11 +101,11 @@ def applyCC1Selection(rdf, runNumber, isHadron=False, applyCut=True):
 
     print("Applying CC1 selection based on Cerenkov1 channel.")
     rdf = rdf.Define(f"{cc1_channel}_peak_value",
-                     f"MinRange({cc1_channel}_blsub, 600, 800)")
+                     f"MinRange({cc1_channel}_blsub, 1, 1000)")
     rdf = rdf.Define(f"{cc1_channel}_sum",
-                     f"SumRange({cc1_channel}_blsub, 600, 800)")
+                     f"SumRange({cc1_channel}_blsub, 1, 1000)")
 
-    valCut = getCC1SumCutValue()
+    valCut = getServiceDRSSumCutValue("Cerenkov1")
     rdf = rdf.Define("pass_CC1Ele_selection",
                      f"({cc1_channel}_sum < {valCut})")
 
