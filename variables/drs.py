@@ -25,8 +25,8 @@ def preProcessDRSBoards(rdf, debug=False, drsboards=None):
     rdf = rdf.Define("TS", "FillIndices(1024)")
 
     # get the list of 6mm amplified channels
+    drs_amplified_channels = []
     if drsboards is not None:
-        drs_amplified_channels = []
         for _, DRSBoard in drsboards.items():
             for channel in DRSBoard:
                 if channel.is6mm and channel.isAmplified:
