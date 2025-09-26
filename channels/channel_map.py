@@ -1,5 +1,6 @@
 from channels.CaloXChannel import FERSBoard, DRSBoard, DRSChannel, drs_map, FERSBoards
 import json
+from collections import OrderedDict
 
 f_scanruns = "data/scanruns.json"
 with open(f_scanruns, 'r') as f:
@@ -302,7 +303,7 @@ def buildDRSBoards(run=316):
             channel.isAmplified = True
             channel = DRSBoards["Board1"].GetChannelByGroupChannel(0, 1)
             channel.isAmplified = True
-    elif run >= 1173:
+    elif run >= 1173 and run < 1327:
         # test beam
         DRSBoards["Board0"] = base_DRSBoard_3mm.copy(boardNo=0)
         DRSBoards["Board1"] = base_DRSBoard_3mm.copy(boardNo=1)
@@ -317,6 +318,31 @@ def buildDRSBoards(run=316):
         DRSBoards["Board4"] = buildDRSBoardTestBeam(boardNo=4)
         DRSBoards["Board5"] = buildDRSBoardTestBeam(boardNo=5)
         DRSBoards["Board6"] = buildDRSBoardTestBeam(boardNo=6)
+    elif run >= 1342:
+        # september 2nd test beam channel maps
+        DRSBoards["Board0"] = base_DRSBoard_3mm.copy(boardNo=0)
+        DRSBoards["Board1"] = base_DRSBoard_3mm.copy(boardNo=1)
+        DRSBoards["Board2"] = base_DRSBoard_3mm.copy(boardNo=2)
+        DRSBoards["Board3"] = base_DRSBoard_3mm.copy(boardNo=3)
+
+        DRSBoards["Board0"].MoveTo(-1.5, 1.875)
+        DRSBoards["Board1"].MoveTo(-1.5, -0.125)
+        DRSBoards["Board2"].MoveTo(0.5, 1.875)
+        DRSBoards["Board3"].MoveTo(0.5, -0.125)
+        # channels for MCP
+        DRSBoards["Board0"].RemoveChannelByGroupChannel(3, 6)
+        DRSBoards["Board0"].RemoveChannelByGroupChannel(3, 7)
+        DRSBoards["Board1"].RemoveChannelByGroupChannel(3, 6)
+        DRSBoards["Board1"].RemoveChannelByGroupChannel(3, 7)
+        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 6)
+        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 7)
+        DRSBoards["Board3"].RemoveChannelByGroupChannel(3, 6)
+        DRSBoards["Board3"].RemoveChannelByGroupChannel(3, 7)
+
+        DRSBoards["Board4"] = buildDRSBoardTestBeamSep(boardNo=4)
+        DRSBoards["Board5"] = buildDRSBoardTestBeamSep(boardNo=5)
+        DRSBoards["Board6"] = buildDRSBoardTestBeamSep(boardNo=6)
+
     else:
         raise ValueError(f"Unsupported run number {run} for DRS boards.")
     updateQuartzChannels(DRSBoards)
@@ -438,6 +464,200 @@ def buildDRSBoardTestBeam(boardNo=4):
 
         drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
         return drsboard
+
+
+def buildDRSBoardTestBeamSep(boardNo=4):
+    if boardNo == 4:
+        # top left
+        base_iX = -1.5
+        base_iY = -2.5
+        maps_board4 = {
+            (base_iX + 3, base_iY): (0, 0),
+            (base_iX + 2, base_iY): (0, 1),
+            (base_iX + 1, base_iY): (0, 2),
+            (base_iX + 0, base_iY): (0, 3),
+            (base_iX + 3, base_iY - 1): (0, 4),
+            (base_iX + 2, base_iY - 1): (0, 5),
+            (base_iX + 1, base_iY - 1): (0, 6),
+            (base_iX + 0, base_iY - 1): (0, 7),
+            (base_iX + 3, base_iY - 2): (1, 0),
+            (base_iX + 2, base_iY - 2): (1, 1),
+            (base_iX + 1, base_iY - 2): (1, 2),
+            (base_iX + 0, base_iY - 2): (1, 3),
+            (base_iX + 3, base_iY - 3): (1, 4),
+            (base_iX + 2, base_iY - 3): (1, 5),
+            (base_iX + 1, base_iY - 3): (1, 6),
+            (base_iX + 0, base_iY - 3): (1, 7),
+            # two channels for Sci
+            (base_iX + 3, base_iY - 4): (2, 2),
+            (base_iX + 2, base_iY - 4): (2, 3),
+            (base_iX + 1, base_iY - 4): (2, 4),
+            (base_iX + 0, base_iY - 4): (2, 5),
+            # only two Cer channels for this row
+            (base_iX + 2, base_iY - 5): (2, 6),
+            (base_iX + 1, base_iY - 5): (2, 7),
+            (base_iX + 3, base_iY - 6): (3, 0),
+            (base_iX + 2, base_iY - 6): (3, 1),
+            (base_iX + 1, base_iY - 6): (3, 2),
+            (base_iX + 0, base_iY - 6): (3, 3),
+            # two remnant 6mm cer channels
+            (2.5, -3.5): (3, 6),
+            (-2.5, -3.5): (3, 7),
+        }
+
+        channels_DRS = []
+
+        for (iTowerX, iTowerY), (groupNo, chanNo) in maps_board4.items():
+            isCer = True
+            channel = DRSChannel(iTowerX, iTowerY, isCer, chanNo,
+                                 groupNo, boardNo, is6mm=True, isAmplified=False)
+            channels_DRS.append(channel)
+
+        # add four channels for Sci
+        channel = DRSChannel(0.5, -5.5, False, 0, 2,
+                             boardNo, is6mm=True, isAmplified=False)
+        channels_DRS.append(channel)
+        channel = DRSChannel(-0.5, -5.5, False, 1, 2, boardNo,
+                             is6mm=True, isAmplified=False)
+        channels_DRS.append(channel)
+        channel = DRSChannel(0.5, -8.5, False, 4, 3, boardNo,
+                             is6mm=True, isAmplified=False)
+        channels_DRS.append(channel)
+        channel = DRSChannel(-0.5, -8.5, False, 5, 3, boardNo,
+                             is6mm=True, isAmplified=False)
+        channels_DRS.append(channel)
+
+        drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
+
+    elif boardNo == 5:
+        # top middle
+        base_iX = -1.5
+        base_iY = 9.5
+        maps_board5 = {
+            (base_iX + 3, base_iY - 1): (0, 0),
+            (base_iX + 2, base_iY - 1): (0, 1),
+            (base_iX + 1, base_iY - 1): (0, 2),
+            (base_iX + 0, base_iY - 1): (0, 3),
+            # leave two channels for Sci
+            # only two Cer channels for this row
+            (base_iX + 2, base_iY - 2): (0, 6),
+            (base_iX + 1, base_iY - 2): (0, 7),
+            (base_iX + 3, base_iY - 3): (1, 0),
+            (base_iX + 2, base_iY - 3): (1, 1),
+            (base_iX + 1, base_iY - 3): (1, 2),
+            (base_iX + 0, base_iY - 3): (1, 3),
+            (base_iX + 3, base_iY - 4): (1, 4),
+            (base_iX + 2, base_iY - 4): (1, 5),
+            (base_iX + 1, base_iY - 4): (1, 6),
+            (base_iX + 0, base_iY - 4): (1, 7),
+            # leave two channels for Sci
+            (base_iX + 3, base_iY - 5): (2, 2),
+            (base_iX + 2, base_iY - 5): (2, 3),
+            (base_iX + 1, base_iY - 5): (2, 4),
+            (base_iX + 0, base_iY - 5): (2, 5),
+            (base_iX + 3, base_iY - 6): (2, 6),
+            (base_iX + 2, base_iY - 6): (2, 7),
+            # group 3 is for 3mm Cer and Sci
+        }
+
+        channels_DRS = []
+
+        for (iTowerX, iTowerY), (groupNo, chanNo) in maps_board5.items():
+            isCer = True
+            channel = DRSChannel(iTowerX, iTowerY, isCer, chanNo,
+                                 groupNo, boardNo, is6mm=True, isAmplified=False)
+            channels_DRS.append(channel)
+
+        # add four channels for Sci
+        channel = DRSChannel(0.5, 8.5, False, 4, 0, boardNo,
+                             is6mm=True, isAmplified=False)
+        channels_DRS.append(channel)
+        channel = DRSChannel(-0.5, 8.5, False, 5, 0, boardNo,
+                             is6mm=True, isAmplified=False)
+        channels_DRS.append(channel)
+        channel = DRSChannel(0.5, 5.5, False, 0, 2, boardNo,
+                             is6mm=True, isAmplified=False)
+        channels_DRS.append(channel)
+        channel = DRSChannel(-0.5, 5.5, False, 1, 2, boardNo,
+                             is6mm=True, isAmplified=False)
+        channels_DRS.append(channel)
+
+        # 8 channels for 3mm Cer and Sci
+        # NOTE
+        # not sure if isCer starts with True or False
+        # !!!!!
+        isCer = True
+        maps_board5_3mm = [
+            ((0.5, 0.125), (3, 0, isCer)),
+            ((0.5, 0.125), (3, 1, not isCer)),
+            ((0.5, -1.875), (3, 2, isCer)),
+            ((0.5, -1.875), (3, 3, not isCer)),
+            ((-1.5, 0.125), (3, 4, isCer)),
+            ((-1.5, 0.125), (3, 5, not isCer)),
+            ((-1.5, -1.875), (3, 6, isCer)),
+            ((-1.5, -1.875), (3, 7, not isCer)),
+        ]
+        for (iTowerX, iTowerY), (groupNo, chanNo, isCer) in maps_board5_3mm:
+            channel = DRSChannel(iTowerX, iTowerY, isCer, chanNo,
+                                 groupNo, boardNo, is6mm=False, isAmplified=True, isQuartz=isCer)
+            channels_DRS.append(channel)
+
+        drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
+
+    elif boardNo == 6:
+        maps_board5 = {
+            # iTowerX, iTowerY: (groupNo, chanNo)
+            # top
+            (-0.5, 3.5): (0, 0),
+            (-1.5, 3.5): (0, 1),
+            (1.5, 2.5): (0, 2),
+            (0.5, 2.5): (0, 3),
+            (-0.5, 2.5): (0, 4),
+            (-1.5, 2.5): (0, 5),
+            # left and right
+            (2.5, 3.5): (0, 6),
+            (-2.5, 3.5): (0, 7),
+            # right
+            (3.5, 2.5): (1, 0),
+            (2.5, 2.5): (1, 1),
+            (3.5, 1.5): (1, 2),
+            (2.5, 1.5): (1, 3),
+            (3.5, 0.5): (1, 4),
+            (2.5, 0.5): (1, 5),
+            (3.5, -0.5): (1, 6),
+            (2.5, -0.5): (1, 7),
+            (3.5, -1.5): (2, 0),
+            (2.5, -1.5): (2, 1),
+            (3.5, -2.5): (2, 2),
+            (2.5, -2.5): (2, 3),
+            # left
+            (-2.5, 2.5): (2, 4),
+            (-3.5, 2.5): (2, 5),
+            (-2.5, 1.5): (2, 6),
+            (-3.5, 1.5): (2, 7),
+            (-2.5, 0.5): (3, 0),
+            (-3.5, 0.5): (3, 1),
+            (-2.5, -0.5): (3, 2),
+            (-3.5, -0.5): (3, 3),
+            (-2.5, -1.5): (3, 4),
+            (-3.5, -1.5): (3, 5),
+            (-2.5, -2.5): (3, 6),
+            (-3.5, -2.5): (3, 7),
+        }
+        channels_DRS = []
+
+        for (iTowerX, iTowerY), (groupNo, chanNo) in maps_board5.items():
+            isCer = True
+            channel = DRSChannel(iTowerX, iTowerY, isCer, chanNo,
+                                 groupNo, boardNo, is6mm=True, isAmplified=False)
+            channels_DRS.append(channel)
+
+        drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
+
+    else:
+        raise ValueError(f"Unsupported board number {boardNo} for test beam.")
+
+    return drsboard
 
 
 def buildTimeReferenceChannels(run=316):
