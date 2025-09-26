@@ -878,6 +878,30 @@ def getCerenkovCounters(run=1184):
         ]
 
 
+def getMCPChannels(run=1184):
+    """
+    Returns a list of MCP channels.
+    """
+    # todo: add MCP channels for August test beam
+    if run < 1342:
+        return []
+    else:
+        return {
+            "DS": [
+                "DRS_Board0_Group3_Channel6",
+                "DRS_Board1_Group3_Channel6",
+                "DRS_Board2_Group3_Channel6",
+                "DRS_Board3_Group3_Channel6",
+            ],
+            "US": [
+                "DRS_Board0_Group3_Channel7",
+                "DRS_Board1_Group3_Channel7",
+                "DRS_Board2_Group3_Channel7",
+                "DRS_Board3_Group3_Channel7",
+            ]
+        }
+
+
 def getServiceDRSChannels(run=1184):
     """
     Returns a list of service DRS channels.
