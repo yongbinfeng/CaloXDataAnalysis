@@ -633,7 +633,7 @@ def makeDRSVSTSPlots():
                 plots.append(output_name + ".png")
 
                 ymin_tmp, ymax_tmp = getDRSPlotRanges(
-                    subtractMedian=True, isAmplified=chan.isAmplified)
+                    subtractMedian=True, isAmplified=chan.isAmplified, is6mm=chan.is6mm)
 
                 extraToDraw = ROOT.TPaveText(0.20, 0.75, 0.60, 0.90, "NDC")
                 extraToDraw.SetTextAlign(11)
@@ -960,7 +960,7 @@ def makeDRSPeakVSFERSPlots():
                         f"Warning: Channel not found for Board {boardNo}, Tower ({iTowerX}, {iTowerY}), Var {var}")
                     continue
                 _, ymax = getDRSPlotRanges(
-                    subtractMedian=True, isAmplified=chan.isAmplified)
+                    subtractMedian=True, isAmplified=chan.isAmplified, is6mm=chan.is6mm)
                 histname = f"hist_DRSPeak_VS_FERS_{var}_{sTowerX}_{sTowerY}"
                 output_name = histname.replace("hist_", "")
                 plots.append(output_name + ".png")

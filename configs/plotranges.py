@@ -100,7 +100,7 @@ def getFERSSaturationValue():
     return 7500
 
 
-def getDRSPlotRanges(subtractMedian=False, isAmplified=False):
+def getDRSPlotRanges(subtractMedian=False, isAmplified=False, is6mm=False):
     xmin = -50
     xmax = 50
     if subtractMedian:
@@ -109,6 +109,9 @@ def getDRSPlotRanges(subtractMedian=False, isAmplified=False):
     if isAmplified:
         xmin = -1000
         xmax = 2500
+    if is6mm and isAmplified:
+        xmin = -200
+        xmax = 500
     return xmin, xmax
 
 

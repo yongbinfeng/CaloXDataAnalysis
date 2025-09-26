@@ -36,7 +36,7 @@ print(f"Total number of events to process: {nEvents} in run {runNumber}")
 rdf = vectorizeFERS(rdf, fersboards)
 rdf = getFERSEnergyMax(rdf, fersboards, gain="HG")
 rdf = getFERSEnergyMax(rdf, fersboards, gain="LG")
-rdf = preProcessDRSBoards(rdf, debug=debugDRS)
+rdf = preProcessDRSBoards(rdf, debug=debugDRS, drsboards=DRSBoards)
 rdf = getDRSStats(rdf, runNumber, DRSBoards, 0, 1000, 9)
 
 rdf = getFERSEnergySum(rdf, fersboards, gain="HG")
@@ -348,7 +348,7 @@ def makeDRS2DHists(debug=False):
                     continue
                 channelName = chan.GetChannelName(blsub=True)
                 ymin, ymax = getDRSPlotRanges(
-                    subtractMedian=True, isAmplified=chan.isAmplified)
+                    subtractMedian=True, isAmplified=chan.isAmplified, is6mm=chan.is6mm)
                 hist_subtractMedian = rdf.Histo2D((
                     f"hist_{channelName}_VS_TS",
                     "DRS values (subtract baseline);TS;DRS values",
@@ -484,7 +484,7 @@ def checkDRSPeakVSFERS():
                     continue
 
                 _, ymax = getDRSPlotRanges(
-                    subtractMedian=True, isAmplified=chan_DRS.isAmplified)
+                    subtractMedian=True, isAmplified=chan_DRS.isAmplified, is6mm=chan_DRS.is6mm)
                 h2_DRSPeak_VS_FERS = rdf.Histo2D((
                     f"hist_DRSPeak_VS_FERS_{var}_{sTowerX}_{sTowerY}",
                     f"DRS Peak VS FERS energy correlation for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}; FERS Energy HG; DRS Peak",

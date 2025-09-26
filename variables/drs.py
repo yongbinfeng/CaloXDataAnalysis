@@ -2,7 +2,8 @@
 from utils.utils import getBranchStats
 from channels.channel_map import findFanoutTimeReferenceDelay, findDRSTriggerMap
 
-def preProcessDRSBoards(rdf, debug=False):
+
+def preProcessDRSBoards(rdf, debug=False, drsboards=None):
     import re
     # Get the list of all branch names
     branches = [str(b) for b in rdf.GetColumnNames()]
@@ -23,6 +24,16 @@ def preProcessDRSBoards(rdf, debug=False):
     # Create an array of indices for DRS outputs
     rdf = rdf.Define("TS", "FillIndices(1024)")
 
+    # get the list of 6mm amplified channels
+    if drsboards is not None:
+        drs_amplified_channels = []
+        for _, DRSBoard in drsboards.items():
+            for channel in DRSBoard:
+                if channel.is6mm and channel.isAmplified:
+                    drs_amplified_channels.append(
+                        channel.GetChannelName(blsub=False))
+        print("6mm amplified channels:", drs_amplified_channels)
+
     # find the baseline of each DRS channel (median here)
     # and subtract it from the DRS outputs
     for varname in drs_branches:
@@ -30,11 +41,17 @@ def preProcessDRSBoards(rdf, debug=False):
             f"{varname}_bl",
             f"compute_median({varname})"
         )
-        rdf = rdf.Define(
-            f"{varname}_blsub",
-            f"{varname} - {varname}_bl"
-        )
-
+        if varname in drs_amplified_channels:
+            # for 6mm amplified channels, flip the signal
+            rdf = rdf.Define(
+                f"{varname}_blsub",
+                f"-({varname} - {varname}_bl)"
+            )
+        else:
+            rdf = rdf.Define(
+                f"{varname}_blsub",
+                f"{varname} - {varname}_bl"
+            )
     if debug:
         # define relative TS with respect to the StartIndexCell
         for varrname in drs_branches:
@@ -90,13 +107,14 @@ def getDRSPeakTS(rdf, run, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
             triggerName = findDRSTriggerMap(channelName, run=run)
             triggerPeakTSName = triggerName + "_peakTS"
             triggerDelay = findFanoutTimeReferenceDelay(triggerName, run=run)
-            triggerDelayTS = int((triggerDelay / 0.2) + 800.0) # convert to time samples
+            # convert to time samples
+            triggerDelayTS = int((triggerDelay / 0.2) + 800.0)
 
             rdf = rdf.Define(
                 channelPeakTSName,
                 f"ArgMaxRange({channelName_sub}, {TS_start}, {TS_end}, {threshold})"
             )
-            if(not rdf.HasColumn(triggerPeakTSName)):
+            if (not rdf.HasColumn(triggerPeakTSName)):
                 rdf = rdf.Define(
                     triggerPeakTSName,
                     f"ArgMinRange({triggerName}_blsub, 500, 1024)"
