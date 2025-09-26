@@ -74,11 +74,13 @@ float MinRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j)
     return minVal;
 }
 
-size_t ArgMinRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j)
+size_t ArgMinRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j, float threshold = 0.0f)
 {
     if (i >= v.size() || j > v.size() || i >= j)
         return 0; // return 0 if the range is invalid
     auto minIt = std::min_element(v.begin() + i, v.begin() + j);
+    if (*minIt > threshold)
+        return 0; // return 0 if the minimum value is above the threshold
     return std::distance(v.begin(), minIt);
 }
 
@@ -88,6 +90,6 @@ size_t ArgMaxRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j, float
         return -1; // return -1 if the range is invalid
     auto maxIt = std::max_element(v.begin() + i, v.begin() + j);
     if (*maxIt < threshold)
-        return -1; // return -1 if the maximum value is below the threshold
+        return 0; // return 0 if the maximum value is below the threshold
     return std::distance(v.begin(), maxIt);
 }
