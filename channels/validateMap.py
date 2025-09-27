@@ -46,7 +46,7 @@ def DrawFERSBoards(run=316):
                ymax, "iY", output_name + "_Cer_plastic", dology=False, drawoptions=["col,text", "col,text"],
                outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Plastic", runNumber=run, ncolors=16, zmin=0, zmax=1600)
 
-    output_html = f"results/html/Run{run}/ChannelMaps/FERSBoards/index.html"
+    output_html = f"results/html/Run{run}/ChannelMaps/FERSBoards.html"
     generate_html(
         [output_name + "_Cer.png", output_name + "_Sci.png"] +
         [output_name + "_Cer_quartz.png", output_name + "_Cer_plastic.png"],
@@ -85,7 +85,7 @@ def DrawDRSBoards(run=316):
                ymax, "iY", output_name + "_Cer_plastic", dology=False, drawoptions=["text,col", "text,col"],
                outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Plastic", runNumber=run, zmax=1600, zmin=0, ncolors=16)
 
-    output_html = f"results/html/Run{run}/ChannelMaps/DRSBoards/index.html"
+    output_html = f"results/html/Run{run}/ChannelMaps/DRSBoards.html"
     generate_html(
         [output_name + "_Cer.png", output_name + "_Sci.png"] +
         [output_name + "_Cer_quartz.png", output_name + "_Cer_plastic.png"],

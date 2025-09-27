@@ -103,7 +103,7 @@ def makeConditionsPlots():
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
     plots.insert(3, output_name + ".png")
 
-    output_html = f"{htmldir}/Conditions_VS_Event/index.html"
+    output_html = f"{htmldir}/Conditions/conditions_vs_event.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -197,7 +197,7 @@ def makeFERSSumPlots():
                outdir=outdir_plots, runNumber=runNumber, legendNCols=2, legendPos=[0.6, 0.85, 0.9, 0.9])
     plots.insert(1, "FERS_Total_LG_EnergySum_VS_Event.png")
 
-    output_html = f"{htmldir}/FERS_EnergySum_VS_Event/index.html"
+    output_html = f"{htmldir}/Conditions/FERS_energysum_vs_event.html"
     generate_html(plots, outdir_plots,
                   output_html=output_html, plots_per_row=6)
 
@@ -248,14 +248,14 @@ def makeFERS1DPlots():
 
             plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/FERS_1D/index.html"
+    output_html = f"{htmldir}/FERS/ChannelADC.html"
     generate_html(plots, outdir_plots,
                   output_html=output_html)
     return output_html
 
 
 def makeFERSStatsPlots(includePedestals=False):
-    plots = []
+    output_htmls = []
     outdir_plots = f"{plotdir}/FERS_Stats"
     # load the json file
     import json
@@ -317,6 +317,7 @@ def makeFERSStatsPlots(includePedestals=False):
     [h2_Cer_LG_pedestal, h2_Cer_3mm_LG_pedestal], [h2_Sci_LG_pedestal, h2_Sci_3mm_LG_pedestal] = visualizeFERSBoards(
         fersboards, valuemaps_LG_pedestal, suffix=f"Run{runNumber}_LG_pedestal", gain="LG")
 
+    plots = []
     output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_mean"
     DrawHistos([h2_Cer_HG_mean, h2_Cer_3mm_HG_mean], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
@@ -327,42 +328,28 @@ def makeFERSStatsPlots(includePedestals=False):
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
     plots.append(output_name + "_Sci.png")
 
-    output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_max"
-    DrawHistos([h2_Cer_HG_max, h2_Cer_3mm_HG_max], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=8000)
-    plots.append(output_name + "_Cer.png")
-    DrawHistos([h2_Sci_HG_max, h2_Sci_3mm_HG_max], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
-    plots.append(output_name + "_Sci.png")
-
-    output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_satfreq"
-    DrawHistos([h2_Cer_HG_satfreq, h2_Cer_3mm_HG_satfreq], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
-    plots.append(output_name + "_Cer.png")
-    DrawHistos([h2_Sci_HG_satfreq, h2_Sci_3mm_HG_satfreq], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
-    plots.append(output_name + "_Sci.png")
-
-    output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_pedestal"
-    DrawHistos([h2_Cer_HG_pedestal, h2_Cer_3mm_HG_pedestal], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=100, zmax=300, nTextDigits=0)
-    plots.append(output_name + "_Cer.png")
-    DrawHistos([h2_Sci_HG_pedestal, h2_Sci_3mm_HG_pedestal], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=100, zmax=300, nTextDigits=0)
-    plots.append(output_name + "_Sci.png")
-
     output_name = f"FERS_Boards_Run{runNumber}_Stats_LG_mean"
     DrawHistos([h2_Cer_LG_mean, h2_Cer_3mm_LG_mean], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=8000)
     plots.append(output_name + "_Cer.png")
     DrawHistos([h2_Sci_LG_mean, h2_Sci_3mm_LG_mean], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
+    plots.append(output_name + "_Sci.png")
+
+    output_html = f"{htmldir}/FERS/Channel_Mean.html"
+    generate_html(plots, outdir_plots, plots_per_row=2,
+                  output_html=output_html)
+    output_htmls.append(output_html)
+
+    plots = []
+    output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_max"
+    DrawHistos([h2_Cer_HG_max, h2_Cer_3mm_HG_max], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=8000)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_HG_max, h2_Sci_3mm_HG_max], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
     plots.append(output_name + "_Sci.png")
@@ -377,6 +364,22 @@ def makeFERSStatsPlots(includePedestals=False):
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
     plots.append(output_name + "_Sci.png")
 
+    output_html = f"{htmldir}/FERS/Channel_Max.html"
+    generate_html(plots, outdir_plots, plots_per_row=2,
+                  output_html=output_html)
+    output_htmls.append(output_html)
+
+    plots = []
+    output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_satfreq"
+    DrawHistos([h2_Cer_HG_satfreq, h2_Cer_3mm_HG_satfreq], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_HG_satfreq, h2_Sci_3mm_HG_satfreq], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
+    plots.append(output_name + "_Sci.png")
+
     output_name = f"FERS_Boards_Run{runNumber}_Stats_LG_satfreq"
     DrawHistos([h2_Cer_LG_satfreq, h2_Cer_3mm_LG_satfreq], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
@@ -385,6 +388,22 @@ def makeFERSStatsPlots(includePedestals=False):
     DrawHistos([h2_Sci_LG_satfreq, h2_Sci_3mm_LG_satfreq], "", xmin, xmax, "iX", ymin,
                ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
+    plots.append(output_name + "_Sci.png")
+
+    output_html = f"{htmldir}/FERS/Channel_SatFreq.html"
+    generate_html(plots, outdir_plots, plots_per_row=2,
+                  output_html=output_html)
+    output_htmls.append(output_html)
+
+    plots = []
+    output_name = f"FERS_Boards_Run{runNumber}_Stats_HG_pedestal"
+    DrawHistos([h2_Cer_HG_pedestal, h2_Cer_3mm_HG_pedestal], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=100, zmax=300, nTextDigits=0)
+    plots.append(output_name + "_Cer.png")
+    DrawHistos([h2_Sci_HG_pedestal, h2_Sci_3mm_HG_pedestal], "", xmin, xmax, "iX", ymin,
+               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=100, zmax=300, nTextDigits=0)
     plots.append(output_name + "_Sci.png")
 
     output_name = f"FERS_Boards_Run{runNumber}_Stats_LG_pedestal"
@@ -397,10 +416,11 @@ def makeFERSStatsPlots(includePedestals=False):
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=100, zmax=300, nTextDigits=0)
     plots.append(output_name + "_Sci.png")
 
-    output_html = f"{htmldir}/FERS_Stats/index.html"
+    output_html = f"{htmldir}/FERS/Channel_Pedestal.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
-    return output_html
+    output_htmls.append(output_html)
+    return output_htmls
 
 
 def makeFERSMaxValuePlots():
@@ -507,7 +527,7 @@ def makeFERSMaxValuePlots():
                outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.75, 0.50, 0.9], extraToDraw=extraToDraw)
     plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/FERS_MaxValues/index.html"
+    output_html = f"{htmldir}/FERS/channelmax.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
@@ -549,7 +569,7 @@ def makeFERS2DPlots():
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True, extraToDraw=extraToDraw,
                            outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
                 plots.append(output_name + ".png")
-    output_html = f"{htmldir}/FERS_2D/index.html"
+    output_html = f"{htmldir}/FERS/LG_vs_HG.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -652,7 +672,7 @@ def makeDRSVSTSPlots():
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                            extraToDraw=extraToDraw,
                            outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
-    output_html = f"{htmldir}/DRS_VS_TS/index.html"
+    output_html = f"{htmldir}/DRS/DRS_vs_TS.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
@@ -728,7 +748,7 @@ def makeDRSPeakTSPlots():
                outdir=outdir_plots, runNumber=runNumber)
     plots.insert(0, "DRS_PeakTS_Combined.png")
 
-    output_html = f"{htmldir}/DRSPeakTS/index.html"
+    output_html = f"{htmldir}/DRS/DRS_PeakTS.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -780,7 +800,7 @@ def makeDRSPeakTSCerVSSciPlots():
                outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
     plots.insert(0, output_name + ".png")
 
-    output_html = f"{htmldir}/DRSPeakTSCerVSSci/index.html"
+    output_html = f"{htmldir}/DRS/DRS_PeakTS_Cer_VS_Sci.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -858,7 +878,7 @@ def compareServiceDRSPlots():
                    outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
         plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/ServiceDRS/index.html"
+    output_html = f"{htmldir}/ServiceDRS/detectors.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
 
@@ -897,7 +917,7 @@ def compareMCPPlots():
                        outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
             plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/MCP/index.html"
+    output_html = f"{htmldir}/ServiceDRS/MCP.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -973,7 +993,7 @@ def makeDRSSumVSFERSPlots():
                        outdir=outdir_plots, addOverflow=True, runNumber=runNumber, extraText=f"{var}")
             plots.insert(0, output_name + ".png")
 
-    output_html = f"{htmldir}/DRSSum_VS_FERS/index.html"
+    output_html = f"{htmldir}/DRS_VS_FERS/DRSSum_vs_FERS.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -1015,7 +1035,7 @@ def makeDRSPeakVSFERSPlots():
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=None, dologz=True,
                            outdir=outdir_plots, addOverflow=True, runNumber=runNumber, extraText=f"{var}")
 
-    output_html = f"{htmldir}/DRSPeak_VS_FERS/index.html"
+    output_html = f"{htmldir}/DRS_VS_FERS/DRSPeak_vs_FERS.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html

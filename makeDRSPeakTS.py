@@ -257,7 +257,7 @@ def makeDRSPeakTSPlots():
 
     plots.insert(1, "NEWLINE")
 
-    output_html = f"{htmldir}/DRSPeakTS_rel_us/index.html"
+    output_html = f"{htmldir}/DRS/DRSPeakTS_relative_to_MCP.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -348,7 +348,7 @@ def makeDRSPeakTSCerVSSciPlots():
 
     print("quartz:", len(hists_Quartz), "plastic:", len(hists_Plastic))
 
-    output_html = f"{htmldir}/DRSPeakTSCerVSSci_rel_us/index.html"
+    output_html = f"{htmldir}/DRS/DRSPeakTS_Cer_VS_Sci_relative_to_MCP.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html

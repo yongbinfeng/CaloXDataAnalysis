@@ -224,7 +224,7 @@ for idx, hist2d in enumerate(hists_2d_mcps):
     plots.append(f"{outputname}.png")
 
 
-output_html = f"results/html/Run{runNumber}/MCP/index.html"
+output_html = f"results/html/Run{runNumber}/ServiceDRS/MCPPeakTS.html"
 outputs_html["abs"] = generate_html(
     plots, output_dir, plots_per_row=4, output_html=output_html)
 
@@ -313,7 +313,7 @@ for det in map_mcp_channels.keys():
                addOverflow=False, addUnderflow=False, legendNCols=4, legendPos=legendPos, extraToDraw=extraToDraw)
     plots.append(f"{outputname}.png")
 
-output_html = f"results/html/Run{runNumber}/MCP/index_relative.html"
+output_html = f"results/html/Run{runNumber}/ServiceDRS/MCPPeakTS_relative.html"
 outputs_html["rel"] = generate_html(
     plots, output_dir, plots_per_row=4, output_html=output_html)
 

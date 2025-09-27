@@ -3,6 +3,7 @@ __pycache__
 html
 plots
 root
+results
 backup*
 *zip
 *.d
@@ -10,3 +11,4 @@ backup*
 *.pcm
 .DS_Store
 *png
+*csv

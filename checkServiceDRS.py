@@ -395,7 +395,7 @@ def plotPulse(channels, names):
                        extraToDraw=extraToDraw)
             plots.append(f"{name1}_vs_{name2}_sum2D.png")
 
-    output_html = f"results/html/Run{runNumber}/drs_service/viewer.html"
+    output_html = f"results/html/Run{runNumber}/ServiceDRS/PID.html"
     generate_html(plots, f"results/plots/Run{runNumber}/drs_service/", plots_per_row=3,
                   output_html=output_html)
 
@@ -497,6 +497,7 @@ def plotHodoPeak():
         plots.append(outputname + ".png")
 
     # LR vs UD
+    plots_summary = []
     for sel in ["pass_NoSel", "pass_upstream_veto"]:
         for dwc in ["LR1_vs_UD1", "LR2_vs_UD2"]:
             cat = f"{dwc}_{sel}"
@@ -510,9 +511,11 @@ def plotHodoPeak():
                     drawoptions="COLz", zmin=1, zmax=None, dologz=True,
                     dology=False, runNumber=runNumber, addOverflow=True, doth2=True,
                 )
-            plots.append(outputname + ".png")
+            plots_summary.append(outputname + ".png")
+    plots_summary.append("NEWLINE")
 
-    output_html = f"results/html/Run{runNumber}/DWC/viewer.html"
+    plots = plots_summary + plots
+    output_html = f"results/html/Run{runNumber}/ServiceDRS/DWC.html"
     generate_html(plots, outdir, plots_per_row=7,
                   output_html=output_html)
 

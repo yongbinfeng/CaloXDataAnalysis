@@ -29,6 +29,8 @@ firstEvent = args.first_event
 lastEvent = args.last_event
 btype, benergy = getRunInfo(runNumber)
 
+doPerBoardPlots = False
+
 # HE = (runNumber >= 1200)
 HE = (benergy >= 50)  # GeV
 # multi-threading support
@@ -312,31 +314,32 @@ def makeFERSEnergySumPlots(suffix=""):
     outdir_plots = f"{plotdir}/FERS_EnergySum_{suffix}"
 
     # per-board energy sum plots
-    for gain, calib in GainCalibs:
-        config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
-        for cat in ["cer", "sci"]:
-            hists = []
-            legends = []
-            for fersboard in fersboards.values():
-                boardNo = fersboard.boardNo
-                varname = fersboard.GetEnergySumName(
-                    gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib)
-                hist_name = f"hist_{varname}_{suffix}"
-                hist = infile.Get(hist_name)
-                if not hist:
-                    print(
-                        f"Warning: Histogram {hist_name} for board {boardNo} not found in {infile_name}")
-                    continue
-                legends.append(str(boardNo))
-                hists.append(hist)
+    if doPerBoardPlots:
+        for gain, calib in GainCalibs:
+            config = getRangesForFERSEnergySums(
+                pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
+            for cat in ["cer", "sci"]:
+                hists = []
+                legends = []
+                for fersboard in fersboards.values():
+                    boardNo = fersboard.boardNo
+                    varname = fersboard.GetEnergySumName(
+                        gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib)
+                    hist_name = f"hist_{varname}_{suffix}"
+                    hist = infile.Get(hist_name)
+                    if not hist:
+                        print(
+                            f"Warning: Histogram {hist_name} for board {boardNo} not found in {infile_name}")
+                        continue
+                    legends.append(str(boardNo))
+                    hists.append(hist)
 
-            output_name = f"FERS_Boards_{gain}_{cat}{suffix}"
-            DrawHistos(hists, legends, config["xmin_board"][f"{gain}_{cat}"], config["xmax_board"][f"{gain}_{cat}"], f"{cat.capitalize()} {gain} {config[f'title_{gain}']}", 1, None, "Events",
-                       output_name,
-                       dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
-                       outdir=outdir_plots, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
-            plots.append(output_name + ".png")
+                output_name = f"FERS_Boards_{gain}_{cat}{suffix}"
+                DrawHistos(hists, legends, config["xmin_board"][f"{gain}_{cat}"], config["xmax_board"][f"{gain}_{cat}"], f"{cat.capitalize()} {gain} {config[f'title_{gain}']}", 1, None, "Events",
+                           output_name,
+                           dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
+                           outdir=outdir_plots, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
+                plots.append(output_name + ".png")
 
     # per-event energy sum plot ranges
     for gain, calib in GainCalibs:
@@ -358,7 +361,7 @@ def makeFERSEnergySumPlots(suffix=""):
                        outdir=outdir_plots, runNumber=runNumber)
             plots.insert(0, output_name + ".png")
 
-    output_html = f"{htmldir}/FERS_EnergySum_{suffix}/index.html"
+    output_html = f"{htmldir}/FERS/EnergySum_{suffix}.html"
     generate_html(plots, outdir_plots, plots_per_row=6,
                   output_html=output_html)
     return output_html
@@ -370,28 +373,29 @@ def makeFERSCerVsSciPlots(suffix=""):
     infile = ROOT.TFile(infile_name, "READ")
     outdir_plots = f"{plotdir}/FERS_Cer_vs_Sci_{suffix}"
 
-    for gain, calib in GainCalibs:
-        config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
-        for fersboard in fersboards.values():
-            boardNo = fersboard.boardNo
-            var_cer = fersboard.GetEnergySumName(
-                gain=gain, isCer=True, pdsub=True, calib=calib)
-            var_sci = fersboard.GetEnergySumName(
-                gain=gain, isCer=False, pdsub=True, calib=calib)
-            hist_Cer_vs_Sci_name = f"hist_{var_cer}_VS_{var_sci}_{suffix}"
-            hist_Cer_vs_Sci = infile.Get(hist_Cer_vs_Sci_name)
-            if not hist_Cer_vs_Sci:
-                print(
-                    f"Warning: Histogram {hist_Cer_vs_Sci_name} for board {boardNo} not found in {infile_name}")
-                continue
+    if doPerBoardPlots:
+        for gain, calib in GainCalibs:
+            config = getRangesForFERSEnergySums(
+                pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
+            for fersboard in fersboards.values():
+                boardNo = fersboard.boardNo
+                var_cer = fersboard.GetEnergySumName(
+                    gain=gain, isCer=True, pdsub=True, calib=calib)
+                var_sci = fersboard.GetEnergySumName(
+                    gain=gain, isCer=False, pdsub=True, calib=calib)
+                hist_Cer_vs_Sci_name = f"hist_{var_cer}_VS_{var_sci}_{suffix}"
+                hist_Cer_vs_Sci = infile.Get(hist_Cer_vs_Sci_name)
+                if not hist_Cer_vs_Sci:
+                    print(
+                        f"Warning: Histogram {hist_Cer_vs_Sci_name} for board {boardNo} not found in {infile_name}")
+                    continue
 
-            output_name = f"FERS_Board{boardNo}_Cer_VS_Sci_{gain}{suffix}"
-            DrawHistos([hist_Cer_vs_Sci], "", config["xmin_board"][f"{gain}_sci"], config["xmax_board"][f"{gain}_sci"], f"Sci {gain} {config[f'title_{gain}']}", config["xmin_board"][f"{gain}_cer"], config["xmax_board"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
-                       output_name,
-                       dology=False, drawoptions=["colz"],
-                       outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
-            plots.append(output_name + ".png")
+                output_name = f"FERS_Board{boardNo}_Cer_VS_Sci_{gain}{suffix}"
+                DrawHistos([hist_Cer_vs_Sci], "", config["xmin_board"][f"{gain}_sci"], config["xmax_board"][f"{gain}_sci"], f"Sci {gain} {config[f'title_{gain}']}", config["xmin_board"][f"{gain}_cer"], config["xmax_board"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
+                           output_name,
+                           dology=False, drawoptions=["colz"],
+                           outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+                plots.append(output_name + ".png")
 
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
@@ -413,7 +417,7 @@ def makeFERSCerVsSciPlots(suffix=""):
                    outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
         plots.insert(0, output_name + ".png")
 
-    output_html = f"{htmldir}/FERS_Cer_VS_Sci_{suffix}/index.html"
+    output_html = f"{htmldir}/FERS/EnergySum_Cer_VS_Sci_{suffix}.html"
     generate_html(plots, outdir_plots, plots_per_row=3,
                   output_html=output_html)
     return output_html
@@ -486,7 +490,7 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
                 print(
                     f"Warning: Histogram {hist2D_name} not found in {infile_name}")
 
-    output_html = f"{htmldir}/FERS_EnergyWeightedCenter_{suffix}/index.html"
+    output_html = f"{htmldir}/FERS/EnergyWeightedCenter_{suffix}.html"
     generate_html(plots, outdir_plots, plots_per_row=3,
                   output_html=output_html)
     return output_html
@@ -571,7 +575,7 @@ def makeFERSShowerShapePlots(suffix=""):
                        outdir=outdir_plots, runNumber=runNumber)
             plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/FERS_ShowerShape_{suffix}/index.html"
+    output_html = f"{htmldir}/FERS/ShowerShape_{suffix}.html"
     generate_html(plots, outdir_plots, plots_per_row=6,
                   output_html=output_html)
     return output_html
@@ -618,7 +622,7 @@ def makeFERSStatsPlots():
                    outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer / Sci", runNumber=runNumber, zmin=0, zmax=1.5)
         plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/FERS_Stats_Cer_over_Sci/index.html"
+    output_html = f"{htmldir}/FERS/Stats_Cer_over_Sci.html"
     generate_html(plots, outdir_plots, plots_per_row=3,
                   output_html=output_html)
     return output_html
