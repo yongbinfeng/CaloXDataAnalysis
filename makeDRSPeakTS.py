@@ -44,8 +44,8 @@ rootdir = f"results/root/Run{runNumber}/"
 plotdir = f"results/plots/Run{runNumber}/"
 htmldir = f"results/html/Run{runNumber}/"
 
-TSmin = 0
-TSmax = 90
+TSmin = -90
+TSmax = -10
 
 varsuffix = "DiffRelPeakTS_US"
 
@@ -77,8 +77,13 @@ rdf = calibrateDRSPeakTS(rdf, runNumber, DRSBoards,
 
 rdf_prefilter2 = rdf
 map_mcp_channels = getMCPChannels(runNumber)
-rdf = rdf.Filter(f"{map_mcp_channels['US'][0]}_RelPeakTS > 240 && {map_mcp_channels['US'][0]}_RelPeakTS < 280",
-                 "Pre-filter on MCP US channel 0 Peak TS")
+
+condition = f"{map_mcp_channels['US'][0]}_RelPeakTS > -350 && {map_mcp_channels['US'][0]}_RelPeakTS < -100"
+condition += f" && {map_mcp_channels['US'][0]}_PeakTS > 500 && {map_mcp_channels['US'][0]}_PeakTS < 600"
+rdf = rdf_prefilter2.Filter(condition,
+                            "Pre-filter on MCP US channel 0 Peak TS")
+# rdf = rdf.Filter(f"{map_mcp_channels['US'][0]}_RelPeakTS > 240 && {map_mcp_channels['US'][0]}_RelPeakTS < 280",
+#                 "Pre-filter on MCP US channel 0 Peak TS")
 
 
 def checkDRSPeakTS():
@@ -203,9 +208,9 @@ def makeDRSPeakTSPlots():
             extraToDraw.SetTextSize(0.04)
             extraToDraw.AddText(f"Tower: ({iTowerX}, {iTowerY})")
             extraToDraw.AddText(
-                f"Cer: {channelNos['Cer']}")
+                f"Cer: {channelNos['Cer']}, {hists['Cer'].GetBinCenter(hists['Cer'].GetMaximumBin())} TS")
             extraToDraw.AddText(
-                f"Sci: {channelNos['Sci']}")
+                f"Sci: {channelNos['Sci']}, {hists['Sci'].GetBinCenter(hists['Sci'].GetMaximumBin())} TS")
             if isQuartz:
                 extraToDraw.AddText("Cer: Quartz")
             else:
@@ -232,10 +237,22 @@ def makeDRSPeakTSPlots():
     hist_Cer_Plastic_Combined = LHistos2Hist(
         hists_Cer_Plastic, "hist_DRSPeakTS_Cer_Plastic_Combined")
     output_name = "DRS_PeakTS_Combined"
+    extraToDraw = ROOT.TPaveText(0.50, 0.65, 0.90, 0.90, "NDC")
+    extraToDraw.SetTextAlign(11)
+    extraToDraw.SetFillColorAlpha(0, 0)
+    extraToDraw.SetBorderSize(0)
+    extraToDraw.SetTextFont(42)
+    extraToDraw.SetTextSize(0.04)
+    extraToDraw.AddText(
+        f"Quartz: {hist_Cer_Quartz_Combined.GetBinCenter(hist_Cer_Quartz_Combined.GetMaximumBin())} TS")
+    extraToDraw.AddText(
+        f"Plastic: {hist_Cer_Plastic_Combined.GetBinCenter(hist_Cer_Plastic_Combined.GetMaximumBin())} TS")
+    extraToDraw.AddText(
+        f"Sci: {hist_Sci_Combined.GetBinCenter(hist_Sci_Combined.GetMaximumBin())} TS")
     DrawHistos([hist_Cer_Quartz_Combined, hist_Cer_Plastic_Combined, hist_Sci_Combined], ["Cer Quartz", "Cer Plastic", "Sci"], TSmin, TSmax, "Peak TS", 1, None, "Counts",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2, 6, 4], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.25, 0.75, 0.40, 0.90])
+               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.25, 0.75, 0.40, 0.90], extraToDraw=extraToDraw)
     plots.insert(0, output_name + ".png")
 
     plots.insert(1, "NEWLINE")

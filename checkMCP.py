@@ -25,13 +25,15 @@ lastEvent = parser.last_event
 
 TSmin = 500
 TSmax = 600
-RelTSmin = 220
-RelTSmax = 300
+RelTSmin = -320
+RelTSmax = -230
 DiffRelTSmin = -5
 DiffRelTSmax = 5
+DiffRelTSmin_US = -8
+DiffRelTSmax_US = 10
 
 # jitter offset
-value_diffcorrs = [0, 0, 0, 16]
+value_diffcorrs = [0, 0, 0, -16]
 
 outputs_html = {}
 
@@ -61,7 +63,7 @@ for det, channels in map_mcp_channels.items():
         # define the relative peak TS with respect to the reference channel
         channel_TS = re.sub(r"_Channel[0-7]", "_Channel8", channel)
         rdf = rdf.Define(
-            f"{channel}_RelPeakTS", f"-{channel}_PeakTS + {channel_TS}_PeakTS")
+            f"{channel}_RelPeakTS", f"(int){channel}_PeakTS - (int){channel_TS}_PeakTS")
 
         # define the difference of relative peak TS with respect to the first channel
         rdf = rdf.Define(
@@ -74,8 +76,9 @@ for det, channels in map_mcp_channels.items():
             f"{channel}_DiffRelPeakTS_US", f"(int){channel}_RelPeakTS - (int){map_mcp_channels['US'][0]}_RelPeakTS - {value_diffcorrs[idx]}")
 
 rdf_prefilter = rdf
-condition = f"{map_mcp_channels['US'][0]}_RelPeakTS > 240 && {map_mcp_channels['US'][0]}_RelPeakTS < 280"
-condition += f" && {map_mcp_channels['DS'][0]}_RelPeakTS > 240 && {map_mcp_channels['DS'][0]}_RelPeakTS < 280"
+condition = f"{map_mcp_channels['US'][0]}_RelPeakTS > -350 && {map_mcp_channels['US'][0]}_RelPeakTS < -100"
+condition += f" && {map_mcp_channels['DS'][0]}_RelPeakTS > -350 && {map_mcp_channels['DS'][0]}_RelPeakTS < -100"
+condition += f" && {map_mcp_channels['US'][0]}_PeakTS > {TSmin} && {map_mcp_channels['US'][0]}_PeakTS < {TSmax}"
 rdf = rdf.Filter(condition,
                  "Pre-filter on MCP US channel 0 Peak TS")
 
@@ -169,7 +172,7 @@ for det, channels in map_mcp_channels.items():
     for idx, channel in enumerate(channels):
         h1 = rdf.Histo1D(
             (f"h_{channel}_DiffRelPeakTS_US", f"{channel} Difference of Relative Peak TS wrt US;Difference of Relative Peak TS wrt US;Counts",
-             19, -14, 5),
+             DiffRelTSmax_US - DiffRelTSmin_US, DiffRelTSmin_US, DiffRelTSmax_US),
             f"{channel}_DiffRelPeakTS_US"
         )
         hists_diff_rel_1d_us[det].append(h1)
@@ -304,7 +307,7 @@ for det in map_mcp_channels.keys():
     for idx, hist in enumerate(hists):
         extraToDraw.AddText(
             f"B{idx}: {hist.GetMean():.1f} #pm {hist.GetRMS():.1f}")
-    DrawHistos(hists, labels, -14, 5, "Difference of Relative Peak TS wrt US", 0, hists[1].GetMaximum()*1.5, "Counts",
+    DrawHistos(hists, labels, DiffRelTSmin_US, DiffRelTSmax_US, "Difference of Relative Peak TS wrt US", 0, hists[1].GetMaximum()*1.5, "Counts",
                outputname=outputname, outdir=output_dir,
                dology=False, mycolors=[1, 2, 3, 4], drawashist=True, runNumber=runNumber,
                addOverflow=False, addUnderflow=False, legendNCols=4, legendPos=legendPos, extraToDraw=extraToDraw)
