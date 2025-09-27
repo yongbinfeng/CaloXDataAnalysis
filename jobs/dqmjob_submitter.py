@@ -10,7 +10,7 @@ submissiontext = """#!/bin/bash
 """
 
 singularity_cmd = "singularity run --cleanenv --bind /lustre:/lustre -B /usr/lib64/libgif.so.7:/usr/lib64/libgif.so.7 -B /usr/lib64/libtiff.so.5:/usr/lib64/libtiff.so.5 -B /usr/lib64/libjpeg.so.62:/usr/lib64/libjpeg.so.62 -B /usr/lib64/libjbig.so.2.1:/usr/lib64/libjbig.so.2.1 /lustre/work/yofeng/SimulationEnv/alma9forgeant4_sbox/"
-run_cmd = "cd SCRIPTDIR && python prepareDQMPlots.py --run RUNNUMBER && python makeDQMPlots.py --run RUNNUMBER && python checkServiceDRS.py --run RUNNUMBER && python makeFERSEnergyPlots.py --run RUNNUMBER"
+run_cmd = "cd SCRIPTDIR && python makeDQMHists.py --run RUNNUMBER && python makeDQMPlots.py --run RUNNUMBER && python checkServiceDRS.py --run RUNNUMBER && python makeFERSEnergyPlots.py --run RUNNUMBER && python checkMCP.py --run RUNNUMBER && python makeDRSPeakTS.py --run RUNNUMBER"
 
 import os
 
@@ -60,5 +60,5 @@ def generate_submission_script(runlist):
     
     
 if __name__ == "__main__":
-    runList = range(1180, 1316)
+    runList = range(1350, 1448)
     generate_submission_script(runlist=runList)

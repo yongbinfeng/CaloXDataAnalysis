@@ -7,7 +7,7 @@ submissiontext = """#!/bin/bash
 #SBATCH -p nocona
 """
 
-singularity_cmd = "singularity run --cleanenv --bind /lustre:/lustre /lustre/work/yofeng/SimulationEnv/alma9forgeant4_v1_sbox/"
+singularity_cmd = "singularity run --cleanenv --bind /lustre:/lustre /lustre/work/yofeng/SimulationEnv/alma9forgeant4_sbox/"
 run_cmd = "python SCRIPTDIR/convertData.py -i ROOTFILE"
 
 import os
@@ -59,6 +59,6 @@ def generate_submission_script(input_files):
     
 if __name__ == "__main__":
     import json
-    data = open("data_org.json", "r")
+    data = open("data_org_TB.json", "r")
     input_files = json.load(data)
     generate_submission_script(input_files)
