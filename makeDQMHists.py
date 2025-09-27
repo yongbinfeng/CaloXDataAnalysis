@@ -4,7 +4,7 @@ from utils.dataloader import getRunInfo, loadRDF
 from variables.fers import vectorizeFERS, getFERSEnergyMax, getFERSEnergySum
 from variables.drs import preProcessDRSBoards, getDRSStats
 from utils.utils import number2string
-from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
+from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels, getMCPChannels
 import ROOT
 import os
 from utils.timing import auto_timer  # noqa
@@ -596,6 +596,11 @@ if __name__ == "__main__":
                 for channel in channels]
     hists2d_hodo_pos = compareDRSChannels(channels)
 
+    mcp_channels_map = getMCPChannels(run=runNumber)
+    mcp_channels = [channel for channels in mcp_channels_map.values()
+                    for channel in channels]
+    hists2d_mcp = compareDRSChannels(mcp_channels)
+
     hists2d_DRSSum_VS_FERS = checkDRSSumVSFERS()
 
     hists_FERS_max = makeFERSMaxValueHists()
@@ -724,6 +729,14 @@ if __name__ == "__main__":
             hist.SetDirectory(outfile_service_drs)
             hist.Write()
         outfile_service_drs.Close()
+
+    if 'hists2d_mcp' in locals() and hists2d_mcp:
+        outfile_mcp = ROOT.TFile(
+            f"{rootdir}/mcp_channels.root", "RECREATE")
+        for hist in hists2d_mcp:
+            hist.SetDirectory(outfile_mcp)
+            hist.Write()
+        outfile_mcp.Close()
 
     outfile_hodo_pos = ROOT.TFile(
         f"{rootdir}/hodo_pos_channels.root", "RECREATE")

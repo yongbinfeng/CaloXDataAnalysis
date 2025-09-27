@@ -2,7 +2,7 @@ import sys
 sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from myFunction import DrawHistos, LHistos2Hist
-from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels
+from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels, getMCPChannels
 from utils.utils import number2string, round_up_to_1eN
 from utils.html_generator import generate_html
 from utils.visualization import visualizeFERSBoards
@@ -27,6 +27,7 @@ hodo_pos_channels = buildHodoPosChannels(run=runNumber)
 upstream_veto_channel = getUpstreamVetoChannel(run=runNumber)
 downstream_muon_channel = getDownStreamMuonChannel(run=runNumber)
 service_drs_channels = getServiceDRSChannels(run=runNumber)
+mcp_channels = getMCPChannels(run=runNumber)
 
 
 rootdir = f"results/root/Run{runNumber}/"
@@ -864,6 +865,44 @@ def compareServiceDRSPlots():
     return output_html
 
 
+def compareMCPPlots():
+    ymin = -1500
+    ymax = 500
+    plots = []
+    infile_name = f"{rootdir}/mcp_channels.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    outdir_plots = f"{plotdir}/MCP"
+
+    for det_name, channels in mcp_channels.items():
+        for chan_name in channels:
+            hist_name = f"hist_{chan_name}_blsub"
+            hist = infile.Get(hist_name)
+            if not hist:
+                print(
+                    f"Warning: Histogram {hist_name} not found in {infile_name}")
+                continue
+            extraToDraw = ROOT.TPaveText(0.60, 0.20, 0.90, 0.30, "NDC")
+            extraToDraw.SetTextAlign(11)
+            extraToDraw.SetFillColorAlpha(0, 0)
+            extraToDraw.SetBorderSize(0)
+            extraToDraw.SetTextFont(42)
+            extraToDraw.SetTextSize(0.04)
+            extraToDraw.AddText(f"{det_name}")
+            output_name = f"MCP_{chan_name}"
+
+            DrawHistos([hist], "", 0, 1024, "Time Slice", ymin, ymax, "Counts",
+                       output_name,
+                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
+                       extraToDraw=extraToDraw,
+                       outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
+            plots.append(output_name + ".png")
+
+    output_html = f"{htmldir}/MCP/index.html"
+    generate_html(plots, outdir_plots, plots_per_row=4,
+                  output_html=output_html)
+    return output_html
+
+
 def makeDRSSumVSFERSPlots():
     """
     Check if the sum of FERS and DRS energies are consistent.
@@ -1001,6 +1040,8 @@ if __name__ == "__main__":
     output_htmls["drs peak ts cer vs ts"] = makeDRSPeakTSCerVSSciPlots()
 
     output_htmls["drs services"] = compareServiceDRSPlots()
+
+    output_htmls["mcp"] = compareMCPPlots()
 
     # output_htmls["time reference"] = compareTimeReferencePlots(True)
 
