@@ -33,7 +33,7 @@ def preProcessDRSBoards(rdf, debug=False, drsboards=None):
                 if channel.is6mm and channel.isAmplified:
                     drs_amplified_channels.append(
                         channel.GetChannelName(blsub=False))
-        print("6mm amplified channels:", drs_amplified_channels)
+        # print("6mm amplified channels:", drs_amplified_channels)
 
     # find the baseline of each DRS channel (median here)
     # and subtract it from the DRS outputs

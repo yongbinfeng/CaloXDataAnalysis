@@ -420,8 +420,9 @@ def checkDRSSumVSFERS():
                 chan_DRS = DRSBoard.GetChannelByTower(
                     iTowerX, iTowerY, isCer=(var == "Cer"))
                 if chan_DRS is None:
-                    print(
-                        f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
+                    if var == "Cer":
+                        print(
+                            f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
                     continue
                 chan_FERS = None
                 for fersboard in fersboards.values():
@@ -469,8 +470,9 @@ def checkDRSPeakVSFERS():
                 chan_DRS = DRSBoard.GetChannelByTower(
                     iTowerX, iTowerY, isCer=(var == "Cer"))
                 if chan_DRS is None:
-                    print(
-                        f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
+                    if var == "Cer":
+                        print(
+                            f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
                     continue
                 chan_FERS = None
                 for fersboard in fersboards.values():
@@ -525,8 +527,9 @@ def checkDRSPeakTS():
                 chan_DRS = DRSBoard.GetChannelByTower(
                     iTowerX, iTowerY, isCer=(var == "Cer"))
                 if chan_DRS is None:
-                    print(
-                        f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
+                    if var == "Cer":
+                        print(
+                            f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
                     continue
 
                 channelName = chan_DRS.GetChannelPeakTSName()
@@ -541,8 +544,8 @@ def checkDRSPeakTS():
                 h1s_DRSPeakTS[var].append(h1_DRSPeakTS)
 
             if len(channelNames) < 2:
-                print(
-                    f"Warning: Not enough channels found for Board{boardNo}, Tower({sTowerX}, {sTowerY})")
+                # print(
+                #    f"Warning: Not enough channels found for Board{boardNo}, Tower({sTowerX}, {sTowerY})")
                 continue
 
             h2_DRSPeak_Cer_VS_Sci = rdf.Histo2D((

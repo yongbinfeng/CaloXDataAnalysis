@@ -811,7 +811,7 @@ def findFanoutTimeReferenceDelay(channel, run=1040):
 
 def findDRSTriggerMap(channel, run=1040):
     result = "_".join(channel.split("_")[:3])
-    print(triggermap.keys())
+    # print(triggermap.keys())
     if str(run) not in triggermap.keys():
         return triggermap["default"][result]
     else:
