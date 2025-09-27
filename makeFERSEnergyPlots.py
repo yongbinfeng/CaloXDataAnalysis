@@ -99,8 +99,8 @@ rdf = applyCC1Selection(rdf, runNumber, applyCut=False)
 
 rdfs["inc"] = rdf
 rdfs["passHaloVeto"] = rdf.Filter("pass_upstream_veto == 1")
-rdfs["passHaloVeto_passPSDEle_passCC1Ele"] = rdf.Filter(
-    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 1 && pass_upstream_veto == 1")
+# rdfs["passHaloVeto_passPSDEle_passCC1Ele"] = rdf.Filter(
+#    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 1 && pass_upstream_veto == 1")
 # rdfs["passPSDEle_failCC1Ele"] = rdf.Filter(
 #    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 0")
 # rdfs["failPSDEle_passCC1Ele"] = rdf.Filter(

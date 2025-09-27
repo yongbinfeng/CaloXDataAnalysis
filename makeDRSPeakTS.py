@@ -60,9 +60,9 @@ rdfs = OrderedDict()
 rdf = applyPSDSelection(rdf, runNumber, applyCut=False)
 rdf = applyCC1Selection(rdf, runNumber, applyCut=False)
 
-rdf_prefilter = rdf
-rdf = rdf_prefilter.Filter(
-    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 1")
+# rdf_prefilter = rdf
+# rdf = rdf_prefilter.Filter(
+#    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 1")
 
 # rdfs["passPSDEle_failCC1Ele"] = rdf.Filter(
 #    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 0")
