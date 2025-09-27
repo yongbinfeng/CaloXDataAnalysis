@@ -1,6 +1,7 @@
 # collect all functions related to DRS here
+import re
 from utils.utils import getBranchStats
-from channels.channel_map import findFanoutTimeReferenceDelay, findDRSTriggerMap
+from channels.channel_map import findFanoutTimeReferenceDelay, findDRSTriggerMap, getMCPChannels
 
 
 def preProcessDRSBoards(rdf, debug=False, drsboards=None):
@@ -123,6 +124,80 @@ def getDRSPeakTS(rdf, run, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
                 f"{channelPeakTSName}_good",
                 f"({channelPeakTSName} - {triggerPeakTSName}) + {triggerDelayTS}"
             )
+    return rdf
+
+
+def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS=0, TSmaxDRS=400, threshold=1.0):
+    map_mcp_channels = getMCPChannels(run)
+
+    # get time reference channel TS
+    channels_TF = [
+        "DRS_Board0_Group0_Channel8",
+        "DRS_Board1_Group0_Channel8",
+        "DRS_Board2_Group0_Channel8",
+        "DRS_Board3_Group0_Channel8",
+        "DRS_Board4_Group0_Channel8",
+        "DRS_Board5_Group0_Channel8",
+        "DRS_Board6_Group0_Channel8",
+        "DRS_Board0_Group1_Channel8",
+        "DRS_Board1_Group1_Channel8",
+        "DRS_Board2_Group1_Channel8",
+        "DRS_Board3_Group1_Channel8",
+        "DRS_Board4_Group1_Channel8",
+        "DRS_Board5_Group1_Channel8",
+        "DRS_Board6_Group1_Channel8",
+        "DRS_Board0_Group2_Channel8",
+        "DRS_Board1_Group2_Channel8",
+        "DRS_Board2_Group2_Channel8",
+        "DRS_Board3_Group2_Channel8",
+        "DRS_Board4_Group2_Channel8",
+        "DRS_Board5_Group2_Channel8",
+        "DRS_Board6_Group2_Channel8",
+        "DRS_Board0_Group3_Channel8",
+        "DRS_Board1_Group3_Channel8",
+        "DRS_Board2_Group3_Channel8",
+        "DRS_Board3_Group3_Channel8",
+        "DRS_Board4_Group3_Channel8",
+        "DRS_Board5_Group3_Channel8",
+        "DRS_Board6_Group3_Channel8",
+    ]
+
+    # jitter offset
+    value_diffcorrs = [0, 0, 0, 16, 0, 0, 0]
+
+    for channel in channels_TF:
+        rdf = rdf.Define(f"{channel}_PeakTS",
+                         f"ArgMinRange({channel}_blsub, 0, 1024, -70.0)")
+
+    for det, channels in map_mcp_channels.items():
+        for idx, channel in enumerate(channels):
+            rdf = rdf.Define(f"{channel}_PeakTS",
+                             f"ArgMinRange({channel}_blsub, {TSminMCP}, {TSmaxMCP}, -200.0)")
+            # define the relative peak TS with respect to the reference channel
+            channel_TS = re.sub(r"_Channel[0-7]", "_Channel8", channel)
+            rdf = rdf.Define(
+                f"{channel}_RelPeakTS", f"-{channel}_PeakTS + {channel_TS}_PeakTS")
+
+    # calibration all DRS channels to MCP US channel 0
+    for _, DRSBoard in DRSBoards.items():
+        if DRSBoard.boardNo > 3:
+            continue
+        for channel in DRSBoard:
+            channelName = channel.GetChannelName(blsub=False)
+
+            # define the relative peak TS with respect to the reference channel
+            channel_TS = re.sub(r"_Channel[0-7]", "_Channel8", channelName)
+            rdf = rdf.Define(
+                f"{channelName}_PeakTS",
+                f"ArgMaxRange({channelName}_blsub, {TSminDRS}, {TSmaxDRS}, {threshold})"
+            )
+            rdf = rdf.Define(
+                f"{channelName}_RelPeakTS", f"-{channelName}_PeakTS + {channel_TS}_PeakTS")
+
+            # define the difference of relative peak TS with respect to the first channel of US
+            rdf = rdf.Define(
+                f"{channelName}_DiffRelPeakTS_US", f"(int){channelName}_RelPeakTS - (int){map_mcp_channels['US'][0]}_RelPeakTS - {value_diffcorrs[DRSBoard.boardNo]}")
+
     return rdf
 
 

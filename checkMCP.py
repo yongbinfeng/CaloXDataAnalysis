@@ -73,6 +73,12 @@ for det, channels in map_mcp_channels.items():
         rdf = rdf.Define(
             f"{channel}_DiffRelPeakTS_US", f"(int){channel}_RelPeakTS - (int){map_mcp_channels['US'][0]}_RelPeakTS - {value_diffcorrs[idx]}")
 
+rdf_prefilter = rdf
+condition = f"{map_mcp_channels['US'][0]}_RelPeakTS > 240 && {map_mcp_channels['US'][0]}_RelPeakTS < 280"
+condition += f" && {map_mcp_channels['DS'][0]}_RelPeakTS > 240 && {map_mcp_channels['DS'][0]}_RelPeakTS < 280"
+rdf = rdf.Filter(condition,
+                 "Pre-filter on MCP US channel 0 Peak TS")
+
 # plot the time reference channel TS
 hists_tf = []
 for channel in channels_TF:
@@ -163,7 +169,7 @@ for det, channels in map_mcp_channels.items():
     for idx, channel in enumerate(channels):
         h1 = rdf.Histo1D(
             (f"h_{channel}_DiffRelPeakTS_US", f"{channel} Difference of Relative Peak TS wrt US;Difference of Relative Peak TS wrt US;Counts",
-             20, -15, 5),
+             19, -14, 5),
             f"{channel}_DiffRelPeakTS_US"
         )
         hists_diff_rel_1d_us[det].append(h1)
@@ -298,7 +304,7 @@ for det in map_mcp_channels.keys():
     for idx, hist in enumerate(hists):
         extraToDraw.AddText(
             f"B{idx}: {hist.GetMean():.1f} #pm {hist.GetRMS():.1f}")
-    DrawHistos(hists, labels, -15, 5, "Difference of Relative Peak TS wrt US", 0, hists[1].GetMaximum()*1.5, "Counts",
+    DrawHistos(hists, labels, -14, 5, "Difference of Relative Peak TS wrt US", 0, hists[1].GetMaximum()*1.5, "Counts",
                outputname=outputname, outdir=output_dir,
                dology=False, mycolors=[1, 2, 3, 4], drawashist=True, runNumber=runNumber,
                addOverflow=False, addUnderflow=False, legendNCols=4, legendPos=legendPos, extraToDraw=extraToDraw)
