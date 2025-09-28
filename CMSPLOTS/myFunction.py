@@ -599,8 +599,11 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         btypes = {
             "pion": "#pi^{+}",
             "pions": "#pi^{+}",
+            "pi+": "#pi^{+}",
             "positron": "e^{+}",
             "positrons": "e^{+}",
+            "e+": "e^{+}",
+            "mu+": "#mu^{+}",
         }
         CMS_lumi.lumi_13TeV = f"Run {runNumber}: {btypes.get(btype.lower(), btype.lower())}, {benergy} GeV"
 

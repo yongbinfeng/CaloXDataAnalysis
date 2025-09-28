@@ -12,3 +12,5 @@ backup*
 .DS_Store
 *png
 *csv
+*machinefile*
+*log
