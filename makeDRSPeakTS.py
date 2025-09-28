@@ -86,6 +86,17 @@ rdf = rdf_prefilter2.Filter(condition,
 #                 "Pre-filter on MCP US channel 0 Peak TS")
 
 
+def GetMean(hist, useMode=True):
+    if useMode:
+        # peak position of peakTS
+        bin_max = hist.GetMaximumBin()
+        mean = hist.GetBinCenter(bin_max)
+    else:
+        # average position of peakTS
+        mean = hist.GetMean()
+    return mean
+
+
 def checkDRSPeakTS():
     h1s_DRSPeakTS = {}
     h1s_DRSPeakTS["Cer"] = []
@@ -208,9 +219,9 @@ def makeDRSPeakTSPlots():
             extraToDraw.SetTextSize(0.04)
             extraToDraw.AddText(f"Tower: ({iTowerX}, {iTowerY})")
             extraToDraw.AddText(
-                f"Cer: {channelNos['Cer']}, {hists['Cer'].GetBinCenter(hists['Cer'].GetMaximumBin())} TS")
+                f"Cer: {channelNos['Cer']}, {GetMean(hists['Cer']):.2f} TS")
             extraToDraw.AddText(
-                f"Sci: {channelNos['Sci']}, {hists['Sci'].GetBinCenter(hists['Sci'].GetMaximumBin())} TS")
+                f"Sci: {channelNos['Sci']}, {GetMean(hists['Sci']):.2f} TS")
             if isQuartz:
                 extraToDraw.AddText("Cer: Quartz")
             else:
@@ -244,11 +255,11 @@ def makeDRSPeakTSPlots():
     extraToDraw.SetTextFont(42)
     extraToDraw.SetTextSize(0.04)
     extraToDraw.AddText(
-        f"Quartz: {hist_Cer_Quartz_Combined.GetBinCenter(hist_Cer_Quartz_Combined.GetMaximumBin())} TS")
+        f"Quartz: {GetMean(hist_Cer_Quartz_Combined):.2f} TS")
     extraToDraw.AddText(
-        f"Plastic: {hist_Cer_Plastic_Combined.GetBinCenter(hist_Cer_Plastic_Combined.GetMaximumBin())} TS")
+        f"Plastic: {GetMean(hist_Cer_Plastic_Combined):.2f} TS")
     extraToDraw.AddText(
-        f"Sci: {hist_Sci_Combined.GetBinCenter(hist_Sci_Combined.GetMaximumBin())} TS")
+        f"Sci: {GetMean(hist_Sci_Combined):.2f} TS")
     DrawHistos([hist_Cer_Quartz_Combined, hist_Cer_Plastic_Combined, hist_Sci_Combined], ["Cer Quartz", "Cer Plastic", "Sci"], TSmin, TSmax, "Peak TS", 1, None, "Counts",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2, 6, 4], addOverflow=False, addUnderflow=False,
