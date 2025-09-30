@@ -7,7 +7,7 @@ def IsScanRun(runNumber):
     return runNumber in scanruns
 
 
-def getDataFile(runNumber, jsonFile):
+def getDataFileList(runNumber, jsonFile):
     runNum = str(runNumber)
     import json
     with open(jsonFile, 'r') as f:
@@ -20,10 +20,15 @@ def getDataFile(runNumber, jsonFile):
 
 def loadRDF(runNumber, firstEvent=0, lastEvent=-1, jsonFile="data/datafiles.json"):
     import ROOT
-    # Open the input ROOT file
-    ifile = getDataFile(runNumber, jsonFile)
-    infile = ROOT.TFile(ifile, "READ")
-    rdf_org = ROOT.RDataFrame("EventTree", infile)
+    # Open the input ROOT file(s)
+    filelist = getDataFileList(runNumber, jsonFile)
+    if not isinstance(filelist, list):
+        filelist = [filelist]
+    tchain = ROOT.TChain("EventTree")
+    for f in filelist:
+        print(f"Adding file {f} to TChain")
+        tchain.Add(f)
+    rdf_org = ROOT.RDataFrame(tchain)
     nevents = rdf_org.Count().GetValue()
     if lastEvent < 0 or lastEvent > nevents:
         lastEvent = nevents
@@ -32,7 +37,7 @@ def loadRDF(runNumber, firstEvent=0, lastEvent=-1, jsonFile="data/datafiles.json
     # Apply the event range filter
     rdf = rdf_org.Filter(f"event_n >= {firstEvent} && event_n < {lastEvent}")
 
-    return rdf, rdf_org
+    return rdf, [rdf_org, tchain]
 
 
 def getRunInfo(runNumber):
