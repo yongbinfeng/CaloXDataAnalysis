@@ -6,9 +6,7 @@ from collections import OrderedDict
 from channels.channel_map import buildFERSBoards, buildDRSBoards, getMCPChannels
 from utils.dataloader import loadRDF, getRunInfo
 from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS
-from utils.visualization import visualizeFERSBoards
 from utils.html_generator import generate_html
-from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters
 from selections.selections import vetoMuonCounter, applyUpstreamVeto, applyPSDSelection, applyCC1Selection
 from utils.parser import get_args
 sys.path.append("CMSPLOTS")  # noqa
@@ -25,15 +23,20 @@ args = get_args()
 runNumber = args.run
 firstEvent = args.first_event
 lastEvent = args.last_event
+jsonFile = args.json_file
 btype, benergy = getRunInfo(runNumber)
+
+file_drschannels_bad = "data/drs/badchannels.json"
+with open(file_drschannels_bad, "r") as f:
+    drschannels_bad = json.load(f)
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
 ROOT.gROOT.SetBatch(True)  # Disable interactive mode for batch processing
 ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
-rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
-rdf = preProcessDRSBoards(rdf)
+rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
+rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
 # rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
 # rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber, applyCut=False)
 rdf = applyUpstreamVeto(rdf, runNumber, applyCut=False)
@@ -46,6 +49,8 @@ htmldir = f"results/html/Run{runNumber}/"
 
 TSmin = -90
 TSmax = -10
+TSCermin = -70
+TSCermax = -50
 
 varsuffix = "DiffRelPeakTS_US"
 
@@ -121,6 +126,10 @@ def checkDRSPeakTS():
                     continue
 
                 channelName = chan_DRS.GetChannelName(blsub=False)
+                if channelName in drschannels_bad:
+                    print(
+                        f"Warning: DRS Channel {channelName} is marked as bad channel, skipping...")
+                    continue
                 channelNames[var] = channelName
 
                 h1_DRSPeakTS = rdf.Histo1D((
@@ -133,7 +142,7 @@ def checkDRSPeakTS():
 
             if len(channelNames) < 2:
                 print(
-                    f"Warning: Not enough channels found for Board{boardNo}, Tower({sTowerX}, {sTowerY})")
+                    f"Warning: Not enough good channels found for Board{boardNo}, Tower({sTowerX}, {sTowerY})")
                 continue
 
             h2_DRSPeak_Cer_VS_Sci = rdf.Histo2D((
@@ -248,7 +257,7 @@ def makeDRSPeakTSPlots():
     hist_Cer_Plastic_Combined = LHistos2Hist(
         hists_Cer_Plastic, "hist_DRSPeakTS_Cer_Plastic_Combined")
     output_name = "DRS_PeakTS_Combined"
-    extraToDraw = ROOT.TPaveText(0.50, 0.65, 0.90, 0.90, "NDC")
+    extraToDraw = ROOT.TPaveText(0.50, 0.75, 0.90, 0.90, "NDC")
     extraToDraw.SetTextAlign(11)
     extraToDraw.SetFillColorAlpha(0, 0)
     extraToDraw.SetBorderSize(0)
@@ -266,7 +275,14 @@ def makeDRSPeakTSPlots():
                outdir=outdir_plots, runNumber=runNumber, legendPos=[0.25, 0.75, 0.40, 0.90], extraToDraw=extraToDraw)
     plots.insert(0, output_name + ".png")
 
-    plots.insert(1, "NEWLINE")
+    output_name = "DRS_PeakTS_Cer_Combined"
+    DrawHistos([hist_Cer_Quartz_Combined, hist_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], TSCermin, TSCermax, "Peak TS", 0, 0.15, "Fraction",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=[2, 6], addOverflow=False, addUnderflow=False, donormalize=True,
+               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.80, 0.40, 0.90])
+    plots.insert(1, output_name + ".png")
+
+    plots.insert(2, "NEWLINE")
 
     output_html = f"{htmldir}/DRS/DRSPeakTS_relative_to_MCP.html"
     generate_html(plots, outdir_plots, plots_per_row=4,

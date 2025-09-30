@@ -1,26 +1,43 @@
 # collect all functions related to DRS here
+import os
 import re
+import json
 from utils.utils import getBranchStats
 from channels.channel_map import findFanoutTimeReferenceDelay, findDRSTriggerMap, getMCPChannels
 
 
-def preProcessDRSBoards(rdf, debug=False, drsboards=None):
+def preProcessDRSBoards(rdf, debug=False, drsboards=None, runNumber=None):
     import re
     # Get the list of all branch names
     branches = [str(b) for b in rdf.GetColumnNames()]
     pattern = re.compile(r"^DRS_Board\d+_Group\d+_Channel\d+$")
     drs_branches = [b for b in branches if pattern.search(b)]
-    stats = getBranchStats(rdf, drs_branches)
-    print("DRS branches statistics:")
-    for br, res in stats.items():
-        print(f"{br}: mean = {res['mean'].GetValue():.4f}, "
-              f"min = {res['min'].GetValue():.4f}, "
-              f"max = {res['max'].GetValue():.4f}")
-        stats[br] = {
-            "mean": res['mean'].GetValue(),
-            "min": res['min'].GetValue(),
-            "max": res['max'].GetValue()
-        }
+    # check if the drs stats file already exists
+    stats_file = f"results/root/Run{runNumber}/drs_stat_preprocessed.json"
+    if not os.path.exists(stats_file):
+        # get the statistics of DRS branches
+        print(f"Calculating DRS stats and saving to {stats_file}")
+        stats = getBranchStats(rdf, drs_branches)
+
+        print("DRS branches statistics:")
+        for br, res in stats.items():
+            print(f"{br}: mean = {res['mean'].GetValue():.4f}, "
+                  f"min = {res['min'].GetValue():.4f}, "
+                  f"max = {res['max'].GetValue():.4f}")
+            stats[br] = {
+                "mean": res['mean'].GetValue(),
+                "min": res['min'].GetValue(),
+                "max": res['max'].GetValue()
+            }
+        # save the stats to a json file
+        os.makedirs(os.path.dirname(stats_file), exist_ok=True)
+        with open(stats_file, "w") as f:
+            json.dump(stats, f, indent=4)
+
+    else:
+        print(f"Loading DRS stats from {stats_file}")
+        with open(stats_file, "r") as f:
+            stats = json.load(f)
 
     # Create an array of indices for DRS outputs
     rdf = rdf.Define("TS", "FillIndices(1024)")
@@ -172,7 +189,7 @@ def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS
     for det, channels in map_mcp_channels.items():
         for idx, channel in enumerate(channels):
             rdf = rdf.Define(f"{channel}_PeakTS",
-                             f"ArgMinRange({channel}_blsub, {TSminMCP}, {TSmaxMCP}, -200.0)")
+                             f"ArgMinRange({channel}_blsub, {TSminMCP}, {TSmaxMCP}, -300.0)")
             # define the relative peak TS with respect to the reference channel
             channel_TS = re.sub(r"_Channel[0-7]", "_Channel8", channel)
             rdf = rdf.Define(

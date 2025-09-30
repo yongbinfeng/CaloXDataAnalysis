@@ -12,13 +12,13 @@ def get_args():
     parser.add_argument(
         "--last-event", default=lastEvent, type=int, help="Last event")
     parser.add_argument(
-        "--jsonFile", default=jsonFile, type=str, help="JSON file with data files")
+        "--json-file", default=jsonFile, type=str, help="JSON file with data files")
     args = parser.parse_args()
 
     print(f"Run number: {args.run}")
     print(f"First event: {args.first_event}")
     print(f"Last event: {args.last_event}")
-    print(f"JSON file: {args.jsonFile}")
+    print(f"JSON file: {args.json_file}")
 
     btype, benergy = getRunInfo(args.run)
     print(f"Beam type: {btype}")
