@@ -190,6 +190,8 @@ def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS
         for idx, channel in enumerate(channels):
             rdf = rdf.Define(f"{channel}_PeakTS",
                              f"ArgMinRange({channel}_blsub, {TSminMCP}, {TSmaxMCP}, -300.0)")
+            rdf = rdf.Define(
+                f"{channel}_Peak", f"MinRange({channel}_blsub, {TSminMCP}, {TSmaxMCP})")
             # define the relative peak TS with respect to the reference channel
             channel_TS = re.sub(r"_Channel[0-7]", "_Channel8", channel)
             rdf = rdf.Define(
@@ -214,6 +216,15 @@ def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS
             # define the difference of relative peak TS with respect to the first channel of US
             rdf = rdf.Define(
                 f"{channelName}_DiffRelPeakTS_US", f"(int){channelName}_RelPeakTS - (int){map_mcp_channels['US'][0]}_RelPeakTS - {value_diffcorrs[DRSBoard.boardNo]}")
+
+            # align TS
+            rdf = rdf.Define(
+                f"{channelName}_AlignedTS", f"TS - (int){channel_TS}_PeakTS - (int){map_mcp_channels['US'][0]}_RelPeakTS - {value_diffcorrs[DRSBoard.boardNo]}"
+            )
+
+            # channel sum
+            rdf = rdf.Define(
+                f"{channelName}_Sum", f"SumRange({channelName}_blsub, {TSminDRS}, {TSmaxDRS})")
 
     return rdf
 
