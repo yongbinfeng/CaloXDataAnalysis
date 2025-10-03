@@ -57,7 +57,7 @@ if runNumber >= 1350:
     file_deadchannels = None
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile=jsonFile)
-rdf = preProcessDRSBoards(rdf)
+rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
 # rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
 # rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber, applyCut=False)
 rdf = applyUpstreamVeto(rdf, runNumber, applyCut=False)
@@ -102,8 +102,8 @@ if not os.path.exists(htmldir):
 
 # study PSD and CC1 selections
 rdfs = OrderedDict()
-rdf = applyPSDSelection(rdf, runNumber, applyCut=False)
-rdf = applyCC1Selection(rdf, runNumber, applyCut=False)
+# rdf = applyPSDSelection(rdf, runNumber, applyCut=False)
+# rdf = applyCC1Selection(rdf, runNumber, applyCut=False)
 
 rdfs["inc"] = rdf
 rdfs["passHaloVeto"] = rdf.Filter("pass_upstream_veto == 1")
