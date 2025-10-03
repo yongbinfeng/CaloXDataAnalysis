@@ -1,0 +1,4452 @@
+{
+    "FERS_Board2_energyMix_13": {
+        "response": 0.00019458189544385585,
+        "uncertainty": 2.6322660717230388e-05,
+        "uncertainty_toys": 6.372430582946341e-05
+    },
+    "FERS_Board2_energyMix_21": {
+        "response": 0.00022445737597477866,
+        "uncertainty": 1.961422312970129e-05,
+        "uncertainty_toys": 8.957775270533305e-06
+    },
+    "FERS_Board2_energyMix_28": {
+        "response": 0.00024045179872340418,
+        "uncertainty": 4.5117702842095694e-06,
+        "uncertainty_toys": 1.0571395052801295e-06
+    },
+    "FERS_Board2_energyMix_38": {
+        "response": 0.0001972452849684628,
+        "uncertainty": 4.831947566877538e-06,
+        "uncertainty_toys": 1.675041808564436e-06
+    },
+    "FERS_Board2_energyMix_60": {
+        "response": 0.0005778175656856355,
+        "uncertainty": 2.708727855661197e-05,
+        "uncertainty_toys": 4.831014185617267e-05
+    },
+    "FERS_Board2_energyMix_4": {
+        "response": 0.0007560962678985123,
+        "uncertainty": 5.949735140035945e-05,
+        "uncertainty_toys": 0.00011762894697304374
+    },
+    "FERS_Board2_energyMix_45": {
+        "response": 0.00019278660363543693,
+        "uncertainty": 8.722881440709935e-06,
+        "uncertainty_toys": 3.0208589802824584e-06
+    },
+    "FERS_Board2_energyMix_7": {
+        "response": 0.0005854935951039094,
+        "uncertainty": 6.880913819013715e-05,
+        "uncertainty_toys": 6.561397870051505e-05
+    },
+    "FERS_Board2_energyMix_31": {
+        "response": 0.00027515115023657064,
+        "uncertainty": 8.865444687403488e-06,
+        "uncertainty_toys": 2.0798873428738367e-06
+    },
+    "FERS_Board2_energyMix_62": {
+        "response": 0.0005705808297522697,
+        "uncertainty": 3.403126680736231e-05,
+        "uncertainty_toys": 0.00019914718581824493
+    },
+    "FERS_Board2_energyMix_37": {
+        "response": 0.00018394243010928088,
+        "uncertainty": 7.999813381594404e-06,
+        "uncertainty_toys": 3.5510215543208506e-06
+    },
+    "FERS_Board2_energyMix_22": {
+        "response": 0.0002282591543179439,
+        "uncertainty": 1.1761040939792663e-05,
+        "uncertainty_toys": 3.2302058229568107e-06
+    },
+    "FERS_Board2_energyMix_54": {
+        "response": 0.0007030919039132183,
+        "uncertainty": 4.34923430869379e-05,
+        "uncertainty_toys": 9.018888616207232e-05
+    },
+    "FERS_Board2_energyMix_14": {
+        "response": 0.0008114989355297694,
+        "uncertainty": 5.849466009316634e-05,
+        "uncertainty_toys": 8.007218086494549e-05
+    },
+    "FERS_Board2_energyMix_47": {
+        "response": 0.00022783433461925822,
+        "uncertainty": 1.2665043809959266e-05,
+        "uncertainty_toys": 6.764347809284251e-06
+    },
+    "FERS_Board2_energyMix_29": {
+        "response": 0.00018468155482120497,
+        "uncertainty": 6.560271890779667e-06,
+        "uncertainty_toys": 2.191373696998911e-06
+    },
+    "FERS_Board2_energyMix_39": {
+        "response": 0.0002219384041525445,
+        "uncertainty": 7.006634622656119e-06,
+        "uncertainty_toys": 2.33906672524873e-06
+    },
+    "FERS_Board2_energyMix_30": {
+        "response": 0.0002406626400721835,
+        "uncertainty": 5.157411833663047e-06,
+        "uncertainty_toys": 1.1849622868070628e-06
+    },
+    "FERS_Board2_energyMix_12": {
+        "response": 0.0010699503085173096,
+        "uncertainty": 8.656277138601281e-05,
+        "uncertainty_toys": 0.00010939035743118444
+    },
+    "FERS_Board2_energyMix_44": {
+        "response": 0.00020273051158501372,
+        "uncertainty": 1.1889662558749654e-05,
+        "uncertainty_toys": 5.4470856051738765e-06
+    },
+    "FERS_Board2_energyMix_5": {
+        "response": 0.0006637802171329624,
+        "uncertainty": 6.842121837361178e-05,
+        "uncertainty_toys": 5.693302769555572e-05
+    },
+    "FERS_Board2_energyMix_53": {
+        "response": 0.0004030211703952469,
+        "uncertainty": 2.3992354138170608e-05,
+        "uncertainty_toys": 9.24010640173134e-05
+    },
+    "FERS_Board2_energyMix_61": {
+        "response": 0.0006212933283803642,
+        "uncertainty": 4.316509994387845e-05,
+        "uncertainty_toys": 2.2304968563099446e-05
+    },
+    "FERS_Board2_energyMix_23": {
+        "response": 0.00030824806653480393,
+        "uncertainty": 1.904379329215736e-05,
+        "uncertainty_toys": 1.0879323103960427e-05
+    },
+    "FERS_Board2_energyMix_20": {
+        "response": 0.00031629069775438655,
+        "uncertainty": 2.168319694642867e-05,
+        "uncertainty_toys": 6.948268106251738e-06
+    },
+    "FERS_Board2_energyMix_46": {
+        "response": 0.00026390936680199313,
+        "uncertainty": 1.0072685210422772e-05,
+        "uncertainty_toys": 3.6407156965603986e-06
+    },
+    "FERS_Board2_energyMix_6": {
+        "response": 0.0005250302742571988,
+        "uncertainty": 3.386220302076451e-05,
+        "uncertainty_toys": 4.3656231754710424e-05
+    },
+    "FERS_Board2_energyMix_15": {
+        "response": 0.0014871423104358473,
+        "uncertainty": 7.254898707884483e-05,
+        "uncertainty_toys": 8.625586994983341e-05
+    },
+    "FERS_Board2_energyMix_63": {
+        "response": 0.0006477429768910533,
+        "uncertainty": 4.375074484925819e-05,
+        "uncertainty_toys": 4.4429933403106486e-05
+    },
+    "FERS_Board2_energyMix_36": {
+        "response": 0.00023099506736329488,
+        "uncertainty": 3.860443548288004e-06,
+        "uncertainty_toys": 1.0937267537605415e-06
+    },
+    "FERS_Board2_energyMix_52": {
+        "response": 0.0008297763172910972,
+        "uncertainty": 5.609924196779137e-05,
+        "uncertainty_toys": 0.00015925798563922328
+    },
+    "FERS_Board2_energyMix_55": {
+        "response": 0.0003129438056246011,
+        "uncertainty": 1.85462716056623e-05,
+        "uncertainty_toys": 1.707655115138702e-05
+    },
+    "FERS_Board3_energyMix_31": {
+        "response": 0.00027204679005684315,
+        "uncertainty": 1.1337969202845591e-05,
+        "uncertainty_toys": 5.85427878550689e-06
+    },
+    "FERS_Board3_energyMix_22": {
+        "response": 0.000236557161042156,
+        "uncertainty": 3.936205266662709e-06,
+        "uncertainty_toys": 1.1844545565825494e-06
+    },
+    "FERS_Board3_energyMix_39": {
+        "response": 0.00032854427524345596,
+        "uncertainty": 2.2893188030032075e-05,
+        "uncertainty_toys": 1.2305123808675155e-05
+    },
+    "FERS_Board3_energyMix_46": {
+        "response": 0.00016399265805565517,
+        "uncertainty": 4.877229696133401e-06,
+        "uncertainty_toys": 2.9932154640820963e-06
+    },
+    "FERS_Board3_energyMix_63": {
+        "response": 0.0002900239768856672,
+        "uncertainty": 1.3440449789678637e-05,
+        "uncertainty_toys": 6.524625862303822e-06
+    },
+    "FERS_Board3_energyMix_54": {
+        "response": 0.00019760705319448338,
+        "uncertainty": 1.6267033319885554e-06,
+        "uncertainty_toys": 4.1810263499448724e-07
+    },
+    "FERS_Board3_energyMix_7": {
+        "response": 0.00028058901225294153,
+        "uncertainty": 1.2926784174713928e-05,
+        "uncertainty_toys": 1.01292359467327e-05
+    },
+    "FERS_Board3_energyMix_14": {
+        "response": 0.0009461642949301388,
+        "uncertainty": 5.426610271774405e-05,
+        "uncertainty_toys": 5.0263550230112656e-05
+    },
+    "FERS_Board3_energyMix_12": {
+        "response": 0.0002927146335110448,
+        "uncertainty": 2.835341668996586e-06,
+        "uncertainty_toys": 1.1561169201924057e-06
+    },
+    "FERS_Board3_energyMix_61": {
+        "response": 0.0004252251384785747,
+        "uncertainty": 1.6858540048161664e-05,
+        "uncertainty_toys": 9.588986542220517e-06
+    },
+    "FERS_Board3_energyMix_5": {
+        "response": 0.00022431358879550415,
+        "uncertainty": 1.308163186986082e-05,
+        "uncertainty_toys": 6.318424038678263e-06
+    },
+    "FERS_Board3_energyMix_44": {
+        "response": 0.00020796763080295217,
+        "uncertainty": 2.2509994066317755e-06,
+        "uncertainty_toys": 8.753947394318172e-07
+    },
+    "FERS_Board3_energyMix_29": {
+        "response": 0.00023317525833471266,
+        "uncertainty": 1.2414954404524426e-05,
+        "uncertainty_toys": 4.709342121107694e-06
+    },
+    "FERS_Board3_energyMix_52": {
+        "response": 0.00017861100940251822,
+        "uncertainty": 2.3535329631263378e-06,
+        "uncertainty_toys": 1.0534393255503971e-06
+    },
+    "FERS_Board3_energyMix_13": {
+        "response": 0.00021119290381382938,
+        "uncertainty": 6.721664605710972e-06,
+        "uncertainty_toys": 1.8161900803571268e-06
+    },
+    "FERS_Board3_energyMix_37": {
+        "response": 0.0003304067999708401,
+        "uncertainty": 1.5463694384387217e-05,
+        "uncertainty_toys": 7.848084426179674e-06
+    },
+    "FERS_Board3_energyMix_20": {
+        "response": 0.0002481412372736299,
+        "uncertainty": 6.46339610944854e-06,
+        "uncertainty_toys": 2.72227567262548e-06
+    },
+    "FERS_Board3_energyMix_6": {
+        "response": 0.00027525885883486424,
+        "uncertainty": 5.5573638332569855e-06,
+        "uncertainty_toys": 3.0290082637180376e-06
+    },
+    "FERS_Board3_energyMix_55": {
+        "response": 0.0003135171432738031,
+        "uncertainty": 4.385944009015311e-06,
+        "uncertainty_toys": 2.1807486354912186e-06
+    },
+    "FERS_Board3_energyMix_15": {
+        "response": 0.00021479785305003545,
+        "uncertainty": 6.186548835372754e-06,
+        "uncertainty_toys": 1.919395888291596e-06
+    },
+    "FERS_Board3_energyMix_38": {
+        "response": 0.0002647297094731832,
+        "uncertainty": 1.6601119263891568e-05,
+        "uncertainty_toys": 1.1264903718267445e-05
+    },
+    "FERS_Board3_energyMix_23": {
+        "response": 0.0002138237542690264,
+        "uncertainty": 6.0155658156451425e-06,
+        "uncertainty_toys": 1.2937990966121824e-06
+    },
+    "FERS_Board3_energyMix_62": {
+        "response": 0.00020466515005228126,
+        "uncertainty": 8.329780672121872e-06,
+        "uncertainty_toys": 2.79030918105578e-06
+    },
+    "FERS_Board3_energyMix_47": {
+        "response": 0.00032430421915476647,
+        "uncertainty": 6.461562404942444e-06,
+        "uncertainty_toys": 1.5886961983403343e-06
+    },
+    "FERS_Board3_energyMix_30": {
+        "response": 0.00018494890455542017,
+        "uncertainty": 1.6051313113461817e-05,
+        "uncertainty_toys": 9.107102284171614e-06
+    },
+    "FERS_Board3_energyMix_21": {
+        "response": 0.0002454273436032963,
+        "uncertainty": 7.841915427117561e-06,
+        "uncertainty_toys": 2.9795849895307067e-06
+    },
+    "FERS_Board3_energyMix_28": {
+        "response": 0.0002860452280785131,
+        "uncertainty": 1.2200512530126569e-05,
+        "uncertainty_toys": 7.268457992358999e-06
+    },
+    "FERS_Board3_energyMix_45": {
+        "response": 0.0003709349829347821,
+        "uncertainty": 6.310220019990191e-06,
+        "uncertainty_toys": 1.737205054672269e-06
+    },
+    "FERS_Board3_energyMix_36": {
+        "response": 0.0004443507217365846,
+        "uncertainty": 2.7520699032202356e-05,
+        "uncertainty_toys": 2.0736535181277224e-05
+    },
+    "FERS_Board3_energyMix_53": {
+        "response": 0.00025555044964090145,
+        "uncertainty": 3.968949178681978e-06,
+        "uncertainty_toys": 1.4284333178529857e-06
+    },
+    "FERS_Board3_energyMix_60": {
+        "response": 0.0002913208306296555,
+        "uncertainty": 9.869420491029598e-06,
+        "uncertainty_toys": 3.4991037592896534e-06
+    },
+    "FERS_Board3_energyMix_4": {
+        "response": 0.0010479223158428393,
+        "uncertainty": 5.0511196219211796e-05,
+        "uncertainty_toys": 4.4282128676490416e-05
+    },
+    "FERS_Board4_energyMix_22": {
+        "response": 0.00021652072458471912,
+        "uncertainty": 1.525807480579094e-06,
+        "uncertainty_toys": 3.942462186735703e-07
+    },
+    "FERS_Board4_energyMix_61": {
+        "response": 0.00028405365337958463,
+        "uncertainty": 3.0934650486817916e-06,
+        "uncertainty_toys": 9.318665277547615e-07
+    },
+    "FERS_Board4_energyMix_44": {
+        "response": 0.00029639754338887123,
+        "uncertainty": 2.623327170750647e-06,
+        "uncertainty_toys": 6.578888060556458e-07
+    },
+    "FERS_Board4_energyMix_23": {
+        "response": 0.00031095468552608924,
+        "uncertainty": 4.557604678375112e-06,
+        "uncertainty_toys": 1.228677237123746e-06
+    },
+    "FERS_Board4_energyMix_37": {
+        "response": 0.00045465115952139786,
+        "uncertainty": 1.7890259397573045e-05,
+        "uncertainty_toys": 9.622660528299132e-06
+    },
+    "FERS_Board4_energyMix_20": {
+        "response": 0.00018136301645823265,
+        "uncertainty": 3.680598246142389e-06,
+        "uncertainty_toys": 1.0841116710088284e-06
+    },
+    "FERS_Board4_energyMix_12": {
+        "response": 0.0001767386753903423,
+        "uncertainty": 1.5773250506410408e-06,
+        "uncertainty_toys": 5.404427569423835e-07
+    },
+    "FERS_Board4_energyMix_55": {
+        "response": 0.0002865470884445193,
+        "uncertainty": 4.266462934495459e-06,
+        "uncertainty_toys": 1.8032197756152667e-06
+    },
+    "FERS_Board4_energyMix_52": {
+        "response": 0.0002630585509262646,
+        "uncertainty": 3.6593499462785844e-06,
+        "uncertainty_toys": 7.584788350738222e-07
+    },
+    "FERS_Board4_energyMix_5": {
+        "response": 0.0003690463815829651,
+        "uncertainty": 2.016863109896449e-05,
+        "uncertainty_toys": 1.3290325695616454e-05
+    },
+    "FERS_Board4_energyMix_38": {
+        "response": 0.00035151322456034874,
+        "uncertainty": 1.4137610141710666e-05,
+        "uncertainty_toys": 8.229577768598784e-06
+    },
+    "FERS_Board4_energyMix_30": {
+        "response": 0.00036227486866575727,
+        "uncertainty": 1.7009997315494074e-05,
+        "uncertainty_toys": 7.32048639528152e-06
+    },
+    "FERS_Board4_energyMix_47": {
+        "response": 0.00028963125088420793,
+        "uncertainty": 5.54957443687595e-06,
+        "uncertainty_toys": 1.5271781288348414e-06
+    },
+    "FERS_Board4_energyMix_6": {
+        "response": 0.00031487075133225837,
+        "uncertainty": 1.2002142614250577e-05,
+        "uncertainty_toys": 6.097204355046547e-06
+    },
+    "FERS_Board4_energyMix_13": {
+        "response": 0.00020242357114221422,
+        "uncertainty": 4.092332320038159e-06,
+        "uncertainty_toys": 1.9151525562577248e-06
+    },
+    "FERS_Board4_energyMix_62": {
+        "response": 0.000365926459212361,
+        "uncertainty": 1.4644044158618127e-05,
+        "uncertainty_toys": 7.5632188309463295e-06
+    },
+    "FERS_Board4_energyMix_15": {
+        "response": 0.0002722258272746095,
+        "uncertainty": 4.930597554466711e-06,
+        "uncertainty_toys": 1.6561670510933847e-06
+    },
+    "FERS_Board4_energyMix_45": {
+        "response": 0.00025119817971234733,
+        "uncertainty": 4.174132613152782e-06,
+        "uncertainty_toys": 1.6573307323427954e-06
+    },
+    "FERS_Board4_energyMix_4": {
+        "response": 0.0003389601898864488,
+        "uncertainty": 1.80143541984401e-05,
+        "uncertainty_toys": 1.3384347592576066e-05
+    },
+    "FERS_Board4_energyMix_46": {
+        "response": 0.00023981722416387043,
+        "uncertainty": 4.7768465913516185e-06,
+        "uncertainty_toys": 1.3833481105553474e-06
+    },
+    "FERS_Board4_energyMix_53": {
+        "response": 0.00025638139631322196,
+        "uncertainty": 3.833390223132163e-06,
+        "uncertainty_toys": 1.4622627685223574e-06
+    },
+    "FERS_Board4_energyMix_60": {
+        "response": 0.0003651310727420452,
+        "uncertainty": 1.2676926716174658e-05,
+        "uncertainty_toys": 8.514203828609854e-06
+    },
+    "FERS_Board4_energyMix_7": {
+        "response": 0.00047476651829822395,
+        "uncertainty": 1.9634581466192668e-05,
+        "uncertainty_toys": 1.8474872509723816e-05
+    },
+    "FERS_Board4_energyMix_21": {
+        "response": 0.0002463038883992204,
+        "uncertainty": 3.457945537070409e-06,
+        "uncertainty_toys": 1.7047824477722172e-06
+    },
+    "FERS_Board4_energyMix_36": {
+        "response": 0.0005693165164507467,
+        "uncertainty": 2.5929664591510065e-05,
+        "uncertainty_toys": 2.4035832813042527e-05
+    },
+    "FERS_Board4_energyMix_28": {
+        "response": 0.0004381831134097205,
+        "uncertainty": 1.5482983901711405e-05,
+        "uncertainty_toys": 5.766666397038614e-06
+    },
+    "FERS_Board4_energyMix_39": {
+        "response": 0.0003545928899026706,
+        "uncertainty": 2.5292603164661694e-06,
+        "uncertainty_toys": 8.101247097791262e-07
+    },
+    "FERS_Board4_energyMix_14": {
+        "response": 0.0002632179795868073,
+        "uncertainty": 7.481265519172373e-06,
+        "uncertainty_toys": 2.748592070653671e-06
+    },
+    "FERS_Board4_energyMix_63": {
+        "response": 0.0003312863928647332,
+        "uncertainty": 1.201352433027692e-05,
+        "uncertainty_toys": 6.473460138065178e-06
+    },
+    "FERS_Board4_energyMix_54": {
+        "response": 0.00023929656974019635,
+        "uncertainty": 1.5750113675545228e-06,
+        "uncertainty_toys": 3.2506198158118225e-07
+    },
+    "FERS_Board4_energyMix_29": {
+        "response": 0.0003359549126735685,
+        "uncertainty": 3.727062472564362e-06,
+        "uncertainty_toys": 6.857158191906224e-07
+    },
+    "FERS_Board4_energyMix_31": {
+        "response": 0.00035690678550759445,
+        "uncertainty": 1.2956545349672865e-05,
+        "uncertainty_toys": 4.37054211013666e-06
+    },
+    "FERS_Board5_energyMix_55": {
+        "response": 0.00022565332379904078,
+        "uncertainty": 3.7316821726462873e-06,
+        "uncertainty_toys": 1.2538043144555103e-06
+    },
+    "FERS_Board5_energyMix_14": {
+        "response": 0.0002816345459185704,
+        "uncertainty": 9.258199421542385e-06,
+        "uncertainty_toys": 4.400291615999058e-06
+    },
+    "FERS_Board5_energyMix_63": {
+        "response": 0.00031724826848469846,
+        "uncertainty": 1.1514663702605926e-05,
+        "uncertainty_toys": 3.0926662390498315e-06
+    },
+    "FERS_Board5_energyMix_36": {
+        "response": 0.00025552519053345034,
+        "uncertainty": 5.408155223844091e-06,
+        "uncertainty_toys": 2.0819988664682665e-06
+    },
+    "FERS_Board5_energyMix_22": {
+        "response": 0.00019598194461056337,
+        "uncertainty": 1.3549766913649236e-06,
+        "uncertainty_toys": 4.550954069723467e-07
+    },
+    "FERS_Board5_energyMix_21": {
+        "response": 0.00021894028246918196,
+        "uncertainty": 3.5226535107938993e-06,
+        "uncertainty_toys": 1.0200571860636745e-06
+    },
+    "FERS_Board5_energyMix_29": {
+        "response": 0.00026179849854819116,
+        "uncertainty": 1.066687562112459e-05,
+        "uncertainty_toys": 5.529947843566796e-06
+    },
+    "FERS_Board5_energyMix_54": {
+        "response": 0.0002476683898830693,
+        "uncertainty": 1.8402258479858627e-06,
+        "uncertainty_toys": 5.341689717564511e-07
+    },
+    "FERS_Board5_energyMix_53": {
+        "response": 0.0002570750740030066,
+        "uncertainty": 2.5951221984683603e-06,
+        "uncertainty_toys": 6.052468630878926e-07
+    },
+    "FERS_Board5_energyMix_61": {
+        "response": 0.0003411909724520469,
+        "uncertainty": 1.3628980467050511e-05,
+        "uncertainty_toys": 5.357317475186306e-06
+    },
+    "FERS_Board5_energyMix_6": {
+        "response": 0.0002861926311091574,
+        "uncertainty": 1.611305116129905e-05,
+        "uncertainty_toys": 1.2035902281935035e-05
+    },
+    "FERS_Board5_energyMix_46": {
+        "response": 0.0003154040491857505,
+        "uncertainty": 2.688394053093156e-06,
+        "uncertainty_toys": 5.665026081057582e-07
+    },
+    "FERS_Board5_energyMix_39": {
+        "response": 0.00059380797236643,
+        "uncertainty": 2.4958335268345693e-05,
+        "uncertainty_toys": 1.9210613218709373e-05
+    },
+    "FERS_Board5_energyMix_44": {
+        "response": 0.0002494869300632947,
+        "uncertainty": 2.2137107787703e-06,
+        "uncertainty_toys": 7.412231913732624e-07
+    },
+    "FERS_Board5_energyMix_47": {
+        "response": 0.00023512885629594583,
+        "uncertainty": 3.30627682532356e-06,
+        "uncertainty_toys": 1.1312595122601917e-06
+    },
+    "FERS_Board5_energyMix_52": {
+        "response": 0.00025704909975894326,
+        "uncertainty": 1.8241903385178329e-06,
+        "uncertainty_toys": 3.1004485714805493e-07
+    },
+    "FERS_Board5_energyMix_20": {
+        "response": 0.0002919068504431415,
+        "uncertainty": 7.189603550505698e-06,
+        "uncertainty_toys": 3.2583672447240008e-06
+    },
+    "FERS_Board5_energyMix_45": {
+        "response": 0.00026729211517249223,
+        "uncertainty": 5.057622899045457e-06,
+        "uncertainty_toys": 1.4037793626503658e-06
+    },
+    "FERS_Board5_energyMix_38": {
+        "response": 0.0005030645792979007,
+        "uncertainty": 1.2938566593035997e-05,
+        "uncertainty_toys": 1.1953875366298899e-05
+    },
+    "FERS_Board5_energyMix_37": {
+        "response": 0.0003879319579484847,
+        "uncertainty": 1.7738701405273125e-05,
+        "uncertainty_toys": 1.1245765417101813e-05
+    },
+    "FERS_Board5_energyMix_62": {
+        "response": 0.00028954971130539664,
+        "uncertainty": 7.007937404715576e-06,
+        "uncertainty_toys": 1.98447975641454e-06
+    },
+    "FERS_Board5_energyMix_7": {
+        "response": 0.0004963653405542568,
+        "uncertainty": 2.269433381235114e-05,
+        "uncertainty_toys": 1.6916400886919542e-05
+    },
+    "FERS_Board5_energyMix_15": {
+        "response": 0.00022669047058273,
+        "uncertainty": 4.603090599413469e-06,
+        "uncertainty_toys": 2.0515127412901123e-06
+    },
+    "FERS_Board5_energyMix_12": {
+        "response": 0.00024979771019301324,
+        "uncertainty": 2.5501550464697797e-06,
+        "uncertainty_toys": 1.314962772294576e-06
+    },
+    "FERS_Board5_energyMix_30": {
+        "response": 0.00021443053175287512,
+        "uncertainty": 5.171754457621558e-06,
+        "uncertainty_toys": 2.7020947878747006e-06
+    },
+    "FERS_Board5_energyMix_4": {
+        "response": 0.0007091290295866651,
+        "uncertainty": 4.40815914279092e-05,
+        "uncertainty_toys": 7.997937121797112e-05
+    },
+    "FERS_Board5_energyMix_28": {
+        "response": 0.00030103160371032473,
+        "uncertainty": 7.427606332617215e-06,
+        "uncertainty_toys": 4.382973328130983e-06
+    },
+    "FERS_Board5_energyMix_31": {
+        "response": 0.00030484724868376235,
+        "uncertainty": 1.2283223683652198e-05,
+        "uncertainty_toys": 6.0687961563388075e-06
+    },
+    "FERS_Board5_energyMix_13": {
+        "response": 0.00027897933234001814,
+        "uncertainty": 3.4472027554102296e-06,
+        "uncertainty_toys": 1.8143231111076704e-06
+    },
+    "FERS_Board5_energyMix_23": {
+        "response": 0.00019818571593027142,
+        "uncertainty": 3.183532263306102e-06,
+        "uncertainty_toys": 1.5236533126011303e-06
+    },
+    "FERS_Board5_energyMix_5": {
+        "response": 0.00034306032902230345,
+        "uncertainty": 1.718185960655232e-05,
+        "uncertainty_toys": 1.0568174867653557e-05
+    },
+    "FERS_Board5_energyMix_60": {
+        "response": 0.0004105808694426583,
+        "uncertainty": 1.233875840957836e-05,
+        "uncertainty_toys": 5.682086504857772e-06
+    },
+    "FERS_Board6_energyMix_5": {
+        "response": 0.0005090227295458977,
+        "uncertainty": 2.642514291155636e-05,
+        "uncertainty_toys": 1.603447339006059e-05
+    },
+    "FERS_Board6_energyMix_60": {
+        "response": 0.00031525972726932037,
+        "uncertainty": 1.7335297704595038e-05,
+        "uncertainty_toys": 5.592033122816733e-06
+    },
+    "FERS_Board6_energyMix_13": {
+        "response": 0.00021553243703229544,
+        "uncertainty": 4.3109520526017754e-06,
+        "uncertainty_toys": 1.1388983295460455e-06
+    },
+    "FERS_Board6_energyMix_52": {
+        "response": 0.0002825979326645645,
+        "uncertainty": 3.4242438872595837e-06,
+        "uncertainty_toys": 1.4241071820177225e-06
+    },
+    "FERS_Board6_energyMix_6": {
+        "response": 0.00032186553512752477,
+        "uncertainty": 1.1311334397175674e-05,
+        "uncertainty_toys": 6.138498337111166e-06
+    },
+    "FERS_Board6_energyMix_20": {
+        "response": 0.0002344745566578763,
+        "uncertainty": 2.8303983134407885e-06,
+        "uncertainty_toys": 9.440901794108559e-07
+    },
+    "FERS_Board6_energyMix_55": {
+        "response": 0.0002900429250190332,
+        "uncertainty": 4.411661790258774e-06,
+        "uncertainty_toys": 1.1756444078534641e-06
+    },
+    "FERS_Board6_energyMix_63": {
+        "response": 0.0003294055554136927,
+        "uncertainty": 1.4834787915963696e-05,
+        "uncertainty_toys": 4.3962549887966755e-06
+    },
+    "FERS_Board6_energyMix_38": {
+        "response": 0.00039254021974019466,
+        "uncertainty": 1.4900263277771027e-05,
+        "uncertainty_toys": 8.860099093803521e-06
+    },
+    "FERS_Board6_energyMix_23": {
+        "response": 0.00024452787231419107,
+        "uncertainty": 3.780858917765562e-06,
+        "uncertainty_toys": 1.0091110584077264e-06
+    },
+    "FERS_Board6_energyMix_31": {
+        "response": 0.00035672579099095797,
+        "uncertainty": 1.5780845335551817e-05,
+        "uncertainty_toys": 6.909562057891955e-06
+    },
+    "FERS_Board6_energyMix_12": {
+        "response": 0.00019772876389774464,
+        "uncertainty": 2.114415123044709e-06,
+        "uncertainty_toys": 5.876381814625912e-07
+    },
+    "FERS_Board6_energyMix_46": {
+        "response": 0.0002585488781051851,
+        "uncertainty": 4.843171950812672e-06,
+        "uncertainty_toys": 1.3963588780590382e-06
+    },
+    "FERS_Board6_energyMix_61": {
+        "response": 0.0004273177255188213,
+        "uncertainty": 2.2659205397066926e-05,
+        "uncertainty_toys": 8.868063402415544e-06
+    },
+    "FERS_Board6_energyMix_53": {
+        "response": 0.0002381922327545918,
+        "uncertainty": 4.0172383855651786e-06,
+        "uncertainty_toys": 8.175689451223484e-07
+    },
+    "FERS_Board6_energyMix_44": {
+        "response": 0.0002241453368793353,
+        "uncertainty": 2.4153355777051945e-06,
+        "uncertainty_toys": 7.626246123651769e-07
+    },
+    "FERS_Board6_energyMix_14": {
+        "response": 0.0002522733172489433,
+        "uncertainty": 4.245402350135171e-06,
+        "uncertainty_toys": 1.1887404535349088e-06
+    },
+    "FERS_Board6_energyMix_29": {
+        "response": 0.0005221062573745566,
+        "uncertainty": 2.6852270257246534e-05,
+        "uncertainty_toys": 1.6400382031175543e-05
+    },
+    "FERS_Board6_energyMix_21": {
+        "response": 0.0002499221795047463,
+        "uncertainty": 4.035761531237844e-06,
+        "uncertainty_toys": 1.041830937536877e-06
+    },
+    "FERS_Board6_energyMix_45": {
+        "response": 0.00031744617574557134,
+        "uncertainty": 6.283884107653629e-06,
+        "uncertainty_toys": 2.5775910166476458e-06
+    },
+    "FERS_Board6_energyMix_36": {
+        "response": 0.0002776460759108883,
+        "uncertainty": 9.814332842625822e-06,
+        "uncertainty_toys": 3.3367992537668237e-06
+    },
+    "FERS_Board6_energyMix_47": {
+        "response": 0.0003079117530205299,
+        "uncertainty": 6.081933430939393e-06,
+        "uncertainty_toys": 2.452428502751259e-06
+    },
+    "FERS_Board6_energyMix_22": {
+        "response": 0.000277384230802301,
+        "uncertainty": 2.147902699772094e-06,
+        "uncertainty_toys": 5.516186761205762e-07
+    },
+    "FERS_Board6_energyMix_4": {
+        "response": 0.00033452781622021847,
+        "uncertainty": 4.443286170287282e-06,
+        "uncertainty_toys": 2.2794267972027037e-06
+    },
+    "FERS_Board6_energyMix_39": {
+        "response": 0.0007756156615355755,
+        "uncertainty": 3.820272779065343e-05,
+        "uncertainty_toys": 3.251180501314437e-05
+    },
+    "FERS_Board6_energyMix_15": {
+        "response": 0.00024198326571444633,
+        "uncertainty": 5.086559411015834e-06,
+        "uncertainty_toys": 1.1381361931247595e-06
+    },
+    "FERS_Board6_energyMix_54": {
+        "response": 0.00023429119846371435,
+        "uncertainty": 2.1231197393396155e-06,
+        "uncertainty_toys": 3.413869913753574e-07
+    },
+    "FERS_Board6_energyMix_7": {
+        "response": 0.00029580534521487226,
+        "uncertainty": 2.8505061409885205e-05,
+        "uncertainty_toys": 1.3426738891735923e-05
+    },
+    "FERS_Board6_energyMix_62": {
+        "response": 0.00035451843883461487,
+        "uncertainty": 2.039098538571656e-05,
+        "uncertainty_toys": 4.5675215263432265e-06
+    },
+    "FERS_Board6_energyMix_37": {
+        "response": 0.0003962290782139075,
+        "uncertainty": 2.1314925343475628e-05,
+        "uncertainty_toys": 1.2525564118240272e-05
+    },
+    "FERS_Board6_energyMix_28": {
+        "response": 0.0004461193481001251,
+        "uncertainty": 1.955589300224802e-05,
+        "uncertainty_toys": 7.86498701329313e-06
+    },
+    "FERS_Board6_energyMix_30": {
+        "response": 0.00028912010476020704,
+        "uncertainty": 9.440456645722923e-06,
+        "uncertainty_toys": 2.105572877151241e-06
+    },
+    "FERS_Board7_energyMix_38": {
+        "response": 0.0002243991585927274,
+        "uncertainty": 9.978487300262865e-06,
+        "uncertainty_toys": 6.658802048306763e-06
+    },
+    "FERS_Board7_energyMix_55": {
+        "response": 0.00017636376590655643,
+        "uncertainty": 3.000023351058839e-06,
+        "uncertainty_toys": 1.1421447258246674e-06
+    },
+    "FERS_Board7_energyMix_14": {
+        "response": 0.00022171723475412002,
+        "uncertainty": 6.276567216480635e-06,
+        "uncertainty_toys": 1.412644903686509e-06
+    },
+    "FERS_Board7_energyMix_63": {
+        "response": 0.00020677222597428012,
+        "uncertainty": 1.00732434022197e-05,
+        "uncertainty_toys": 6.286509038529593e-06
+    },
+    "FERS_Board7_energyMix_6": {
+        "response": 0.00011291441679496247,
+        "uncertainty": 2.138055360349083e-05,
+        "uncertainty_toys": 8.417031682116516e-06
+    },
+    "FERS_Board7_energyMix_46": {
+        "response": 0.00022316799988751648,
+        "uncertainty": 4.848921296019138e-06,
+        "uncertainty_toys": 1.8741739277129971e-06
+    },
+    "FERS_Board7_energyMix_29": {
+        "response": 0.00026895038204420525,
+        "uncertainty": 2.8808176012275738e-05,
+        "uncertainty_toys": 1.981709168286784e-05
+    },
+    "FERS_Board7_energyMix_21": {
+        "response": 0.00019113205944294156,
+        "uncertainty": 5.914879132845148e-06,
+        "uncertainty_toys": 3.537531992738632e-06
+    },
+    "FERS_Board7_energyMix_44": {
+        "response": 0.000297527783791614,
+        "uncertainty": 2.780489624293161e-06,
+        "uncertainty_toys": 9.93844384754657e-07
+    },
+    "FERS_Board7_energyMix_61": {
+        "response": 0.00027247671371879057,
+        "uncertainty": 1.1593924978763255e-05,
+        "uncertainty_toys": 7.428676682378883e-06
+    },
+    "FERS_Board7_energyMix_4": {
+        "response": 0.0007404274282108382,
+        "uncertainty": 3.68187801129952e-05,
+        "uncertainty_toys": 1.919180289757266e-05
+    },
+    "FERS_Board7_energyMix_53": {
+        "response": 0.00021490230361479186,
+        "uncertainty": 3.4209949565875498e-06,
+        "uncertainty_toys": 1.0711175652732281e-06
+    },
+    "FERS_Board7_energyMix_12": {
+        "response": 0.00021303455951340774,
+        "uncertainty": 3.126714562720102e-06,
+        "uncertainty_toys": 1.1415093746876198e-06
+    },
+    "FERS_Board7_energyMix_36": {
+        "response": 0.0006345856808365109,
+        "uncertainty": 3.2702930652831125e-05,
+        "uncertainty_toys": 3.710146674720963e-05
+    },
+    "FERS_Board7_energyMix_15": {
+        "response": 0.00028383825360390693,
+        "uncertainty": 6.319398273492945e-06,
+        "uncertainty_toys": 5.115074362889991e-06
+    },
+    "FERS_Board7_energyMix_7": {
+        "response": 0.0004585593714220551,
+        "uncertainty": 5.8629595518009685e-05,
+        "uncertainty_toys": 7.482270696984915e-05
+    },
+    "FERS_Board7_energyMix_30": {
+        "response": 0.00026906285890450127,
+        "uncertainty": 2.0535881951173614e-05,
+        "uncertainty_toys": 1.3728983774431e-05
+    },
+    "FERS_Board7_energyMix_47": {
+        "response": 0.0001941675726488253,
+        "uncertainty": 4.4303484464432264e-06,
+        "uncertainty_toys": 1.248281766204307e-06
+    },
+    "FERS_Board7_energyMix_54": {
+        "response": 0.00021227175319237583,
+        "uncertainty": 1.5543552530241352e-06,
+        "uncertainty_toys": 3.139880116773397e-07
+    },
+    "FERS_Board7_energyMix_39": {
+        "response": 0.0005121560092267519,
+        "uncertainty": 3.056504690524676e-05,
+        "uncertainty_toys": 2.1142192416293004e-05
+    },
+    "FERS_Board7_energyMix_62": {
+        "response": 0.00045797225396028966,
+        "uncertainty": 2.3972931994224644e-05,
+        "uncertainty_toys": 7.92245268378622e-06
+    },
+    "FERS_Board7_energyMix_22": {
+        "response": 0.0002474938393667303,
+        "uncertainty": 2.541400298759099e-06,
+        "uncertainty_toys": 9.131228225507502e-07
+    },
+    "FERS_Board7_energyMix_5": {
+        "response": 0.0005218378551904271,
+        "uncertainty": 3.419821547885445e-05,
+        "uncertainty_toys": 2.2940297335422353e-05
+    },
+    "FERS_Board7_energyMix_13": {
+        "response": 0.0028006904952947113,
+        "uncertainty": 0.00014581649016373415,
+        "uncertainty_toys": 0.0002749851739449109
+    },
+    "FERS_Board7_energyMix_20": {
+        "response": 0.00026845969961399274,
+        "uncertainty": 5.718567195563589e-06,
+        "uncertainty_toys": 1.5268552918846932e-06
+    },
+    "FERS_Board7_energyMix_37": {
+        "response": 0.00034686877022906733,
+        "uncertainty": 1.751693189848119e-05,
+        "uncertainty_toys": 6.498376249043242e-06
+    },
+    "FERS_Board7_energyMix_60": {
+        "response": 0.0003128763795791089,
+        "uncertainty": 1.2475241151651768e-05,
+        "uncertainty_toys": 5.617361353558329e-06
+    },
+    "FERS_Board7_energyMix_45": {
+        "response": 0.0002524594179745795,
+        "uncertainty": 5.3740544897062174e-06,
+        "uncertainty_toys": 1.97878081029958e-06
+    },
+    "FERS_Board7_energyMix_52": {
+        "response": 0.00035534963156514873,
+        "uncertainty": 5.4792508473036515e-06,
+        "uncertainty_toys": 1.1303197334609584e-06
+    },
+    "FERS_Board7_energyMix_28": {
+        "response": 0.00023500668426763708,
+        "uncertainty": 1.2914109478643928e-05,
+        "uncertainty_toys": 6.4240230509174055e-06
+    },
+    "FERS_Board7_energyMix_23": {
+        "response": 0.000268068076253782,
+        "uncertainty": 5.458510870403752e-06,
+        "uncertainty_toys": 3.933244621177723e-06
+    },
+    "FERS_Board7_energyMix_31": {
+        "response": 0.00033132877181136296,
+        "uncertainty": 1.654453747893078e-05,
+        "uncertainty_toys": 8.790208270438261e-06
+    },
+    "FERS_Board8_energyMix_52": {
+        "response": 0.00017512132298148707,
+        "uncertainty": 8.033667854155277e-06,
+        "uncertainty_toys": 1.2081380833484123e-05
+    },
+    "FERS_Board8_energyMix_21": {
+        "response": 0.0002283437176155498,
+        "uncertainty": 1.727740812874654e-05,
+        "uncertainty_toys": 5.344654578110976e-06
+    },
+    "FERS_Board8_energyMix_44": {
+        "response": 0.0002106679509962415,
+        "uncertainty": 1.1213991483636794e-05,
+        "uncertainty_toys": 4.763156106809624e-06
+    },
+    "FERS_Board8_energyMix_12": {
+        "response": 0.000216938092905887,
+        "uncertainty": 2.589713983770106e-05,
+        "uncertainty_toys": 2.3004459084661618e-05
+    },
+    "FERS_Board8_energyMix_61": {
+        "response": 0.0010349842479585908,
+        "uncertainty": 3.458758963813656e-05,
+        "uncertainty_toys": 4.045125756697204e-05
+    },
+    "FERS_Board8_energyMix_4": {
+        "response": 8.94675064250477e-05,
+        "uncertainty": 3.278935992539536e-05,
+        "uncertainty_toys": 2.6949814233309275e-05
+    },
+    "FERS_Board8_energyMix_46": {
+        "response": 0.00021654251582319198,
+        "uncertainty": 6.885846979664001e-06,
+        "uncertainty_toys": 2.4404915827807597e-06
+    },
+    "FERS_Board8_energyMix_15": {
+        "response": 0.00015927298511557865,
+        "uncertainty": 4.1633107610457e-05,
+        "uncertainty_toys": 5.830818550609032e-05
+    },
+    "FERS_Board8_energyMix_54": {
+        "response": 0.0008237427886519339,
+        "uncertainty": 4.204129637896046e-05,
+        "uncertainty_toys": 9.324780180808321e-05
+    },
+    "FERS_Board8_energyMix_7": {
+        "response": 0.0005154503472273945,
+        "uncertainty": 3.926936783614892e-05,
+        "uncertainty_toys": 0.0003633982507994037
+    },
+    "FERS_Board8_energyMix_22": {
+        "response": 0.00019355493306469048,
+        "uncertainty": 6.017384668043411e-06,
+        "uncertainty_toys": 1.9377512409647155e-06
+    },
+    "FERS_Board8_energyMix_63": {
+        "response": 0.0002605490465938544,
+        "uncertainty": 1.027169664396043e-05,
+        "uncertainty_toys": 9.811036254093092e-06
+    },
+    "FERS_Board8_energyMix_36": {
+        "response": 0.00018534457441279887,
+        "uncertainty": 7.084136412173603e-06,
+        "uncertainty_toys": 2.740944295202767e-06
+    },
+    "FERS_Board8_energyMix_30": {
+        "response": 0.00020284056952147642,
+        "uncertainty": 7.466915659469675e-06,
+        "uncertainty_toys": 1.431163101746537e-06
+    },
+    "FERS_Board8_energyMix_5": {
+        "response": 0.00024365261397493883,
+        "uncertainty": 8.202286999188958e-06,
+        "uncertainty_toys": 3.413479966700086e-05
+    },
+    "FERS_Board8_energyMix_13": {
+        "response": 0.0017513212055318794,
+        "uncertainty": 0.00011766339335364573,
+        "uncertainty_toys": 0.0005935649555537163
+    },
+    "FERS_Board8_energyMix_60": {
+        "response": 0.0008325490883497579,
+        "uncertainty": 7.69949376801354e-05,
+        "uncertainty_toys": 0.0003883351230154739
+    },
+    "FERS_Board8_energyMix_28": {
+        "response": 0.00018683330095163315,
+        "uncertainty": 3.006255024220402e-06,
+        "uncertainty_toys": 1.0450945132722176e-06
+    },
+    "FERS_Board8_energyMix_38": {
+        "response": 0.00018401315118304204,
+        "uncertainty": 3.2768055860908314e-06,
+        "uncertainty_toys": 5.992524277251574e-07
+    },
+    "FERS_Board8_energyMix_53": {
+        "response": 8.813272165951328e-05,
+        "uncertainty": 2.9768099398121993e-05,
+        "uncertainty_toys": 2.8115910955100386e-05
+    },
+    "FERS_Board8_energyMix_20": {
+        "response": 0.00028054019333474103,
+        "uncertainty": 6.057655464550188e-06,
+        "uncertainty_toys": 1.6829006063461708e-06
+    },
+    "FERS_Board8_energyMix_62": {
+        "response": 0.000351353503684601,
+        "uncertainty": 3.325909110237717e-05,
+        "uncertainty_toys": 6.565012449015153e-05
+    },
+    "FERS_Board8_energyMix_39": {
+        "response": 0.0003277340102382891,
+        "uncertainty": 6.619264169799685e-06,
+        "uncertainty_toys": 3.713944171815071e-06
+    },
+    "FERS_Board8_energyMix_45": {
+        "response": 0.00034001773592739267,
+        "uncertainty": 1.0216593959153007e-05,
+        "uncertainty_toys": 8.632311558918341e-06
+    },
+    "FERS_Board8_energyMix_23": {
+        "response": 0.00040068516367705907,
+        "uncertainty": 1.7172432473973206e-05,
+        "uncertainty_toys": 1.805953138496809e-05
+    },
+    "FERS_Board8_energyMix_31": {
+        "response": 0.00027094529431762,
+        "uncertainty": 1.0975172850132801e-05,
+        "uncertainty_toys": 4.1246187031364876e-06
+    },
+    "FERS_Board8_energyMix_37": {
+        "response": 0.00020124579279521963,
+        "uncertainty": 9.071303214727674e-06,
+        "uncertainty_toys": 2.285689873896607e-06
+    },
+    "FERS_Board8_energyMix_6": {
+        "response": 0.0021772231250869233,
+        "uncertainty": 0.00013126239800588765,
+        "uncertainty_toys": 8.484502357748583e-05
+    },
+    "FERS_Board8_energyMix_47": {
+        "response": 0.00020940415129281454,
+        "uncertainty": 1.4062600307670232e-05,
+        "uncertainty_toys": 4.539536376105975e-06
+    },
+    "FERS_Board8_energyMix_55": {
+        "response": 0.0012388615484248782,
+        "uncertainty": 0.00010401767377682579,
+        "uncertainty_toys": 0.00036793352973131055
+    },
+    "FERS_Board8_energyMix_29": {
+        "response": 0.0003925692773220119,
+        "uncertainty": 7.963967086024002e-06,
+        "uncertainty_toys": 4.210080451000833e-06
+    },
+    "FERS_Board8_energyMix_14": {
+        "response": 0.00016750719722452456,
+        "uncertainty": 6.430244116053074e-06,
+        "uncertainty_toys": 4.7100427142944426e-06
+    },
+    "FERS_Board9_energyMix_49": {
+        "response": 0.00019132783755838753,
+        "uncertainty": 2.594365382389916e-05,
+        "uncertainty_toys": 6.239845840300517e-06
+    },
+    "FERS_Board9_energyMix_53": {
+        "response": 7.665943424368216e-05,
+        "uncertainty": 4.3100165109822133e-05,
+        "uncertainty_toys": 1.3682160866395499e-05
+    },
+    "FERS_Board9_energyMix_57": {
+        "response": 0.0007542701683841291,
+        "uncertainty": 5.3472779584356114e-05,
+        "uncertainty_toys": 3.7727148152868466e-05
+    },
+    "FERS_Board9_energyMix_46": {
+        "response": 0.00018421561993104942,
+        "uncertainty": 1.5459070197639865e-05,
+        "uncertainty_toys": 7.0331324356106376e-06
+    },
+    "FERS_Board9_energyMix_22": {
+        "response": 0.0006645767966448321,
+        "uncertainty": 5.189164732008453e-05,
+        "uncertainty_toys": 1.337380555063423e-05
+    },
+    "FERS_Board9_energyMix_26": {
+        "response": 0.000199490457630544,
+        "uncertainty": 1.0800393161488822e-05,
+        "uncertainty_toys": 4.122209049541505e-06
+    },
+    "FERS_Board9_energyMix_30": {
+        "response": 0.0002300658688299979,
+        "uncertainty": 1.573973542129319e-05,
+        "uncertainty_toys": 4.077116630426802e-06
+    },
+    "FERS_Board9_energyMix_34": {
+        "response": 0.00022100749152973988,
+        "uncertainty": 1.1080624156517597e-05,
+        "uncertainty_toys": 3.849251105872166e-06
+    },
+    "FERS_Board9_energyMix_18": {
+        "response": 0.00029474912469399885,
+        "uncertainty": 2.1258869573866732e-05,
+        "uncertainty_toys": 9.700626385169375e-06
+    },
+    "FERS_Board9_energyMix_38": {
+        "response": 0.00017946234718916964,
+        "uncertainty": 9.988876476161961e-06,
+        "uncertainty_toys": 4.339557187128043e-06
+    },
+    "FERS_Board9_energyMix_42": {
+        "response": 0.00018770450665182235,
+        "uncertainty": 1.1111478304734223e-05,
+        "uncertainty_toys": 4.235951148753369e-06
+    },
+    "FERS_Board9_energyMix_58": {
+        "response": 0.00025160488416104575,
+        "uncertainty": 3.961593325585885e-05,
+        "uncertainty_toys": 1.2363804028826772e-05
+    },
+    "FERS_Board9_energyMix_62": {
+        "response": 0.0004192930685154776,
+        "uncertainty": 4.066595326113776e-05,
+        "uncertainty_toys": 1.3471972941359967e-05
+    },
+    "FERS_Board9_energyMix_50": {
+        "response": 0.0002411487555578739,
+        "uncertainty": 2.367865598907152e-05,
+        "uncertainty_toys": 1.1006832409094015e-05
+    },
+    "FERS_Board9_energyMix_54": {
+        "response": 0.0002625643225246991,
+        "uncertainty": 3.1854169114077224e-05,
+        "uncertainty_toys": 9.249947589127234e-06
+    },
+    "FERS_Board9_energyMix_17": {
+        "response": 0.00020681695194500545,
+        "uncertainty": 3.908587776683521e-05,
+        "uncertainty_toys": 1.5559839716066264e-05
+    },
+    "FERS_Board9_energyMix_21": {
+        "response": 0.00019407464600087126,
+        "uncertainty": 2.636027552760396e-05,
+        "uncertainty_toys": 7.87582756628102e-06
+    },
+    "FERS_Board9_energyMix_25": {
+        "response": 0.0005478006267324068,
+        "uncertainty": 4.7800370103285146e-05,
+        "uncertainty_toys": 8.965866827564092e-06
+    },
+    "FERS_Board9_energyMix_29": {
+        "response": 0.0002480048471825852,
+        "uncertainty": 1.5116029571060145e-05,
+        "uncertainty_toys": 4.896869907820364e-06
+    },
+    "FERS_Board9_energyMix_33": {
+        "response": 0.00017667822437839343,
+        "uncertainty": 1.65102359807715e-05,
+        "uncertainty_toys": 1.1070179849670234e-05
+    },
+    "FERS_Board9_energyMix_37": {
+        "response": 0.0002096005629335654,
+        "uncertainty": 1.3534798004663087e-05,
+        "uncertainty_toys": 5.512083286304715e-06
+    },
+    "FERS_Board9_energyMix_41": {
+        "response": 0.00017515330956061162,
+        "uncertainty": 1.2633053657470417e-05,
+        "uncertainty_toys": 3.1692003998802506e-06
+    },
+    "FERS_Board9_energyMix_45": {
+        "response": 0.00017008651766628442,
+        "uncertainty": 1.4586020698006792e-05,
+        "uncertainty_toys": 2.577694247599458e-06
+    },
+    "FERS_Board9_energyMix_0": {
+        "response": 0.00047167367557722647,
+        "uncertainty": 3.5616673173738926e-05,
+        "uncertainty_toys": 6.161017449955966e-06
+    },
+    "FERS_Board9_energyMix_3": {
+        "response": 0.000564125901577564,
+        "uncertainty": 0.00022691678528531203,
+        "uncertainty_toys": 0.00013427835229533843
+    },
+    "FERS_Board9_energyMix_7": {
+        "response": 0.0009826374573906683,
+        "uncertainty": 0.00012534966482198958,
+        "uncertainty_toys": 0.00011060353427704304
+    },
+    "FERS_Board9_energyMix_11": {
+        "response": 0.00029881702228954976,
+        "uncertainty": 5.356374809318952e-05,
+        "uncertainty_toys": 2.707447769679336e-05
+    },
+    "FERS_Board9_energyMix_15": {
+        "response": 0.00028922385751165724,
+        "uncertainty": 8.24362839899384e-05,
+        "uncertainty_toys": 3.647781968439352e-05
+    },
+    "FERS_Board9_energyMix_4": {
+        "response": 0.00020552151658025894,
+        "uncertainty": 1.9020780859441178e-05,
+        "uncertainty_toys": 7.569054730334286e-06
+    },
+    "FERS_Board9_energyMix_12": {
+        "response": 0.0003589467652204005,
+        "uncertainty": 3.272641069256898e-05,
+        "uncertainty_toys": 1.440616756758499e-05
+    },
+    "FERS_Board9_energyMix_8": {
+        "response": 0.00019085951563641856,
+        "uncertainty": 2.0218843325000112e-05,
+        "uncertainty_toys": 5.572175442242897e-06
+    },
+    "FERS_Board10_energyMix_41": {
+        "response": 0.0002190748598237337,
+        "uncertainty": 6.068253031891763e-05,
+        "uncertainty_toys": 4.974563838517854e-05
+    },
+    "FERS_Board10_energyMix_45": {
+        "response": 7.375890464313064e-05,
+        "uncertainty": 9.121250328906901e-05,
+        "uncertainty_toys": 2.7965595210923793e-05
+    },
+    "FERS_Board10_energyMix_50": {
+        "response": 0.00015931169203099336,
+        "uncertainty": 3.9687281684268245e-05,
+        "uncertainty_toys": 1.1531502535129829e-05
+    },
+    "FERS_Board10_energyMix_54": {
+        "response": 0.0004560694918770745,
+        "uncertainty": 7.846286857151293e-05,
+        "uncertainty_toys": 8.049452009580501e-05
+    },
+    "FERS_Board10_energyMix_58": {
+        "response": 0.0007528685750236226,
+        "uncertainty": 0.00026751408010203514,
+        "uncertainty_toys": 9.238431549275525e-05
+    },
+    "FERS_Board10_energyMix_62": {
+        "response": 0.0005488681494946654,
+        "uncertainty": 8.71750068922977e-05,
+        "uncertainty_toys": 0.00012981543451951895
+    },
+    "FERS_Board10_energyMix_7": {
+        "response": 0.0003169852611150461,
+        "uncertainty": 9.632856567145276e-05,
+        "uncertainty_toys": 9.339342340788763e-05
+    },
+    "FERS_Board10_energyMix_11": {
+        "response": 0.0002932062707258285,
+        "uncertainty": 5.334301557195794e-05,
+        "uncertainty_toys": 3.00484596420325e-05
+    },
+    "FERS_Board10_energyMix_15": {
+        "response": 0.0002883771186603484,
+        "uncertainty": 6.939950890664006e-05,
+        "uncertainty_toys": 3.4155312394380655e-05
+    },
+    "FERS_Board10_energyMix_3": {
+        "response": 0.0005617134440478768,
+        "uncertainty": 7.073257953452428e-05,
+        "uncertainty_toys": 8.281904138738234e-05
+    },
+    "FERS_Board10_energyMix_18": {
+        "response": 0.0003457764367561941,
+        "uncertainty": 7.221220898924651e-05,
+        "uncertainty_toys": 3.976695949806922e-05
+    },
+    "FERS_Board10_energyMix_22": {
+        "response": 0.00019819117525403995,
+        "uncertainty": 3.8814674640442636e-05,
+        "uncertainty_toys": 1.5824092490771298e-05
+    },
+    "FERS_Board10_energyMix_26": {
+        "response": 0.0002602860985311435,
+        "uncertainty": 3.054639793718767e-05,
+        "uncertainty_toys": 1.2106436036461135e-05
+    },
+    "FERS_Board10_energyMix_30": {
+        "response": 0.00028113728642669783,
+        "uncertainty": 1.7925471357111256e-05,
+        "uncertainty_toys": 3.0823497777643737e-06
+    },
+    "FERS_Board10_energyMix_34": {
+        "response": 0.00024854687288659096,
+        "uncertainty": 1.8375073869622712e-05,
+        "uncertainty_toys": 2.8939214243875715e-06
+    },
+    "FERS_Board10_energyMix_38": {
+        "response": 0.00016715901462609504,
+        "uncertainty": 1.3342651381266846e-05,
+        "uncertainty_toys": 2.961547025310363e-06
+    },
+    "FERS_Board10_energyMix_42": {
+        "response": 0.00015068957183945816,
+        "uncertainty": 1.3210068019487822e-05,
+        "uncertainty_toys": 2.442066203402198e-06
+    },
+    "FERS_Board10_energyMix_46": {
+        "response": 0.00016656777808500052,
+        "uncertainty": 2.139236295423739e-05,
+        "uncertainty_toys": 5.497775775796787e-06
+    },
+    "FERS_Board10_energyMix_17": {
+        "response": 0.0007577712323740075,
+        "uncertainty": 0.00020038136028926554,
+        "uncertainty_toys": 8.902306738303728e-05
+    },
+    "FERS_Board10_energyMix_21": {
+        "response": 0.0003407147222492398,
+        "uncertainty": 7.135188060115058e-05,
+        "uncertainty_toys": 4.492797416489758e-05
+    },
+    "FERS_Board10_energyMix_25": {
+        "response": 0.00019192198537484867,
+        "uncertainty": 8.558343984381874e-05,
+        "uncertainty_toys": 3.9291114182788706e-05
+    },
+    "FERS_Board10_energyMix_29": {
+        "response": 0.0005773178128967501,
+        "uncertainty": 9.236591961297162e-05,
+        "uncertainty_toys": 2.951431463454646e-05
+    },
+    "FERS_Board10_energyMix_33": {
+        "response": 0.00013259183910190752,
+        "uncertainty": 5.117131053957706e-05,
+        "uncertainty_toys": 1.5539666917659364e-05
+    },
+    "FERS_Board10_energyMix_37": {
+        "response": 0.00024643644574117433,
+        "uncertainty": 6.534922933687988e-05,
+        "uncertainty_toys": 3.086916498853539e-05
+    },
+    "FERS_Board10_energyMix_0": {
+        "response": 0.00047355546908423984,
+        "uncertainty": 8.139490172934358e-05,
+        "uncertainty_toys": 2.7888474686926307e-05
+    },
+    "FERS_Board10_energyMix_12": {
+        "response": 0.0003904717414730574,
+        "uncertainty": 8.510456345332591e-05,
+        "uncertainty_toys": 8.683295756634249e-05
+    },
+    "FERS_Board10_energyMix_4": {
+        "response": 0.00026191169136562554,
+        "uncertainty": 6.834017812682213e-05,
+        "uncertainty_toys": 7.575365355048568e-05
+    },
+    "FERS_Board10_energyMix_8": {
+        "response": 0.0002588114958329171,
+        "uncertainty": 8.933942402848383e-05,
+        "uncertainty_toys": 0.00020297540395333323
+    },
+    "FERS_Board10_energyMix_53": {
+        "response": 0.0008883024645025711,
+        "uncertainty": 0.00012796757934533043,
+        "uncertainty_toys": 8.718160785602614e-05
+    },
+    "FERS_Board10_energyMix_57": {
+        "response": 0.0002765961521534886,
+        "uncertainty": 9.679063378062217e-05,
+        "uncertainty_toys": 5.580236678380346e-05
+    },
+    "FERS_Board10_energyMix_61": {
+        "response": 0.00020520147706716156,
+        "uncertainty": 4.78939203796269e-05,
+        "uncertainty_toys": 2.693534437112515e-05
+    },
+    "FERS_Board10_energyMix_49": {
+        "response": 0.0004800014497305521,
+        "uncertainty": 9.410272090732383e-05,
+        "uncertainty_toys": 8.801144785178236e-05
+    },
+    "FERS_Board11_energyMix_31": {
+        "response": 0.0002522772546747256,
+        "uncertainty": 1.2932585948101338e-05,
+        "uncertainty_toys": 8.623852366817473e-06
+    },
+    "FERS_Board11_energyMix_14": {
+        "response": 0.00018125202181765762,
+        "uncertainty": 3.529690622547981e-06,
+        "uncertainty_toys": 9.788152209327643e-07
+    },
+    "FERS_Board11_energyMix_38": {
+        "response": 0.00016026024905177124,
+        "uncertainty": 9.456669957413882e-06,
+        "uncertainty_toys": 3.165612858362064e-06
+    },
+    "FERS_Board11_energyMix_55": {
+        "response": 0.0002370656618861877,
+        "uncertainty": 6.147696821857111e-06,
+        "uncertainty_toys": 1.5595035636546211e-06
+    },
+    "FERS_Board11_energyMix_63": {
+        "response": 0.00019644335447740007,
+        "uncertainty": 1.183807540152408e-05,
+        "uncertainty_toys": 3.3225950623023237e-06
+    },
+    "FERS_Board11_energyMix_5": {
+        "response": 0.0004136982789553045,
+        "uncertainty": 2.08943994830713e-05,
+        "uncertainty_toys": 1.0515510227938313e-05
+    },
+    "FERS_Board11_energyMix_23": {
+        "response": 0.0002662443144996158,
+        "uncertainty": 3.76386378701624e-06,
+        "uncertainty_toys": 9.64784239401258e-07
+    },
+    "FERS_Board11_energyMix_52": {
+        "response": 0.002151640509290322,
+        "uncertainty": 0.00011650407415659263,
+        "uncertainty_toys": 8.739260816075351e-05
+    },
+    "FERS_Board11_energyMix_37": {
+        "response": 0.00031029119923689253,
+        "uncertainty": 1.5632331201799333e-05,
+        "uncertainty_toys": 9.785314054742668e-06
+    },
+    "FERS_Board11_energyMix_20": {
+        "response": 0.00018780091134575246,
+        "uncertainty": 2.643074092962126e-06,
+        "uncertainty_toys": 1.6657694791786601e-06
+    },
+    "FERS_Board11_energyMix_28": {
+        "response": 0.0004023521051973169,
+        "uncertainty": 1.6348361817699655e-05,
+        "uncertainty_toys": 1.2071405676224828e-05
+    },
+    "FERS_Board11_energyMix_45": {
+        "response": 0.00024142422090805765,
+        "uncertainty": 8.248087832196156e-06,
+        "uncertainty_toys": 2.0265812514058957e-06
+    },
+    "FERS_Board11_energyMix_7": {
+        "response": 0.00039044497710056527,
+        "uncertainty": 2.3546896147373998e-05,
+        "uncertainty_toys": 1.1515925499704676e-05
+    },
+    "FERS_Board11_energyMix_60": {
+        "response": 0.00024533062674486405,
+        "uncertainty": 1.1127122042081287e-05,
+        "uncertainty_toys": 4.343724120518594e-06
+    },
+    "FERS_Board11_energyMix_13": {
+        "response": 0.00020423827458940092,
+        "uncertainty": 3.408732753485883e-06,
+        "uncertainty_toys": 7.291056908124922e-07
+    },
+    "FERS_Board11_energyMix_62": {
+        "response": 0.0005367441715106355,
+        "uncertainty": 6.635273816050794e-05,
+        "uncertainty_toys": 3.289577487513529e-05
+    },
+    "FERS_Board11_energyMix_22": {
+        "response": 0.000198368009717371,
+        "uncertainty": 1.7290173716128947e-06,
+        "uncertainty_toys": 3.784150899324907e-07
+    },
+    "FERS_Board11_energyMix_15": {
+        "response": 0.0003684729509949841,
+        "uncertainty": 6.63285728258039e-06,
+        "uncertainty_toys": 2.331900225699256e-06
+    },
+    "FERS_Board11_energyMix_30": {
+        "response": 0.00020404155277370883,
+        "uncertainty": 1.347210228399378e-05,
+        "uncertainty_toys": 5.896968262414734e-06
+    },
+    "FERS_Board11_energyMix_54": {
+        "response": 0.00032181686627027486,
+        "uncertainty": 3.314867268944492e-06,
+        "uncertainty_toys": 2.1575656100936237e-06
+    },
+    "FERS_Board11_energyMix_39": {
+        "response": 0.00026555927528502406,
+        "uncertainty": 1.697565774294246e-05,
+        "uncertainty_toys": 9.537408867303323e-06
+    },
+    "FERS_Board11_energyMix_47": {
+        "response": 0.00018794622163081096,
+        "uncertainty": 7.334390749746905e-06,
+        "uncertainty_toys": 2.5884466282090158e-06
+    },
+    "FERS_Board11_energyMix_4": {
+        "response": 0.0002585928499970058,
+        "uncertainty": 1.3384208132699593e-05,
+        "uncertainty_toys": 7.603050420709096e-06
+    },
+    "FERS_Board11_energyMix_12": {
+        "response": 0.00018113436719224067,
+        "uncertainty": 1.8555250878069817e-06,
+        "uncertainty_toys": 4.474813174302914e-07
+    },
+    "FERS_Board11_energyMix_61": {
+        "response": 0.00020935955252385824,
+        "uncertainty": 1.0438065539122822e-05,
+        "uncertainty_toys": 3.2856289315646097e-06
+    },
+    "FERS_Board11_energyMix_21": {
+        "response": 0.0002737465561490452,
+        "uncertainty": 4.153732975050798e-06,
+        "uncertainty_toys": 1.042229828012634e-06
+    },
+    "FERS_Board11_energyMix_36": {
+        "response": 8.889708043759739e-05,
+        "uncertainty": 7.947081846742732e-06,
+        "uncertainty_toys": 7.63279931882901e-06
+    },
+    "FERS_Board11_energyMix_44": {
+        "response": 0.00024348503011390352,
+        "uncertainty": 6.7537300963624294e-06,
+        "uncertainty_toys": 1.980079564859617e-06
+    },
+    "FERS_Board11_energyMix_29": {
+        "response": 0.0004724145194497482,
+        "uncertainty": 2.3342355721287304e-05,
+        "uncertainty_toys": 9.438617662372138e-06
+    },
+    "FERS_Board11_energyMix_53": {
+        "response": 0.00020308591677113257,
+        "uncertainty": 8.941756965269827e-06,
+        "uncertainty_toys": 2.6144955594704364e-06
+    },
+    "FERS_Board11_energyMix_46": {
+        "response": 0.0001995088685389067,
+        "uncertainty": 3.3962088208825486e-06,
+        "uncertainty_toys": 2.1107358948029546e-06
+    },
+    "FERS_Board11_energyMix_6": {
+        "response": 0.00031980102213019767,
+        "uncertainty": 1.1309589418317896e-05,
+        "uncertainty_toys": 7.73473966454112e-06
+    },
+    "FERS_Board12_energyMix_12": {
+        "response": 0.00025284931873866467,
+        "uncertainty": 2.3317618974598042e-06,
+        "uncertainty_toys": 6.43187547979791e-07
+    },
+    "FERS_Board12_energyMix_7": {
+        "response": 0.00021529669565315094,
+        "uncertainty": 1.6791408053315412e-06,
+        "uncertainty_toys": 5.569318693603113e-07
+    },
+    "FERS_Board12_energyMix_21": {
+        "response": 0.0003089057211960346,
+        "uncertainty": 4.831247589105302e-06,
+        "uncertainty_toys": 1.3493271299222596e-06
+    },
+    "FERS_Board12_energyMix_29": {
+        "response": 0.00045347175538604207,
+        "uncertainty": 1.83688924667103e-05,
+        "uncertainty_toys": 1.0177437666764583e-05
+    },
+    "FERS_Board12_energyMix_14": {
+        "response": 0.000231531635236447,
+        "uncertainty": 4.489663440139029e-06,
+        "uncertainty_toys": 1.0929242569835544e-06
+    },
+    "FERS_Board12_energyMix_63": {
+        "response": 0.0003978753154980382,
+        "uncertainty": 1.5394607880177268e-05,
+        "uncertainty_toys": 8.699826190093201e-06
+    },
+    "FERS_Board12_energyMix_61": {
+        "response": 0.0005350394050563877,
+        "uncertainty": 1.912482345680594e-05,
+        "uncertainty_toys": 2.092524573187754e-05
+    },
+    "FERS_Board12_energyMix_46": {
+        "response": 0.0002683007379041026,
+        "uncertainty": 2.739737467644046e-06,
+        "uncertainty_toys": 7.542510346468905e-07
+    },
+    "FERS_Board12_energyMix_31": {
+        "response": 0.00033471001578262385,
+        "uncertainty": 1.3372434511426146e-05,
+        "uncertainty_toys": 4.652191644568967e-06
+    },
+    "FERS_Board12_energyMix_38": {
+        "response": 0.0005148993157127051,
+        "uncertainty": 2.4556397206624637e-05,
+        "uncertainty_toys": 1.2682681547784968e-05
+    },
+    "FERS_Board12_energyMix_20": {
+        "response": 0.00023961646382797915,
+        "uncertainty": 3.2332525267624486e-06,
+        "uncertainty_toys": 8.111133328238795e-07
+    },
+    "FERS_Board12_energyMix_23": {
+        "response": 0.000266100925499946,
+        "uncertainty": 4.072247095766737e-06,
+        "uncertainty_toys": 9.879301243090926e-07
+    },
+    "FERS_Board12_energyMix_53": {
+        "response": 0.0002291246980350431,
+        "uncertainty": 3.6701572827408793e-06,
+        "uncertainty_toys": 1.07334648257769e-06
+    },
+    "FERS_Board12_energyMix_60": {
+        "response": 0.0004066489046646267,
+        "uncertainty": 1.6430429203308596e-05,
+        "uncertainty_toys": 6.5949809792762785e-06
+    },
+    "FERS_Board12_energyMix_4": {
+        "response": 0.0005659225344838263,
+        "uncertainty": 2.099484093696009e-05,
+        "uncertainty_toys": 1.8171624748030235e-05
+    },
+    "FERS_Board12_energyMix_52": {
+        "response": 0.00028062885359230827,
+        "uncertainty": 2.029379943254102e-06,
+        "uncertainty_toys": 5.12012076597666e-07
+    },
+    "FERS_Board12_energyMix_37": {
+        "response": 0.000474938860278052,
+        "uncertainty": 2.2988811526890007e-05,
+        "uncertainty_toys": 2.4733178160879094e-05
+    },
+    "FERS_Board12_energyMix_55": {
+        "response": 0.00022337539602254624,
+        "uncertainty": 4.606362437444778e-06,
+        "uncertainty_toys": 1.9754122648006627e-06
+    },
+    "FERS_Board12_energyMix_28": {
+        "response": 0.000304038486543505,
+        "uncertainty": 1.749778318063544e-05,
+        "uncertainty_toys": 6.151516889553596e-06
+    },
+    "FERS_Board12_energyMix_13": {
+        "response": 0.0003261663854979935,
+        "uncertainty": 5.334971823538917e-06,
+        "uncertainty_toys": 1.4007564445889094e-06
+    },
+    "FERS_Board12_energyMix_6": {
+        "response": 0.0004702002504471772,
+        "uncertainty": 1.479837023831764e-05,
+        "uncertainty_toys": 1.1869015551087359e-05
+    },
+    "FERS_Board12_energyMix_54": {
+        "response": 0.0001856645466568649,
+        "uncertainty": 2.5948883234958933e-06,
+        "uncertainty_toys": 5.554030546459782e-07
+    },
+    "FERS_Board12_energyMix_30": {
+        "response": 0.0002828059314468099,
+        "uncertainty": 1.7859167194498e-05,
+        "uncertainty_toys": 5.676652730314506e-06
+    },
+    "FERS_Board12_energyMix_47": {
+        "response": 0.00022019833631043998,
+        "uncertainty": 4.334188447225017e-06,
+        "uncertainty_toys": 1.6613765762928214e-06
+    },
+    "FERS_Board12_energyMix_45": {
+        "response": 0.0002810591355842656,
+        "uncertainty": 5.421748522379709e-06,
+        "uncertainty_toys": 1.8255479053648965e-06
+    },
+    "FERS_Board12_energyMix_22": {
+        "response": 0.00028589513739483616,
+        "uncertainty": 1.9968704507407765e-06,
+        "uncertainty_toys": 4.4701068658705744e-07
+    },
+    "FERS_Board12_energyMix_62": {
+        "response": 0.0003537897261656152,
+        "uncertainty": 1.3483018042488467e-05,
+        "uncertainty_toys": 5.08580043403152e-06
+    },
+    "FERS_Board12_energyMix_15": {
+        "response": 0.0002580756048061025,
+        "uncertainty": 4.492489168452815e-06,
+        "uncertainty_toys": 1.400214824560333e-06
+    },
+    "FERS_Board12_energyMix_5": {
+        "response": 0.0003652413238668061,
+        "uncertainty": 1.2928780674290872e-05,
+        "uncertainty_toys": 5.803630794131512e-06
+    },
+    "FERS_Board12_energyMix_39": {
+        "response": 0.00033883831252053863,
+        "uncertainty": 1.4927945958482574e-05,
+        "uncertainty_toys": 1.1289785978085431e-05
+    },
+    "FERS_Board12_energyMix_44": {
+        "response": 0.00028240819994730583,
+        "uncertainty": 4.314325747184237e-06,
+        "uncertainty_toys": 1.454570954071375e-06
+    },
+    "FERS_Board12_energyMix_36": {
+        "response": 0.0004200710867554656,
+        "uncertainty": 2.135730075674267e-05,
+        "uncertainty_toys": 6.83639095806329e-06
+    },
+    "FERS_Board13_energyMix_14": {
+        "response": 0.0002349802332985589,
+        "uncertainty": 2.579405220317612e-06,
+        "uncertainty_toys": 7.227926298568861e-07
+    },
+    "FERS_Board13_energyMix_38": {
+        "response": 0.0003906872695778137,
+        "uncertainty": 1.5207566342314837e-05,
+        "uncertainty_toys": 9.418829928689403e-06
+    },
+    "FERS_Board13_energyMix_37": {
+        "response": 0.0003885849464730532,
+        "uncertainty": 2.063435451831318e-05,
+        "uncertainty_toys": 1.2957608844807954e-05
+    },
+    "FERS_Board13_energyMix_29": {
+        "response": 0.0005326341790481949,
+        "uncertainty": 1.6828176398675257e-05,
+        "uncertainty_toys": 1.4180958309376806e-05
+    },
+    "FERS_Board13_energyMix_52": {
+        "response": 0.00026798272011158646,
+        "uncertainty": 1.8549468789435263e-06,
+        "uncertainty_toys": 7.179337352480271e-07
+    },
+    "FERS_Board13_energyMix_6": {
+        "response": 0.0003692233522232863,
+        "uncertainty": 1.5169417084242923e-05,
+        "uncertainty_toys": 5.164249700565354e-06
+    },
+    "FERS_Board13_energyMix_7": {
+        "response": 0.0003486885661369697,
+        "uncertainty": 1.9548967022232506e-05,
+        "uncertainty_toys": 1.0762646584233786e-05
+    },
+    "FERS_Board13_energyMix_20": {
+        "response": 0.000291294923710289,
+        "uncertainty": 2.3815999690624013e-06,
+        "uncertainty_toys": 1.018952914935247e-06
+    },
+    "FERS_Board13_energyMix_28": {
+        "response": 0.00044201238002441085,
+        "uncertainty": 1.3072126820043607e-05,
+        "uncertainty_toys": 1.2879522292698834e-05
+    },
+    "FERS_Board13_energyMix_31": {
+        "response": 0.00034814690076386776,
+        "uncertainty": 1.3442162495123601e-05,
+        "uncertainty_toys": 7.958854356907903e-06
+    },
+    "FERS_Board13_energyMix_39": {
+        "response": 0.0006932905300733722,
+        "uncertainty": 2.1151831478141477e-05,
+        "uncertainty_toys": 1.4077149503648533e-05
+    },
+    "FERS_Board13_energyMix_30": {
+        "response": 0.00026228281276633966,
+        "uncertainty": 7.567694969264396e-06,
+        "uncertainty_toys": 4.323498648124593e-06
+    },
+    "FERS_Board13_energyMix_13": {
+        "response": 0.00029197038019419927,
+        "uncertainty": 4.9530555416283295e-06,
+        "uncertainty_toys": 2.0016903041999246e-06
+    },
+    "FERS_Board13_energyMix_21": {
+        "response": 0.00023890586893596873,
+        "uncertainty": 3.582437623915203e-06,
+        "uncertainty_toys": 1.329529263197481e-06
+    },
+    "FERS_Board13_energyMix_22": {
+        "response": 0.00024084441282822697,
+        "uncertainty": 2.5576533257524605e-06,
+        "uncertainty_toys": 5.597225829865026e-07
+    },
+    "FERS_Board13_energyMix_45": {
+        "response": 0.00018015937752515935,
+        "uncertainty": 3.3528882693553102e-06,
+        "uncertainty_toys": 1.2647709507223654e-06
+    },
+    "FERS_Board13_energyMix_54": {
+        "response": 0.0002197877032543728,
+        "uncertainty": 2.671373322227207e-06,
+        "uncertainty_toys": 7.082539509955264e-07
+    },
+    "FERS_Board13_energyMix_53": {
+        "response": 0.00027509419494420204,
+        "uncertainty": 3.996145428765999e-06,
+        "uncertainty_toys": 1.5087939261354288e-06
+    },
+    "FERS_Board13_energyMix_36": {
+        "response": 0.00048514296485409217,
+        "uncertainty": 1.3674875284098064e-05,
+        "uncertainty_toys": 8.59216714357426e-06
+    },
+    "FERS_Board13_energyMix_62": {
+        "response": 0.0003444037523105159,
+        "uncertainty": 1.3089042354925495e-05,
+        "uncertainty_toys": 4.506708766014733e-06
+    },
+    "FERS_Board13_energyMix_23": {
+        "response": 0.00026128123556562883,
+        "uncertainty": 4.045209230804636e-06,
+        "uncertainty_toys": 1.0838455160905826e-06
+    },
+    "FERS_Board13_energyMix_4": {
+        "response": 0.00031505211465825974,
+        "uncertainty": 7.806909915161162e-06,
+        "uncertainty_toys": 1.8690566877823316e-06
+    },
+    "FERS_Board13_energyMix_15": {
+        "response": 0.00024778560760213027,
+        "uncertainty": 4.661256207461666e-06,
+        "uncertainty_toys": 2.1103845036632238e-06
+    },
+    "FERS_Board13_energyMix_12": {
+        "response": 0.000268553873985883,
+        "uncertainty": 3.5000438084482346e-06,
+        "uncertainty_toys": 9.177757733742519e-07
+    },
+    "FERS_Board13_energyMix_55": {
+        "response": 0.000382023776080268,
+        "uncertainty": 4.294301719410097e-06,
+        "uncertainty_toys": 1.620889176158181e-06
+    },
+    "FERS_Board13_energyMix_61": {
+        "response": 0.00047130707318595634,
+        "uncertainty": 1.549613970638444e-05,
+        "uncertainty_toys": 9.61705047930021e-06
+    },
+    "FERS_Board13_energyMix_44": {
+        "response": 0.0002492081166819706,
+        "uncertainty": 3.227602935707216e-06,
+        "uncertainty_toys": 8.707473153523903e-07
+    },
+    "FERS_Board13_energyMix_47": {
+        "response": 0.00019751668268508236,
+        "uncertainty": 3.959708006325796e-06,
+        "uncertainty_toys": 3.6490549147389025e-06
+    },
+    "FERS_Board13_energyMix_46": {
+        "response": 0.00022989456640685733,
+        "uncertainty": 2.745148599627165e-06,
+        "uncertainty_toys": 1.2550108163173819e-06
+    },
+    "FERS_Board13_energyMix_5": {
+        "response": 0.0004400178020182498,
+        "uncertainty": 2.9681553332209038e-05,
+        "uncertainty_toys": 1.1842648073407387e-05
+    },
+    "FERS_Board13_energyMix_63": {
+        "response": 0.0003837651760802009,
+        "uncertainty": 1.4476070404462044e-05,
+        "uncertainty_toys": 1.2439726200686883e-05
+    },
+    "FERS_Board13_energyMix_60": {
+        "response": 0.0005516887645247382,
+        "uncertainty": 2.236671182536651e-05,
+        "uncertainty_toys": 1.0635774380269316e-05
+    },
+    "FERS_Board14_energyMix_31": {
+        "response": 0.0004000237105734692,
+        "uncertainty": 1.4691328167166312e-05,
+        "uncertainty_toys": 7.871906688897119e-06
+    },
+    "FERS_Board14_energyMix_36": {
+        "response": 0.0002925218542164834,
+        "uncertainty": 1.3219478634791933e-05,
+        "uncertainty_toys": 5.049441975580287e-06
+    },
+    "FERS_Board14_energyMix_6": {
+        "response": 0.00037934631529065217,
+        "uncertainty": 1.9291404408470008e-05,
+        "uncertainty_toys": 9.53393735288935e-06
+    },
+    "FERS_Board14_energyMix_53": {
+        "response": 0.00027206705476413704,
+        "uncertainty": 4.101027421313e-06,
+        "uncertainty_toys": 9.038829233442909e-07
+    },
+    "FERS_Board14_energyMix_62": {
+        "response": 0.00036299175261499366,
+        "uncertainty": 9.064133376835458e-06,
+        "uncertainty_toys": 3.21809585191841e-06
+    },
+    "FERS_Board14_energyMix_28": {
+        "response": 0.0003792130999860688,
+        "uncertainty": 1.7142423510552182e-05,
+        "uncertainty_toys": 5.430885608606721e-06
+    },
+    "FERS_Board14_energyMix_45": {
+        "response": 0.0002372204548196071,
+        "uncertainty": 4.553367678958206e-06,
+        "uncertainty_toys": 1.6344766591337153e-06
+    },
+    "FERS_Board14_energyMix_21": {
+        "response": 0.00022625873447061046,
+        "uncertainty": 3.4830060375625782e-06,
+        "uncertainty_toys": 1.023087905696522e-06
+    },
+    "FERS_Board14_energyMix_5": {
+        "response": 0.0004121103104889572,
+        "uncertainty": 2.03288600952851e-05,
+        "uncertainty_toys": 1.5012990088713817e-05
+    },
+    "FERS_Board14_energyMix_30": {
+        "response": 0.00030180170638680623,
+        "uncertainty": 9.597989313209477e-06,
+        "uncertainty_toys": 2.6794626294473153e-06
+    },
+    "FERS_Board14_energyMix_60": {
+        "response": 0.00043483061892281614,
+        "uncertainty": 1.713558420299075e-05,
+        "uncertainty_toys": 9.005197258944352e-06
+    },
+    "FERS_Board14_energyMix_13": {
+        "response": 0.0003017932077437051,
+        "uncertainty": 5.572828004173026e-06,
+        "uncertainty_toys": 1.4892336027298449e-06
+    },
+    "FERS_Board14_energyMix_47": {
+        "response": 0.00035646165623459154,
+        "uncertainty": 7.41513442113849e-06,
+        "uncertainty_toys": 3.1831745608054215e-06
+    },
+    "FERS_Board14_energyMix_38": {
+        "response": 0.0004127620577679538,
+        "uncertainty": 1.738591983928069e-05,
+        "uncertainty_toys": 1.0075217387873662e-05
+    },
+    "FERS_Board14_energyMix_55": {
+        "response": 0.00028268758619352693,
+        "uncertainty": 4.212876066709344e-06,
+        "uncertainty_toys": 7.692648612971419e-07
+    },
+    "FERS_Board14_energyMix_7": {
+        "response": 0.00045053066457474635,
+        "uncertainty": 3.051896749241178e-05,
+        "uncertainty_toys": 1.9990355025948232e-05
+    },
+    "FERS_Board14_energyMix_15": {
+        "response": 0.00031110855229041294,
+        "uncertainty": 6.458481389218638e-06,
+        "uncertainty_toys": 2.5842720435897e-06
+    },
+    "FERS_Board14_energyMix_52": {
+        "response": 0.00020928584707267679,
+        "uncertainty": 2.200989074246674e-06,
+        "uncertainty_toys": 8.525436628846738e-07
+    },
+    "FERS_Board14_energyMix_23": {
+        "response": 0.000277376626208353,
+        "uncertainty": 4.102602153012134e-06,
+        "uncertainty_toys": 9.473518549771567e-07
+    },
+    "FERS_Board14_energyMix_20": {
+        "response": 0.0003317725633229062,
+        "uncertainty": 3.2028825143193053e-06,
+        "uncertainty_toys": 1.1257956690429648e-06
+    },
+    "FERS_Board14_energyMix_12": {
+        "response": 0.0003170950103733323,
+        "uncertainty": 3.7319949862378933e-06,
+        "uncertainty_toys": 1.2400461165978121e-06
+    },
+    "FERS_Board14_energyMix_39": {
+        "response": 0.0008391157699408369,
+        "uncertainty": 3.4688129343296846e-05,
+        "uncertainty_toys": 3.0540725130528135e-05
+    },
+    "FERS_Board14_energyMix_61": {
+        "response": 0.0003729733515485932,
+        "uncertainty": 1.6696219732735158e-05,
+        "uncertainty_toys": 9.32610700314298e-06
+    },
+    "FERS_Board14_energyMix_46": {
+        "response": 0.0003060711852179648,
+        "uncertainty": 3.943381761151799e-06,
+        "uncertainty_toys": 1.131496050719634e-06
+    },
+    "FERS_Board14_energyMix_44": {
+        "response": 0.0002983580528424355,
+        "uncertainty": 3.2131251666108876e-06,
+        "uncertainty_toys": 9.354994871096662e-07
+    },
+    "FERS_Board14_energyMix_29": {
+        "response": 0.0003763998299443204,
+        "uncertainty": 2.0178670471354697e-05,
+        "uncertainty_toys": 8.858217880596718e-06
+    },
+    "FERS_Board14_energyMix_37": {
+        "response": 0.00046649549255636845,
+        "uncertainty": 3.078842304115416e-05,
+        "uncertainty_toys": 2.336258437724214e-05
+    },
+    "FERS_Board14_energyMix_14": {
+        "response": 0.0003009554913933259,
+        "uncertainty": 4.943059767780367e-06,
+        "uncertainty_toys": 1.651437901622784e-06
+    },
+    "FERS_Board14_energyMix_22": {
+        "response": 0.0002693502257434398,
+        "uncertainty": 2.4591047648213177e-06,
+        "uncertainty_toys": 6.319298617929911e-07
+    },
+    "FERS_Board14_energyMix_4": {
+        "response": 0.0004518761001778937,
+        "uncertainty": 3.0516444412899124e-05,
+        "uncertainty_toys": 1.69438921704333e-05
+    },
+    "FERS_Board14_energyMix_63": {
+        "response": 0.0004133719460898998,
+        "uncertainty": 1.5924846350667808e-05,
+        "uncertainty_toys": 7.355978000936606e-06
+    },
+    "FERS_Board14_energyMix_54": {
+        "response": 0.0002561801512162138,
+        "uncertainty": 2.498190373521687e-06,
+        "uncertainty_toys": 7.458722560214269e-07
+    },
+    "FERS_Board15_energyMix_54": {
+        "response": 0.00022598976214355222,
+        "uncertainty": 4.067677846022239e-06,
+        "uncertainty_toys": 1.4132981960260775e-06
+    },
+    "FERS_Board15_energyMix_5": {
+        "response": 0.00035953099807239214,
+        "uncertainty": 1.63906070498279e-05,
+        "uncertainty_toys": 1.6053653815765766e-05
+    },
+    "FERS_Board15_energyMix_14": {
+        "response": 0.00023253580621305833,
+        "uncertainty": 4.400261632975264e-06,
+        "uncertainty_toys": 1.683988050650184e-06
+    },
+    "FERS_Board15_energyMix_39": {
+        "response": 0.00026284036681637466,
+        "uncertainty": 1.9091464993591148e-05,
+        "uncertainty_toys": 9.471100162561731e-06
+    },
+    "FERS_Board15_energyMix_22": {
+        "response": 0.00026302276087313784,
+        "uncertainty": 1.999779061021637e-06,
+        "uncertainty_toys": 7.646381917805846e-07
+    },
+    "FERS_Board15_energyMix_31": {
+        "response": 0.0002807057159975431,
+        "uncertainty": 1.7222394032388585e-05,
+        "uncertainty_toys": 1.3092953237350397e-05
+    },
+    "FERS_Board15_energyMix_46": {
+        "response": 0.00021796722195254533,
+        "uncertainty": 5.734874282541702e-06,
+        "uncertainty_toys": 1.9457288437988317e-06
+    },
+    "FERS_Board15_energyMix_63": {
+        "response": 0.0003176694377146128,
+        "uncertainty": 1.532951393410872e-05,
+        "uncertainty_toys": 1.1135112426041825e-05
+    },
+    "FERS_Board15_energyMix_7": {
+        "response": 0.00044253699075110745,
+        "uncertainty": 2.100769003891403e-05,
+        "uncertainty_toys": 1.7758434630794278e-05
+    },
+    "FERS_Board15_energyMix_36": {
+        "response": 0.0002598956940449756,
+        "uncertainty": 1.8345576987487666e-05,
+        "uncertainty_toys": 5.351941222008171e-06
+    },
+    "FERS_Board15_energyMix_60": {
+        "response": 0.00013723703901763877,
+        "uncertainty": 1.52305092516581e-05,
+        "uncertainty_toys": 7.5930974780956696e-06
+    },
+    "FERS_Board15_energyMix_21": {
+        "response": 0.00023001173552698761,
+        "uncertainty": 4.58263105385232e-06,
+        "uncertainty_toys": 1.2818826000724028e-06
+    },
+    "FERS_Board15_energyMix_13": {
+        "response": 0.0002030581971095865,
+        "uncertainty": 4.565017587172217e-06,
+        "uncertainty_toys": 1.5734984077322508e-06
+    },
+    "FERS_Board15_energyMix_28": {
+        "response": 0.00034213486614649195,
+        "uncertainty": 1.9383622866854486e-05,
+        "uncertainty_toys": 7.850064960705742e-06
+    },
+    "FERS_Board15_energyMix_53": {
+        "response": 0.0002801787059481466,
+        "uncertainty": 8.062615262153212e-06,
+        "uncertainty_toys": 3.714504921126469e-06
+    },
+    "FERS_Board15_energyMix_45": {
+        "response": 0.00027583031338595214,
+        "uncertainty": 8.412488155552635e-06,
+        "uncertainty_toys": 6.202708712213529e-06
+    },
+    "FERS_Board15_energyMix_30": {
+        "response": 0.00025039256107585553,
+        "uncertainty": 2.4648579200676937e-05,
+        "uncertainty_toys": 8.936511848235646e-06
+    },
+    "FERS_Board15_energyMix_4": {
+        "response": 0.000613040565454288,
+        "uncertainty": 2.909202525979325e-05,
+        "uncertainty_toys": 1.4966293871750126e-05
+    },
+    "FERS_Board15_energyMix_15": {
+        "response": 0.00023416684626056193,
+        "uncertainty": 5.377288359187697e-06,
+        "uncertainty_toys": 1.77112535136164e-06
+    },
+    "FERS_Board15_energyMix_62": {
+        "response": 0.00021941264172676612,
+        "uncertainty": 1.1216329161934945e-05,
+        "uncertainty_toys": 5.522310949173941e-06
+    },
+    "FERS_Board15_energyMix_23": {
+        "response": 0.00023628657018883755,
+        "uncertainty": 4.341909214668896e-06,
+        "uncertainty_toys": 2.1721015957506917e-06
+    },
+    "FERS_Board15_energyMix_38": {
+        "response": 0.00014540884550821252,
+        "uncertainty": 6.885283400282416e-06,
+        "uncertainty_toys": 2.1228211368409435e-06
+    },
+    "FERS_Board15_energyMix_47": {
+        "response": 0.00026820587514097925,
+        "uncertainty": 1.0669569998060166e-05,
+        "uncertainty_toys": 2.4711053478351037e-06
+    },
+    "FERS_Board15_energyMix_55": {
+        "response": 0.0005982607539356987,
+        "uncertainty": 6.557407406419902e-05,
+        "uncertainty_toys": 0.0002911610879204276
+    },
+    "FERS_Board15_energyMix_6": {
+        "response": 0.00026733610930812247,
+        "uncertainty": 1.4023676494431566e-05,
+        "uncertainty_toys": 8.603601984190308e-06
+    },
+    "FERS_Board15_energyMix_44": {
+        "response": 0.00022405008297751608,
+        "uncertainty": 3.688809311483138e-06,
+        "uncertainty_toys": 1.0528855283720344e-06
+    },
+    "FERS_Board15_energyMix_20": {
+        "response": 0.0003204518092539597,
+        "uncertainty": 4.096284479305322e-06,
+        "uncertainty_toys": 1.165702888528582e-06
+    },
+    "FERS_Board15_energyMix_29": {
+        "response": 0.00028354619274041247,
+        "uncertainty": 1.505924523081423e-05,
+        "uncertainty_toys": 1.3365385090839369e-05
+    },
+    "FERS_Board15_energyMix_12": {
+        "response": 0.00023613732860878404,
+        "uncertainty": 2.3722246760422056e-06,
+        "uncertainty_toys": 7.483486188233753e-07
+    },
+    "FERS_Board15_energyMix_37": {
+        "response": 0.00023792286476990123,
+        "uncertainty": 1.5436387351845575e-05,
+        "uncertainty_toys": 9.012050377887942e-06
+    },
+    "FERS_Board15_energyMix_52": {
+        "response": 0.00021116420094810021,
+        "uncertainty": 4.837297309475437e-06,
+        "uncertainty_toys": 1.7578436902016243e-06
+    },
+    "FERS_Board15_energyMix_61": {
+        "response": 0.002000774999882362,
+        "uncertainty": 0.00012205515441932254,
+        "uncertainty_toys": 0.0002801816767985149
+    },
+    "FERS_Board2_energyMix_9": {
+        "response": 0.0003177420340488904,
+        "uncertainty": 4.9792956774093004e-05,
+        "uncertainty_toys": 9.765277484067722e-05
+    },
+    "FERS_Board2_energyMix_17": {
+        "response": 0.0006503534125980867,
+        "uncertainty": 2.779671638210732e-05,
+        "uncertainty_toys": 1.4452540106899385e-05
+    },
+    "FERS_Board2_energyMix_24": {
+        "response": 0.0006081820973818362,
+        "uncertainty": 6.58266630207752e-06,
+        "uncertainty_toys": 3.7541449815766924e-06
+    },
+    "FERS_Board2_energyMix_34": {
+        "response": 0.00028861970069459625,
+        "uncertainty": 1.05162524383306e-05,
+        "uncertainty_toys": 5.100765630353382e-06
+    },
+    "FERS_Board2_energyMix_56": {
+        "response": 0.0008543586778530774,
+        "uncertainty": 4.0290248137271244e-05,
+        "uncertainty_toys": 7.686403877282715e-05
+    },
+    "FERS_Board2_energyMix_0": {
+        "response": 0.000800371572940477,
+        "uncertainty": 0.00011596947821474236,
+        "uncertainty_toys": 6.438957406147926e-05
+    },
+    "FERS_Board2_energyMix_41": {
+        "response": 0.0003012733358034213,
+        "uncertainty": 1.638489919269884e-05,
+        "uncertainty_toys": 5.651732706835633e-06
+    },
+    "FERS_Board2_energyMix_3": {
+        "response": 0.0005467757587665356,
+        "uncertainty": 9.5630768492064e-05,
+        "uncertainty_toys": 7.107922854722385e-05
+    },
+    "FERS_Board2_energyMix_58": {
+        "response": 0.001152560420241804,
+        "uncertainty": 7.055348305422006e-05,
+        "uncertainty_toys": 0.00043910690121975316
+    },
+    "FERS_Board2_energyMix_33": {
+        "response": 0.000351285342790927,
+        "uncertainty": 1.3401335261323395e-05,
+        "uncertainty_toys": 8.123808314786866e-06
+    },
+    "FERS_Board2_energyMix_18": {
+        "response": 6.813747197498423e-05,
+        "uncertainty": 1.9443652429234258e-05,
+        "uncertainty_toys": 1.2014352179330422e-05
+    },
+    "FERS_Board2_energyMix_50": {
+        "response": 0.0009262629886412792,
+        "uncertainty": 7.947257688674074e-05,
+        "uncertainty_toys": 9.719917143962008e-05
+    },
+    "FERS_Board2_energyMix_10": {
+        "response": 0.0017764216785374376,
+        "uncertainty": 0.00010085018211555717,
+        "uncertainty_toys": 0.0001028605421483698
+    },
+    "FERS_Board2_energyMix_43": {
+        "response": 0.00028938610994224805,
+        "uncertainty": 2.2701596097994843e-05,
+        "uncertainty_toys": 1.3419946374416736e-05
+    },
+    "FERS_Board2_energyMix_25": {
+        "response": 0.00041507832708151843,
+        "uncertainty": 1.241525857456798e-05,
+        "uncertainty_toys": 4.390098550432072e-06
+    },
+    "FERS_Board2_energyMix_35": {
+        "response": 0.00030055712750828514,
+        "uncertainty": 1.3501504478492687e-05,
+        "uncertainty_toys": 4.417802053011673e-06
+    },
+    "FERS_Board2_energyMix_8": {
+        "response": 0.0010901918016578253,
+        "uncertainty": 0.00010493956717585243,
+        "uncertainty_toys": 0.00010460649259763833
+    },
+    "FERS_Board2_energyMix_40": {
+        "response": 0.0003955857376783834,
+        "uncertainty": 2.5490357140264175e-05,
+        "uncertainty_toys": 1.1824794508822167e-05
+    },
+    "FERS_Board2_energyMix_1": {
+        "response": 0.0008697671836109576,
+        "uncertainty": 8.756853194829437e-05,
+        "uncertainty_toys": 5.961521801567722e-05
+    },
+    "FERS_Board2_energyMix_49": {
+        "response": 0.0008254920809597851,
+        "uncertainty": 5.594795351285223e-05,
+        "uncertainty_toys": 0.00023400177430508946
+    },
+    "FERS_Board2_energyMix_57": {
+        "response": 0.001106647934082222,
+        "uncertainty": 7.615784695475073e-05,
+        "uncertainty_toys": 4.961096506416973e-05
+    },
+    "FERS_Board2_energyMix_19": {
+        "response": 0.00037158356749475365,
+        "uncertainty": 3.007575390573761e-05,
+        "uncertainty_toys": 1.4886439427723002e-05
+    },
+    "FERS_Board2_energyMix_16": {
+        "response": 0.0008261124959477233,
+        "uncertainty": 2.2135155629164697e-05,
+        "uncertainty_toys": 2.4143993202084503e-05
+    },
+    "FERS_Board2_energyMix_42": {
+        "response": 0.00045419790029882864,
+        "uncertainty": 1.9052728425243287e-05,
+        "uncertainty_toys": 6.687611176172701e-06
+    },
+    "FERS_Board2_energyMix_2": {
+        "response": 0.0009790551082643143,
+        "uncertainty": 6.145303555085964e-05,
+        "uncertainty_toys": 6.316387740500286e-05
+    },
+    "FERS_Board2_energyMix_11": {
+        "response": 0.002057138414045198,
+        "uncertainty": 0.00012833182301350267,
+        "uncertainty_toys": 0.00012133556137917985
+    },
+    "FERS_Board2_energyMix_59": {
+        "response": 0.0011905393529853191,
+        "uncertainty": 8.371199149694844e-05,
+        "uncertainty_toys": 8.374012820963535e-05
+    },
+    "FERS_Board2_energyMix_32": {
+        "response": 0.00044851450840927584,
+        "uncertainty": 7.46015035929023e-06,
+        "uncertainty_toys": 3.1605240635707475e-06
+    },
+    "FERS_Board2_energyMix_48": {
+        "response": 0.0010602299504448803,
+        "uncertainty": 8.750028844830677e-05,
+        "uncertainty_toys": 0.0001920991094701231
+    },
+    "FERS_Board2_energyMix_51": {
+        "response": 0.0005254858771153795,
+        "uncertainty": 3.796495940410397e-05,
+        "uncertainty_toys": 3.0185304274194375e-05
+    },
+    "FERS_Board3_energyMix_27": {
+        "response": 0.0005357110974253406,
+        "uncertainty": 2.6768376652333815e-05,
+        "uncertainty_toys": 9.456470414105388e-06
+    },
+    "FERS_Board3_energyMix_18": {
+        "response": 0.0003299542494331352,
+        "uncertainty": 6.925828705653873e-06,
+        "uncertainty_toys": 1.5723905494944336e-06
+    },
+    "FERS_Board3_energyMix_35": {
+        "response": 0.000530485986813865,
+        "uncertainty": 3.613100985308062e-05,
+        "uncertainty_toys": 1.7031298289768327e-05
+    },
+    "FERS_Board3_energyMix_42": {
+        "response": 0.0002517074521992188,
+        "uncertainty": 8.480404587522102e-06,
+        "uncertainty_toys": 5.422751417725126e-06
+    },
+    "FERS_Board3_energyMix_59": {
+        "response": 0.0014410335355193487,
+        "uncertainty": 7.166730290973317e-05,
+        "uncertainty_toys": 2.2781845901063647e-05
+    },
+    "FERS_Board3_energyMix_50": {
+        "response": 0.0003171431732466896,
+        "uncertainty": 3.1279480449222215e-06,
+        "uncertainty_toys": 8.615714675888918e-07
+    },
+    "FERS_Board3_energyMix_3": {
+        "response": 0.000463741066582843,
+        "uncertainty": 2.3915546506390998e-05,
+        "uncertainty_toys": 1.610094959576531e-05
+    },
+    "FERS_Board3_energyMix_10": {
+        "response": 0.0017125812968902317,
+        "uncertainty": 0.00010109597796492254,
+        "uncertainty_toys": 0.00012078190291410112
+    },
+    "FERS_Board3_energyMix_8": {
+        "response": 0.0004497098337530879,
+        "uncertainty": 5.077379458602736e-06,
+        "uncertainty_toys": 1.8679449856454609e-06
+    },
+    "FERS_Board3_energyMix_57": {
+        "response": 0.0020305043965099115,
+        "uncertainty": 8.706897809825158e-05,
+        "uncertainty_toys": 3.444496797045064e-05
+    },
+    "FERS_Board3_energyMix_1": {
+        "response": 0.00028210347492815834,
+        "uncertainty": 2.077468015407117e-05,
+        "uncertainty_toys": 9.740716798025444e-06
+    },
+    "FERS_Board3_energyMix_40": {
+        "response": 0.0002665516024044318,
+        "uncertainty": 3.4445454222088153e-06,
+        "uncertainty_toys": 1.168039914653639e-06
+    },
+    "FERS_Board3_energyMix_25": {
+        "response": 0.00030500200223586386,
+        "uncertainty": 1.7972705928782728e-05,
+        "uncertainty_toys": 7.454598525217371e-06
+    },
+    "FERS_Board3_energyMix_48": {
+        "response": 0.00034898619931108627,
+        "uncertainty": 5.7491378526902135e-06,
+        "uncertainty_toys": 2.434794609446104e-06
+    },
+    "FERS_Board3_energyMix_9": {
+        "response": 0.00032125217742160384,
+        "uncertainty": 1.2339529989302714e-05,
+        "uncertainty_toys": 3.2519295922633806e-06
+    },
+    "FERS_Board3_energyMix_33": {
+        "response": 0.0006291104152793775,
+        "uncertainty": 3.080032310575338e-05,
+        "uncertainty_toys": 1.5011359705182308e-05
+    },
+    "FERS_Board3_energyMix_16": {
+        "response": 0.00041433833640029156,
+        "uncertainty": 1.2930839232149528e-05,
+        "uncertainty_toys": 5.440074865395998e-06
+    },
+    "FERS_Board3_energyMix_2": {
+        "response": 0.0004063793962926762,
+        "uncertainty": 1.0681059320326036e-05,
+        "uncertainty_toys": 5.094586186598292e-06
+    },
+    "FERS_Board3_energyMix_51": {
+        "response": 0.0012543150137507377,
+        "uncertainty": 2.1685927856698192e-05,
+        "uncertainty_toys": 8.476925082951616e-06
+    },
+    "FERS_Board3_energyMix_11": {
+        "response": 0.00035542455648491947,
+        "uncertainty": 1.2527723817958294e-05,
+        "uncertainty_toys": 3.4273027315373747e-06
+    },
+    "FERS_Board3_energyMix_34": {
+        "response": 0.00042196771579307583,
+        "uncertainty": 2.8222072529336326e-05,
+        "uncertainty_toys": 1.7358450205481668e-05
+    },
+    "FERS_Board3_energyMix_19": {
+        "response": 0.0003401714171012306,
+        "uncertainty": 1.1861581090332316e-05,
+        "uncertainty_toys": 2.3923788816403363e-06
+    },
+    "FERS_Board3_energyMix_58": {
+        "response": 0.0003021118945380064,
+        "uncertainty": 1.4970147166180701e-05,
+        "uncertainty_toys": 4.440134659849904e-06
+    },
+    "FERS_Board3_energyMix_43": {
+        "response": 0.0011831756467193207,
+        "uncertainty": 2.8406158747330706e-05,
+        "uncertainty_toys": 7.98840290756435e-06
+    },
+    "FERS_Board3_energyMix_26": {
+        "response": 0.00020513073442680966,
+        "uncertainty": 2.766008014064459e-05,
+        "uncertainty_toys": 1.2305490245131054e-05
+    },
+    "FERS_Board3_energyMix_17": {
+        "response": 0.0004228543963920541,
+        "uncertainty": 1.4704800184264185e-05,
+        "uncertainty_toys": 5.807518397111044e-06
+    },
+    "FERS_Board3_energyMix_24": {
+        "response": 0.0004829183561343926,
+        "uncertainty": 2.3652736787316237e-05,
+        "uncertainty_toys": 1.076237591632464e-05
+    },
+    "FERS_Board3_energyMix_41": {
+        "response": 0.0012556738765092637,
+        "uncertainty": 2.6894274620686655e-05,
+        "uncertainty_toys": 7.350655301553459e-06
+    },
+    "FERS_Board3_energyMix_32": {
+        "response": 0.0006619759393165154,
+        "uncertainty": 4.3164826135850534e-05,
+        "uncertainty_toys": 3.051699089905451e-05
+    },
+    "FERS_Board3_energyMix_49": {
+        "response": 0.001477439172718483,
+        "uncertainty": 2.789372465219839e-05,
+        "uncertainty_toys": 1.2593577107487373e-05
+    },
+    "FERS_Board3_energyMix_56": {
+        "response": 0.0003754452314940645,
+        "uncertainty": 1.721212724388472e-05,
+        "uncertainty_toys": 5.7488214579082134e-06
+    },
+    "FERS_Board3_energyMix_0": {
+        "response": 0.0018931216473166246,
+        "uncertainty": 9.863597606392162e-05,
+        "uncertainty_toys": 6.674139026164413e-05
+    },
+    "FERS_Board4_energyMix_18": {
+        "response": 0.00032331028711910686,
+        "uncertainty": 2.986904604025634e-06,
+        "uncertainty_toys": 8.88778609542503e-07
+    },
+    "FERS_Board4_energyMix_57": {
+        "response": 0.0013750666919915202,
+        "uncertainty": 1.8250531833293272e-05,
+        "uncertainty_toys": 6.436286016140419e-06
+    },
+    "FERS_Board4_energyMix_40": {
+        "response": 0.0012054659223815914,
+        "uncertainty": 1.3524077974462124e-05,
+        "uncertainty_toys": 3.434621209406269e-06
+    },
+    "FERS_Board4_energyMix_19": {
+        "response": 0.0013858503378821182,
+        "uncertainty": 2.4618063174740545e-05,
+        "uncertainty_toys": 7.622058512542898e-06
+    },
+    "FERS_Board4_energyMix_33": {
+        "response": 0.0014477661892988167,
+        "uncertainty": 6.655985971169362e-05,
+        "uncertainty_toys": 2.6885566851934126e-05
+    },
+    "FERS_Board4_energyMix_16": {
+        "response": 0.0003131491648037535,
+        "uncertainty": 8.033495811057334e-06,
+        "uncertainty_toys": 2.492002288203689e-06
+    },
+    "FERS_Board4_energyMix_8": {
+        "response": 0.00027034918880510666,
+        "uncertainty": 3.1649182269729743e-06,
+        "uncertainty_toys": 9.617814989437263e-07
+    },
+    "FERS_Board4_energyMix_51": {
+        "response": 0.0014809934914078444,
+        "uncertainty": 2.6709540983942194e-05,
+        "uncertainty_toys": 1.326424127008832e-05
+    },
+    "FERS_Board4_energyMix_48": {
+        "response": 0.001330625304012379,
+        "uncertainty": 2.2461310667942615e-05,
+        "uncertainty_toys": 6.46077732741717e-06
+    },
+    "FERS_Board4_energyMix_1": {
+        "response": 0.0005462996665382924,
+        "uncertainty": 3.34304502912911e-05,
+        "uncertainty_toys": 1.80312380262977e-05
+    },
+    "FERS_Board4_energyMix_34": {
+        "response": 0.0013607806912171432,
+        "uncertainty": 6.80490530499216e-05,
+        "uncertainty_toys": 2.635563195423566e-05
+    },
+    "FERS_Board4_energyMix_26": {
+        "response": 0.001351799332625384,
+        "uncertainty": 8.884437160776496e-05,
+        "uncertainty_toys": 2.8950043329811353e-05
+    },
+    "FERS_Board4_energyMix_43": {
+        "response": 0.001392222015127327,
+        "uncertainty": 3.162309842088277e-05,
+        "uncertainty_toys": 8.071262176699654e-06
+    },
+    "FERS_Board4_energyMix_2": {
+        "response": 0.0004788670061290304,
+        "uncertainty": 2.1145505803896554e-05,
+        "uncertainty_toys": 9.787400877145047e-06
+    },
+    "FERS_Board4_energyMix_9": {
+        "response": 0.0003154107606833465,
+        "uncertainty": 7.656881878400023e-06,
+        "uncertainty_toys": 3.3543496087579892e-06
+    },
+    "FERS_Board4_energyMix_58": {
+        "response": 0.0017532722184113332,
+        "uncertainty": 9.647513707003336e-05,
+        "uncertainty_toys": 5.166462113981582e-05
+    },
+    "FERS_Board4_energyMix_11": {
+        "response": 0.0003006454105535005,
+        "uncertainty": 7.105112349507671e-06,
+        "uncertainty_toys": 2.3145868818566756e-06
+    },
+    "FERS_Board4_energyMix_41": {
+        "response": 0.001315602235851713,
+        "uncertainty": 2.6993240420853423e-05,
+        "uncertainty_toys": 1.0381315971826185e-05
+    },
+    "FERS_Board4_energyMix_0": {
+        "response": 0.000440658504496222,
+        "uncertainty": 2.9130382809711523e-05,
+        "uncertainty_toys": 1.7783660149566006e-05
+    },
+    "FERS_Board4_energyMix_42": {
+        "response": 0.001332756085708169,
+        "uncertainty": 2.8505573635263228e-05,
+        "uncertainty_toys": 8.742007491418314e-06
+    },
+    "FERS_Board4_energyMix_49": {
+        "response": 0.0012803741163316324,
+        "uncertainty": 2.3826680901584426e-05,
+        "uncertainty_toys": 9.956754180529838e-06
+    },
+    "FERS_Board4_energyMix_56": {
+        "response": 0.0014853282720106763,
+        "uncertainty": 5.520782639856115e-05,
+        "uncertainty_toys": 2.828730865420785e-05
+    },
+    "FERS_Board4_energyMix_3": {
+        "response": 0.0006387107685168278,
+        "uncertainty": 2.7498193354984032e-05,
+        "uncertainty_toys": 2.108358262055156e-05
+    },
+    "FERS_Board4_energyMix_17": {
+        "response": 0.001251750525638542,
+        "uncertainty": 2.1962505081906272e-05,
+        "uncertainty_toys": 9.176062926609935e-06
+    },
+    "FERS_Board4_energyMix_32": {
+        "response": 0.0020071235639292783,
+        "uncertainty": 0.00010702487796100309,
+        "uncertainty_toys": 5.4361747995287545e-05
+    },
+    "FERS_Board4_energyMix_24": {
+        "response": 0.001625032882797155,
+        "uncertainty": 6.584230941302794e-05,
+        "uncertainty_toys": 2.2215926919758427e-05
+    },
+    "FERS_Board4_energyMix_35": {
+        "response": 0.0012719091599156188,
+        "uncertainty": 1.197371486265779e-05,
+        "uncertainty_toys": 4.132132238037787e-06
+    },
+    "FERS_Board4_energyMix_10": {
+        "response": 0.0003784989915903695,
+        "uncertainty": 1.08912820185763e-05,
+        "uncertainty_toys": 3.879847161511482e-06
+    },
+    "FERS_Board4_energyMix_59": {
+        "response": 0.0017839433601107473,
+        "uncertainty": 6.395170644957315e-05,
+        "uncertainty_toys": 3.412915672217429e-05
+    },
+    "FERS_Board4_energyMix_50": {
+        "response": 0.0011959383938515789,
+        "uncertainty": 1.0463000725907727e-05,
+        "uncertainty_toys": 2.932649124362632e-06
+    },
+    "FERS_Board4_energyMix_25": {
+        "response": 0.0014354473441721023,
+        "uncertainty": 1.9665705775058654e-05,
+        "uncertainty_toys": 4.634066736273436e-06
+    },
+    "FERS_Board4_energyMix_27": {
+        "response": 0.0019596396312897275,
+        "uncertainty": 7.972013473252367e-05,
+        "uncertainty_toys": 2.728285514610378e-05
+    },
+    "FERS_Board5_energyMix_51": {
+        "response": 0.0013720116003365387,
+        "uncertainty": 2.704452478103721e-05,
+        "uncertainty_toys": 1.2322682458783174e-05
+    },
+    "FERS_Board5_energyMix_10": {
+        "response": 0.00048606778386993654,
+        "uncertainty": 1.7720628697200226e-05,
+        "uncertainty_toys": 8.69912155064085e-06
+    },
+    "FERS_Board5_energyMix_59": {
+        "response": 0.001520636149020104,
+        "uncertainty": 5.881330244932294e-05,
+        "uncertainty_toys": 1.70334041772161e-05
+    },
+    "FERS_Board5_energyMix_32": {
+        "response": 0.0013050837312788112,
+        "uncertainty": 3.294355570977946e-05,
+        "uncertainty_toys": 1.4911326678310927e-05
+    },
+    "FERS_Board5_energyMix_18": {
+        "response": 0.0003286913733097074,
+        "uncertainty": 2.9283857014560107e-06,
+        "uncertainty_toys": 8.502094098869411e-07
+    },
+    "FERS_Board5_energyMix_17": {
+        "response": 0.00032332168427407377,
+        "uncertainty": 5.667802743601436e-06,
+        "uncertainty_toys": 1.5769029421492813e-06
+    },
+    "FERS_Board5_energyMix_25": {
+        "response": 0.00047140061472050434,
+        "uncertainty": 2.0934043212823832e-05,
+        "uncertainty_toys": 8.308923595299186e-06
+    },
+    "FERS_Board5_energyMix_50": {
+        "response": 0.0016138746420468818,
+        "uncertainty": 1.4853650379673225e-05,
+        "uncertainty_toys": 4.83599944909256e-06
+    },
+    "FERS_Board5_energyMix_49": {
+        "response": 0.0014460561465203495,
+        "uncertainty": 1.8647748132605738e-05,
+        "uncertainty_toys": 5.492539764838736e-06
+    },
+    "FERS_Board5_energyMix_57": {
+        "response": 0.0017359317397001859,
+        "uncertainty": 8.625128688797991e-05,
+        "uncertainty_toys": 2.2757269620759258e-05
+    },
+    "FERS_Board5_energyMix_2": {
+        "response": 0.0003968310275975235,
+        "uncertainty": 2.6409563009328998e-05,
+        "uncertainty_toys": 1.7353759246657706e-05
+    },
+    "FERS_Board5_energyMix_42": {
+        "response": 0.001452853688477202,
+        "uncertainty": 1.6395225088733545e-05,
+        "uncertainty_toys": 3.677372330443687e-06
+    },
+    "FERS_Board5_energyMix_35": {
+        "response": 0.0024814000885965515,
+        "uncertainty": 0.0001247612543896963,
+        "uncertainty_toys": 4.730856339913383e-05
+    },
+    "FERS_Board5_energyMix_40": {
+        "response": 0.0014610337855754817,
+        "uncertainty": 1.5162162029994214e-05,
+        "uncertainty_toys": 4.185887341643128e-06
+    },
+    "FERS_Board5_energyMix_43": {
+        "response": 0.001483683939439777,
+        "uncertainty": 2.4307420517974483e-05,
+        "uncertainty_toys": 9.297247317003171e-06
+    },
+    "FERS_Board5_energyMix_48": {
+        "response": 0.0011407007646337672,
+        "uncertainty": 9.868102677453021e-06,
+        "uncertainty_toys": 2.0509479758129405e-06
+    },
+    "FERS_Board5_energyMix_16": {
+        "response": 0.000311107448426755,
+        "uncertainty": 9.389945100271961e-06,
+        "uncertainty_toys": 3.5523896260446724e-06
+    },
+    "FERS_Board5_energyMix_41": {
+        "response": 0.0013618737653020574,
+        "uncertainty": 2.9383057952328063e-05,
+        "uncertainty_toys": 8.233825779115466e-06
+    },
+    "FERS_Board5_energyMix_34": {
+        "response": 0.0023321128232089592,
+        "uncertainty": 7.394008921351048e-05,
+        "uncertainty_toys": 4.717261449944095e-05
+    },
+    "FERS_Board5_energyMix_33": {
+        "response": 0.0020193159099741865,
+        "uncertainty": 8.892938817585285e-05,
+        "uncertainty_toys": 5.1859444893966454e-05
+    },
+    "FERS_Board5_energyMix_58": {
+        "response": 0.001571721955262071,
+        "uncertainty": 4.083609305013538e-05,
+        "uncertainty_toys": 1.1693413790633814e-05
+    },
+    "FERS_Board5_energyMix_3": {
+        "response": 0.0008944929141214547,
+        "uncertainty": 4.8982489668145766e-05,
+        "uncertainty_toys": 3.129257139328986e-05
+    },
+    "FERS_Board5_energyMix_11": {
+        "response": 0.00034899699108441014,
+        "uncertainty": 8.938568555795536e-06,
+        "uncertainty_toys": 4.433878612851151e-06
+    },
+    "FERS_Board5_energyMix_8": {
+        "response": 0.0002978865992455244,
+        "uncertainty": 3.8576642206950775e-06,
+        "uncertainty_toys": 1.5609896094768174e-06
+    },
+    "FERS_Board5_energyMix_26": {
+        "response": 0.0003672315689819556,
+        "uncertainty": 9.43667709478397e-06,
+        "uncertainty_toys": 4.1598578401983405e-06
+    },
+    "FERS_Board5_energyMix_0": {
+        "response": 0.0009845671140386353,
+        "uncertainty": 6.571082850043139e-05,
+        "uncertainty_toys": 9.852569488646389e-05
+    },
+    "FERS_Board5_energyMix_24": {
+        "response": 0.000464982299435095,
+        "uncertainty": 1.3681688823366439e-05,
+        "uncertainty_toys": 7.270381769410971e-06
+    },
+    "FERS_Board5_energyMix_27": {
+        "response": 0.0005020879197608753,
+        "uncertainty": 2.367541843440972e-05,
+        "uncertainty_toys": 1.2123695395157826e-05
+    },
+    "FERS_Board5_energyMix_9": {
+        "response": 0.0004954823935493715,
+        "uncertainty": 7.216273398532893e-06,
+        "uncertainty_toys": 3.6102934754725577e-06
+    },
+    "FERS_Board5_energyMix_19": {
+        "response": 0.00031828857598448766,
+        "uncertainty": 6.310446816229259e-06,
+        "uncertainty_toys": 2.9030420617303173e-06
+    },
+    "FERS_Board5_energyMix_1": {
+        "response": 0.0006637928684807807,
+        "uncertainty": 4.2996636375805154e-05,
+        "uncertainty_toys": 2.2398560153602998e-05
+    },
+    "FERS_Board5_energyMix_56": {
+        "response": 0.001692859902075554,
+        "uncertainty": 6.616497639366103e-05,
+        "uncertainty_toys": 2.4584226672864686e-05
+    },
+    "FERS_Board6_energyMix_1": {
+        "response": 0.0008135174842103767,
+        "uncertainty": 4.76648924341934e-05,
+        "uncertainty_toys": 2.5257011461332072e-05
+    },
+    "FERS_Board6_energyMix_56": {
+        "response": 0.0016667907971820823,
+        "uncertainty": 8.298615534467794e-05,
+        "uncertainty_toys": 3.5295743696543164e-05
+    },
+    "FERS_Board6_energyMix_9": {
+        "response": 0.00037871303975683083,
+        "uncertainty": 9.290911434298513e-06,
+        "uncertainty_toys": 2.4822589399134574e-06
+    },
+    "FERS_Board6_energyMix_48": {
+        "response": 0.0013039292868328018,
+        "uncertainty": 2.095775894573469e-05,
+        "uncertainty_toys": 6.538398097705302e-06
+    },
+    "FERS_Board6_energyMix_2": {
+        "response": 0.0005297864128543161,
+        "uncertainty": 2.2382032937854664e-05,
+        "uncertainty_toys": 1.063662359542025e-05
+    },
+    "FERS_Board6_energyMix_16": {
+        "response": 0.001317464829695845,
+        "uncertainty": 2.1334710132982003e-05,
+        "uncertainty_toys": 3.7149510814616333e-06
+    },
+    "FERS_Board6_energyMix_51": {
+        "response": 0.0013189419723678587,
+        "uncertainty": 2.5555838403381776e-05,
+        "uncertainty_toys": 7.57017118742734e-06
+    },
+    "FERS_Board6_energyMix_59": {
+        "response": 0.001396476262631984,
+        "uncertainty": 7.757293777846589e-05,
+        "uncertainty_toys": 2.932756946073796e-05
+    },
+    "FERS_Board6_energyMix_34": {
+        "response": 0.0017293688979567446,
+        "uncertainty": 7.974165274679694e-05,
+        "uncertainty_toys": 3.112583612011324e-05
+    },
+    "FERS_Board6_energyMix_19": {
+        "response": 0.00037194522068580637,
+        "uncertainty": 7.255572875202793e-06,
+        "uncertainty_toys": 1.984654053110065e-06
+    },
+    "FERS_Board6_energyMix_27": {
+        "response": 0.001551439338961482,
+        "uncertainty": 7.765706184052057e-05,
+        "uncertainty_toys": 2.8776872266591527e-05
+    },
+    "FERS_Board6_energyMix_8": {
+        "response": 0.0003361680634897136,
+        "uncertainty": 4.475549084158999e-06,
+        "uncertainty_toys": 1.2260357263384602e-06
+    },
+    "FERS_Board6_energyMix_42": {
+        "response": 0.0015281296143394086,
+        "uncertainty": 3.167946893070579e-05,
+        "uncertainty_toys": 9.53156489922113e-06
+    },
+    "FERS_Board6_energyMix_57": {
+        "response": 0.0018829976113126986,
+        "uncertainty": 0.00010581103526329064,
+        "uncertainty_toys": 3.921749103521585e-05
+    },
+    "FERS_Board6_energyMix_49": {
+        "response": 0.0013075452184872056,
+        "uncertainty": 2.6195293855166768e-05,
+        "uncertainty_toys": 6.1788020021015985e-06
+    },
+    "FERS_Board6_energyMix_40": {
+        "response": 0.001157592355753526,
+        "uncertainty": 1.572465202659226e-05,
+        "uncertainty_toys": 5.250388568179854e-06
+    },
+    "FERS_Board6_energyMix_10": {
+        "response": 0.0003562344340537274,
+        "uncertainty": 7.5446913090443384e-06,
+        "uncertainty_toys": 1.7393245766637539e-06
+    },
+    "FERS_Board6_energyMix_25": {
+        "response": 0.0015040842683776165,
+        "uncertainty": 0.00010934499280534716,
+        "uncertainty_toys": 4.3925906885453605e-05
+    },
+    "FERS_Board6_energyMix_17": {
+        "response": 0.00033697316917446986,
+        "uncertainty": 6.382734405335535e-06,
+        "uncertainty_toys": 1.6121922624543947e-06
+    },
+    "FERS_Board6_energyMix_41": {
+        "response": 0.0012515044466775084,
+        "uncertainty": 3.148455329852094e-05,
+        "uncertainty_toys": 8.441327881430371e-06
+    },
+    "FERS_Board6_energyMix_32": {
+        "response": 0.0013329435820396297,
+        "uncertainty": 5.208385030703864e-05,
+        "uncertainty_toys": 2.130164930161402e-05
+    },
+    "FERS_Board6_energyMix_43": {
+        "response": 0.001324585552583164,
+        "uncertainty": 2.9599895011906716e-05,
+        "uncertainty_toys": 1.2377900934810513e-05
+    },
+    "FERS_Board6_energyMix_18": {
+        "response": 0.001375158935921961,
+        "uncertainty": 1.3320115124062187e-05,
+        "uncertainty_toys": 3.0178546154755935e-06
+    },
+    "FERS_Board6_energyMix_0": {
+        "response": 0.0005548902102044914,
+        "uncertainty": 8.362957781148512e-06,
+        "uncertainty_toys": 4.165508713705864e-06
+    },
+    "FERS_Board6_energyMix_35": {
+        "response": 0.0027042859863517124,
+        "uncertainty": 0.00014274045938020673,
+        "uncertainty_toys": 4.497142589296884e-05
+    },
+    "FERS_Board6_energyMix_11": {
+        "response": 0.00038183878061379253,
+        "uncertainty": 9.538159574180906e-06,
+        "uncertainty_toys": 2.3672058794304916e-06
+    },
+    "FERS_Board6_energyMix_50": {
+        "response": 0.0015469797358096259,
+        "uncertainty": 1.7196477278138312e-05,
+        "uncertainty_toys": 3.385444357155742e-06
+    },
+    "FERS_Board6_energyMix_3": {
+        "response": 0.0005164421025314659,
+        "uncertainty": 5.933093499134203e-05,
+        "uncertainty_toys": 2.9791273348233988e-05
+    },
+    "FERS_Board6_energyMix_58": {
+        "response": 0.0013685255307470596,
+        "uncertainty": 9.46363051855104e-05,
+        "uncertainty_toys": 2.475127170221405e-05
+    },
+    "FERS_Board6_energyMix_33": {
+        "response": 0.0019758248170878012,
+        "uncertainty": 0.000126303060559871,
+        "uncertainty_toys": 5.824130806627573e-05
+    },
+    "FERS_Board6_energyMix_24": {
+        "response": 0.0019192642372608047,
+        "uncertainty": 8.321365876467254e-05,
+        "uncertainty_toys": 3.7962344873534997e-05
+    },
+    "FERS_Board6_energyMix_26": {
+        "response": 0.001747912559149869,
+        "uncertainty": 7.175881057870832e-05,
+        "uncertainty_toys": 2.1765391693104156e-05
+    },
+    "FERS_Board7_energyMix_34": {
+        "response": 0.00034349884112283867,
+        "uncertainty": 2.253692453967351e-05,
+        "uncertainty_toys": 9.058344542470423e-06
+    },
+    "FERS_Board7_energyMix_51": {
+        "response": 0.00031915742422983467,
+        "uncertainty": 6.5365354087519905e-06,
+        "uncertainty_toys": 2.156976312502585e-06
+    },
+    "FERS_Board7_energyMix_10": {
+        "response": 0.00032328890812447023,
+        "uncertainty": 1.0488053473903152e-05,
+        "uncertainty_toys": 2.631352996489413e-06
+    },
+    "FERS_Board7_energyMix_59": {
+        "response": 0.0004379816267242985,
+        "uncertainty": 2.1076046423123222e-05,
+        "uncertainty_toys": 1.3195514868573482e-05
+    },
+    "FERS_Board7_energyMix_2": {
+        "response": 0.00021301152324960213,
+        "uncertainty": 3.756902029125688e-05,
+        "uncertainty_toys": 1.2767020493750506e-05
+    },
+    "FERS_Board7_energyMix_42": {
+        "response": 0.0013123767824990181,
+        "uncertainty": 3.2301132170167024e-05,
+        "uncertainty_toys": 8.339896606124216e-06
+    },
+    "FERS_Board7_energyMix_25": {
+        "response": 0.0003300440285105287,
+        "uncertainty": 4.539991516967248e-05,
+        "uncertainty_toys": 1.984887821133223e-05
+    },
+    "FERS_Board7_energyMix_17": {
+        "response": 0.00026772633050770023,
+        "uncertainty": 8.976314694095464e-06,
+        "uncertainty_toys": 5.3489293198871e-06
+    },
+    "FERS_Board7_energyMix_40": {
+        "response": 0.0012179761795107255,
+        "uncertainty": 1.3718073203453166e-05,
+        "uncertainty_toys": 5.101188531793848e-06
+    },
+    "FERS_Board7_energyMix_57": {
+        "response": 0.00044452234949032447,
+        "uncertainty": 2.127491972640244e-05,
+        "uncertainty_toys": 1.2925085411239771e-05
+    },
+    "FERS_Board7_energyMix_0": {
+        "response": 0.0011473797168903863,
+        "uncertainty": 6.980827909467414e-05,
+        "uncertainty_toys": 4.3479655087269364e-05
+    },
+    "FERS_Board7_energyMix_49": {
+        "response": 0.0002888836859807587,
+        "uncertainty": 5.2957128466008456e-06,
+        "uncertainty_toys": 1.4192448934634676e-06
+    },
+    "FERS_Board7_energyMix_8": {
+        "response": 0.00029030297775682623,
+        "uncertainty": 5.230590483514022e-06,
+        "uncertainty_toys": 1.7119710812629553e-06
+    },
+    "FERS_Board7_energyMix_32": {
+        "response": 0.002203139630150071,
+        "uncertainty": 0.00013448214236092213,
+        "uncertainty_toys": 6.420395118004308e-05
+    },
+    "FERS_Board7_energyMix_11": {
+        "response": 0.0004471823623312248,
+        "uncertainty": 1.1706734495669429e-05,
+        "uncertainty_toys": 8.227843456469107e-06
+    },
+    "FERS_Board7_energyMix_3": {
+        "response": 0.0005469554710236945,
+        "uncertainty": 9.064417643499664e-05,
+        "uncertainty_toys": 8.740682162450005e-05
+    },
+    "FERS_Board7_energyMix_26": {
+        "response": 0.0004983403129849643,
+        "uncertainty": 3.3781933985945456e-05,
+        "uncertainty_toys": 1.8889253075641567e-05
+    },
+    "FERS_Board7_energyMix_43": {
+        "response": 0.00031329890612350646,
+        "uncertainty": 8.045950536041882e-06,
+        "uncertainty_toys": 2.572642832782005e-06
+    },
+    "FERS_Board7_energyMix_50": {
+        "response": 0.0013801285678536057,
+        "uncertainty": 1.2426267640517361e-05,
+        "uncertainty_toys": 2.7994825874775187e-06
+    },
+    "FERS_Board7_energyMix_35": {
+        "response": 0.0006783289338056671,
+        "uncertainty": 4.38807004779775e-05,
+        "uncertainty_toys": 3.194314296725817e-05
+    },
+    "FERS_Board7_energyMix_58": {
+        "response": 0.0013393775499748886,
+        "uncertainty": 8.718354806706213e-05,
+        "uncertainty_toys": 2.6320060808517407e-05
+    },
+    "FERS_Board7_energyMix_18": {
+        "response": 0.00035723054655563256,
+        "uncertainty": 4.763286312261456e-06,
+        "uncertainty_toys": 1.173617882896602e-06
+    },
+    "FERS_Board7_energyMix_1": {
+        "response": 0.0008917574261046096,
+        "uncertainty": 6.160766276619062e-05,
+        "uncertainty_toys": 2.2962685972713875e-05
+    },
+    "FERS_Board7_energyMix_9": {
+        "response": 0.003534918341872503,
+        "uncertainty": 0.00020153132637718108,
+        "uncertainty_toys": 0.00017072904092885067
+    },
+    "FERS_Board7_energyMix_16": {
+        "response": 0.0003265257904769829,
+        "uncertainty": 8.683986422559931e-06,
+        "uncertainty_toys": 2.8746171114060264e-06
+    },
+    "FERS_Board7_energyMix_33": {
+        "response": 0.0005976659385994351,
+        "uncertainty": 3.241974188415092e-05,
+        "uncertainty_toys": 1.0424697586109065e-05
+    },
+    "FERS_Board7_energyMix_56": {
+        "response": 0.0014524128429158501,
+        "uncertainty": 6.923024731067954e-05,
+        "uncertainty_toys": 2.8750669920438765e-05
+    },
+    "FERS_Board7_energyMix_41": {
+        "response": 0.00034111745764200973,
+        "uncertainty": 8.702103824768025e-06,
+        "uncertainty_toys": 2.994470581320476e-06
+    },
+    "FERS_Board7_energyMix_48": {
+        "response": 0.0013580329143905927,
+        "uncertainty": 2.6649002813974787e-05,
+        "uncertainty_toys": 6.716195964744155e-06
+    },
+    "FERS_Board7_energyMix_24": {
+        "response": 0.00039432016238237754,
+        "uncertainty": 2.7139888531388686e-05,
+        "uncertainty_toys": 1.4228378402071352e-05
+    },
+    "FERS_Board7_energyMix_19": {
+        "response": 0.0004098228341662509,
+        "uncertainty": 9.507046866622634e-06,
+        "uncertainty_toys": 4.918729757275448e-06
+    },
+    "FERS_Board7_energyMix_27": {
+        "response": 0.0006223475366155272,
+        "uncertainty": 3.4054308679260595e-05,
+        "uncertainty_toys": 1.7539612993905245e-05
+    },
+    "FERS_Board8_energyMix_48": {
+        "response": 0.00021002239186668795,
+        "uncertainty": 1.2669118490638996e-05,
+        "uncertainty_toys": 1.1839364560466077e-05
+    },
+    "FERS_Board8_energyMix_17": {
+        "response": 0.0003471086672722812,
+        "uncertainty": 2.6752554146029828e-05,
+        "uncertainty_toys": 8.444875569164993e-06
+    },
+    "FERS_Board8_energyMix_40": {
+        "response": 0.0003286509289384379,
+        "uncertainty": 2.1320747270108327e-05,
+        "uncertainty_toys": 8.18186867001375e-06
+    },
+    "FERS_Board8_energyMix_8": {
+        "response": 0.000563791064470485,
+        "uncertainty": 4.491175108179114e-05,
+        "uncertainty_toys": 2.2900364752491097e-05
+    },
+    "FERS_Board8_energyMix_57": {
+        "response": 0.0014796025116070074,
+        "uncertainty": 5.306868124719048e-05,
+        "uncertainty_toys": 6.064614053029202e-05
+    },
+    "FERS_Board8_energyMix_0": {
+        "response": 0.00024009965258686442,
+        "uncertainty": 4.769622701290476e-05,
+        "uncertainty_toys": 3.360757152452474e-05
+    },
+    "FERS_Board8_energyMix_42": {
+        "response": 0.0003834776938207775,
+        "uncertainty": 1.3092939032861358e-05,
+        "uncertainty_toys": 3.836825313562398e-06
+    },
+    "FERS_Board8_energyMix_11": {
+        "response": 0.0003608459641923967,
+        "uncertainty": 7.521884254074087e-05,
+        "uncertainty_toys": 6.154767380019663e-05
+    },
+    "FERS_Board8_energyMix_50": {
+        "response": 0.0012862479174440956,
+        "uncertainty": 7.360993020326886e-05,
+        "uncertainty_toys": 9.303177166319403e-05
+    },
+    "FERS_Board8_energyMix_3": {
+        "response": 0.000476891100788551,
+        "uncertainty": 4.590966675384656e-05,
+        "uncertainty_toys": 0.00019134725920598526
+    },
+    "FERS_Board8_energyMix_18": {
+        "response": 0.00035551558327906734,
+        "uncertainty": 1.2976043641746478e-05,
+        "uncertainty_toys": 3.2621194485412e-06
+    },
+    "FERS_Board8_energyMix_59": {
+        "response": 0.0003990513833242542,
+        "uncertainty": 1.812652521640622e-05,
+        "uncertainty_toys": 1.3202665137017741e-05
+    },
+    "FERS_Board8_energyMix_32": {
+        "response": 0.00027943154715046395,
+        "uncertainty": 1.3169273457826506e-05,
+        "uncertainty_toys": 4.490252558329495e-06
+    },
+    "FERS_Board8_energyMix_26": {
+        "response": 0.00035458814752021086,
+        "uncertainty": 1.563589516886088e-05,
+        "uncertainty_toys": 2.644073802092715e-06
+    },
+    "FERS_Board8_energyMix_1": {
+        "response": 0.00040811316339631746,
+        "uncertainty": 1.5542198139964632e-05,
+        "uncertainty_toys": 3.163594817530399e-05
+    },
+    "FERS_Board8_energyMix_9": {
+        "response": 0.002849791036219561,
+        "uncertainty": 0.00017395781965058994,
+        "uncertainty_toys": 0.0004219050188897172
+    },
+    "FERS_Board8_energyMix_56": {
+        "response": 0.0010443896746079799,
+        "uncertainty": 9.212959586972404e-05,
+        "uncertainty_toys": 0.0003362339184875667
+    },
+    "FERS_Board8_energyMix_24": {
+        "response": 0.0003339176789284686,
+        "uncertainty": 6.514705779412134e-06,
+        "uncertainty_toys": 1.8855001381811535e-06
+    },
+    "FERS_Board8_energyMix_34": {
+        "response": 0.0003449305927144255,
+        "uncertainty": 7.099243205592289e-06,
+        "uncertainty_toys": 1.2306595223183023e-06
+    },
+    "FERS_Board8_energyMix_49": {
+        "response": 0.00017154267749892193,
+        "uncertainty": 5.148041826457477e-05,
+        "uncertainty_toys": 4.7125347683302044e-05
+    },
+    "FERS_Board8_energyMix_16": {
+        "response": 0.0004295108223360043,
+        "uncertainty": 1.0194585477593731e-05,
+        "uncertainty_toys": 2.2588758198825293e-06
+    },
+    "FERS_Board8_energyMix_58": {
+        "response": 0.0005190357473791647,
+        "uncertainty": 6.152838722237679e-05,
+        "uncertainty_toys": 8.995091638718246e-05
+    },
+    "FERS_Board8_energyMix_35": {
+        "response": 0.0005249721467698231,
+        "uncertainty": 1.1728346833941638e-05,
+        "uncertainty_toys": 7.401295088102793e-06
+    },
+    "FERS_Board8_energyMix_41": {
+        "response": 0.000575641333985516,
+        "uncertainty": 2.0982547135834093e-05,
+        "uncertainty_toys": 1.4711583469357573e-05
+    },
+    "FERS_Board8_energyMix_19": {
+        "response": 0.0006355619941655859,
+        "uncertainty": 3.1274100135285025e-05,
+        "uncertainty_toys": 2.012094647714773e-05
+    },
+    "FERS_Board8_energyMix_27": {
+        "response": 0.00037420862596707413,
+        "uncertainty": 1.9261409550379993e-05,
+        "uncertainty_toys": 6.7455382066841595e-06
+    },
+    "FERS_Board8_energyMix_33": {
+        "response": 0.0003101212072800588,
+        "uncertainty": 1.7440560358760277e-05,
+        "uncertainty_toys": 4.887521612281203e-06
+    },
+    "FERS_Board8_energyMix_2": {
+        "response": 0.001299911655770113,
+        "uncertainty": 0.00014683087563114398,
+        "uncertainty_toys": 5.58222748609236e-05
+    },
+    "FERS_Board8_energyMix_43": {
+        "response": 0.0003025072810783632,
+        "uncertainty": 2.3907409650184034e-05,
+        "uncertainty_toys": 6.90110248895609e-06
+    },
+    "FERS_Board8_energyMix_51": {
+        "response": 0.0015201564026108131,
+        "uncertainty": 0.00014731697988442394,
+        "uncertainty_toys": 0.0004301330618505627
+    },
+    "FERS_Board8_energyMix_25": {
+        "response": 0.0004943213037787618,
+        "uncertainty": 1.1750571836179668e-05,
+        "uncertainty_toys": 6.341844316670487e-06
+    },
+    "FERS_Board8_energyMix_10": {
+        "response": 0.00032801029573029653,
+        "uncertainty": 1.2890677242483207e-05,
+        "uncertainty_toys": 4.629454397375244e-06
+    },
+    "FERS_Board9_energyMix_51": {
+        "response": 0.0007883758816640431,
+        "uncertainty": 0.00011657505341021336,
+        "uncertainty_toys": 3.795001461202005e-05
+    },
+    "FERS_Board9_energyMix_55": {
+        "response": 0.0,
+        "uncertainty": 0.00035753702987825347,
+        "uncertainty_toys": 0.0
+    },
+    "FERS_Board9_energyMix_59": {
+        "response": 0.0025199974264690185,
+        "uncertainty": 0.00018857163906006768,
+        "uncertainty_toys": 8.155227408493256e-05
+    },
+    "FERS_Board9_energyMix_63": {
+        "response": 0.0007468755603640575,
+        "uncertainty": 0.0004536388682770611,
+        "uncertainty_toys": 0.00016166913781205116
+    },
+    "FERS_Board9_energyMix_44": {
+        "response": 0.0006315373913567911,
+        "uncertainty": 0.00020963084836336806,
+        "uncertainty_toys": 7.417456840792897e-05
+    },
+    "FERS_Board9_energyMix_20": {
+        "response": 0.0010170397493452408,
+        "uncertainty": 0.00015338090327397217,
+        "uncertainty_toys": 5.2824621867471046e-05
+    },
+    "FERS_Board9_energyMix_24": {
+        "response": 0.0008948617227626214,
+        "uncertainty": 5.858957299201191e-05,
+        "uncertainty_toys": 2.6266260467119978e-05
+    },
+    "FERS_Board9_energyMix_28": {
+        "response": 0.0014997431171014537,
+        "uncertainty": 0.00015929598837607619,
+        "uncertainty_toys": 4.9380771855487766e-05
+    },
+    "FERS_Board9_energyMix_32": {
+        "response": 0.0009104757481372463,
+        "uncertainty": 4.39911111735426e-05,
+        "uncertainty_toys": 1.2761645434951911e-05
+    },
+    "FERS_Board9_energyMix_16": {
+        "response": 0.0013394476404570864,
+        "uncertainty": 9.011566477539756e-05,
+        "uncertainty_toys": 3.353801273671983e-05
+    },
+    "FERS_Board9_energyMix_36": {
+        "response": 0.001268610198290763,
+        "uncertainty": 0.00014219008063370348,
+        "uncertainty_toys": 4.228270290905985e-05
+    },
+    "FERS_Board9_energyMix_40": {
+        "response": 0.000764352768043263,
+        "uncertainty": 4.7526137983901444e-05,
+        "uncertainty_toys": 1.4321002998820182e-05
+    },
+    "FERS_Board9_energyMix_56": {
+        "response": 0.001803429838967292,
+        "uncertainty": 0.00018318367191247264,
+        "uncertainty_toys": 5.657819145186896e-05
+    },
+    "FERS_Board9_energyMix_60": {
+        "response": 0.0013220335600513883,
+        "uncertainty": 0.00022786194535986092,
+        "uncertainty_toys": 6.287939721593951e-05
+    },
+    "FERS_Board9_energyMix_48": {
+        "response": 0.001107016164654686,
+        "uncertainty": 8.563538945528012e-05,
+        "uncertainty_toys": 3.200694062243337e-05
+    },
+    "FERS_Board9_energyMix_52": {
+        "response": 0.0009580697698410852,
+        "uncertainty": 0.00029912420656043695,
+        "uncertainty_toys": 9.019791403898586e-05
+    },
+    "FERS_Board9_energyMix_19": {
+        "response": 0.0012959331255118182,
+        "uncertainty": 0.0001223156015060448,
+        "uncertainty_toys": 5.1805666018507004e-05
+    },
+    "FERS_Board9_energyMix_23": {
+        "response": 0.0008227150492275336,
+        "uncertainty": 0.0002737847049768383,
+        "uncertainty_toys": 0.00010740911535747158
+    },
+    "FERS_Board9_energyMix_27": {
+        "response": 0.001687823757515434,
+        "uncertainty": 0.00014827135846257647,
+        "uncertainty_toys": 2.8844326571681725e-05
+    },
+    "FERS_Board9_energyMix_31": {
+        "response": 0.0013805815017400788,
+        "uncertainty": 0.00020093234820656609,
+        "uncertainty_toys": 5.137161616063131e-05
+    },
+    "FERS_Board9_energyMix_35": {
+        "response": 0.0008873434124503406,
+        "uncertainty": 7.384850168480787e-05,
+        "uncertainty_toys": 4.1808683065894e-05
+    },
+    "FERS_Board9_energyMix_39": {
+        "response": 0.0011783892121498627,
+        "uncertainty": 0.0001861781939260006,
+        "uncertainty_toys": 8.154207662963311e-05
+    },
+    "FERS_Board9_energyMix_43": {
+        "response": 0.0009119924043863798,
+        "uncertainty": 6.180922405694535e-05,
+        "uncertainty_toys": 1.876377721756383e-05
+    },
+    "FERS_Board9_energyMix_47": {
+        "response": 0.0018272417240137446,
+        "uncertainty": 0.0002470546614866861,
+        "uncertainty_toys": 6.594396517576352e-05
+    },
+    "FERS_Board9_energyMix_2": {
+        "response": 0.0019005352486909704,
+        "uncertainty": 0.0001748313406052876,
+        "uncertainty_toys": 3.984007523505732e-05
+    },
+    "FERS_Board9_energyMix_1": {
+        "response": 0.0017945559258826607,
+        "uncertainty": 0.00018548868253526912,
+        "uncertainty_toys": 0.00013731122835311386
+    },
+    "FERS_Board9_energyMix_5": {
+        "response": 0.0,
+        "uncertainty": 0.00042256253953216116,
+        "uncertainty_toys": 9.025089027676158e-05
+    },
+    "FERS_Board9_energyMix_9": {
+        "response": 0.002040397766034817,
+        "uncertainty": 0.00018008369625691762,
+        "uncertainty_toys": 8.211360217080438e-05
+    },
+    "FERS_Board9_energyMix_13": {
+        "response": 0.0,
+        "uncertainty": 0.00040693838576537545,
+        "uncertainty_toys": 0.0
+    },
+    "FERS_Board9_energyMix_6": {
+        "response": 0.000782858412584005,
+        "uncertainty": 0.0002229226943973083,
+        "uncertainty_toys": 7.842870896138721e-05
+    },
+    "FERS_Board9_energyMix_14": {
+        "response": 0.0006614988935877642,
+        "uncertainty": 0.00034238227054207324,
+        "uncertainty_toys": 0.0001364863089524186
+    },
+    "FERS_Board9_energyMix_10": {
+        "response": 0.0010249074998580293,
+        "uncertainty": 8.045440373084246e-05,
+        "uncertainty_toys": 2.792445169725122e-05
+    },
+    "FERS_Board10_energyMix_43": {
+        "response": 0.002108116270694647,
+        "uncertainty": 0.00019578151852267913,
+        "uncertainty_toys": 0.00020527665060300908
+    },
+    "FERS_Board10_energyMix_47": {
+        "response": 0.0008619042749052092,
+        "uncertainty": 0.0004753166138658361,
+        "uncertainty_toys": 0.0001995089332815567
+    },
+    "FERS_Board10_energyMix_48": {
+        "response": 0.0021880911080271502,
+        "uncertainty": 0.00014838434821201109,
+        "uncertainty_toys": 0.00010479241790868927
+    },
+    "FERS_Board10_energyMix_52": {
+        "response": 0.0003807731390566741,
+        "uncertainty": 0.0004595753320116948,
+        "uncertainty_toys": 0.00018419662738005171
+    },
+    "FERS_Board10_energyMix_56": {
+        "response": 0.0031572863831166634,
+        "uncertainty": 0.000319711158280854,
+        "uncertainty_toys": 8.43853087897607e-05
+    },
+    "FERS_Board10_energyMix_60": {
+        "response": 0.0006975850894229246,
+        "uncertainty": 0.0004866493537786673,
+        "uncertainty_toys": 0.00015003675463227858
+    },
+    "FERS_Board10_energyMix_5": {
+        "response": 0.0,
+        "uncertainty": 0.00046562425885887134,
+        "uncertainty_toys": 0.0
+    },
+    "FERS_Board10_energyMix_9": {
+        "response": 0.0019405880023274365,
+        "uncertainty": 0.0002181942788700492,
+        "uncertainty_toys": 0.0001149432007910571
+    },
+    "FERS_Board10_energyMix_13": {
+        "response": 0.0,
+        "uncertainty": 0.00044686569746173465,
+        "uncertainty_toys": 0.0
+    },
+    "FERS_Board10_energyMix_1": {
+        "response": 0.001971983811453678,
+        "uncertainty": 0.0002165896106642364,
+        "uncertainty_toys": 9.710727997927187e-05
+    },
+    "FERS_Board10_energyMix_16": {
+        "response": 0.0015176504797716397,
+        "uncertainty": 0.00020376164806075106,
+        "uncertainty_toys": 0.00011113141717360349
+    },
+    "FERS_Board10_energyMix_20": {
+        "response": 0.0009569112181788888,
+        "uncertainty": 0.00032170852942156375,
+        "uncertainty_toys": 8.850914808032355e-05
+    },
+    "FERS_Board10_energyMix_24": {
+        "response": 0.0009255397201958748,
+        "uncertainty": 9.52942342955766e-05,
+        "uncertainty_toys": 2.7439903986741836e-05
+    },
+    "FERS_Board10_energyMix_28": {
+        "response": 0.0015820246982066232,
+        "uncertainty": 0.00021414482934587443,
+        "uncertainty_toys": 5.232627005599513e-05
+    },
+    "FERS_Board10_energyMix_32": {
+        "response": 0.0007117236103172941,
+        "uncertainty": 8.175497462186173e-05,
+        "uncertainty_toys": 1.629371963490957e-05
+    },
+    "FERS_Board10_energyMix_36": {
+        "response": 0.003087714751758009,
+        "uncertainty": 0.00016154083939087983,
+        "uncertainty_toys": 6.0197613531350676e-05
+    },
+    "FERS_Board10_energyMix_19": {
+        "response": 0.0022940849766181952,
+        "uncertainty": 0.0002124888814832566,
+        "uncertainty_toys": 6.728389421202802e-05
+    },
+    "FERS_Board10_energyMix_23": {
+        "response": 0.0,
+        "uncertainty": 0.00043785523620321927,
+        "uncertainty_toys": 0.0
+    },
+    "FERS_Board10_energyMix_27": {
+        "response": 0.0017136822828700093,
+        "uncertainty": 0.00020558659994308927,
+        "uncertainty_toys": 5.4170691480496876e-05
+    },
+    "FERS_Board10_energyMix_31": {
+        "response": 0.000413792395882696,
+        "uncertainty": 0.0004204785457429803,
+        "uncertainty_toys": 0.00010792852616487232
+    },
+    "FERS_Board10_energyMix_35": {
+        "response": 0.0014600404819380265,
+        "uncertainty": 0.00017760732785568854,
+        "uncertainty_toys": 6.726307771605361e-05
+    },
+    "FERS_Board10_energyMix_39": {
+        "response": 0.00015597591229806528,
+        "uncertainty": 0.00044462299924708036,
+        "uncertainty_toys": 0.00012900914790995297
+    },
+    "FERS_Board10_energyMix_2": {
+        "response": 0.001961208819572394,
+        "uncertainty": 0.0002586431399234895,
+        "uncertainty_toys": 0.00012449021287969678
+    },
+    "FERS_Board10_energyMix_14": {
+        "response": 0.0006884813425263372,
+        "uncertainty": 0.0004355586005442964,
+        "uncertainty_toys": 0.0001577569014103253
+    },
+    "FERS_Board10_energyMix_6": {
+        "response": 0.0002334905670602059,
+        "uncertainty": 0.000464031790560737,
+        "uncertainty_toys": 0.00015915820686354966
+    },
+    "FERS_Board10_energyMix_10": {
+        "response": 0.0015016046400906054,
+        "uncertainty": 0.00022188261130411626,
+        "uncertainty_toys": 0.00027673744863123887
+    },
+    "FERS_Board10_energyMix_55": {
+        "response": 0.000825721260756778,
+        "uncertainty": 0.0004654418240152387,
+        "uncertainty_toys": 0.00018311058412077402
+    },
+    "FERS_Board10_energyMix_59": {
+        "response": 0.001864609273404171,
+        "uncertainty": 0.000259283530981011,
+        "uncertainty_toys": 0.00011824167874144899
+    },
+    "FERS_Board10_energyMix_63": {
+        "response": 0.0020300337985926123,
+        "uncertainty": 0.00043805705815202714,
+        "uncertainty_toys": 0.00014011829183544142
+    },
+    "FERS_Board10_energyMix_51": {
+        "response": 0.0024830648917968925,
+        "uncertainty": 0.00026626704274373866,
+        "uncertainty_toys": 0.00018450853250386365
+    },
+    "FERS_Board11_energyMix_27": {
+        "response": 0.0004009177924623439,
+        "uncertainty": 2.3272700284069045e-05,
+        "uncertainty_toys": 1.3458634406016608e-05
+    },
+    "FERS_Board11_energyMix_10": {
+        "response": 0.0003044663063987484,
+        "uncertainty": 7.128163530543508e-06,
+        "uncertainty_toys": 1.2526823099062236e-06
+    },
+    "FERS_Board11_energyMix_34": {
+        "response": 0.00029397558997633556,
+        "uncertainty": 1.680783166106757e-05,
+        "uncertainty_toys": 5.890965852548009e-06
+    },
+    "FERS_Board11_energyMix_51": {
+        "response": 0.0003073650319851273,
+        "uncertainty": 8.455629680841822e-06,
+        "uncertainty_toys": 2.114041176220783e-06
+    },
+    "FERS_Board11_energyMix_59": {
+        "response": 0.0002850196646269407,
+        "uncertainty": 1.9405101822479205e-05,
+        "uncertainty_toys": 5.056120657265977e-06
+    },
+    "FERS_Board11_energyMix_1": {
+        "response": 0.0018473305421502727,
+        "uncertainty": 0.0001107104981021673,
+        "uncertainty_toys": 5.809965791407234e-05
+    },
+    "FERS_Board11_energyMix_19": {
+        "response": 0.0011417274431401703,
+        "uncertainty": 2.2073340190823584e-05,
+        "uncertainty_toys": 5.641559816788657e-06
+    },
+    "FERS_Board11_energyMix_48": {
+        "response": 0.002072397891085251,
+        "uncertainty": 0.0001722315245678677,
+        "uncertainty_toys": 0.00010343588261221467
+    },
+    "FERS_Board11_energyMix_33": {
+        "response": 0.0003928784104481247,
+        "uncertainty": 2.3371435090431084e-05,
+        "uncertainty_toys": 1.2850164213875324e-05
+    },
+    "FERS_Board11_energyMix_16": {
+        "response": 0.00024640237879615466,
+        "uncertainty": 4.659438251496715e-06,
+        "uncertainty_toys": 3.1491868360630256e-06
+    },
+    "FERS_Board11_energyMix_24": {
+        "response": 0.0005118754111133209,
+        "uncertainty": 2.381973032103241e-05,
+        "uncertainty_toys": 1.610173033802569e-05
+    },
+    "FERS_Board11_energyMix_41": {
+        "response": 0.00032486397268805315,
+        "uncertainty": 1.229050158654298e-05,
+        "uncertainty_toys": 3.4972623568086647e-06
+    },
+    "FERS_Board11_energyMix_3": {
+        "response": 0.002003296339389808,
+        "uncertainty": 0.00013132974577189353,
+        "uncertainty_toys": 5.4952627649674345e-05
+    },
+    "FERS_Board11_energyMix_56": {
+        "response": 0.00032318516461613125,
+        "uncertainty": 1.904335263378879e-05,
+        "uncertainty_toys": 6.563224133185258e-06
+    },
+    "FERS_Board11_energyMix_9": {
+        "response": 0.0014260005571305532,
+        "uncertainty": 2.745253957036888e-05,
+        "uncertainty_toys": 8.437631654271456e-06
+    },
+    "FERS_Board11_energyMix_58": {
+        "response": 0.0012909304069993216,
+        "uncertainty": 0.0001012982268936885,
+        "uncertainty_toys": 0.00010171854508957003
+    },
+    "FERS_Board11_energyMix_18": {
+        "response": 0.00029253328891292054,
+        "uncertainty": 3.444247753452588e-06,
+        "uncertainty_toys": 7.871303336642705e-07
+    },
+    "FERS_Board11_energyMix_11": {
+        "response": 0.0013112606486238249,
+        "uncertainty": 2.801657158169359e-05,
+        "uncertainty_toys": 9.851144605505682e-06
+    },
+    "FERS_Board11_energyMix_26": {
+        "response": 0.00037252461962369697,
+        "uncertainty": 2.427402044303979e-05,
+        "uncertainty_toys": 1.020395842232592e-05
+    },
+    "FERS_Board11_energyMix_50": {
+        "response": 0.0005290086820332855,
+        "uncertainty": 6.452934808635671e-06,
+        "uncertainty_toys": 3.1844290344978445e-06
+    },
+    "FERS_Board11_energyMix_35": {
+        "response": 0.0003671859442620665,
+        "uncertainty": 2.566576953127496e-05,
+        "uncertainty_toys": 1.448675496791457e-05
+    },
+    "FERS_Board11_energyMix_43": {
+        "response": 0.00023724880449486904,
+        "uncertainty": 1.1075257236837476e-05,
+        "uncertainty_toys": 3.7016679702028014e-06
+    },
+    "FERS_Board11_energyMix_0": {
+        "response": 0.0003816629020443635,
+        "uncertainty": 1.9175748781116635e-05,
+        "uncertainty_toys": 9.493246923120585e-06
+    },
+    "FERS_Board11_energyMix_8": {
+        "response": 0.00027475848749342096,
+        "uncertainty": 3.885389181704835e-06,
+        "uncertainty_toys": 8.985570166585601e-07
+    },
+    "FERS_Board11_energyMix_57": {
+        "response": 0.0003415835417227723,
+        "uncertainty": 1.832971275979145e-05,
+        "uncertainty_toys": 7.1682648396166735e-06
+    },
+    "FERS_Board11_energyMix_17": {
+        "response": 0.0010772323462559265,
+        "uncertainty": 2.0570571010026004e-05,
+        "uncertainty_toys": 5.7631661309140865e-06
+    },
+    "FERS_Board11_energyMix_32": {
+        "response": 0.00011136810923364509,
+        "uncertainty": 1.7563157966268285e-05,
+        "uncertainty_toys": 1.1735022199963534e-05
+    },
+    "FERS_Board11_energyMix_40": {
+        "response": 0.00034817420675003,
+        "uncertainty": 1.1213489942082528e-05,
+        "uncertainty_toys": 3.1742037727200146e-06
+    },
+    "FERS_Board11_energyMix_25": {
+        "response": 0.0022240584424614972,
+        "uncertainty": 0.00010318906899799123,
+        "uncertainty_toys": 3.3526989628417324e-05
+    },
+    "FERS_Board11_energyMix_49": {
+        "response": 0.00028216173668728004,
+        "uncertainty": 1.5057780227161796e-05,
+        "uncertainty_toys": 3.5873813373575166e-06
+    },
+    "FERS_Board11_energyMix_42": {
+        "response": 0.000298466393753606,
+        "uncertainty": 7.071568734359828e-06,
+        "uncertainty_toys": 3.4394773464127897e-06
+    },
+    "FERS_Board11_energyMix_2": {
+        "response": 0.0005065824004926461,
+        "uncertainty": 1.8294330179234243e-05,
+        "uncertainty_toys": 1.126861352642004e-05
+    },
+    "FERS_Board12_energyMix_8": {
+        "response": 0.001245647153271425,
+        "uncertainty": 1.6403951992484574e-05,
+        "uncertainty_toys": 5.784646761336577e-06
+    },
+    "FERS_Board12_energyMix_3": {
+        "response": 0.0012104946198559369,
+        "uncertainty": 1.3700072838495356e-05,
+        "uncertainty_toys": 4.735439951326682e-06
+    },
+    "FERS_Board12_energyMix_17": {
+        "response": 0.0011938818891348614,
+        "uncertainty": 2.3903967153415874e-05,
+        "uncertainty_toys": 6.148366881011789e-06
+    },
+    "FERS_Board12_energyMix_25": {
+        "response": 0.0016743483872839894,
+        "uncertainty": 8.133166932304555e-05,
+        "uncertainty_toys": 3.5467049593033386e-05
+    },
+    "FERS_Board12_energyMix_10": {
+        "response": 0.0012283996639324722,
+        "uncertainty": 3.136190174060028e-05,
+        "uncertainty_toys": 8.134407156576799e-06
+    },
+    "FERS_Board12_energyMix_59": {
+        "response": 0.0004800523705674212,
+        "uncertainty": 2.3719472295096713e-05,
+        "uncertainty_toys": 9.499310253782318e-06
+    },
+    "FERS_Board12_energyMix_57": {
+        "response": 0.000771080571803654,
+        "uncertainty": 2.835329418676279e-05,
+        "uncertainty_toys": 2.133690999071462e-05
+    },
+    "FERS_Board12_energyMix_42": {
+        "response": 0.00031677563363527905,
+        "uncertainty": 4.081790760766177e-06,
+        "uncertainty_toys": 1.1161915957062365e-06
+    },
+    "FERS_Board12_energyMix_27": {
+        "response": 0.0015071992391638752,
+        "uncertainty": 7.513737545319799e-05,
+        "uncertainty_toys": 1.914125894884182e-05
+    },
+    "FERS_Board12_energyMix_34": {
+        "response": 0.001962249057599867,
+        "uncertainty": 0.00010211451189749002,
+        "uncertainty_toys": 4.599939965246003e-05
+    },
+    "FERS_Board12_energyMix_16": {
+        "response": 0.001651486981071221,
+        "uncertainty": 2.3846912303486985e-05,
+        "uncertainty_toys": 6.421638739802819e-06
+    },
+    "FERS_Board12_energyMix_19": {
+        "response": 0.0013509382634664744,
+        "uncertainty": 2.4192458588063853e-05,
+        "uncertainty_toys": 6.224301419734534e-06
+    },
+    "FERS_Board12_energyMix_49": {
+        "response": 0.00033715000746729966,
+        "uncertainty": 6.382972455514456e-06,
+        "uncertainty_toys": 1.9189486083855902e-06
+    },
+    "FERS_Board12_energyMix_56": {
+        "response": 0.0005711656115569637,
+        "uncertainty": 2.5001535172124342e-05,
+        "uncertainty_toys": 9.192942786696783e-06
+    },
+    "FERS_Board12_energyMix_0": {
+        "response": 0.0025779222404993096,
+        "uncertainty": 0.00011313206869821491,
+        "uncertainty_toys": 7.424316873966197e-05
+    },
+    "FERS_Board12_energyMix_48": {
+        "response": 0.0003248166163376426,
+        "uncertainty": 2.9324832480572443e-06,
+        "uncertainty_toys": 6.506779894501732e-07
+    },
+    "FERS_Board12_energyMix_33": {
+        "response": 0.002341805460860952,
+        "uncertainty": 0.0001487778058377443,
+        "uncertainty_toys": 8.416581929613834e-05
+    },
+    "FERS_Board12_energyMix_51": {
+        "response": 0.00027466601999571777,
+        "uncertainty": 7.450034391364877e-06,
+        "uncertainty_toys": 2.5007809205077163e-06
+    },
+    "FERS_Board12_energyMix_24": {
+        "response": 0.002273709812276877,
+        "uncertainty": 8.093352280058087e-05,
+        "uncertainty_toys": 2.4740053200017522e-05
+    },
+    "FERS_Board12_energyMix_9": {
+        "response": 0.0014937678873060375,
+        "uncertainty": 2.8815163884276637e-05,
+        "uncertainty_toys": 4.955372024517956e-06
+    },
+    "FERS_Board12_energyMix_2": {
+        "response": 0.0019190415607192343,
+        "uncertainty": 7.560833045588654e-05,
+        "uncertainty_toys": 4.7387433453102416e-05
+    },
+    "FERS_Board12_energyMix_50": {
+        "response": 0.0003635636347447407,
+        "uncertainty": 6.236898535111165e-06,
+        "uncertainty_toys": 1.6251342301821913e-06
+    },
+    "FERS_Board12_energyMix_43": {
+        "response": 0.0015458205887035584,
+        "uncertainty": 3.4147428197769767e-05,
+        "uncertainty_toys": 1.4049550808282034e-05
+    },
+    "FERS_Board12_energyMix_41": {
+        "response": 0.0012844795568899676,
+        "uncertainty": 2.9954561515532955e-05,
+        "uncertainty_toys": 7.0907385400207965e-06
+    },
+    "FERS_Board12_energyMix_18": {
+        "response": 0.001485845610217267,
+        "uncertainty": 1.451900911572732e-05,
+        "uncertainty_toys": 3.263520231429619e-06
+    },
+    "FERS_Board12_energyMix_58": {
+        "response": 0.00033691934983735324,
+        "uncertainty": 1.558877398409761e-05,
+        "uncertainty_toys": 5.778333501564514e-06
+    },
+    "FERS_Board12_energyMix_11": {
+        "response": 0.0012409524309609401,
+        "uncertainty": 2.8285167279121572e-05,
+        "uncertainty_toys": 7.446772648240193e-06
+    },
+    "FERS_Board12_energyMix_1": {
+        "response": 0.0015423111883407126,
+        "uncertainty": 6.152721430487464e-05,
+        "uncertainty_toys": 3.0523383212884526e-05
+    },
+    "FERS_Board12_energyMix_35": {
+        "response": 0.001956021193551025,
+        "uncertainty": 8.539423875617204e-05,
+        "uncertainty_toys": 4.6922641429868315e-05
+    },
+    "FERS_Board12_energyMix_40": {
+        "response": 0.00036948631945836745,
+        "uncertainty": 7.539659033127965e-06,
+        "uncertainty_toys": 2.4596095724256295e-06
+    },
+    "FERS_Board12_energyMix_32": {
+        "response": 0.002106562292357722,
+        "uncertainty": 0.00012202981579814497,
+        "uncertainty_toys": 4.5993991745002905e-05
+    },
+    "FERS_Board13_energyMix_10": {
+        "response": 0.0012505198284812737,
+        "uncertainty": 1.7255559645726744e-05,
+        "uncertainty_toys": 5.0567021467834565e-06
+    },
+    "FERS_Board13_energyMix_34": {
+        "response": 0.0004589910774202687,
+        "uncertainty": 1.9445924187006178e-05,
+        "uncertainty_toys": 1.1009216903495262e-05
+    },
+    "FERS_Board13_energyMix_33": {
+        "response": 0.0005991871799082042,
+        "uncertainty": 3.044156721944108e-05,
+        "uncertainty_toys": 1.6506524725002453e-05
+    },
+    "FERS_Board13_energyMix_25": {
+        "response": 0.0019678698462174955,
+        "uncertainty": 7.672361102445536e-05,
+        "uncertainty_toys": 6.877282070781365e-05
+    },
+    "FERS_Board13_energyMix_48": {
+        "response": 0.000378526193183292,
+        "uncertainty": 3.3437617024511457e-06,
+        "uncertainty_toys": 1.0069573683587273e-06
+    },
+    "FERS_Board13_energyMix_2": {
+        "response": 0.0021056171825287306,
+        "uncertainty": 8.805358960689211e-05,
+        "uncertainty_toys": 3.4898544056810756e-05
+    },
+    "FERS_Board13_energyMix_3": {
+        "response": 0.0014442839301001106,
+        "uncertainty": 8.510961462903269e-05,
+        "uncertainty_toys": 2.2810676725635127e-05
+    },
+    "FERS_Board13_energyMix_16": {
+        "response": 0.0012386836706212935,
+        "uncertainty": 1.306197558934356e-05,
+        "uncertainty_toys": 4.562958981643486e-06
+    },
+    "FERS_Board13_energyMix_24": {
+        "response": 0.002189583373280482,
+        "uncertainty": 7.913259257176047e-05,
+        "uncertainty_toys": 6.255031693149146e-05
+    },
+    "FERS_Board13_energyMix_27": {
+        "response": 0.0013562448675680453,
+        "uncertainty": 5.9760986975262833e-05,
+        "uncertainty_toys": 3.524100828392203e-05
+    },
+    "FERS_Board13_energyMix_35": {
+        "response": 0.0006907437887079281,
+        "uncertainty": 2.542475163108887e-05,
+        "uncertainty_toys": 1.30354438875955e-05
+    },
+    "FERS_Board13_energyMix_26": {
+        "response": 0.0016334751822580137,
+        "uncertainty": 5.689014236238359e-05,
+        "uncertainty_toys": 3.072767186455891e-05
+    },
+    "FERS_Board13_energyMix_9": {
+        "response": 0.0012436511996973642,
+        "uncertainty": 2.6288258229919317e-05,
+        "uncertainty_toys": 1.1045994867712458e-05
+    },
+    "FERS_Board13_energyMix_17": {
+        "response": 0.0010451760439409584,
+        "uncertainty": 2.0634688351808343e-05,
+        "uncertainty_toys": 7.1729257772862245e-06
+    },
+    "FERS_Board13_energyMix_18": {
+        "response": 0.0012003518092826913,
+        "uncertainty": 1.6265602474302737e-05,
+        "uncertainty_toys": 3.1914605168253017e-06
+    },
+    "FERS_Board13_energyMix_41": {
+        "response": 0.000307780888778829,
+        "uncertainty": 6.768818084824652e-06,
+        "uncertainty_toys": 2.465140297094263e-06
+    },
+    "FERS_Board13_energyMix_50": {
+        "response": 0.0002746367513888692,
+        "uncertainty": 4.094087310794223e-06,
+        "uncertainty_toys": 1.1121124695122787e-06
+    },
+    "FERS_Board13_energyMix_49": {
+        "response": 0.0003356094529673736,
+        "uncertainty": 6.639699431813249e-06,
+        "uncertainty_toys": 2.2905768083289904e-06
+    },
+    "FERS_Board13_energyMix_32": {
+        "response": 0.0006436154568883464,
+        "uncertainty": 2.1451527642611368e-05,
+        "uncertainty_toys": 1.1648073326209841e-05
+    },
+    "FERS_Board13_energyMix_58": {
+        "response": 0.0004954901219245938,
+        "uncertainty": 1.8233845949360112e-05,
+        "uncertainty_toys": 6.307583841432075e-06
+    },
+    "FERS_Board13_energyMix_19": {
+        "response": 0.0015119174626761565,
+        "uncertainty": 2.944166916546503e-05,
+        "uncertainty_toys": 8.223579853782576e-06
+    },
+    "FERS_Board13_energyMix_0": {
+        "response": 0.0013325883108704158,
+        "uncertainty": 3.994670641130708e-05,
+        "uncertainty_toys": 9.991902257412388e-06
+    },
+    "FERS_Board13_energyMix_11": {
+        "response": 0.0011226840921884623,
+        "uncertainty": 2.569920534506871e-05,
+        "uncertainty_toys": 1.2805033890406788e-05
+    },
+    "FERS_Board13_energyMix_8": {
+        "response": 0.0012809730228640992,
+        "uncertainty": 1.989629897791457e-05,
+        "uncertainty_toys": 7.547189196680044e-06
+    },
+    "FERS_Board13_energyMix_51": {
+        "response": 0.0004560017342179688,
+        "uncertainty": 5.911098927794531e-06,
+        "uncertainty_toys": 2.2156151023568333e-06
+    },
+    "FERS_Board13_energyMix_57": {
+        "response": 0.0006630835089753865,
+        "uncertainty": 2.482585845809176e-05,
+        "uncertainty_toys": 1.4899724086203425e-05
+    },
+    "FERS_Board13_energyMix_40": {
+        "response": 0.0003674599204581883,
+        "uncertainty": 5.515403317634812e-06,
+        "uncertainty_toys": 1.5826691330199506e-06
+    },
+    "FERS_Board13_energyMix_43": {
+        "response": 0.00029584642955296205,
+        "uncertainty": 7.155164016795697e-06,
+        "uncertainty_toys": 6.523586150187457e-06
+    },
+    "FERS_Board13_energyMix_42": {
+        "response": 0.0003483627047135033,
+        "uncertainty": 5.509222863277891e-06,
+        "uncertainty_toys": 2.4312045303418365e-06
+    },
+    "FERS_Board13_energyMix_1": {
+        "response": 0.00171389826048506,
+        "uncertainty": 0.00013063894077027695,
+        "uncertainty_toys": 5.251564895877895e-05
+    },
+    "FERS_Board13_energyMix_59": {
+        "response": 0.00038272775362652026,
+        "uncertainty": 2.0697996017392334e-05,
+        "uncertainty_toys": 1.2060180021978305e-05
+    },
+    "FERS_Board13_energyMix_56": {
+        "response": 0.0006302190776754862,
+        "uncertainty": 2.7115751442323886e-05,
+        "uncertainty_toys": 1.0833747237124913e-05
+    },
+    "FERS_Board14_energyMix_27": {
+        "response": 0.0020539392444533303,
+        "uncertainty": 9.318699887026445e-05,
+        "uncertainty_toys": 4.028821413770076e-05
+    },
+    "FERS_Board14_energyMix_32": {
+        "response": 0.0017187674650689705,
+        "uncertainty": 8.191351425279622e-05,
+        "uncertainty_toys": 3.182763078643818e-05
+    },
+    "FERS_Board14_energyMix_2": {
+        "response": 0.001839122738543065,
+        "uncertainty": 0.00010249578354308202,
+        "uncertainty_toys": 4.6246967121501695e-05
+    },
+    "FERS_Board14_energyMix_49": {
+        "response": 0.0003578353768092256,
+        "uncertainty": 6.859921823114413e-06,
+        "uncertainty_toys": 1.6733187311603893e-06
+    },
+    "FERS_Board14_energyMix_58": {
+        "response": 0.0005311711820032784,
+        "uncertainty": 1.441037089779663e-05,
+        "uncertainty_toys": 3.5437199026497954e-06
+    },
+    "FERS_Board14_energyMix_24": {
+        "response": 0.0016339795234537788,
+        "uncertainty": 9.053646544077101e-05,
+        "uncertainty_toys": 2.2372560338582627e-05
+    },
+    "FERS_Board14_energyMix_41": {
+        "response": 0.00034750665308911835,
+        "uncertainty": 8.553320171223527e-06,
+        "uncertainty_toys": 3.0802989803889216e-06
+    },
+    "FERS_Board14_energyMix_17": {
+        "response": 0.0015395155777109325,
+        "uncertainty": 2.890283844456829e-05,
+        "uncertainty_toys": 9.871873617051829e-06
+    },
+    "FERS_Board14_energyMix_1": {
+        "response": 0.002287673466447505,
+        "uncertainty": 0.00012912718043100367,
+        "uncertainty_toys": 6.58733820327486e-05
+    },
+    "FERS_Board14_energyMix_26": {
+        "response": 0.001395337079232864,
+        "uncertainty": 5.691421699016415e-05,
+        "uncertainty_toys": 1.709690169121531e-05
+    },
+    "FERS_Board14_energyMix_56": {
+        "response": 0.0005910436536763061,
+        "uncertainty": 2.370858743591427e-05,
+        "uncertainty_toys": 1.059471767302327e-05
+    },
+    "FERS_Board14_energyMix_9": {
+        "response": 0.0013501313841066316,
+        "uncertainty": 3.156524575566387e-05,
+        "uncertainty_toys": 8.967633334463745e-06
+    },
+    "FERS_Board14_energyMix_43": {
+        "response": 0.00034935778221852374,
+        "uncertainty": 8.063240161050117e-06,
+        "uncertainty_toys": 2.8514340956261653e-06
+    },
+    "FERS_Board14_energyMix_34": {
+        "response": 0.0020180263451434486,
+        "uncertainty": 0.00010271781328151333,
+        "uncertainty_toys": 4.2262196277309574e-05
+    },
+    "FERS_Board14_energyMix_51": {
+        "response": 0.000383605105537278,
+        "uncertainty": 6.976234785026165e-06,
+        "uncertainty_toys": 1.0403328380718827e-06
+    },
+    "FERS_Board14_energyMix_3": {
+        "response": 0.0020689788876489907,
+        "uncertainty": 0.00015497832370897394,
+        "uncertainty_toys": 6.008155554223681e-05
+    },
+    "FERS_Board14_energyMix_11": {
+        "response": 0.0014339689355670514,
+        "uncertainty": 3.506872686690979e-05,
+        "uncertainty_toys": 1.494893493603787e-05
+    },
+    "FERS_Board14_energyMix_48": {
+        "response": 0.0003165440410125093,
+        "uncertainty": 4.378641457374205e-06,
+        "uncertainty_toys": 1.1822175150958824e-06
+    },
+    "FERS_Board14_energyMix_19": {
+        "response": 0.0012394005189386133,
+        "uncertainty": 2.549576063449382e-05,
+        "uncertainty_toys": 7.2792301305128e-06
+    },
+    "FERS_Board14_energyMix_16": {
+        "response": 0.001413916501533278,
+        "uncertainty": 1.9045558868573416e-05,
+        "uncertainty_toys": 5.317300506982593e-06
+    },
+    "FERS_Board14_energyMix_8": {
+        "response": 0.001305785577473297,
+        "uncertainty": 2.0962926887275994e-05,
+        "uncertainty_toys": 8.266506544964065e-06
+    },
+    "FERS_Board14_energyMix_35": {
+        "response": 0.0023551072807106123,
+        "uncertainty": 0.00014935614374052655,
+        "uncertainty_toys": 7.932403296959833e-05
+    },
+    "FERS_Board14_energyMix_57": {
+        "response": 0.0005056563440420592,
+        "uncertainty": 2.5512489994757282e-05,
+        "uncertainty_toys": 8.530376224038918e-06
+    },
+    "FERS_Board14_energyMix_42": {
+        "response": 0.0011981259665485428,
+        "uncertainty": 2.0994061933313745e-05,
+        "uncertainty_toys": 6.260442972326077e-06
+    },
+    "FERS_Board14_energyMix_40": {
+        "response": 0.001325767214242823,
+        "uncertainty": 1.8177812920783818e-05,
+        "uncertainty_toys": 3.4941891167418847e-06
+    },
+    "FERS_Board14_energyMix_25": {
+        "response": 0.001854888452258105,
+        "uncertainty": 0.00010783419090690382,
+        "uncertainty_toys": 3.320374165451268e-05
+    },
+    "FERS_Board14_energyMix_33": {
+        "response": 0.0020631400249516065,
+        "uncertainty": 0.00014728306200744053,
+        "uncertainty_toys": 6.106491202212431e-05
+    },
+    "FERS_Board14_energyMix_10": {
+        "response": 0.0012423698740216976,
+        "uncertainty": 2.5279091999182676e-05,
+        "uncertainty_toys": 5.76239243355585e-06
+    },
+    "FERS_Board14_energyMix_18": {
+        "response": 0.0014724049710597223,
+        "uncertainty": 1.7683275488327246e-05,
+        "uncertainty_toys": 6.055063679175133e-06
+    },
+    "FERS_Board14_energyMix_0": {
+        "response": 0.0016663284292432376,
+        "uncertainty": 0.00017692047364995938,
+        "uncertainty_toys": 6.768478358229002e-05
+    },
+    "FERS_Board14_energyMix_59": {
+        "response": 0.0004595120954873731,
+        "uncertainty": 2.1039669769968873e-05,
+        "uncertainty_toys": 7.225249266909174e-06
+    },
+    "FERS_Board14_energyMix_50": {
+        "response": 0.0003058305594274518,
+        "uncertainty": 3.6670818870110466e-06,
+        "uncertainty_toys": 1.0124801847910836e-06
+    },
+    "FERS_Board15_energyMix_50": {
+        "response": 0.00029379436713301827,
+        "uncertainty": 7.078667895951993e-06,
+        "uncertainty_toys": 2.0648471075280924e-06
+    },
+    "FERS_Board15_energyMix_1": {
+        "response": 0.0006471938667835577,
+        "uncertainty": 3.2581716829520335e-05,
+        "uncertainty_toys": 2.552979385777442e-05
+    },
+    "FERS_Board15_energyMix_10": {
+        "response": 0.0013799394282284997,
+        "uncertainty": 3.0265965713809158e-05,
+        "uncertainty_toys": 8.031821224171409e-06
+    },
+    "FERS_Board15_energyMix_35": {
+        "response": 0.00033990638617328016,
+        "uncertainty": 3.032482410677719e-05,
+        "uncertainty_toys": 1.7387654610137436e-05
+    },
+    "FERS_Board15_energyMix_18": {
+        "response": 0.0014644276591782228,
+        "uncertainty": 1.504731156997695e-05,
+        "uncertainty_toys": 5.9359069512810215e-06
+    },
+    "FERS_Board15_energyMix_27": {
+        "response": 0.000383526095393162,
+        "uncertainty": 2.8446740967924318e-05,
+        "uncertainty_toys": 2.1159866361315877e-05
+    },
+    "FERS_Board15_energyMix_42": {
+        "response": 0.00032723274417234105,
+        "uncertainty": 1.0633055191429209e-05,
+        "uncertainty_toys": 2.9810902041728677e-06
+    },
+    "FERS_Board15_energyMix_59": {
+        "response": 0.0004965621051615563,
+        "uncertainty": 2.8976279806568372e-05,
+        "uncertainty_toys": 1.9901036077811347e-05
+    },
+    "FERS_Board15_energyMix_3": {
+        "response": 0.0007125836440338955,
+        "uncertainty": 3.9365639974852226e-05,
+        "uncertainty_toys": 3.245400947005254e-05
+    },
+    "FERS_Board15_energyMix_32": {
+        "response": 0.0006104318198864663,
+        "uncertainty": 3.870304816661714e-05,
+        "uncertainty_toys": 1.2713878550807645e-05
+    },
+    "FERS_Board15_energyMix_56": {
+        "response": 0.00025772345001251777,
+        "uncertainty": 2.440814500345669e-05,
+        "uncertainty_toys": 9.337805564161157e-06
+    },
+    "FERS_Board15_energyMix_17": {
+        "response": 0.00031274658585524564,
+        "uncertainty": 7.632601788380554e-06,
+        "uncertainty_toys": 2.161434060029569e-06
+    },
+    "FERS_Board15_energyMix_9": {
+        "response": 0.0003024176911217106,
+        "uncertainty": 8.501429343557196e-06,
+        "uncertainty_toys": 2.7866607642073095e-06
+    },
+    "FERS_Board15_energyMix_24": {
+        "response": 0.0004310002142092571,
+        "uncertainty": 3.169890844653613e-05,
+        "uncertainty_toys": 1.191379327454671e-05
+    },
+    "FERS_Board15_energyMix_49": {
+        "response": 0.0004065767796597136,
+        "uncertainty": 1.3140407762822602e-05,
+        "uncertainty_toys": 5.932163735862444e-06
+    },
+    "FERS_Board15_energyMix_41": {
+        "response": 0.000432910616774216,
+        "uncertainty": 1.4637402052232163e-05,
+        "uncertainty_toys": 9.118590255589792e-06
+    },
+    "FERS_Board15_energyMix_26": {
+        "response": 0.000990276941807961,
+        "uncertainty": 0.00013508988158922788,
+        "uncertainty_toys": 5.6617306507306444e-05
+    },
+    "FERS_Board15_energyMix_0": {
+        "response": 0.0024916064131419867,
+        "uncertainty": 0.00014073112236956978,
+        "uncertainty_toys": 6.414882122303876e-05
+    },
+    "FERS_Board15_energyMix_11": {
+        "response": 0.00031036648386525783,
+        "uncertainty": 8.65991221678707e-06,
+        "uncertainty_toys": 2.372184227789066e-06
+    },
+    "FERS_Board15_energyMix_58": {
+        "response": 0.0004126318765962962,
+        "uncertainty": 2.1700730839083095e-05,
+        "uncertainty_toys": 1.1272193839103587e-05
+    },
+    "FERS_Board15_energyMix_19": {
+        "response": 0.00032910086141092916,
+        "uncertainty": 7.11356905325616e-06,
+        "uncertainty_toys": 2.7605045140919795e-06
+    },
+    "FERS_Board15_energyMix_34": {
+        "response": 0.00030274831723916515,
+        "uncertainty": 1.559326843168725e-05,
+        "uncertainty_toys": 4.782194061336338e-06
+    },
+    "FERS_Board15_energyMix_43": {
+        "response": 0.00034439865545384316,
+        "uncertainty": 1.793416415003942e-05,
+        "uncertainty_toys": 5.316481690260923e-06
+    },
+    "FERS_Board15_energyMix_51": {
+        "response": 0.0009123934767046702,
+        "uncertainty": 0.00012500905907488928,
+        "uncertainty_toys": 0.00036312322981498326
+    },
+    "FERS_Board15_energyMix_2": {
+        "response": 0.0009232254136986433,
+        "uncertainty": 6.478014168918352e-05,
+        "uncertainty_toys": 3.628585434570472e-05
+    },
+    "FERS_Board15_energyMix_40": {
+        "response": 0.0003719476387956018,
+        "uncertainty": 7.123550788721765e-06,
+        "uncertainty_toys": 1.6654055156916064e-06
+    },
+    "FERS_Board15_energyMix_16": {
+        "response": 0.0016649928600512667,
+        "uncertainty": 2.638702098266434e-05,
+        "uncertainty_toys": 8.956666809252016e-06
+    },
+    "FERS_Board15_energyMix_25": {
+        "response": 0.0004066025415238485,
+        "uncertainty": 2.8114946446339946e-05,
+        "uncertainty_toys": 2.3325186106560912e-05
+    },
+    "FERS_Board15_energyMix_8": {
+        "response": 0.0014442362764305263,
+        "uncertainty": 1.7604786245362927e-05,
+        "uncertainty_toys": 7.2062232176391825e-06
+    },
+    "FERS_Board15_energyMix_33": {
+        "response": 0.00045537936934374727,
+        "uncertainty": 3.219586528830525e-05,
+        "uncertainty_toys": 1.63668611086996e-05
+    },
+    "FERS_Board15_energyMix_48": {
+        "response": 0.0003992831174737592,
+        "uncertainty": 1.0495937917619804e-05,
+        "uncertainty_toys": 3.13765105491691e-06
+    },
+    "FERS_Board15_energyMix_57": {
+        "response": 0.0025090712332511704,
+        "uncertainty": 0.00018105200185774092,
+        "uncertainty_toys": 0.00031891870167272173
+    }
+}

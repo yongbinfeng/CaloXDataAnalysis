@@ -27,6 +27,7 @@ args = get_args()
 runNumber = args.run
 firstEvent = args.first_event
 lastEvent = args.last_event
+jsonFile = args.json_file
 btype, benergy = getRunInfo(runNumber)
 
 doPerBoardPlots = False
@@ -40,15 +41,22 @@ ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
 # load the gains and pedestals from SiPM fits
 # file_gains = f"results/root/Run{runNumber}/valuemaps_gain.json"
-# file_pedestals = f"data/fers/FERS_pedestals_run1259.json"
-file_pedestals_HG = f"results/root/Run{runNumber}/fers_pedestals_hg.json"
-file_pedestals_LG = f"results/root/Run{runNumber}/fers_pedestals_lg.json"
+# file_pedestals_HG = f"results/root/Run{runNumber}/fers_pedestals_hg.json"
+# file_pedestals_LG = f"results/root/Run{runNumber}/fers_pedestals_lg.json"
 
+file_pedestals = f"data/fers/FERS_pedestals_run1259.json"
 file_calibrations = "data/fers/FERS_response.json"
 file_HG2LG = "data/fers/FERS_HG2LG.json"
 file_deadchannels = f"data/fers/deadchannels.json"
 
-rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
+
+if runNumber >= 1350:
+    file_pedestals = f"data/fers/FERS_pedestals_run1425.json"
+    file_calibrations = "data/fers/FERS_response_Sep.json"
+    file_HG2LG = "data/fers/FERS_HG2LG_Sep.json"
+    file_deadchannels = None
+
+rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile=jsonFile)
 rdf = preProcessDRSBoards(rdf)
 # rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
 # rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber, applyCut=False)
@@ -59,18 +67,18 @@ fersboards = buildFERSBoards(run=runNumber)
 rdf = vectorizeFERS(rdf, fersboards)
 # subtract pedestals
 rdf = subtractFERSPedestal(
-    rdf, fersboards, gain="HG", file_pedestals=file_pedestals_HG)
+    rdf, fersboards, gain="HG", file_pedestals=file_pedestals)
 rdf = subtractFERSPedestal(
-    rdf, fersboards, gain="LG", file_pedestals=file_pedestals_LG)
+    rdf, fersboards, gain="LG", file_pedestals=file_pedestals)
 # mix HG and LG
-# rdf = mixFERSHGLG(
-#    rdf, fersboards, file_HG2LG=file_HG2LG)
+rdf = mixFERSHGLG(
+    rdf, fersboards, file_HG2LG=file_HG2LG)
 # calibrate Mix gain
-# rdf = calibrateFERSChannels(
-#    rdf, fersboards, file_calibrations=file_calibrations, gain="Mix", file_deadchannels=file_deadchannels)
+rdf = calibrateFERSChannels(
+    rdf, fersboards, file_calibrations=file_calibrations, gain="Mix", file_deadchannels=file_deadchannels)
 
-# GainCalibs = [("HG", False), ("LG", False), ("Mix", True)]
-GainCalibs = [("HG", False), ("LG", False)]
+GainCalibs = [("HG", False), ("LG", False), ("Mix", True)]
+# GainCalibs = [("HG", False), ("LG", False)]
 
 # calculate energy sums
 for gain, calib in GainCalibs:
