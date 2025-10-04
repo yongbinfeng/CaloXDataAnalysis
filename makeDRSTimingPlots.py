@@ -68,16 +68,26 @@ if not os.path.exists(htmldir):
 rdf = calibrateDRSPeakTS(rdf, runNumber, DRSBoards,
                          TSminDRS=0, TSmaxDRS=1000, threshold=9.0)
 
-rdf_prefilter2 = rdf
+rdf_prefilterMCP1 = rdf
 map_mcp_channels = getMCPChannels(runNumber)
 
 condition = f"{map_mcp_channels['US'][0]}_RelPeakTS > -350 && {map_mcp_channels['US'][0]}_RelPeakTS < -100"
 condition += f" && {map_mcp_channels['US'][0]}_PeakTS > 500 && {map_mcp_channels['US'][0]}_PeakTS < 600"
-condition += f" && {map_mcp_channels['US'][0]}_Peak < -500.0"
-rdf = rdf_prefilter2.Filter(condition,
-                            "Pre-filter on MCP US channel 0 Peak TS")
-# rdf = rdf.Filter(f"{map_mcp_channels['US'][0]}_RelPeakTS > 240 && {map_mcp_channels['US'][0]}_RelPeakTS < 280",
-#                 "Pre-filter on MCP US channel 0 Peak TS")
+condition += f" && {map_mcp_channels['US'][0]}_Peak < -300.0"
+rdf_prefilterMCP2 = rdf_prefilterMCP1.Filter(condition,
+                                             "Pre-filter on MCP US channel 0 Peak TS")
+
+rdf_prefilterMCP2 = rdf_prefilterMCP1.Define(
+    "MCP0_DeltaRelPeakTS", f"{map_mcp_channels['DS'][0]}_RelPeakTS - {map_mcp_channels['US'][0]}_RelPeakTS")
+
+# requirement on Downstream MCP and also the delta between US and DS
+# so that MCP timing is reliable (this is probably too tight; can be relaxed later)
+condition = f"{map_mcp_channels['DS'][0]}_RelPeakTS > -350 && {map_mcp_channels['DS'][0]}_RelPeakTS < -100"
+condition += f" && {map_mcp_channels['DS'][0]}_PeakTS > 500 && {map_mcp_channels['DS'][0]}_PeakTS < 600"
+condition += f" && {map_mcp_channels['DS'][0]}_Peak < -300.0"
+condition += f" && MCP0_DeltaRelPeakTS > 0 && MCP0_DeltaRelPeakTS < 6"
+rdf = rdf_prefilterMCP2.Filter(condition,
+                               "Filter on MCP DS channel 0 Peak TS and DeltaRelPeakTS")
 
 
 def GetMean(hist, useMode=True):
@@ -541,7 +551,7 @@ def makeDRSvsTSPlots():
 
             output_name = f"prof_DRS_vs_TS_{sTowerX}_{sTowerY}"
 
-            DrawHistos([hprofs["Cer"], hprofs["Sci"]], ["Cer", "Sci"], -80, -50, "Calibrated TS", 0, hprofs["Cer"].GetMaximum() * 1.5, "DRS ADC",
+            DrawHistos([hprofs["Cer"], hprofs["Sci"]], ["Cer", "Sci"], -200, 100, "Calibrated TS", 0, hprofs["Cer"].GetMaximum() * 1.5, "DRS ADC",
                        output_name,
                        dology=False, drawoptions="HIST", mycolors=colors, addOverflow=False, addUnderflow=False,
                        outdir=outdir_plots, runNumber=runNumber)
