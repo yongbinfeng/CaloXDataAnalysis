@@ -180,7 +180,7 @@ def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS
     ]
 
     # jitter offset
-    value_diffcorrs = [0, 0, 0, 16, 0, 0, 0]
+    value_diffcorrs = [0, 0, 0, 0, 0, 0, 0]
 
     for channel in channels_TF:
         rdf = rdf.Define(f"{channel}_PeakTS",
