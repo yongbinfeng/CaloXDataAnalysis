@@ -222,6 +222,16 @@ def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS
                 f"{channelName}_AlignedTS", f"TS - (int){channel_TS}_PeakTS - (int){map_mcp_channels['US'][0]}_RelPeakTS - {value_diffcorrs[DRSBoard.boardNo]}"
             )
 
+            # map aligned TS to real distance in z (cm)
+            t0TS = 116.5 + 2
+            if channel.isQuartz:
+                refrac = 1.468
+            else:
+                refrac = 1.621
+                refrac = 1.58
+            rdf = rdf.Define(
+                f"{channelName}_MeasuredZ", f"{refrac} / ({refrac} - 1) * 250 - 6.0 / ({refrac} - 1) * ({channelName}_AlignedTS + {t0TS})")
+
             # channel sum
             rdf = rdf.Define(
                 f"{channelName}_Sum", f"SumRange({channelName}_blsub, {TSminDRS}, {TSmaxDRS})")
