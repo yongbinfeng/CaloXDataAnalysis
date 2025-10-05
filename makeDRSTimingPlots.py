@@ -35,11 +35,6 @@ ROOT.ROOT.EnableImplicitMT(10)
 ROOT.gROOT.SetBatch(True)  # Disable interactive mode for batch processing
 ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
-rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
-rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
-# rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
-# rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber, applyCut=False)
-rdf = applyUpstreamVeto(rdf, runNumber, applyCut=False)
 
 DRSBoards = buildDRSBoards(run=runNumber)
 
@@ -60,35 +55,6 @@ if not os.path.exists(plotdir):
     os.makedirs(plotdir)
 if not os.path.exists(htmldir):
     os.makedirs(htmldir)
-
-# rdfs = OrderedDict()
-# rdf, _ = applyPSDSelection(rdf, runNumber, applyCut=True)
-# rdf, _ = applyCC1Selection(rdf, runNumber, applyCut=True)
-
-rdf = calibrateDRSPeakTS(rdf, runNumber, DRSBoards,
-                         TSminDRS=0, TSmaxDRS=1000, threshold=9.0)
-
-rdf_prefilterMCP1 = rdf
-map_mcp_channels = getMCPChannels(runNumber)
-
-condition = f"{map_mcp_channels['US'][0]}_RelPeakTS > -350 && {map_mcp_channels['US'][0]}_RelPeakTS < -100"
-condition += f" && {map_mcp_channels['US'][0]}_PeakTS > 500 && {map_mcp_channels['US'][0]}_PeakTS < 600"
-condition += f" && {map_mcp_channels['US'][0]}_Peak < -300.0"
-rdf_prefilterMCP2 = rdf_prefilterMCP1.Filter(condition,
-                                             "Pre-filter on MCP US channel 0 Peak TS")
-
-rdf_prefilterMCP2 = rdf_prefilterMCP1.Define(
-    "MCP0_DeltaRelPeakTS", f"{map_mcp_channels['DS'][0]}_RelPeakTS - {map_mcp_channels['US'][0]}_RelPeakTS")
-
-# requirement on Downstream MCP and also the delta between US and DS
-# so that MCP timing is reliable (this is probably too tight; can be relaxed later)
-# condition = f"{map_mcp_channels['DS'][0]}_RelPeakTS > -350 && {map_mcp_channels['DS'][0]}_RelPeakTS < -100"
-# condition += f" && {map_mcp_channels['DS'][0]}_PeakTS > 500 && {map_mcp_channels['DS'][0]}_PeakTS < 600"
-# condition += f" && {map_mcp_channels['DS'][0]}_Peak < -300.0"
-# condition += f" && MCP0_DeltaRelPeakTS > 0 && MCP0_DeltaRelPeakTS < 6"
-# rdf = rdf_prefilterMCP2.Filter(condition,
-#                               "Filter on MCP DS channel 0 Peak TS and DeltaRelPeakTS")
-rdf = rdf_prefilterMCP2
 
 
 def GetMean(hist, useMode=True):
@@ -535,7 +501,7 @@ def makeDRSvsTSProfPlots():
 
             output_name = f"prof_DRS_vs_TS_{sTowerX}_{sTowerY}"
 
-            DrawHistos([hprofs["Cer"], hprofs["Sci"]], ["Cer", "Sci"], -200, 100, "Calibrated TS", -10, hprofs["Cer"].GetMaximum() * 1.5, "DRS ADC",
+            DrawHistos([hprofs["Cer"], hprofs["Sci"]], ["Cer", "Sci"], -200, 100, "Time slice", -10, hprofs["Cer"].GetMaximum() * 1.5, "DRS ADC",
                        output_name,
                        dology=False, drawoptions="HIST", mycolors=colors, addOverflow=False, addUnderflow=False,
                        outdir=outdir_plots, runNumber=runNumber)
@@ -551,16 +517,16 @@ def makeDRSvsTSProfPlots():
     hprof_Cer_Plastic_Combined = LHistos2Hist(
         hprofs_Cer_Plastic, "prof_DRS_vs_TS_Cer_Plastic_Combined")
     output_name = "DRS_vs_TS_Cer_Sci_Combined"
-    DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined, hprof_Sci_Combined], ["Cer Quartz", "Cer Plastic", "Sci"], -75, 0, "Calibrated TS", 0, None, "DRS ADC",
+    DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined, hprof_Sci_Combined], ["Cer Quartz", "Cer Plastic", "Sci"], -75, 0, "Time slice", 0, None, "DRS ADC",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2, 6, 4], addOverflow=False, addUnderflow=False,
                outdir=outdir_plots, runNumber=runNumber, legendPos=[0.25, 0.75, 0.40, 0.90])
     plots.insert(0, output_name + ".png")
     output_name = "DRS_vs_TS_Cer_Combined"
-    DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], -80, -50, "Calibrated TS", 0, None, "DRS ADC",
+    DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], -80, -50, "Time slice", 0, None, "ADC",
                output_name,
-               dology=False, drawoptions=["C", "C"], mycolors=[2, 6], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.80, 0.40, 0.90])
+               dology=False, drawoptions=["hist,C", "hist,C"], mycolors=[2, 6], addOverflow=False, addUnderflow=False,
+               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.80, 0.40, 0.90], legendoptions=["L", "L"])
     plots.insert(1, output_name + ".png")
 
     plots.insert(2, "NEWLINE")
@@ -681,50 +647,92 @@ def makeDRSvsTS2DPlots():
     return output_html
 
 
-# rdf_old = rdf
-# event_ns = list(rdf_old.Take["unsigned int"]("event_n").GetValue())
-# print("event numbers in this run:", event_ns)
-# rdf = rdf_old.Filter(
-#    f"event_n == {event_ns[0]}", "Select first event only for DRS timing checks")
+if __name__ == "__main__":
+    makeHists = False
+    makePlots = True
 
+    if makeHists:
+        rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
+        rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
+        # rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
+        # rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber, applyCut=False)
+        rdf = applyUpstreamVeto(rdf, runNumber, applyCut=False)
 
-hists1d_DRSPeakTS_Cer, hists1d_DRSPeakTS_Sci, hists2d_DRSPeakTS_Cer_VS_Sci = checkDRSPeakTS(
-    rdf)
-hprofs_DRS_VS_TS, hists2d_DRS_VS_TS, hprofs_DRS_VS_Z, rdfs_filtered = checkDRSvsCalibrationTS(
-    rdf)
+        # rdfs = OrderedDict()
+        # rdf, _ = applyPSDSelection(rdf, runNumber, applyCut=True)
+        # rdf, _ = applyCC1Selection(rdf, runNumber, applyCut=True)
 
-outfile_DRSPeakTS = ROOT.TFile(f"{rootdir}/drspeakts_rel_us.root", "RECREATE")
-for hist in hists1d_DRSPeakTS_Cer:
-    hist.SetDirectory(outfile_DRSPeakTS)
-    hist.Write()
-for hist in hists1d_DRSPeakTS_Sci:
-    hist.SetDirectory(outfile_DRSPeakTS)
-    hist.Write()
-for hist in hists2d_DRSPeakTS_Cer_VS_Sci:
-    hist.SetDirectory(outfile_DRSPeakTS)
-    hist.Write()
-outfile_DRSPeakTS.Close()
+        rdf = calibrateDRSPeakTS(rdf, runNumber, DRSBoards,
+                                 TSminDRS=0, TSmaxDRS=1000, threshold=9.0)
 
-outfile_DRS_VS_TS = ROOT.TFile(
-    f"{rootdir}/drs_vs_ts_calibrated.root", "RECREATE")
-for hprof in hprofs_DRS_VS_TS:
-    hprof.SetDirectory(outfile_DRS_VS_TS)
-    hprof.Write()
-for hist2d in hists2d_DRS_VS_TS:
-    hist2d.SetDirectory(outfile_DRS_VS_TS)
-    hist2d.Write()
-for hprof in hprofs_DRS_VS_Z:
-    hprof.SetDirectory(outfile_DRS_VS_TS)
-    hprof.Write()
-outfile_DRS_VS_TS.Close()
+        rdf_prefilterMCP1 = rdf
+        map_mcp_channels = getMCPChannels(runNumber)
 
-output_html_DRSPeakTS = makeDRSPeakTSPlots()
-output_html_DRSPeakTSCerVSSci = makeDRSPeakTSCerVSSciPlots()
-output_html_DRS_VS_TS_Prof = makeDRSvsTSProfPlots()
-# output_html_DRS_VS_TS_2D = makeDRSvsTS2DPlots()
-output_html_DRS_VS_Z_Prof = makeDRSvsZProfPlots()
-print(f"DRS Peak TS plots saved to {output_html_DRSPeakTS}")
-print(f"DRS Peak TS Cer VS Sci plots saved to {output_html_DRSPeakTSCerVSSci}")
-print(f"DRS VS TS profiled plots saved to {output_html_DRS_VS_TS_Prof}")
-# print(f"DRS VS TS 2D plots saved to {output_html_DRS_VS_TS_2D}")
-print(f"DRS VS Z profiled plots saved to {output_html_DRS_VS_Z_Prof}")
+        condition = f"{map_mcp_channels['US'][0]}_RelPeakTS > -350 && {map_mcp_channels['US'][0]}_RelPeakTS < -100"
+        condition += f" && {map_mcp_channels['US'][0]}_PeakTS > 500 && {map_mcp_channels['US'][0]}_PeakTS < 600"
+        condition += f" && {map_mcp_channels['US'][0]}_Peak < -300.0"
+        rdf_prefilterMCP2 = rdf_prefilterMCP1.Filter(condition,
+                                                     "Pre-filter on MCP US channel 0 Peak TS")
+
+        rdf_prefilterMCP2 = rdf_prefilterMCP1.Define(
+            "MCP0_DeltaRelPeakTS", f"{map_mcp_channels['DS'][0]}_RelPeakTS - {map_mcp_channels['US'][0]}_RelPeakTS")
+
+        # requirement on Downstream MCP and also the delta between US and DS
+        # so that MCP timing is reliable (this is probably too tight; can be relaxed later)
+        # condition = f"{map_mcp_channels['DS'][0]}_RelPeakTS > -350 && {map_mcp_channels['DS'][0]}_RelPeakTS < -100"
+        # condition += f" && {map_mcp_channels['DS'][0]}_PeakTS > 500 && {map_mcp_channels['DS'][0]}_PeakTS < 600"
+        # condition += f" && {map_mcp_channels['DS'][0]}_Peak < -300.0"
+        # condition += f" && MCP0_DeltaRelPeakTS > 0 && MCP0_DeltaRelPeakTS < 6"
+        # rdf = rdf_prefilterMCP2.Filter(condition,
+        #                               "Filter on MCP DS channel 0 Peak TS and DeltaRelPeakTS")
+        rdf = rdf_prefilterMCP2
+        # rdf_old = rdf
+        # event_ns = list(rdf_old.Take["unsigned int"]("event_n").GetValue())
+        # print("event numbers in this run:", event_ns)
+        # rdf = rdf_old.Filter(
+        #    f"event_n == {event_ns[0]}", "Select first event only for DRS timing checks")
+
+        hists1d_DRSPeakTS_Cer, hists1d_DRSPeakTS_Sci, hists2d_DRSPeakTS_Cer_VS_Sci = checkDRSPeakTS(
+            rdf)
+        hprofs_DRS_VS_TS, hists2d_DRS_VS_TS, hprofs_DRS_VS_Z, rdfs_filtered = checkDRSvsCalibrationTS(
+            rdf)
+
+        outfile_DRSPeakTS = ROOT.TFile(
+            f"{rootdir}/drspeakts_rel_us.root", "RECREATE")
+        for hist in hists1d_DRSPeakTS_Cer:
+            hist.SetDirectory(outfile_DRSPeakTS)
+            hist.Write()
+        for hist in hists1d_DRSPeakTS_Sci:
+            hist.SetDirectory(outfile_DRSPeakTS)
+            hist.Write()
+        for hist in hists2d_DRSPeakTS_Cer_VS_Sci:
+            hist.SetDirectory(outfile_DRSPeakTS)
+            hist.Write()
+        outfile_DRSPeakTS.Close()
+
+        outfile_DRS_VS_TS = ROOT.TFile(
+            f"{rootdir}/drs_vs_ts_calibrated.root", "RECREATE")
+        for hprof in hprofs_DRS_VS_TS:
+            hprof.SetDirectory(outfile_DRS_VS_TS)
+            hprof.Write()
+        for hist2d in hists2d_DRS_VS_TS:
+            hist2d.SetDirectory(outfile_DRS_VS_TS)
+            hist2d.Write()
+        for hprof in hprofs_DRS_VS_Z:
+            hprof.SetDirectory(outfile_DRS_VS_TS)
+            hprof.Write()
+        outfile_DRS_VS_TS.Close()
+
+    if makePlots:
+        output_html_DRSPeakTS = makeDRSPeakTSPlots()
+        output_html_DRSPeakTSCerVSSci = makeDRSPeakTSCerVSSciPlots()
+        output_html_DRS_VS_TS_Prof = makeDRSvsTSProfPlots()
+        # output_html_DRS_VS_TS_2D = makeDRSvsTS2DPlots()
+        output_html_DRS_VS_Z_Prof = makeDRSvsZProfPlots()
+        print(f"DRS Peak TS plots saved to {output_html_DRSPeakTS}")
+        print(
+            f"DRS Peak TS Cer VS Sci plots saved to {output_html_DRSPeakTSCerVSSci}")
+        print(
+            f"DRS VS TS profiled plots saved to {output_html_DRS_VS_TS_Prof}")
+        # print(f"DRS VS TS 2D plots saved to {output_html_DRS_VS_TS_2D}")
+        print(f"DRS VS Z profiled plots saved to {output_html_DRS_VS_Z_Prof}")
