@@ -557,9 +557,9 @@ def makeDRSvsTSProfPlots():
                outdir=outdir_plots, runNumber=runNumber, legendPos=[0.25, 0.75, 0.40, 0.90])
     plots.insert(0, output_name + ".png")
     output_name = "DRS_vs_TS_Cer_Combined"
-    DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], -70, -50, "Calibrated TS", 0, None, "DRS ADC",
+    DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], -80, -50, "Calibrated TS", 0, None, "DRS ADC",
                output_name,
-               dology=False, drawoptions="HIST", mycolors=[2, 6], addOverflow=False, addUnderflow=False,
+               dology=False, drawoptions=["C", "C"], mycolors=[2, 6], addOverflow=False, addUnderflow=False,
                outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.80, 0.40, 0.90])
     plots.insert(1, output_name + ".png")
 
@@ -630,10 +630,10 @@ def makeDRSvsZProfPlots():
     hprof_Cer_Plastic_Combined = LHistos2Hist(
         hprofs_Cer_Plastic, "prof_DRS_vs_Z_Cer_Plastic_Combined")
     output_name = "DRS_vs_Z_Cer_Combined"
-    DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], -50, 300, "Measured Z", 0, None, "DRS ADC",
+    DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], -10, 200, "Measured Z", 0, None, "DRS ADC",
                output_name,
                dology=False, drawoptions=["C", "C"], mycolors=[2, 6], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.25, 0.75, 0.40, 0.90])
+               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.55, 0.80, 0.90, 0.90], legendoptions=["P", "P"])
     plots.insert(0, output_name + ".png")
     plots.insert(1, "NEWLINE")
 

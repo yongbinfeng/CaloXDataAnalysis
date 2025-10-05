@@ -223,12 +223,14 @@ def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS
             )
 
             # map aligned TS to real distance in z (cm)
-            t0TS = 116.5 + 2
+            t0TS = 116.5 + 2 + 31
             if channel.isQuartz:
-                refrac = 1.468
+                refrac = 1.468 * 1.468
+                t0TS = 145
             else:
                 refrac = 1.621
-                refrac = 1.58
+                refrac = 1.58 * 1.58
+                t0TS = 154
             rdf = rdf.Define(
                 f"{channelName}_MeasuredZ", f"{refrac} / ({refrac} - 1) * 250 - 6.0 / ({refrac} - 1) * ({channelName}_AlignedTS + {t0TS})")
 
