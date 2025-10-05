@@ -122,12 +122,12 @@ def compareRuns(runLists, xmin_quartz=-80, xmax_quartz=-56, xmin_plastic=-80, xm
 
     legends_ymin = 0.90 - 0.05*len(legends)
 
-    DrawHistos(hists_quartz.values(), legends, xmin_quartz, xmax_quartz, "Time slice (Quartz)", 0, ymax_quartz, "ADC",
+    DrawHistos(hists_quartz.values(), legends, xmin_quartz, xmax_quartz, "Time slice (Quartz)", 0, ymax_quartz, "A.U.",
                f"DRS_vs_TS_Cer_Quartz_{suffix}",
                dology=False, drawoptions=["hist,C"]*len(hists_quartz), mycolors=colors[:len(hists_quartz)], addOverflow=False, addUnderflow=False,
                outdir=outdir_plots, runNumber=None, legendPos=[0.30, legends_ymin, 0.40, 0.90], legendoptions=["L"]*len(hists_quartz))
     plots.append(f"DRS_vs_TS_Cer_Quartz_{suffix}.png")
-    DrawHistos(hists_plastic.values(), legends, xmin_plastic, xmax_plastic, "Time slice (Plastic)", 0, ymax_plastic, "ADC",
+    DrawHistos(hists_plastic.values(), legends, xmin_plastic, xmax_plastic, "Time slice (Plastic)", 0, ymax_plastic, "A.U.",
                f"DRS_vs_TS_Cer_Plastic_{suffix}",
                dology=False, drawoptions=["hist,C"]*len(hists_plastic), mycolors=colors[:len(hists_plastic)], addOverflow=False, addUnderflow=False,
                outdir=outdir_plots, runNumber=None, legendPos=[0.30, legends_ymin, 0.40, 0.90], legendoptions=["L"]*len(hists_plastic))
@@ -149,17 +149,18 @@ if __name__ == "__main__":
     runLists["1412"] = "e^{+}, 60GeV"
     runLists["1410"] = "e^{+}, 100GeV"
     runLists["1411"] = "e^{+}, 120GeV"
-    compareRuns(runLists)
+    compareRuns(runLists, xmax_quartz=-55)
 
     runLists = OrderedDict()
     runLists["1442"] = "#pi^{+}, 10GeV"
     runLists["1441"] = "#pi^{+}, 20GeV"
     runLists["1439"] = "#pi^{+}, 30GeV"
     runLists["1437"] = "#pi^{+}, 60GeV"
-    compareRuns(runLists)
+    compareRuns(runLists, xmax_quartz=-55)
 
     runLists = OrderedDict()
     runLists["1500"] = "e^{+}, 40GeV, -0.0cm"
     runLists["1507"] = "e^{+}, 40GeV, -5.0cm"
     runLists["1511"] = "e^{+}, 40GeV, -10.0cm"
-    compareRuns(runLists, xmax_quartz=-58, ymax_quartz=0.23, ymax_plastic=0.19)
+    compareRuns(runLists, xmax_quartz=-58, ymax_quartz=0.23,
+                ymax_plastic=0.19, xmax_plastic=-55)

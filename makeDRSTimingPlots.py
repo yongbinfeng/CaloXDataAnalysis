@@ -517,6 +517,7 @@ def makeDRSvsTSProfPlots():
     hprof_Cer_Plastic_Combined = LHistos2Hist(
         hprofs_Cer_Plastic, "prof_DRS_vs_TS_Cer_Plastic_Combined")
     output_name = "DRS_vs_TS_Cer_Sci_Combined"
+    hprof_Cer_Quartz_Combined.GetXaxis().SetRangeUser(-80, -55)
     DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined, hprof_Sci_Combined], ["Cer Quartz", "Cer Plastic", "Sci"], -75, 0, "Time slice", 0, None, "DRS ADC",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2, 6, 4], addOverflow=False, addUnderflow=False,

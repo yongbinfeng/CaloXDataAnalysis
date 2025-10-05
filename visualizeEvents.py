@@ -238,10 +238,10 @@ def makeDRS2DPlots(hists_DRS_events):
                     extraText.AddText(
                         f"Evt {event_number} B {board} G {group}")
 
-                    DrawHistos(hists_to_draw, labels, 0, 1024, "Time Slice", -500, 2000, f"DRS Output",
+                    DrawHistos(hists_to_draw, labels, 0, 1024, "Time slice", -500, 2000, f"A.U.",
                                output_name,
                                dology=False, drawoptions="LP",
-                               outdir=outdir_plots, extraText=var, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.85, 0.90, 0.90], addOverflow=False, addUnderflow=False,
+                               outdir=outdir_plots, extraText="", runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.85, 0.90, 0.90], addOverflow=False, addUnderflow=False,
                                extraToDraw=extraText, usePDF=True, usePNG=False)
                     plots.append(output_name + ".pdf")
 
