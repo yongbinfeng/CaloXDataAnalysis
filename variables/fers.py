@@ -103,7 +103,7 @@ def mixFERSHGLG(rdf, fersboards, file_HG2LG: str):
     return rdf
 
 
-def calibrateFERSChannels(rdf, fersboards, file_calibrations: str, gain="HG", file_deadchannels: str = None):
+def calibrateFERSChannels(rdf, fersboards, file_calibrations: str, gain="HG", file_deadchannels: str = None, toyCalib: bool = False):
     """
     Calibrate FERS channels using gains and pedestals from the provided files.
     """
@@ -136,7 +136,18 @@ def calibrateFERSChannels(rdf, fersboards, file_calibrations: str, gain="HG", fi
                     f"\033[93mGain for channel {channelNamePDSub} not found in gains. Channel Masked.\033[0m")
                 rdf = rdf.Define(channelNamePDSubCal, "0.")
             else:
-                calibration = calibrations[channelNamePDSub]["response"]
+                if not toyCalib:
+                    calibration = calibrations[channelNamePDSub]["response"]
+                else:
+                    if channel.isCer and channel.isQuartz:
+                        calibration = 80.0 / 62000.0
+                    elif channel.isCer and not channel.isQuartz:
+                        calibration = 80.0 / 210000.0
+                    elif not channel.isCer:
+                        calibration = 80.0 / 300000.0
+                    else:
+                        print(
+                            "\033[93mUnknown channel type for toy calibration. Channel Masked.\033[0m")
                 rdf = rdf.Define(channelNamePDSubCal,
                                  f"({channelNamePDSub} * {calibration})")
     return rdf
