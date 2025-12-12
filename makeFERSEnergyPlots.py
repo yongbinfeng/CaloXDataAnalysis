@@ -418,10 +418,47 @@ def makeFERSEnergySumPlots(suffix=""):
             output_name = f"FERS_Total_{gain}_DR_{suffix}"
             DrawHistos([hist], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"DR {gain} {config[f'title_{gain}']}", 1, None, "Events",
                        output_name,
-                       dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
+                       dology=False, drawoptions="HIST", mycolors=[1], addOverflow=True, addUnderflow=True,
                        outdir=outdir_plots, runNumber=runNumber)
             plots.insert(1, output_name + ".png")
-            plots.insert(2, 'NEWLINE')
+
+            # plot sci, cer, and dr energy in the same plot, and fit the energy to get resolution
+            varname_cer = fersboards.GetEnergySumName(
+                gain=gain, isCer=True, pdsub=True, calib=calib)
+            varname_sci = fersboards.GetEnergySumName(
+                gain=gain, isCer=False, pdsub=True, calib=calib)
+            varname_dr = varname_cer.replace("Cer", "DR")
+            hist_cer = infile.Get(f"hist_{varname_cer}_{suffix}")
+            hist_sci = infile.Get(f"hist_{varname_sci}_{suffix}")
+            hist_dr = infile.Get(f"hist_{varname_dr}_{suffix}")
+
+            extraToDraw = ROOT.TPaveText(0.20, 0.75, 0.60, 0.90, "NDC")
+            extraToDraw.SetTextAlign(11)
+            extraToDraw.SetFillColorAlpha(0, 0)
+            extraToDraw.SetBorderSize(0)
+            extraToDraw.SetTextFont(42)
+            extraToDraw.SetTextSize(0.04)
+            # fit with gaus, plot the parameters
+            for cat, hist in [("Cer", hist_cer), ("Sci", hist_sci), ("DR", hist_dr)]:
+                if hist:
+                    fit = hist.Fit("gaus", "S")
+                    if fit:
+                        mean = fit.Parameter(1)
+                        sigma = fit.Parameter(2)
+                        chi2 = fit.Chi2()
+                        ndf = fit.Ndf()
+                        print(
+                            f"Fit results for {hist.GetName()}: mean = {mean}, sigma = {sigma}, chi2 = {chi2}, ndf = {ndf}")
+                        extraToDraw.AddText(
+                            f"{cat}: #mu#pm#sigma = {mean:.1f}#pm{sigma:.1f}, #chi^2/ndf = {chi2:.1f}/{ndf}")
+
+            output_name = f"FERS_Total_{gain}_Energy_{suffix}"
+            DrawHistos([hist_cer, hist_sci, hist_dr], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], "Energy [GeV]", 0, None, "Events",
+                       output_name,
+                       dology=False, drawoptions="HIST", mycolors=[2, 4, 1], addOverflow=True, addUnderflow=True,
+                       outdir=outdir_plots, runNumber=runNumber, extraToDraw=extraToDraw)
+            plots.insert(2, output_name + ".png")
+            plots.insert(3, 'NEWLINE')
 
     output_html = f"{htmldir}/FERS/EnergySum_{suffix}.html"
     generate_html(plots, outdir_plots, plots_per_row=6,
