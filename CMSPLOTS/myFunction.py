@@ -592,7 +592,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         CMS_lumi.extraText = extraText
     elif MCOnly:
         CMS_lumi.extraText = "Simulation"
-    CMS_lumi.extraText += " Preliminary"
+    # CMS_lumi.extraText += " Preliminary"
 
     if runNumber is not None:
         from utils.dataloader import getRunInfo
@@ -977,7 +977,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
             if not isinstance(extraToDraw, list):
                 extraToDraw = [extraToDraw]
             for todraw in extraToDraw:
-                todraw.Draw()
+                todraw.Draw("same")
         canvas.Update()
 
     ##

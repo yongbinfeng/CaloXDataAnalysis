@@ -188,6 +188,20 @@ def getFERSEnergySum(rdf, fersboards, gain="HG", pdsub=False, calib=False):
                      f"({' + '.join(fersboard.GetEnergySumName(gain=gain, isCer=True, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
     rdf = rdf.Define(fersboards.GetEnergySumName(gain=gain, isCer=False, pdsub=pdsub, calib=calib),
                      f"({' + '.join(fersboard.GetEnergySumName(gain=gain, isCer=False, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
+
+    # per-event energy ratio
+    rdf = rdf.Define(fersboards.GetEnergySumRatioName(gain=gain, pdsub=pdsub, calib=calib),
+                     f"({fersboards.GetEnergySumName(gain=gain, isCer=True, pdsub=pdsub, calib=calib)}) / ({fersboards.GetEnergySumName(gain=gain, isCer=False, pdsub=pdsub, calib=calib)} + 1e-9)")
+    # dual-readout
+
+    chi = 0.3
+    name_cer = fersboards.GetEnergySumName(
+        gain=gain, isCer=True, pdsub=pdsub, calib=calib)
+    name_sci = fersboards.GetEnergySumName(
+        gain=gain, isCer=False, pdsub=pdsub, calib=calib)
+    name_dr = name_cer.replace("Cer", "DR")
+    rdf = rdf.Define(name_dr,
+                     f"({name_sci} - {name_cer} * {chi}) / (1 - {chi})")
     return rdf
 
 

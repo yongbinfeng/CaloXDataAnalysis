@@ -339,6 +339,17 @@ class FERSBoards(dict):
         return sumname
 
     @enforce_gain
+    def GetEnergySumRatioName(self, gain="HG", pdsub=False, calib=False):
+        cat = "CerOverSci"
+        ratioName = f"FERS_energy{gain}_{cat}"
+        if pdsub and gain != "Mix":
+            ratioName += "_pdsub"
+        if calib:
+            ratioName += "_calib"
+        ratioName += "_sum"
+        return ratioName
+
+    @enforce_gain
     def GetEnergyWeightedCenterName(self, gain="HG", isCer=True, pdsub=False, calib=False, isX=True):
         cat = "Cer" if isCer else "Sci"
         centername = f"FERS_energy{gain}_{cat}"
