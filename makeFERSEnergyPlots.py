@@ -156,6 +156,18 @@ def makeFERSEnergySumHists(rdf=rdf, suffix=""):
                 )
                 hists_FERS_EnergySum.append(hist)
 
+                # sum Cer + Sci
+                varname = fersboards.GetEnergySumName(
+                    gain=gain, isCer=True, pdsub=True, calib=calib)
+                varname = varname.replace("Cer", "CerSci")
+                hist = rdf.Histo1D((
+                    f"hist_{varname}_{suffix}",
+                    f"hist_{varname}_{suffix}",
+                    500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]*2.5),
+                    varname
+                )
+                hists_FERS_EnergySum.append(hist)
+
                 # dual readout
                 varname = fersboards.GetEnergySumName(
                     gain=gain, isCer=True, pdsub=True, calib=calib)
@@ -206,6 +218,28 @@ def makeFERSCervsSciHists(rdf=rdf, suffix=""):
             var_cer
         )
         hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci_Event)
+
+        if gain == "Mix":
+            # S vs Sum Cer + Sci
+            var_sum = var_cer.replace("Cer", "CerSci")
+            hist_Sci_vs_CerSci = rdf.Histo2D((
+                f"hist_{var_sci}_VS_{var_sum}_{suffix}",
+                f"hist_{var_sci}_VS_{var_sum}_{suffix}",
+                500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"] * 2.5,
+                500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
+                var_sum,
+                var_sci
+            )
+            hists_FERS_Cer_vs_Sci.append(hist_Sci_vs_CerSci)
+            hist_Cer_vs_CerSci = rdf.Histo2D((
+                f"hist_{var_cer}_VS_{var_sum}_{suffix}",
+                f"hist_{var_cer}_VS_{var_sum}_{suffix}",
+                500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"] * 2.5,
+                500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
+                var_sum,
+                var_cer
+            )
+            hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_CerSci)
 
     return hists_FERS_Cer_vs_Sci
 
@@ -409,6 +443,19 @@ def makeFERSEnergySumPlots(suffix=""):
                        outdir=outdir_plots, runNumber=runNumber)
             plots.insert(0, output_name + ".png")
 
+            # sum Cer + Sci
+            varname = fersboards.GetEnergySumName(
+                gain=gain, isCer=True, pdsub=True, calib=calib)
+            varname = varname.replace("Cer", "CerSci")
+            hist_name = f"hist_{varname}_{suffix}"
+            hist = infile.Get(hist_name)
+            output_name = f"FERS_Total_{gain}_CerSci_{suffix}"
+            DrawHistos([hist], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"] * 2.5, f"CerSci {gain} {config[f'title_{gain}']}", 1, None, "Events",
+                       output_name,
+                       dology=False, drawoptions="HIST", mycolors=[6], addOverflow=True, addUnderflow=True,
+                       outdir=outdir_plots, runNumber=runNumber)
+            plots.insert(1, output_name + ".png")
+
             # dual readout
             varname = fersboards.GetEnergySumName(
                 gain=gain, isCer=True, pdsub=True, calib=calib)
@@ -420,7 +467,7 @@ def makeFERSEnergySumPlots(suffix=""):
                        output_name,
                        dology=False, drawoptions="HIST", mycolors=[1], addOverflow=True, addUnderflow=True,
                        outdir=outdir_plots, runNumber=runNumber)
-            plots.insert(1, output_name + ".png")
+            plots.insert(2, output_name + ".png")
 
             # plot sci, cer, and dr energy in the same plot, and fit the energy to get resolution
             varname_cer = fersboards.GetEnergySumName(
@@ -439,26 +486,30 @@ def makeFERSEnergySumPlots(suffix=""):
             extraToDraw.SetTextFont(42)
             extraToDraw.SetTextSize(0.04)
             # fit with gaus, plot the parameters
+            tf1s = []
             for cat, hist in [("Cer", hist_cer), ("Sci", hist_sci), ("DR", hist_dr)]:
                 if hist:
-                    fit = hist.Fit("gaus", "S")
-                    if fit:
-                        mean = fit.Parameter(1)
-                        sigma = fit.Parameter(2)
-                        chi2 = fit.Chi2()
-                        ndf = fit.Ndf()
-                        print(
-                            f"Fit results for {hist.GetName()}: mean = {mean}, sigma = {sigma}, chi2 = {chi2}, ndf = {ndf}")
+                    fit_result = hist.Fit("gaus", "S")
+                    if fit_result.IsValid():
+                        fit_func = hist.GetFunction("gaus")
+                        mean = fit_func.GetParameter(1)
+                        sigma = fit_func.GetParameter(2)
+                        chi2 = fit_func.GetChisquare()
+                        ndf = fit_func.GetNDF()
                         extraToDraw.AddText(
-                            f"{cat}: #mu#pm#sigma = {mean:.1f}#pm{sigma:.1f}, #chi^2/ndf = {chi2:.1f}/{ndf}")
+                            f"{cat}: #mu#pm#sigma = {mean:.1f}#pm{sigma:.1f}, #chi^{{2}}/ndf = {chi2:.1f}/{ndf}")
+
+                        fit_func.SetLineColor(
+                            2 if cat == "Cer" else (4 if cat == "Sci" else 1))
+                        tf1s.append(fit_func)
 
             output_name = f"FERS_Total_{gain}_Energy_{suffix}"
             DrawHistos([hist_cer, hist_sci, hist_dr], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], "Energy [GeV]", 0, None, "Events",
                        output_name,
                        dology=False, drawoptions="HIST", mycolors=[2, 4, 1], addOverflow=True, addUnderflow=True,
-                       outdir=outdir_plots, runNumber=runNumber, extraToDraw=extraToDraw)
-            plots.insert(2, output_name + ".png")
-            plots.insert(3, 'NEWLINE')
+                       outdir=outdir_plots, runNumber=runNumber, extraToDraw=[extraToDraw] + tf1s)
+            plots.insert(3, output_name + ".png")
+            plots.insert(4, 'NEWLINE')
 
     output_html = f"{htmldir}/FERS/EnergySum_{suffix}.html"
     generate_html(plots, outdir_plots, plots_per_row=6,
@@ -529,6 +580,30 @@ def makeFERSCerVsSciPlots(suffix=""):
                    extraToDraw=extraObjs,
                    outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
         plots.insert(0, output_name + ".png")
+
+        if gain == "Mix":
+            # Draw Sci vs CerSci
+            var_sum = var_cer.replace("Cer", "CerSci")
+            hist_Sci_vs_CerSci_name = f"hist_{var_sci}_VS_{var_sum}_{suffix}"
+            hist_Sci_vs_CerSci = infile.Get(hist_Sci_vs_CerSci_name)
+            if hist_Sci_vs_CerSci:
+                output_name = f"FERS_Total_Sci_VS_CerSci_{suffix}"
+                DrawHistos([hist_Sci_vs_CerSci], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]*2.5, f"Sci+Cer {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Sci {gain} {config[f'title_{gain}']}",
+                           output_name,
+                           dology=False, drawoptions=["colz"],
+                           outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+                plots.insert(1, output_name + ".png")
+
+            # Draw Cer vs CerSci
+            hist_Cer_vs_CerSci_name = f"hist_{var_cer}_VS_{var_sum}_{suffix}"
+            hist_Cer_vs_CerSci = infile.Get(hist_Cer_vs_CerSci_name)
+            if hist_Cer_vs_CerSci:
+                output_name = f"FERS_Total_Cer_VS_CerSci_{suffix}"
+                DrawHistos([hist_Cer_vs_CerSci], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]*2.5, f"Sci+Cer {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
+                           output_name,
+                           dology=False, drawoptions=["colz"],
+                           outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+                plots.insert(2, output_name + ".png")
 
     output_html = f"{htmldir}/FERS/EnergySum_Cer_VS_Sci_{suffix}.html"
     generate_html(plots, outdir_plots, plots_per_row=3,
