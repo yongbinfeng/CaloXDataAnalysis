@@ -14,3 +14,4 @@ backup*
 *csv
 *machinefile*
 *log
+*.ipynb_checkpoints

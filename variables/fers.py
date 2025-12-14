@@ -172,7 +172,7 @@ def getFERSEnergyMax(rdf, fersboards, gain="HG"):
     return rdf
 
 
-def getFERSEnergySum(rdf, fersboards, gain="HG", pdsub=False, calib=False):
+def getFERSEnergySum(rdf, fersboards, gain="HG", pdsub=False, calib=False, energy=0.0):
     """
     Calculate the Sci and Cer energy sum for FERS boards, per board and per event.
     """
@@ -206,6 +206,11 @@ def getFERSEnergySum(rdf, fersboards, gain="HG", pdsub=False, calib=False):
     # DR: E = (E_sci - E_cer * chi) / (1 - chi)
     rdf = rdf.Define(name_dr,
                      f"({name_sci} - {name_cer} * {chi}) / (1 - {chi})")
+    # DR method 2 (energy dependent correction):
+    # E = S + k * (b * E - (S+C))
+    slope = 0.494
+    rdf = rdf.Define(name_dr + "_method2",
+                     f"{name_sci} + {slope} * (1.77 * {energy}  - {name_sum})")
     return rdf
 
 
