@@ -172,7 +172,7 @@ def getFERSEnergyMax(rdf, fersboards, gain="HG"):
     return rdf
 
 
-def getFERSEnergySum(rdf, fersboards, gain="HG", pdsub=False, calib=False, energy=0.0):
+def getFERSEnergySum(rdf, fersboards, gain="HG", pdsub=False, calib=False):
     """
     Calculate the Sci and Cer energy sum for FERS boards, per board and per event.
     """
@@ -189,16 +189,32 @@ def getFERSEnergySum(rdf, fersboards, gain="HG", pdsub=False, calib=False, energ
     rdf = rdf.Define(fersboards.GetEnergySumName(gain=gain, isCer=False, pdsub=pdsub, calib=calib),
                      f"({' + '.join(fersboard.GetEnergySumName(gain=gain, isCer=False, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
 
-    # per-event energy ratio
-    rdf = rdf.Define(fersboards.GetEnergySumRatioName(gain=gain, pdsub=pdsub, calib=calib),
-                     f"({fersboards.GetEnergySumName(gain=gain, isCer=True, pdsub=pdsub, calib=calib)}) / ({fersboards.GetEnergySumName(gain=gain, isCer=False, pdsub=pdsub, calib=calib)} + 1e-9)")
+    return rdf
 
-    # dual-readout
-    chi = 0.3
+
+def getFERSEnergyDR(rdf, fersboards, energy=0.0):
+    #
+    # for dual-readout calculation
+    #
     name_cer = fersboards.GetEnergySumName(
-        gain=gain, isCer=True, pdsub=pdsub, calib=calib)
+        gain="Mix", isCer=True, pdsub=True, calib=True)
     name_sci = fersboards.GetEnergySumName(
-        gain=gain, isCer=False, pdsub=pdsub, calib=calib)
+        gain="Mix", isCer=False, pdsub=True, calib=True)
+
+    # per-event energy ratio
+    rdf = rdf.Define("COverS", f"{name_cer} / ({name_sci} + 1e-9)")
+
+    eOverh_C = 5.0
+    eOverh_S = 1.3
+
+    # fEM = (S * hOvere_C - C * hOvere_S) / ( (1 - hOvere_S) * C - (1 - hOvere_C) * S)
+    # rdf = rdf.Define(
+    #    "fEM", f"({name_sci} / {eOverh_C} - {name_cer} / {eOverh_S}) / ( (1.0-1.0/{eOverh_S})*{name_cer} - (1.0-1.0/{eOverh_C})*{name_sci})")
+    rdf = rdf.Define(
+        "fEM", f"({name_sci} * {eOverh_S} - {name_cer} * {eOverh_C}) / (({eOverh_S} - 1.0) * {name_cer} - ({eOverh_C} - 1.0) * {name_sci})"
+    )
+
+    chi = 0.3
     name_dr = name_cer.replace("Cer", "DR")
     name_sum = name_cer.replace("Cer", "CerSci")
     rdf = rdf.Define(name_sum,

@@ -5,7 +5,7 @@ import json
 from collections import OrderedDict
 from channels.channel_map import buildFERSBoards
 from utils.dataloader import loadRDF, getRunInfo
-from variables.fers import getFERSEnergySum, vectorizeFERS, calibrateFERSChannels, subtractFERSPedestal, getFERSEnergyWeightedCenter, addFERSPosXY, mixFERSHGLG
+from variables.fers import getFERSEnergySum, vectorizeFERS, calibrateFERSChannels, subtractFERSPedestal, getFERSEnergyWeightedCenter, addFERSPosXY, mixFERSHGLG, getFERSEnergyDR
 from variables.drs import preProcessDRSBoards
 from utils.visualization import visualizeFERSBoards
 from utils.html_generator import generate_html
@@ -58,7 +58,8 @@ if runNumber >= 1350:
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile=jsonFile)
 rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
-rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=200, TSmax=700, cut=-50)
+rdf, rdf_prefilter = vetoMuonCounter(
+    rdf, runNumber, TSmin=200, TSmax=700, cut=-100)
 # rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber, applyCut=False)
 rdf = applyUpstreamVeto(rdf, runNumber, applyCut=False)
 
@@ -83,9 +84,11 @@ GainCalibs = [("HG", False), ("LG", False), ("Mix", True)]
 # calculate energy sums
 for gain, calib in GainCalibs:
     rdf = getFERSEnergySum(rdf, fersboards, pdsub=True,
-                           calib=calib, gain=gain, energy=benergy)
+                           calib=calib, gain=gain)
     rdf = getFERSEnergyWeightedCenter(
         rdf, fersboards, pdsub=True, calib=calib, gain=gain)
+# dual readout
+rdf = getFERSEnergyDR(rdf, fersboards, energy=benergy)
 
 rdf = addFERSPosXY(rdf, fersboards)
 
@@ -105,8 +108,9 @@ rdfs = OrderedDict()
 # rdf = applyPSDSelection(rdf, runNumber, applyCut=False)
 # rdf = applyCC1Selection(rdf, runNumber, applyCut=False)
 
-rdfs["inc"] = rdf
+# rdfs["inc"] = rdf
 rdfs["passHaloVeto"] = rdf.Filter("pass_upstream_veto == 1")
+# rdfs["MuonLike"] = rdf.Filter("FERS_energyMix_Sci_calib_sum < 10.0")
 # rdfs["passHaloVeto_passPSDEle_passCC1Ele"] = rdf.Filter(
 #    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 1 && pass_upstream_veto == 1")
 # rdfs["passPSDEle_failCC1Ele"] = rdf.Filter(
@@ -144,50 +148,6 @@ def makeFERSEnergySumHists(rdf=rdf, suffix=""):
                 varname
             )
             hists_FERS_EnergySum.append(hist)
-            if gain == "Mix":
-                # per-event C/S ratio
-                varname = fersboards.GetEnergySumRatioName(
-                    gain=gain, pdsub=True, calib=calib)
-                hist = rdf.Histo1D((
-                    f"hist_{varname}_{suffix}",
-                    f"hist_{varname}_{suffix}",
-                    100, 0, 2.0),
-                    varname
-                )
-                hists_FERS_EnergySum.append(hist)
-
-                # sum Cer + Sci
-                varname = fersboards.GetEnergySumName(
-                    gain=gain, isCer=True, pdsub=True, calib=calib)
-                varname = varname.replace("Cer", "CerSci")
-                hist = rdf.Histo1D((
-                    f"hist_{varname}_{suffix}",
-                    f"hist_{varname}_{suffix}",
-                    500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]*2.5),
-                    varname
-                )
-                hists_FERS_EnergySum.append(hist)
-
-                # dual readout
-                varname = fersboards.GetEnergySumName(
-                    gain=gain, isCer=True, pdsub=True, calib=calib)
-                varname = varname.replace("Cer", "DR")
-                hist = rdf.Histo1D((
-                    f"hist_{varname}_{suffix}",
-                    f"hist_{varname}_{suffix}",
-                    500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]),
-                    varname
-                )
-                hists_FERS_EnergySum.append(hist)
-                # dual readout method 2
-                varname = varname + "_method2"
-                hist = rdf.Histo1D((
-                    f"hist_{varname}_{suffix}",
-                    f"hist_{varname}_{suffix}",
-                    500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]),
-                    varname
-                )
-                hists_FERS_EnergySum.append(hist)
 
     return hists_FERS_EnergySum
 
@@ -228,51 +188,112 @@ def makeFERSCervsSciHists(rdf=rdf, suffix=""):
         )
         hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci_Event)
 
-        if gain == "Mix":
-            # S vs Sum Cer + Sci
-            var_sum = var_cer.replace("Cer", "CerSci")
-            hist_Sci_vs_CerSci = rdf.Histo2D((
-                f"hist_{var_sci}_VS_{var_sum}_{suffix}",
-                f"hist_{var_sci}_VS_{var_sum}_{suffix}",
-                500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"] * 2.5,
-                500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
-                var_sum,
-                var_sci
-            )
-            hists_FERS_Cer_vs_Sci.append(hist_Sci_vs_CerSci)
-            hist_Cer_vs_CerSci = rdf.Histo2D((
-                f"hist_{var_cer}_VS_{var_sum}_{suffix}",
-                f"hist_{var_cer}_VS_{var_sum}_{suffix}",
-                500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"] * 2.5,
-                500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
-                var_sum,
-                var_cer
-            )
-            hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_CerSci)
-            # C vs DR
-            var_dr = var_cer.replace("Cer", "DR")
-            hist_Cer_vs_DR = rdf.Histo2D((
-                f"hist_{var_cer}_VS_{var_dr}_{suffix}",
-                f"hist_{var_cer}_VS_{var_dr}_{suffix}",
-                500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"],
-                500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
-                var_dr,
-                var_cer
-            )
-            hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_DR)
-            # C vs DR method 2
-            var_dr = var_dr + "_method2"
-            hist_Cer_vs_DR_method2 = rdf.Histo2D((
-                f"hist_{var_cer}_VS_{var_dr}_{suffix}",
-                f"hist_{var_cer}_VS_{var_dr}_{suffix}",
-                500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"],
-                500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
-                var_dr,
-                var_cer
-            )
-            hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_DR_method2)
-
     return hists_FERS_Cer_vs_Sci
+
+
+def makeFERSDRHists(rdf=rdf, suffix=""):
+    calib = True
+    gain = "Mix"
+    config = getRangesForFERSEnergySums(
+        pdsub=True, calib=True, clip=False, HE=HE, runNumber=runNumber)
+    varname_Cer = fersboards.GetEnergySumName(
+        gain=gain, isCer=True, pdsub=True, calib=calib)
+    varname_Sci = fersboards.GetEnergySumName(
+        gain=gain, isCer=False, pdsub=True, calib=calib)
+    hists_DR = []
+    # per-event C/S ratio
+    varname = "COverS"
+    hist = rdf.Histo1D(
+        (f"hist_{varname}_{suffix}", f"hist_{varname}_{suffix}", 100, 0, 2.0), varname)
+    hists_DR.append(hist)
+    # per-event fEm
+    varname = "fEM"
+    hist = rdf.Histo1D(
+        (f"hist_{varname}_{suffix}", f"hist_{varname}_{suffix}", 100, 0, 2.0), varname)
+    hists_DR.append(hist)
+    # sum Cer + Sci
+    varname = varname_Cer.replace("Cer", "CerSci")
+    hist = rdf.Histo1D((
+        f"hist_{varname}_{suffix}",
+        f"hist_{varname}_{suffix}",
+        500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]*2.5),
+        varname
+    )
+    hists_DR.append(hist)
+    # dual readout
+    varname = varname_Cer.replace("Cer", "DR")
+    hist = rdf.Histo1D((
+        f"hist_{varname}_{suffix}",
+        f"hist_{varname}_{suffix}",
+        500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]),
+        varname
+    )
+    hists_DR.append(hist)
+    # dual readout method 2
+    varname = varname + "_method2"
+    hist = rdf.Histo1D((
+        f"hist_{varname}_{suffix}",
+        f"hist_{varname}_{suffix}",
+        500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]),
+        varname
+    )
+    hists_DR.append(hist)
+
+    # S vs Sum Cer + Sci
+    var_sum = varname_Cer.replace("Cer", "CerSci")
+    hist_Sci_vs_CerSci = rdf.Histo2D((
+        f"hist_{varname_Sci}_VS_{var_sum}_{suffix}",
+        f"hist_{varname_Sci}_VS_{var_sum}_{suffix}",
+        500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"] * 2.5,
+        500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
+        var_sum,
+        varname_Sci
+    )
+    hists_DR.append(hist_Sci_vs_CerSci)
+    hist_Cer_vs_CerSci = rdf.Histo2D((
+        f"hist_{varname_Cer}_VS_{var_sum}_{suffix}",
+        f"hist_{varname_Cer}_VS_{var_sum}_{suffix}",
+        500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"] * 2.5,
+        500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
+        var_sum,
+        varname_Cer
+    )
+    hists_DR.append(hist_Cer_vs_CerSci)
+    # S vs fEM
+    var_fem = "fEM"
+    hist_Sci_vs_fEM = rdf.Histo2D((
+        f"hist_{varname_Sci}_VS_{var_fem}_{suffix}",
+        f"hist_{varname_Sci}_VS_{var_fem}_{suffix}",
+        500, 0., 2.0,
+        500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]),
+        var_fem,
+        varname_Sci
+    )
+    hists_DR.append(hist_Sci_vs_fEM)
+    # C vs DR
+    var_dr = varname_Cer.replace("Cer", "DR")
+    hist_Cer_vs_DR = rdf.Histo2D((
+        f"hist_{varname_Cer}_VS_{var_dr}_{suffix}",
+        f"hist_{varname_Cer}_VS_{var_dr}_{suffix}",
+        500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"],
+        500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
+        var_dr,
+        varname_Cer
+    )
+    hists_DR.append(hist_Cer_vs_DR)
+    # C vs DR method 2
+    var_dr = var_dr + "_method2"
+    hist_Cer_vs_DR_method2 = rdf.Histo2D((
+        f"hist_{varname_Cer}_VS_{var_dr}_{suffix}",
+        f"hist_{varname_Cer}_VS_{var_dr}_{suffix}",
+        500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"],
+        500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
+        var_dr,
+        varname_Cer
+    )
+    hists_DR.append(hist_Cer_vs_DR_method2)
+
+    return hists_DR
 
 
 def makeFERSEnergyWeightedCenterHists(rdf=rdf, suffix=""):
@@ -457,102 +478,6 @@ def makeFERSEnergySumPlots(suffix=""):
                        outdir=outdir_plots, runNumber=runNumber)
             plots.insert(0, output_name + ".png")
 
-        # C/S
-        if gain == "Mix":
-            varname = fersboards.GetEnergySumRatioName(
-                gain=gain, pdsub=True, calib=calib)
-            hist_name = f"hist_{varname}_{suffix}"
-            hist = infile.Get(hist_name)
-            if not hist:
-                print(
-                    f"Warning: Histogram {hist_name} not found in {infile_name}")
-                continue
-            output_name = f"FERS_Total_{gain}_CerOverSci_{suffix}"
-            DrawHistos([hist], "", 0, 2, "C/S", 0, None, "Events",
-                       output_name,
-                       dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
-                       outdir=outdir_plots, runNumber=runNumber)
-            plots.insert(0, output_name + ".png")
-
-            # sum Cer + Sci
-            varname = fersboards.GetEnergySumName(
-                gain=gain, isCer=True, pdsub=True, calib=calib)
-            varname = varname.replace("Cer", "CerSci")
-            hist_name = f"hist_{varname}_{suffix}"
-            hist = infile.Get(hist_name)
-            output_name = f"FERS_Total_{gain}_CerSci_{suffix}"
-            DrawHistos([hist], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"] * 2.5, f"CerSci {gain} {config[f'title_{gain}']}", 1, None, "Events",
-                       output_name,
-                       dology=False, drawoptions="HIST", mycolors=[6], addOverflow=True, addUnderflow=True,
-                       outdir=outdir_plots, runNumber=runNumber)
-            plots.insert(1, output_name + ".png")
-
-            # dual readout
-            varname = fersboards.GetEnergySumName(
-                gain=gain, isCer=True, pdsub=True, calib=calib)
-            varname = varname.replace("Cer", "DR")
-            hist_name = f"hist_{varname}_{suffix}"
-            hist = infile.Get(hist_name)
-            output_name = f"FERS_Total_{gain}_DR_{suffix}"
-            DrawHistos([hist], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"DR {gain} {config[f'title_{gain}']}", 1, None, "Events",
-                       output_name,
-                       dology=False, drawoptions="HIST", mycolors=[1], addOverflow=True, addUnderflow=True,
-                       outdir=outdir_plots, runNumber=runNumber)
-            plots.insert(2, output_name + ".png")
-
-            varname = varname + "_method2"
-            hist_name = f"hist_{varname}_{suffix}"
-            hist = infile.Get(hist_name)
-            output_name = f"FERS_Total_{gain}_DR_method2_{suffix}"
-            DrawHistos([hist], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"DR method2 {gain} {config[f'title_{gain}']}", 1, None, "Events",
-                       output_name,
-                       dology=False, drawoptions="HIST", mycolors=[7], addOverflow=True, addUnderflow=True,
-                       outdir=outdir_plots, runNumber=runNumber)
-            plots.insert(3, output_name + ".png")
-
-            # plot sci, cer, and dr energy in the same plot, and fit the energy to get resolution
-            varname_cer = fersboards.GetEnergySumName(
-                gain=gain, isCer=True, pdsub=True, calib=calib)
-            varname_sci = fersboards.GetEnergySumName(
-                gain=gain, isCer=False, pdsub=True, calib=calib)
-            varname_dr = varname_cer.replace("Cer", "DR")
-            hist_cer = infile.Get(f"hist_{varname_cer}_{suffix}")
-            hist_sci = infile.Get(f"hist_{varname_sci}_{suffix}")
-            hist_dr = infile.Get(f"hist_{varname_dr}_{suffix}")
-            hist_dr_method2 = infile.Get(f"hist_{varname_dr}_method2_{suffix}")
-
-            extraToDraw = ROOT.TPaveText(0.20, 0.75, 0.60, 0.90, "NDC")
-            extraToDraw.SetTextAlign(11)
-            extraToDraw.SetFillColorAlpha(0, 0)
-            extraToDraw.SetBorderSize(0)
-            extraToDraw.SetTextFont(42)
-            extraToDraw.SetTextSize(0.04)
-            # fit with gaus, plot the parameters
-            tf1s = []
-            for cat, hist in [("Cer", hist_cer), ("Sci", hist_sci), ("DR", hist_dr), ("DR method2", hist_dr_method2)]:
-                if hist:
-                    fit_result = hist.Fit("gaus", "S")
-                    if fit_result.IsValid():
-                        fit_func = hist.GetFunction("gaus")
-                        mean = fit_func.GetParameter(1)
-                        sigma = fit_func.GetParameter(2)
-                        chi2 = fit_func.GetChisquare()
-                        ndf = fit_func.GetNDF()
-                        extraToDraw.AddText(
-                            f"{cat}: #mu#pm#sigma = {mean:.1f}#pm{sigma:.1f}, #chi^{{2}}/ndf = {chi2:.1f}/{ndf}")
-
-                        fit_func.SetLineColor(
-                            2 if cat == "Cer" else (4 if cat == "Sci" else 1))
-                        tf1s.append(fit_func)
-
-            output_name = f"FERS_Total_{gain}_Energy_{suffix}"
-            DrawHistos([hist_cer, hist_sci, hist_dr, hist_dr_method2], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], "Energy [GeV]", 0, None, "Events",
-                       output_name,
-                       dology=False, drawoptions="HIST", mycolors=[2, 4, 1, 7], addOverflow=True, addUnderflow=True,
-                       outdir=outdir_plots, runNumber=runNumber, extraToDraw=[extraToDraw] + tf1s)
-            plots.insert(4, output_name + ".png")
-            plots.insert(5, 'NEWLINE')
-
     output_html = f"{htmldir}/FERS/EnergySum_{suffix}.html"
     generate_html(plots, outdir_plots, plots_per_row=6,
                   output_html=output_html)
@@ -623,56 +548,185 @@ def makeFERSCerVsSciPlots(suffix=""):
                    outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
         plots.insert(0, output_name + ".png")
 
-        if gain == "Mix":
-            # Draw Sci vs CerSci
-            var_sum = var_cer.replace("Cer", "CerSci")
-            hist_Sci_vs_CerSci_name = f"hist_{var_sci}_VS_{var_sum}_{suffix}"
-            hist_Sci_vs_CerSci = infile.Get(hist_Sci_vs_CerSci_name)
-            if hist_Sci_vs_CerSci:
-                output_name = f"FERS_Total_Sci_VS_CerSci_{suffix}"
-                DrawHistos([hist_Sci_vs_CerSci], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]*2.5, f"Sci+Cer {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Sci {gain} {config[f'title_{gain}']}",
-                           output_name,
-                           dology=False, drawoptions=["colz"],
-                           outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
-                plots.insert(1, output_name + ".png")
-
-            # Draw Cer vs CerSci
-            hist_Cer_vs_CerSci_name = f"hist_{var_cer}_VS_{var_sum}_{suffix}"
-            hist_Cer_vs_CerSci = infile.Get(hist_Cer_vs_CerSci_name)
-            if hist_Cer_vs_CerSci:
-                output_name = f"FERS_Total_Cer_VS_CerSci_{suffix}"
-                DrawHistos([hist_Cer_vs_CerSci], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]*2.5, f"Sci+Cer {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
-                           output_name,
-                           dology=False, drawoptions=["colz"],
-                           outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
-                plots.insert(2, output_name + ".png")
-
-            # Draw Cer vs DR
-            var_dr = var_cer.replace("Cer", "DR")
-            hist_Cer_vs_DR_name = f"hist_{var_cer}_VS_{var_dr}_{suffix}"
-            hist_Cer_vs_DR = infile.Get(hist_Cer_vs_DR_name)
-            if hist_Cer_vs_DR:
-                output_name = f"FERS_Total_Cer_VS_DR_{suffix}"
-                DrawHistos([hist_Cer_vs_DR], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"DR {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
-                           output_name,
-                           dology=False, drawoptions=["colz"],
-                           outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
-                plots.insert(3, output_name + ".png")
-
-            # Draw Cer vs DR method2
-            var_dr = var_dr + "_method2"
-            hist_Cer_vs_DR_method2_name = f"hist_{var_cer}_VS_{var_dr}_{suffix}"
-            hist_Cer_vs_DR_method2 = infile.Get(hist_Cer_vs_DR_method2_name)
-            if hist_Cer_vs_DR_method2:
-                output_name = f"FERS_Total_Cer_VS_DR_method2_{suffix}"
-                DrawHistos([hist_Cer_vs_DR_method2], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"DR method2 {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
-                           output_name,
-                           dology=False, drawoptions=["colz"],
-                           outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
-                plots.insert(4, output_name + ".png")
-
     output_html = f"{htmldir}/FERS/EnergySum_Cer_VS_Sci_{suffix}.html"
     generate_html(plots, outdir_plots, plots_per_row=3,
+                  output_html=output_html)
+    return output_html
+
+
+def makeFERSDRPlots(suffix=""):
+    plots = []
+    infile_name = f"{rootdir}/fers_DR_{suffix}.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    outdir_plots = f"{plotdir}/FERS_DR_{suffix}"
+
+    gain = "Mix"
+    calib = True
+    config = getRangesForFERSEnergySums(
+        pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
+    varname_Cer = fersboards.GetEnergySumName(
+        gain=gain, isCer=True, pdsub=True, calib=calib)
+    varname_Sci = fersboards.GetEnergySumName(
+        gain=gain, isCer=False, pdsub=True, calib=calib)
+
+    varname = "COverS"
+    hist_name = f"hist_{varname}_{suffix}"
+    hist = infile.Get(hist_name)
+    output_name = f"FERS_Total_{gain}_CerOverSci_{suffix}"
+    DrawHistos([hist], "", 0, 2, "C/S", 0, None, "Events",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.append(output_name + ".png")
+
+    varname = "fEM"
+    hist_name = f"hist_{varname}_{suffix}"
+    hist = infile.Get(hist_name)
+    output_name = f"FERS_Total_{gain}_fEM_{suffix}"
+    DrawHistos([hist], "", 0, 1.5, "f_{EM}", 0, None, "Events",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.append(output_name + ".png")
+
+    # sum Cer + Sci
+    varname = fersboards.GetEnergySumName(
+        gain=gain, isCer=True, pdsub=True, calib=calib)
+    varname = varname.replace("Cer", "CerSci")
+    hist_name = f"hist_{varname}_{suffix}"
+    hist = infile.Get(hist_name)
+    output_name = f"FERS_Total_{gain}_CerSci_{suffix}"
+    DrawHistos([hist], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"] * 2.5, f"Cer+Sci {gain} {config[f'title_{gain}']}", 1, None, "Events",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=[6], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.append(output_name + ".png")
+
+    # dual readout
+    varname = fersboards.GetEnergySumName(
+        gain=gain, isCer=True, pdsub=True, calib=calib)
+    varname = varname.replace("Cer", "DR")
+    hist_name = f"hist_{varname}_{suffix}"
+    hist = infile.Get(hist_name)
+    output_name = f"FERS_Total_{gain}_DR_{suffix}"
+    DrawHistos([hist], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"DR {gain} {config[f'title_{gain}']}", 1, None, "Events",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=[1], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.append(output_name + ".png")
+
+    varname = varname + "_method2"
+    hist_name = f"hist_{varname}_{suffix}"
+    hist = infile.Get(hist_name)
+    output_name = f"FERS_Total_{gain}_DR_method2_{suffix}"
+    DrawHistos([hist], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"DR method2 {gain} {config[f'title_{gain}']}", 1, None, "Events",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=[7], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.append(output_name + ".png")
+
+    # plot sci, cer, and dr energy in the same plot, and fit the energy to get resolution
+    varname_cer = fersboards.GetEnergySumName(
+        gain=gain, isCer=True, pdsub=True, calib=calib)
+    varname_sci = fersboards.GetEnergySumName(
+        gain=gain, isCer=False, pdsub=True, calib=calib)
+    varname_dr = varname_cer.replace("Cer", "DR")
+
+    infile_ferssum = ROOT.TFile(
+        f"{rootdir}/fers_energy_sum_{suffix}.root", "READ")
+    hist_cer = infile_ferssum.Get(f"hist_{varname_cer}_{suffix}")
+    hist_sci = infile_ferssum.Get(f"hist_{varname_sci}_{suffix}")
+    hist_dr = infile.Get(f"hist_{varname_dr}_{suffix}")
+    hist_dr_method2 = infile.Get(f"hist_{varname_dr}_method2_{suffix}")
+    extraToDraw = ROOT.TPaveText(0.20, 0.75, 0.60, 0.90, "NDC")
+    extraToDraw.SetTextAlign(11)
+    extraToDraw.SetFillColorAlpha(0, 0)
+    extraToDraw.SetBorderSize(0)
+    extraToDraw.SetTextFont(42)
+    extraToDraw.SetTextSize(0.04)
+    # fit with gaus, plot the parameters
+    tf1s = []
+    for cat, hist in [("Cer", hist_cer), ("Sci", hist_sci), ("DR", hist_dr), ("DR method2", hist_dr_method2)]:
+        if hist:
+            fit_result = hist.Fit("gaus", "S")
+            if fit_result.IsValid():
+                fit_func = hist.GetFunction("gaus")
+                mean = fit_func.GetParameter(1)
+                sigma = fit_func.GetParameter(2)
+                chi2 = fit_func.GetChisquare()
+                ndf = fit_func.GetNDF()
+                extraToDraw.AddText(
+                    f"{cat}: #mu#pm#sigma = {mean:.1f}#pm{sigma:.1f}, #chi^{{2}}/ndf = {chi2:.1f}/{ndf}")
+
+                fit_func.SetLineColor(
+                    2 if cat == "Cer" else (4 if cat == "Sci" else 1))
+                tf1s.append(fit_func)
+
+    output_name = f"FERS_Total_{gain}_Energy_{suffix}"
+    DrawHistos([hist_cer, hist_sci, hist_dr, hist_dr_method2], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], "Energy [GeV]", 0, None, "Events",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=[2, 4, 1, 7], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber, extraToDraw=[extraToDraw] + tf1s)
+    plots.append(output_name + ".png")
+
+    plots.append("NEWLINE")
+
+    # Draw Sci vs CerSci
+    var_sum = varname_Cer.replace("Cer", "CerSci")
+    hist_Sci_vs_CerSci_name = f"hist_{varname_Sci}_VS_{var_sum}_{suffix}"
+    hist_Sci_vs_CerSci = infile.Get(hist_Sci_vs_CerSci_name)
+    output_name = f"FERS_Total_Sci_VS_CerSci_{suffix}"
+    DrawHistos([hist_Sci_vs_CerSci], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]*2.5, f"Sci+Cer {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Sci {gain} {config[f'title_{gain}']}",
+               output_name,
+               dology=False, drawoptions=["colz"],
+               outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+    plots.append(output_name + ".png")
+
+    # Draw Cer vs CerSci
+    hist_Cer_vs_CerSci_name = f"hist_{varname_Cer}_VS_{var_sum}_{suffix}"
+    hist_Cer_vs_CerSci = infile.Get(hist_Cer_vs_CerSci_name)
+    output_name = f"FERS_Total_Cer_VS_CerSci_{suffix}"
+    DrawHistos([hist_Cer_vs_CerSci], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]*2.5, f"Sci+Cer {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
+               output_name,
+               dology=False, drawoptions=["colz"],
+               outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+    plots.append(output_name + ".png")
+
+    # Draw Sci vs fEM
+    var_fem = "fEM"
+    hist_Sci_vs_fEM_name = f"hist_{varname_Sci}_VS_{var_fem}_{suffix}"
+    hist_Sci_vs_fEM = infile.Get(hist_Sci_vs_fEM_name)
+    output_name = f"FERS_Total_Sci_VS_fEM_{suffix}"
+    DrawHistos([hist_Sci_vs_fEM], "", 0, 1.5, "f_{EM}", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"Sci {gain} {config[f'title_{gain}']}",
+               output_name,
+               dology=False, drawoptions=["colz"],
+               outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+    plots.append(output_name + ".png")
+
+    # Draw Cer vs DR
+    var_dr = varname_Cer.replace("Cer", "DR")
+    hist_Cer_vs_DR_name = f"hist_{varname_Cer}_VS_{var_dr}_{suffix}"
+    hist_Cer_vs_DR = infile.Get(hist_Cer_vs_DR_name)
+    output_name = f"FERS_Total_Cer_VS_DR_{suffix}"
+    DrawHistos([hist_Cer_vs_DR], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"DR {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
+               output_name,
+               dology=False, drawoptions=["colz"],
+               outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+    plots.append(output_name + ".png")
+
+    # Draw Cer vs DR method2
+    var_dr = var_dr + "_method2"
+    hist_Cer_vs_DR_method2_name = f"hist_{varname_Cer}_VS_{var_dr}_{suffix}"
+    hist_Cer_vs_DR_method2 = infile.Get(hist_Cer_vs_DR_method2_name)
+    output_name = f"FERS_Total_Cer_VS_DR_method2_{suffix}"
+    DrawHistos([hist_Cer_vs_DR_method2], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"DR method2 {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
+               output_name,
+               dology=False, drawoptions=["colz"],
+               outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+    plots.append(output_name + ".png")
+
+    output_html = f"{htmldir}/FERS/EnergySum_DR_{suffix}.html"
+    generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
 
@@ -930,6 +984,8 @@ if __name__ == "__main__":
 
             hists_cer_vs_sci_raw = makeFERSCervsSciHists(rdf=rdf, suffix=cat)
 
+            hists_dr = makeFERSDRHists(rdf=rdf, suffix=cat)
+
             hists_energy_weighted_center = makeFERSEnergyWeightedCenterHists(
                 rdf=rdf, suffix=cat)
 
@@ -961,6 +1017,14 @@ if __name__ == "__main__":
                     hist.SetDirectory(outfile)
                     hist.Write()
             print(f"Saved CER vs SCI histograms to {outfile_name}")
+
+            # save dr histograms
+            outfile_name = f"{rootdir}/fers_DR_{cat}.root"
+            with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+                for hist in hists_dr:
+                    hist.SetDirectory(outfile)
+                    hist.Write()
+            print(f"Saved DR histograms to {outfile_name}")
 
             # save energy weighted center histograms
             outfile_name = f"{rootdir}/fers_energy_weighted_center_{cat}.root"
@@ -1011,6 +1075,8 @@ if __name__ == "__main__":
 
             outputs_html[f"cer_vs_sci_raw_{cat}"] = makeFERSCerVsSciPlots(
                 suffix=cat)
+
+            outputs_html[f"dr_{cat}"] = makeFERSDRPlots(suffix=cat)
 
             outputs_html[f"energy_weighted_center_{cat}"] = makeFERSEnergyWeightedCenterPlots(
                 suffix=cat)
