@@ -35,9 +35,9 @@ def getServiceDRSSumCutValue(channel):
     return values.get(channel, -1e3)
 
 
-def vetoMuonCounter(rdf, TSmin=400, TSmax=600, cut=-80):
-    from channels.channel_map import getDownStreamMuonChannel
-    muon_channel = getDownStreamMuonChannel()
+def vetoMuonCounter(rdf, runNumber, TSmin=400, TSmax=600, cut=-80):
+    from channels.channel_map import getDownStreamTTUMuonChannel
+    muon_channel = getDownStreamTTUMuonChannel(run=runNumber)
     if muon_channel is None:
         print("Muon counter channel not found, skipping veto.")
         return rdf
