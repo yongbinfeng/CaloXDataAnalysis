@@ -9,8 +9,14 @@ submissiontext = """#!/bin/bash
 #SBATCH -p nocona
 """
 
-singularity_cmd = "singularity run --cleanenv --bind /lustre:/lustre -B /usr/lib64/libgif.so.7:/usr/lib64/libgif.so.7 -B /usr/lib64/libtiff.so.5:/usr/lib64/libtiff.so.5 -B /usr/lib64/libjpeg.so.62:/usr/lib64/libjpeg.so.62 -B /usr/lib64/libjbig.so.2.1:/usr/lib64/libjbig.so.2.1 /lustre/work/yofeng/SimulationEnv/alma9forgeant4_sbox/"
-run_cmd = "cd SCRIPTDIR && python makeDQMHists.py --run RUNNUMBER && python makeDQMPlots.py --run RUNNUMBER && python checkServiceDRS.py --run RUNNUMBER && python makeFERSEnergyPlots.py --run RUNNUMBER && python checkMCP.py --run RUNNUMBER && python makeDRSPeakTS.py --run RUNNUMBER"
+env_cmd = """echo "This job is running on the following nodes:"
+echo $SLURM_NODELIST
+"""
+#singularity_cmd = "singularity run --cleanenv --bind /lustre:/lustre -B /usr/lib64/libgif.so.7:/usr/lib64/libgif.so.7 -B /usr/lib64/libtiff.so.5:/usr/lib64/libtiff.so.5 -B /usr/lib64/libjpeg.so.62:/usr/lib64/libjpeg.so.62 -B /usr/lib64/libjbig.so.2.1:/usr/lib64/libjbig.so.2.1 /lustre/work/yofeng/SimulationEnv/alma9forgeant4_sbox/"
+singularity_cmd = "singularity run --cleanenv --bind /lustre:/lustre /lustre/work/yofeng/SimulationEnv/alma9forgeant4_v3_sbox/"
+#run_cmd = "cd SCRIPTDIR && python makeDQMHists.py --run RUNNUMBER && python makeDQMPlots.py --run RUNNUMBER && python checkServiceDRS.py --run RUNNUMBER && python makeFERSEnergyPlots.py --run RUNNUMBER && python checkMCP.py --run RUNNUMBER && python makeDRSPeakTS.py --run RUNNUMBER"
+#run_cmd = "cd SCRIPTDIR && python makeDRSTimingPlots.py --run RUNNUMBER"
+run_cmd = "export PCM_CACHE_DIR=/tmp; export TMPDIR=/tmp; cd SCRIPTDIR && python makeFERSEnergyPlots.py --run RUNNUMBER"
 
 import os
 
@@ -42,6 +48,7 @@ def generate_submission_script(runlist):
         with open(fname, "w") as f:
             f.write(submissiontext_tmp)
             f.write("\n\n")
+            f.write(env_cmd)
             f.write(run_cmd_tmp)
 
         fnames.append(fname)
@@ -60,5 +67,5 @@ def generate_submission_script(runlist):
     
     
 if __name__ == "__main__":
-    runList = range(1350, 1448)
+    runList = range(1349, 1528)
     generate_submission_script(runlist=runList)
