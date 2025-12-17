@@ -189,6 +189,25 @@ def getFERSEnergySum(rdf, fersboards, gain="HG", pdsub=False, calib=False):
     rdf = rdf.Define(fersboards.GetEnergySumName(gain=gain, isCer=False, pdsub=pdsub, calib=calib),
                      f"({' + '.join(fersboard.GetEnergySumName(gain=gain, isCer=False, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
 
+    # calculate adhoc lateral leakage correction
+    # E_leak = E_{out ring} * f, f=1.0
+    for cat in ["Cer", "Sci"]:
+        channels_outerring = []
+        for fersboard in fersboards.values():
+            for channel in fersboard.GetListOfChannels(isCer=(cat == "Cer")):
+                if abs(channel.iTowerX) >= 8 or abs(channel.iTowerY) >= 6:
+                    channels_outerring.append(
+                        channel.GetChannelName(gain=gain, pdsub=pdsub, calib=calib))
+
+        name_total = fersboards.GetEnergySumName(
+            gain=gain, isCer=(cat == "Cer"), pdsub=pdsub, calib=calib)
+        name_outer = name_total + "_OuterRing"
+        rdf = rdf.Define(f"{name_outer}",
+                         f"({' + '.join(channels_outerring)})")
+        name_corr = name_total + "_LeakCorr"
+        rdf = rdf.Define(f"{name_corr}",
+                         f"{name_total} + {name_outer} * 1.0")
+
     return rdf
 
 
@@ -200,6 +219,8 @@ def getFERSEnergyDR(rdf, fersboards, energy=0.0):
         gain="Mix", isCer=True, pdsub=True, calib=True)
     name_sci = fersboards.GetEnergySumName(
         gain="Mix", isCer=False, pdsub=True, calib=True)
+    name_cer_corr = name_cer + "_LeakCorr"
+    name_sci_corr = name_sci + "_LeakCorr"
 
     # per-event energy ratio
     rdf = rdf.Define("COverS", f"{name_cer} / ({name_sci} + 1e-9)")
@@ -211,7 +232,7 @@ def getFERSEnergyDR(rdf, fersboards, energy=0.0):
     # rdf = rdf.Define(
     #    "fEM", f"({name_sci} / {eOverh_C} - {name_cer} / {eOverh_S}) / ( (1.0-1.0/{eOverh_S})*{name_cer} - (1.0-1.0/{eOverh_C})*{name_sci})")
     rdf = rdf.Define(
-        "fEM", f"({name_sci} * {eOverh_S} - {name_cer} * {eOverh_C}) / (({eOverh_S} - 1.0) * {name_cer} - ({eOverh_C} - 1.0) * {name_sci})"
+        "fEM", f"({name_sci_corr} * {eOverh_S} - {name_cer} * {eOverh_C}) / (({eOverh_S} - 1.0) * {name_cer} - ({eOverh_C} - 1.0) * {name_sci_corr})"
     )
 
     chi = 0.3

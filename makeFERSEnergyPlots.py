@@ -201,12 +201,30 @@ def makeFERSDRHists(rdf=rdf, suffix=""):
     varname_Sci = fersboards.GetEnergySumName(
         gain=gain, isCer=False, pdsub=True, calib=calib)
     hists_DR = []
+    # leakage
+    varname = varname_Cer + "_OuterRing"
+    hist = rdf.Histo1D((
+        f"hist_{varname}_{suffix}", f"hist_{varname}_{suffix}", 500, 0, 20.0), varname)
+    hists_DR.append(hist)
+    varname = varname_Sci + "_OuterRing"
+    hist = rdf.Histo1D((
+        f"hist_{varname}_{suffix}", f"hist_{varname}_{suffix}", 500, 0, 20.0), varname)
+    hists_DR.append(hist)
+    # leakage + central
+    varname = varname_Cer + "_LeakCorr"
+    hist = rdf.Histo1D((
+        f"hist_{varname}_{suffix}", f"hist_{varname}_{suffix}", 500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]), varname)
+    hists_DR.append(hist)
+    varname = varname_Sci + "_LeakCorr"
+    hist = rdf.Histo1D((
+        f"hist_{varname}_{suffix}", f"hist_{varname}_{suffix}", 500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]), varname)
+    hists_DR.append(hist)
     # per-event C/S ratio
     varname = "COverS"
     hist = rdf.Histo1D(
         (f"hist_{varname}_{suffix}", f"hist_{varname}_{suffix}", 100, 0, 2.0), varname)
     hists_DR.append(hist)
-    # per-event fEm
+    # per-event fEM
     varname = "fEM"
     hist = rdf.Histo1D(
         (f"hist_{varname}_{suffix}", f"hist_{varname}_{suffix}", 100, 0, 2.0), varname)
@@ -270,6 +288,16 @@ def makeFERSDRHists(rdf=rdf, suffix=""):
         varname_Sci
     )
     hists_DR.append(hist_Sci_vs_fEM)
+    # C vs fEM
+    hist_Cer_vs_fEM = rdf.Histo2D((
+        f"hist_{varname_Cer}_VS_{var_fem}_{suffix}",
+        f"hist_{varname_Cer}_VS_{var_fem}_{suffix}",
+        500, 0., 2.0,
+        500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
+        var_fem,
+        varname_Cer
+    )
+    hists_DR.append(hist_Cer_vs_fEM)
     # C vs DR
     var_dr = varname_Cer.replace("Cer", "DR")
     hist_Cer_vs_DR = rdf.Histo2D((
@@ -569,6 +597,35 @@ def makeFERSDRPlots(suffix=""):
     varname_Sci = fersboards.GetEnergySumName(
         gain=gain, isCer=False, pdsub=True, calib=calib)
 
+    # leakage
+    hists = []
+    for cat, var in [("Cer", varname_Cer), ("Sci", varname_Sci)]:
+        varname_leak = var + "_OuterRing"
+        hist_name = f"hist_{varname_leak}_{suffix}"
+        hist = infile.Get(hist_name)
+        hists.append(hist)
+    output_name = f"FERS_Total_{gain}_OuterRing_{suffix}"
+    DrawHistos(hists, ["Cer", "Sci"], 0, 20.0, f"Leakage Energy", 0, None, "Events",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.append(output_name + ".png")
+
+    # leakage + central
+    hists = []
+    for cat, var in [("Cer", varname_Cer), ("Sci", varname_Sci)]:
+        varname_leak = var + "_LeakCorr"
+        hist_name = f"hist_{varname_leak}_{suffix}"
+        hist = infile.Get(hist_name)
+        hists.append(hist)
+    output_name = f"FERS_Total_{gain}_LeakCorr_{suffix}"
+    DrawHistos(hists, ["Cer", "Sci"], config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"Leakage Corrected Energy {gain} {config[f'title_{gain}']}", 1, None, "Events",
+               output_name,
+               dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=runNumber)
+    plots.append(output_name + ".png")
+    plots.append("NEWLINE")
+
     varname = "COverS"
     hist_name = f"hist_{varname}_{suffix}"
     hist = infile.Get(hist_name)
@@ -694,14 +751,36 @@ def makeFERSDRPlots(suffix=""):
 
     # Draw Sci vs fEM
     var_fem = "fEM"
-    hist_Sci_vs_fEM_name = f"hist_{varname_Sci}_VS_{var_fem}_{suffix}"
-    hist_Sci_vs_fEM = infile.Get(hist_Sci_vs_fEM_name)
-    output_name = f"FERS_Total_Sci_VS_fEM_{suffix}"
-    DrawHistos([hist_Sci_vs_fEM], "", 0, 1.5, "f_{EM}", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"Sci {gain} {config[f'title_{gain}']}",
-               output_name,
-               dology=False, drawoptions=["colz"],
-               outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
-    plots.append(output_name + ".png")
+    for cat in ["Sci", "Cer"]:
+        varname = varname_Sci if cat == "Sci" else varname_Cer
+        hist_varname_vs_fEM_name = f"hist_{varname}_VS_{var_fem}_{suffix}"
+        hist_varname_vs_fEM = infile.Get(hist_varname_vs_fEM_name)
+        hist_prof = hist_varname_vs_fEM.ProfileX()
+        hist_prof.Fit("pol1")
+        hist_prof.SetLineColor(ROOT.kRed)
+        hist_prof.SetMarkerColor(ROOT.kRed)
+        fit_result = hist_prof.Fit("pol1", "S", "", 0.4, 0.8)
+        extraToDraw = ROOT.TPaveText(0.20, 0.85, 0.60, 0.90, "NDC")
+        extraToDraw.SetTextAlign(11)
+        extraToDraw.SetFillColorAlpha(0, 0)
+        extraToDraw.SetBorderSize(0)
+        extraToDraw.SetTextFont(42)
+        extraToDraw.SetTextSize(0.04)
+        if fit_result.IsValid():
+            fit_func = hist_prof.GetFunction("pol1")
+            p0 = fit_func.GetParameter(0)
+            p1 = fit_func.GetParameter(1)
+            fit_func.SetLineColor(ROOT.kRed)
+            fit_func.SetLineWidth(2)
+            fit_func.SetLineStyle(2)
+            extraToDraw.AddText(f"{cat} = {p0:.1f} + {p1:.1f} * f_{{EM}}")
+
+        output_name = f"FERS_Total_{cat}_VS_fEM_{suffix}"
+        DrawHistos([hist_varname_vs_fEM], "", 0, 1.5, "f_{EM}", config["xmin_total"][f"{gain}_{cat.lower()}"], config["xmax_total"][f"{gain}_{cat.lower()}"], f"{cat} {gain} {config[f'title_{gain}']}",
+                   output_name,
+                   dology=False, drawoptions=["colz"],
+                   outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True, extraToDraw=[extraToDraw, fit_func])
+        plots.append(output_name + ".png")
 
     # Draw Cer vs DR
     var_dr = varname_Cer.replace("Cer", "DR")
