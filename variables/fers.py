@@ -247,11 +247,11 @@ def getFERSEnergyDR(rdf, fersboards, energy=0.0):
                      f"({name_sci} - {name_cer} * {chi}) / (1 - {chi})")
     # DR method 2 (energy dependent correction):
     # E = S + k * (b * E - (S+C))
-    # slope = 0.482
-    # rdf = rdf.Define(name_dr + "_method2",
-    #                 f"{name_sci} + {slope} * (1.766 * {energy}  - {name_sum})")
-    slope = 0.789
+    slope = 0.482
     rdf = rdf.Define(name_dr + "_method2",
+                     f"{name_sci} + {slope} * (1.766 * {energy}  - {name_sum})")
+    slope = 0.789
+    rdf = rdf.Define(name_dr + "_method3",
                      f"{name_sci} + 1.0 / {slope} * (60.0 / 80.0 * {energy}  - {name_cer})")
     return rdf
 
