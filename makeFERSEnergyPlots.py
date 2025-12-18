@@ -298,28 +298,20 @@ def makeFERSDRHists(rdf=rdf, suffix=""):
         varname_Cer
     )
     hists_DR.append(hist_Cer_vs_fEM)
-    # C vs DR
-    var_dr = varname_Cer.replace("Cer", "DR")
-    hist_Cer_vs_DR = rdf.Histo2D((
-        f"hist_{varname_Cer}_VS_{var_dr}_{suffix}",
-        f"hist_{varname_Cer}_VS_{var_dr}_{suffix}",
-        500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"],
-        500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
-        var_dr,
-        varname_Cer
-    )
-    hists_DR.append(hist_Cer_vs_DR)
-    # C vs DR method 2
-    var_dr = var_dr + "_method2"
-    hist_Cer_vs_DR_method2 = rdf.Histo2D((
-        f"hist_{varname_Cer}_VS_{var_dr}_{suffix}",
-        f"hist_{varname_Cer}_VS_{var_dr}_{suffix}",
-        500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"],
-        500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
-        var_dr,
-        varname_Cer
-    )
-    hists_DR.append(hist_Cer_vs_DR_method2)
+    # C/S vs DR/DR_method2
+    var_dr_base = varname_Cer.replace("Cer", "DR")
+    for dr_method in ["", "_method2"]:
+        var_dr = var_dr_base + dr_method
+        for cat, var_y, y_range_key in [("Cer", varname_Cer, "cer"), ("Sci", varname_Sci, "sci")]:
+            hist = rdf.Histo2D((
+                f"hist_{var_y}_VS_{var_dr}_{suffix}",
+                f"hist_{var_y}_VS_{var_dr}_{suffix}",
+                500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"],
+                500, config["xmin_total"][f"{gain}_{y_range_key}"], config["xmax_total"][f"{gain}_{y_range_key}"]),
+                var_dr,
+                var_y
+            )
+            hists_DR.append(hist)
 
     return hists_DR
 
@@ -782,27 +774,25 @@ def makeFERSDRPlots(suffix=""):
                    outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True, extraToDraw=[extraToDraw, fit_func])
         plots.append(output_name + ".png")
 
-    # Draw Cer vs DR
-    var_dr = varname_Cer.replace("Cer", "DR")
-    hist_Cer_vs_DR_name = f"hist_{varname_Cer}_VS_{var_dr}_{suffix}"
-    hist_Cer_vs_DR = infile.Get(hist_Cer_vs_DR_name)
-    output_name = f"FERS_Total_Cer_VS_DR_{suffix}"
-    DrawHistos([hist_Cer_vs_DR], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"DR {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
-               output_name,
-               dology=False, drawoptions=["colz"],
-               outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
-    plots.append(output_name + ".png")
+    # Draw Cer/Sci vs DR/DR_method2
+    var_dr_base = varname_Cer.replace("Cer", "DR")
+    for dr_method, dr_label in [("", "DR"), ("_method2", "DR method2")]:
+        var_dr = var_dr_base + dr_method
+        for cat, var_y, y_range_key in [("Cer", varname_Cer, "cer"), ("Sci", varname_Sci, "sci")]:
+            hist_name = f"hist_{var_y}_VS_{var_dr}_{suffix}"
+            hist = infile.Get(hist_name)
+            if not hist:
+                print(f"Warning: Histogram {hist_name} not found in {infile_name}")
+                continue
 
-    # Draw Cer vs DR method2
-    var_dr = var_dr + "_method2"
-    hist_Cer_vs_DR_method2_name = f"hist_{varname_Cer}_VS_{var_dr}_{suffix}"
-    hist_Cer_vs_DR_method2 = infile.Get(hist_Cer_vs_DR_method2_name)
-    output_name = f"FERS_Total_Cer_VS_DR_method2_{suffix}"
-    DrawHistos([hist_Cer_vs_DR_method2], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"DR method2 {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
-               output_name,
-               dology=False, drawoptions=["colz"],
-               outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
-    plots.append(output_name + ".png")
+            output_name = f"FERS_Total_{cat}_VS_{var_dr.split('_')[-1]}_{suffix}"
+            DrawHistos([hist], "",
+                       config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"{dr_label} {gain} {config[f'title_{gain}']}",
+                       config["xmin_total"][f"{gain}_{y_range_key}"], config["xmax_total"][f"{gain}_{y_range_key}"], f"{cat} {gain} {config[f'title_{gain}']}",
+                       output_name,
+                       dology=False, drawoptions=["colz"],
+                       outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+            plots.append(output_name + ".png")
 
     output_html = f"{htmldir}/FERS/EnergySum_DR_{suffix}.html"
     generate_html(plots, outdir_plots, plots_per_row=4,

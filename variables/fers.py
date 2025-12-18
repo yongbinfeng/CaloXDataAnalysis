@@ -227,15 +227,17 @@ def getFERSEnergyDR(rdf, fersboards, energy=0.0):
 
     eOverh_C = 5.0
     eOverh_S = 1.3
+    hOvere_S = 1.0 / eOverh_S
+    hOvere_C = 1.0 / eOverh_C
 
     # fEM = (S * hOvere_C - C * hOvere_S) / ( (1 - hOvere_S) * C - (1 - hOvere_C) * S)
     # rdf = rdf.Define(
     #    "fEM", f"({name_sci} / {eOverh_C} - {name_cer} / {eOverh_S}) / ( (1.0-1.0/{eOverh_S})*{name_cer} - (1.0-1.0/{eOverh_C})*{name_sci})")
     rdf = rdf.Define(
-        "fEM", f"({name_sci_corr} * {eOverh_S} - {name_cer} * {eOverh_C}) / (({eOverh_S} - 1.0) * {name_cer} - ({eOverh_C} - 1.0) * {name_sci_corr})"
+        "fEM", f"({name_sci_corr} * {hOvere_C} - {name_cer} * {hOvere_S}) / ((1.0 - {hOvere_S}) * {name_cer} - (1.0 - {hOvere_C}) * {name_sci_corr})"
     )
 
-    chi = 0.3
+    chi = 0.29
     name_dr = name_cer.replace("Cer", "DR")
     name_sum = name_cer.replace("Cer", "CerSci")
     rdf = rdf.Define(name_sum,
@@ -245,9 +247,12 @@ def getFERSEnergyDR(rdf, fersboards, energy=0.0):
                      f"({name_sci} - {name_cer} * {chi}) / (1 - {chi})")
     # DR method 2 (energy dependent correction):
     # E = S + k * (b * E - (S+C))
-    slope = 0.494
+    # slope = 0.482
+    # rdf = rdf.Define(name_dr + "_method2",
+    #                 f"{name_sci} + {slope} * (1.766 * {energy}  - {name_sum})")
+    slope = 0.789
     rdf = rdf.Define(name_dr + "_method2",
-                     f"{name_sci} + {slope} * (1.77 * {energy}  - {name_sum})")
+                     f"{name_sci} + 1.0 / {slope} * (60.0 / 80.0 * {energy}  - {name_cer})")
     return rdf
 
 
