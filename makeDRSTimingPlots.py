@@ -535,6 +535,15 @@ def makeDRSvsTSProfPlots():
     output_html = f"{htmldir}/DRS/DRS_VS_TS_relative_to_MCP.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
+
+    # save combined histograms to root file
+    outfile_name = f"{rootdir}/drs_vs_ts_calibrated_combined.root"
+    outfile = ROOT.TFile(outfile_name, "RECREATE")
+    for h in [hprof_Cer_Combined, hprof_Sci_Combined, hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined]:
+        h.SetDirectory(outfile)
+        h.Write()
+    outfile.Close()
+
     return output_html
 
 
@@ -649,14 +658,14 @@ def makeDRSvsTS2DPlots():
 
 
 if __name__ == "__main__":
-    makeHists = False
+    makeHists = True
     makePlots = True
 
     if makeHists:
         rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
         rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
-        # rdf, rdf_prefilter = vetoMuonCounter(rdf, TSmin=400, TSmax=700, cut=-30)
-        # rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber, applyCut=False)
+        rdf, rdf_prefilter = vetoMuonCounter(
+            rdf, runNumber, TSmin=200, TSmax=700, cut=-100)
         rdf = applyUpstreamVeto(rdf, runNumber, applyCut=False)
 
         # rdfs = OrderedDict()

@@ -92,7 +92,27 @@ def collectDRSvsTSProfPlots(runNumber):
     return hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined
 
 
-def compareRuns(runLists, xmin_quartz=-80, xmax_quartz=-56, xmin_plastic=-80, xmax_plastic=-48, ymax_quartz=None, ymax_plastic=None):
+def collectPeakTS(hists, colors):
+    extraToDraws = []
+
+    for idx, (hist, col) in enumerate(zip(hists, colors)):
+        peakBin = hist.GetMaximumBin()
+        peakTS = hist.GetXaxis().GetBinCenter(peakBin)
+
+        extraToDraw = ROOT.TPaveText(
+            0.60, 0.85 - idx * 0.05, 0.90, 0.90 - idx * 0.05, "NDC")
+        extraToDraw.SetTextAlign(11)
+        extraToDraw.SetFillColorAlpha(0, 0)
+        extraToDraw.SetBorderSize(0)
+        extraToDraw.SetTextFont(42)
+        extraToDraw.SetTextSize(0.04)
+        extraToDraw.SetTextColor(col)
+        extraToDraw.AddText(f"Peak TS: {peakTS:.1f}")
+        extraToDraws.append(extraToDraw)
+    return extraToDraws
+
+
+def compareRuns(runLists, xmin_quartz=-80, xmax_quartz=-56, xmin_plastic=-80, xmax_plastic=-48, xmin_sci=-80, xmax_sci=30, ymax_quartz=None, ymax_plastic=None, ymax_sci=None, donormalize=True):
     suffix = "Runs_" + "_".join([str(r) for r in runLists.keys()])
     outdir_plots = f"results/plots/CombineRuns/DRS_vs_TS/"
     htmldir = "results/html/CombineRuns/"
@@ -103,21 +123,37 @@ def compareRuns(runLists, xmin_quartz=-80, xmax_quartz=-56, xmin_plastic=-80, xm
               ROOT.kCyan+2, ROOT.kOrange+7, ROOT.kGray+2, ROOT.kPink+9]
     hists_quartz = OrderedDict()
     hists_plastic = OrderedDict()
+    hists_sci = OrderedDict()
     legends = []
     for runNumber in runLists.keys():
-        hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined = collectDRSvsTSProfPlots(
-            runNumber)
+        # hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined = collectDRSvsTSProfPlots(
+        #    runNumber)
+        indir_root = f"results/root/Run{runNumber}/"
+        infile_name = f"{indir_root}/drs_vs_ts_calibrated_combined.root"
+        infile = ROOT.TFile(infile_name, "READ")
+        hprof_Cer_Quartz_Combined = infile.Get(
+            "prof_DRS_vs_TS_Cer_Quartz_Combined")
+        hprof_Cer_Plastic_Combined = infile.Get(
+            "prof_DRS_vs_TS_Cer_Plastic_Combined")
+        hprof_Sci_Combined = infile.Get(
+            "prof_DRS_vs_TS_Sci_Combined")
         int_quartz = hprof_Cer_Quartz_Combined.Integral(
             hprof_Cer_Quartz_Combined.FindBin(xmin_quartz), hprof_Cer_Quartz_Combined.FindBin(xmax_quartz))
         int_plastic = hprof_Cer_Plastic_Combined.Integral(
             hprof_Cer_Plastic_Combined.FindBin(xmin_plastic), hprof_Cer_Plastic_Combined.FindBin(xmax_plastic))
-        if int_quartz > 0:
-            hprof_Cer_Quartz_Combined.Scale(1./int_quartz)
-        if int_plastic > 0:
-            hprof_Cer_Plastic_Combined.Scale(1./int_plastic)
+        int_sci = hprof_Sci_Combined.Integral(
+            hprof_Sci_Combined.FindBin(xmin_sci), hprof_Sci_Combined.FindBin(xmax_sci))
+        if donormalize:
+            if int_quartz > 0:
+                hprof_Cer_Quartz_Combined.Scale(1./int_quartz)
+            if int_plastic > 0:
+                hprof_Cer_Plastic_Combined.Scale(1./int_plastic)
+            if int_sci > 0:
+                hprof_Sci_Combined.Scale(1./int_sci)
 
         hists_quartz[f"{runNumber}"] = hprof_Cer_Quartz_Combined
         hists_plastic[f"{runNumber}"] = hprof_Cer_Plastic_Combined
+        hists_sci[f"{runNumber}"] = hprof_Sci_Combined
         legends.append(runLists[runNumber])
 
     legends_ymin = 0.90 - 0.05*len(legends)
@@ -125,42 +161,47 @@ def compareRuns(runLists, xmin_quartz=-80, xmax_quartz=-56, xmin_plastic=-80, xm
     DrawHistos(hists_quartz.values(), legends, xmin_quartz, xmax_quartz, "Time slice (Quartz)", 0, ymax_quartz, "A.U.",
                f"DRS_vs_TS_Cer_Quartz_{suffix}",
                dology=False, drawoptions=["hist,C"]*len(hists_quartz), mycolors=colors[:len(hists_quartz)], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, runNumber=None, legendPos=[0.30, legends_ymin, 0.40, 0.90], legendoptions=["L"]*len(hists_quartz))
+               outdir=outdir_plots, runNumber=None, legendPos=[0.30, legends_ymin, 0.40, 0.90], legendoptions=["L"]*len(hists_quartz), extraToDraw=collectPeakTS(hists_quartz.values(), colors))
     plots.append(f"DRS_vs_TS_Cer_Quartz_{suffix}.png")
     DrawHistos(hists_plastic.values(), legends, xmin_plastic, xmax_plastic, "Time slice (Plastic)", 0, ymax_plastic, "A.U.",
                f"DRS_vs_TS_Cer_Plastic_{suffix}",
                dology=False, drawoptions=["hist,C"]*len(hists_plastic), mycolors=colors[:len(hists_plastic)], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, runNumber=None, legendPos=[0.30, legends_ymin, 0.40, 0.90], legendoptions=["L"]*len(hists_plastic))
+               outdir=outdir_plots, runNumber=None, legendPos=[0.30, legends_ymin, 0.40, 0.90], legendoptions=["L"]*len(hists_plastic), extraToDraw=collectPeakTS(hists_plastic.values(), colors))
     plots.append(f"DRS_vs_TS_Cer_Plastic_{suffix}.png")
+    DrawHistos(hists_sci.values(), legends, xmin_sci, xmax_sci, "Time slice (Sci)", 0, ymax_sci, "A.U.",
+               f"DRS_vs_TS_Sci_{suffix}",
+               dology=False, drawoptions=["hist,C"]*len(hists_sci), mycolors=colors[:len(hists_sci)], addOverflow=False, addUnderflow=False,
+               outdir=outdir_plots, runNumber=None, legendPos=[0.30, legends_ymin, 0.40, 0.90], legendoptions=["L"]*len(hists_sci), extraToDraw=collectPeakTS(hists_sci.values(), colors))
+    plots.append(f"DRS_vs_TS_Sci_{suffix}.png")
 
     output_html = f"{htmldir}/DRS/DRSPeakTS_relative_to_MCP_{suffix}.html"
-    generate_html(plots, outdir_plots, plots_per_row=2,
+    generate_html(plots, outdir_plots, plots_per_row=3,
                   output_html=output_html)
 
 
 if __name__ == "__main__":
     runLists = OrderedDict()
-    runLists["1350"] = "e^{+}, 80GeV"
+    runLists["1409"] = "e^{+}, 80GeV"
     runLists["1465"] = "#pi^{+}, 80GeV"
     compareRuns(runLists)
 
-    runLists = OrderedDict()
-    runLists["1416"] = "e^{+}, 30GeV"
-    runLists["1412"] = "e^{+}, 60GeV"
-    runLists["1410"] = "e^{+}, 100GeV"
-    runLists["1411"] = "e^{+}, 120GeV"
-    compareRuns(runLists, xmax_quartz=-55)
+    # runLists = OrderedDict()
+    # runLists["1416"] = "e^{+}, 30GeV"
+    # runLists["1412"] = "e^{+}, 60GeV"
+    # runLists["1410"] = "e^{+}, 100GeV"
+    # runLists["1411"] = "e^{+}, 120GeV"
+    # compareRuns(runLists, xmax_quartz=-55)
 
-    runLists = OrderedDict()
-    runLists["1442"] = "#pi^{+}, 10GeV"
-    runLists["1441"] = "#pi^{+}, 20GeV"
-    runLists["1439"] = "#pi^{+}, 30GeV"
-    runLists["1437"] = "#pi^{+}, 60GeV"
-    compareRuns(runLists, xmax_quartz=-55)
+    # runLists = OrderedDict()
+    # runLists["1442"] = "#pi^{+}, 10GeV"
+    # runLists["1441"] = "#pi^{+}, 20GeV"
+    # runLists["1439"] = "#pi^{+}, 30GeV"
+    # runLists["1437"] = "#pi^{+}, 60GeV"
+    # compareRuns(runLists, xmax_quartz=-55)
 
-    runLists = OrderedDict()
-    runLists["1500"] = "e^{+}, 40GeV, -0.0cm"
-    runLists["1507"] = "e^{+}, 40GeV, -5.0cm"
-    runLists["1511"] = "e^{+}, 40GeV, -10.0cm"
-    compareRuns(runLists, xmax_quartz=-58, ymax_quartz=0.23,
-                ymax_plastic=0.19, xmax_plastic=-55)
+    # runLists = OrderedDict()
+    # runLists["1500"] = "e^{+}, 40GeV, -0.0cm"
+    # runLists["1507"] = "e^{+}, 40GeV, -5.0cm"
+    # runLists["1511"] = "e^{+}, 40GeV, -10.0cm"
+    # compareRuns(runLists, xmax_quartz=-58, ymax_quartz=0.23,
+    #            ymax_plastic=0.19, xmax_plastic=-55)
