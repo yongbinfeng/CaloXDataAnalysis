@@ -347,6 +347,13 @@ def makeDRSPeakTSPlots():
     output_html = f"{htmldir}/DRS/DRSPeakTS_relative_to_MCP.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
+
+    outfile_name = f"{rootdir}/drspeakts_rel_us_combined.root"
+    outfile = ROOT.TFile(outfile_name, "RECREATE")
+    for h in [hist_Cer_Combined, hist_Sci_Combined, hist_Cer_Quartz_Combined, hist_Cer_Plastic_Combined]:
+        h.SetDirectory(outfile)
+        h.Write()
+    outfile.Close()
     return output_html
 
 
@@ -447,6 +454,7 @@ def makeDRSPeakTSCerVSSciPlots():
     output_html = f"{htmldir}/DRS/DRSPeakTS_Cer_VS_Sci_relative_to_MCP.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
+
     return output_html
 
 

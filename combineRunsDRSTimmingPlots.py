@@ -174,6 +174,36 @@ def compareRuns(runLists, xmin_quartz=-80, xmax_quartz=-56, xmin_plastic=-80, xm
                outdir=outdir_plots, runNumber=None, legendPos=[0.30, legends_ymin, 0.40, 0.90], legendoptions=["L"]*len(hists_sci), extraToDraw=collectPeakTS(hists_sci.values(), colors))
     plots.append(f"DRS_vs_TS_Sci_{suffix}.png")
 
+    # draw peak TS comparison
+    hists_peakTS_quartz = OrderedDict()
+    hists_peakTS_plastic = OrderedDict()
+    hists_peakTS_sci = OrderedDict()
+    for runNumber in runLists.keys():
+        infile_name = f"results/root/Run{runNumber}/drspeakts_rel_us_combined.root"
+        infile = ROOT.TFile(infile_name, "READ")
+        hpeakTS_quartz = infile.Get("hist_DRSPeakTS_Cer_Quartz_Combined")
+        hpeakTS_plastic = infile.Get("hist_DRSPeakTS_Cer_Plastic_Combined")
+        hpeakTS_sci = infile.Get("hist_DRSPeakTS_Sci_Combined")
+
+        hists_peakTS_quartz[f"{runNumber}"] = hpeakTS_quartz
+        hists_peakTS_plastic[f"{runNumber}"] = hpeakTS_plastic
+        hists_peakTS_sci[f"{runNumber}"] = hpeakTS_sci
+    DrawHistos(hists_peakTS_quartz.values(), legends, xmin_quartz, xmax_quartz, "Peak TS (Quartz)", 0, 0.02, "A.U.",
+               f"DRSPeakTS_relative_to_MCP_Cer_Quartz_{suffix}",
+               dology=False, drawoptions=["hist,C"]*len(hists_peakTS_quartz), mycolors=colors[:len(hists_peakTS_quartz)], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=None, legendPos=[0.30, legends_ymin, 0.40, 0.90], legendoptions=["L"]*len(hists_peakTS_quartz), donormalize=True)
+    plots.append(f"DRSPeakTS_relative_to_MCP_Cer_Quartz_{suffix}.png")
+    DrawHistos(hists_peakTS_plastic.values(), legends, xmin_plastic, xmax_plastic, "Peak TS (Plastic)", 0, 0.02, "A.U.",
+               f"DRSPeakTS_relative_to_MCP_Cer_Plastic_{suffix}",
+               dology=False, drawoptions=["hist,C"]*len(hists_peakTS_plastic), mycolors=colors[:len(hists_peakTS_plastic)], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=None, legendPos=[0.30, legends_ymin, 0.40, 0.90], legendoptions=["L"]*len(hists_peakTS_plastic), donormalize=True)
+    plots.append(f"DRSPeakTS_relative_to_MCP_Cer_Plastic_{suffix}.png")
+    DrawHistos(hists_peakTS_sci.values(), legends, xmin_sci, 0, "Peak TS (Sci)", 0, 0.01, "A.U.",
+               f"DRSPeakTS_relative_to_MCP_Sci_{suffix}",
+               dology=False, drawoptions=["hist,C"]*len(hists_peakTS_sci), mycolors=colors[:len(hists_peakTS_sci)], addOverflow=True, addUnderflow=True,
+               outdir=outdir_plots, runNumber=None, legendPos=[0.30, legends_ymin, 0.40, 0.90], legendoptions=["L"]*len(hists_peakTS_sci), donormalize=True)
+    plots.append(f"DRSPeakTS_relative_to_MCP_Sci_{suffix}.png")
+
     output_html = f"{htmldir}/DRS/DRSPeakTS_relative_to_MCP_{suffix}.html"
     generate_html(plots, outdir_plots, plots_per_row=3,
                   output_html=output_html)
