@@ -1,5 +1,5 @@
 import argparse
-from runconfig import runNumber, firstEvent, lastEvent, jsonFile
+from configs.runconfig import runNumber, firstEvent, lastEvent, jsonFile
 from utils.dataloader import getRunInfo
 
 

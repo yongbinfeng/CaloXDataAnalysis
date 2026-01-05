@@ -1,7 +1,5 @@
 import os
-import sys
 import ROOT
-import json
 from collections import OrderedDict
 from channels.channel_map import buildFERSBoards
 from utils.dataloader import loadRDF, getRunInfo
@@ -14,7 +12,6 @@ from utils.colors import colors
 from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters
 from selections.selections import vetoMuonCounter, applyUpstreamVeto, applyPSDSelection, applyCC1Selection
 from utils.parser import get_args
-sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos, LHistos2Hist
 from utils.timing import auto_timer
 
@@ -1029,7 +1026,7 @@ def makeBoardFits():
     return output_html
 
 
-if __name__ == "__main__":
+def main():
     makeHists = True
     makePlots = True
     outputs_html = {}
@@ -1145,3 +1142,7 @@ if __name__ == "__main__":
     print("Generated HTML files:")
     for key, html in outputs_html.items():
         print(f"{key}: {html}")
+
+
+if __name__ == "__main__":
+    main()

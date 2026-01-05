@@ -20,7 +20,7 @@ args = get_args()
 runNumber = args.run
 firstEvent = args.first_event
 lastEvent = args.last_event
-jsonFile = args.jsonFile
+jsonFile = args.json_file
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
 
@@ -36,7 +36,8 @@ print(f"Total number of events to process: {nEvents} in run {runNumber}")
 rdf = vectorizeFERS(rdf, fersboards)
 rdf = getFERSEnergyMax(rdf, fersboards, gain="HG")
 rdf = getFERSEnergyMax(rdf, fersboards, gain="LG")
-rdf = preProcessDRSBoards(rdf, debug=debugDRS, drsboards=DRSBoards)
+rdf = preProcessDRSBoards(
+    rdf, debug=debugDRS, drsboards=DRSBoards, runNumber=runNumber)
 rdf = getDRSStats(rdf, runNumber, DRSBoards, 0, 1000, 9)
 
 rdf = getFERSEnergySum(rdf, fersboards, gain="HG")
@@ -559,7 +560,7 @@ def checkDRSPeakTS():
     return h1s_DRSPeakTS["Cer"], h1s_DRSPeakTS["Sci"], h2s_DRSPeakTS_Cer_VS_Sci
 
 
-if __name__ == "__main__":
+def main():
     # start_time = time.time()
 
     hprofs_conditions = monitorConditions()
@@ -761,3 +762,7 @@ if __name__ == "__main__":
         hist.SetDirectory(outfile_FERS_max)
         hist.Write()
     outfile_FERS_max.Close()
+
+
+if __name__ == "__main__":
+    main()

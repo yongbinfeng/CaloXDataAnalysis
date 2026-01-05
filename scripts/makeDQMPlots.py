@@ -1,7 +1,5 @@
-import sys
-sys.path.append("CMSPLOTS")  # noqa
 import ROOT
-from myFunction import DrawHistos, LHistos2Hist
+from CMSPLOTS.myFunction import DrawHistos, LHistos2Hist
 from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels, getMCPChannels
 from utils.utils import number2string, round_up_to_1eN
 from utils.html_generator import generate_html
@@ -1041,7 +1039,7 @@ def makeDRSPeakVSFERSPlots():
     return output_html
 
 
-if __name__ == "__main__":
+def main():
     output_htmls = {}
 
     output_htmls["conditions plots"] = makeConditionsPlots()
@@ -1077,3 +1075,7 @@ if __name__ == "__main__":
         print(f"✅ {key} plots can be viewed at: {value}")
 
     print("All plots generated successfully.")
+
+
+if __name__ == "__main__":
+    main()

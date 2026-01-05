@@ -1,5 +1,4 @@
 import os
-import sys
 import ROOT
 import json
 from collections import OrderedDict
@@ -9,7 +8,6 @@ from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS
 from utils.html_generator import generate_html
 from selections.selections import vetoMuonCounter, applyUpstreamVeto, applyPSDSelection, applyCC1Selection
 from utils.parser import get_args
-sys.path.append("CMSPLOTS")  # noqa
 from myFunction import DrawHistos, LHistos2Hist
 from utils.timing import auto_timer
 from utils.utils import number2string
@@ -665,7 +663,7 @@ def makeDRSvsTS2DPlots():
     return output_html
 
 
-if __name__ == "__main__":
+def main():
     makeHists = True
     makePlots = True
 
@@ -754,3 +752,7 @@ if __name__ == "__main__":
             f"DRS VS TS profiled plots saved to {output_html_DRS_VS_TS_Prof}")
         # print(f"DRS VS TS 2D plots saved to {output_html_DRS_VS_TS_2D}")
         print(f"DRS VS Z profiled plots saved to {output_html_DRS_VS_Z_Prof}")
+
+
+if __name__ == "__main__":
+    main()

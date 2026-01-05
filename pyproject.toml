@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "calox"
+version = "0.1.0"
+description = "Data analysis framework for CaloX"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [] 
+
+[project.scripts]
+# Format: command_name = "script_module_name:function_name"
+calox-dqm-hists = "scripts.makeDQMHists:main"
+calox-dqm-plots = "scripts.makeDQMPlots:main"
+calox-servicedrs = "scripts.checkServiceDRS:main"
+calox-checkmcp = "scripts.checkMCP:main"
+calox-energy-plots = "scripts.makeFERSEnergyPlots:main"
+calox-timing-plots = "scripts.makeDRSTimingPlots:main"
+
+
+[tool.setuptools]
+# This treats the root-level folders as part of the 'calox' package
+# and also includes the new 'scripts' folder
+packages = ["utils", "channels", "variables", "configs", "selections", "CMSPLOTS", "scripts"]

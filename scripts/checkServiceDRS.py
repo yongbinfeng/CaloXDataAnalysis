@@ -1,5 +1,3 @@
-import sys
-sys.path.append("CMSPLOTS")  # noqa
 import ROOT
 from CMSPLOTS.myFunction import DrawHistos
 from channels.channel_map import getPreShowerChannel, getDownStreamMuonChannel, buildHodoPosChannels, getCerenkovCounters, buildFERSBoards, buildDRSBoards, getDownStreamTTUMuonChannel
@@ -21,10 +19,11 @@ parser = get_args()
 runNumber = parser.run
 firstEvent = parser.first_event
 lastEvent = parser.last_event
+jsonFile = parser.json_file
 
 
 def analyzePulse(channels, names):
-    rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
+    rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
     rdf = preProcessDRSBoards(rdf)
     rdf, _ = applyUpstreamVeto(rdf, runNumber)
 
@@ -114,7 +113,7 @@ def analyzePulse(channels, names):
 
 def analyzeHodoPeak():
     hodo_pos_channels = buildHodoPosChannels(run=runNumber)
-    rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent)
+    rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
 
     rdf = preProcessDRSBoards(rdf)
 
@@ -522,7 +521,7 @@ def plotHodoPeak():
     return output_html
 
 
-if __name__ == "__main__":
+def main():
     chan_preshower = getPreShowerChannel(runNumber)
     # chan_muon = getDownStreamMuonChannel()
     chan_muon = getDownStreamTTUMuonChannel(runNumber)
@@ -540,3 +539,7 @@ if __name__ == "__main__":
 
     for key, value in outputs.items():
         print(f"Output for {key}: {value}")
+
+
+if __name__ == "__main__":
+    main()
