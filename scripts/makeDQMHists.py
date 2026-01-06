@@ -7,12 +7,12 @@ from utils.utils import number2string
 from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels, getMCPChannels
 import ROOT
 import os
+from utils.auto_compile import ensure_compiled  # Compiles if needed
 from utils.timing import auto_timer  # noqa
 auto_timer("Total Execution Time")
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
-ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
 debugDRS = False
 

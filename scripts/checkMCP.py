@@ -6,12 +6,12 @@ from utils.html_generator import generate_html
 from utils.dataloader import loadRDF
 from variables.drs import preProcessDRSBoards
 from utils.parser import get_args
+from utils.auto_compile import auto_compile
 from utils.timing import auto_timer  # noqa
 auto_timer("Total Execution Time")
 
 ROOT.gROOT.SetBatch(True)  # Run in batch mode
 ROOT.ROOT.EnableImplicitMT(10)
-ROOT.gSystem.Load("utils/functions_cc.so")
 
 
 def main():

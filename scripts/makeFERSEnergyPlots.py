@@ -12,6 +12,7 @@ from utils.colors import colors
 from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters
 from selections.selections import vetoMuonCounter, applyUpstreamVeto, applyPSDSelection, applyCC1Selection
 from utils.parser import get_args
+from utils.auto_compile import auto_compile
 from myFunction import DrawHistos, LHistos2Hist
 from utils.timing import auto_timer
 

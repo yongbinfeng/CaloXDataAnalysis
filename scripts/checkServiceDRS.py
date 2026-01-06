@@ -8,12 +8,12 @@ from variables.fers import vectorizeFERS
 from configs.plotranges import getServiceDRSProcessedInfoRanges
 from selections.selections import applyUpstreamVeto, applyUpstreamVeto, getServiceDRSSumCutValue
 from utils.parser import get_args
+from utils.auto_compile import auto_compile
 from utils.timing import auto_timer  # noqa
 auto_timer("Total Execution Time")
 
 ROOT.gROOT.SetBatch(True)  # Run in batch mode
 ROOT.ROOT.EnableImplicitMT(10)
-ROOT.gSystem.Load("utils/functions_cc.so")
 
 parser = get_args()
 runNumber = parser.run

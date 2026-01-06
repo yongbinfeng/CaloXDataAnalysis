@@ -10,6 +10,8 @@ from selections.selections import vetoMuonCounter, applyUpstreamVeto, applyPSDSe
 from utils.parser import get_args
 from myFunction import DrawHistos, LHistos2Hist
 from utils.timing import auto_timer
+from utils.auto_compile import auto_compile
+
 from utils.utils import number2string
 
 ROOT.TH1.AddDirectory(False)  # prevents auto-registration in gDirectory
