@@ -4,7 +4,7 @@ import ROOT
 from channels.channel_map import buildFERSBoards
 from CMSPLOTS.myFunction import DrawHistos, LHistos2Hist
 from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters
-from selections.selections import vetoMuonCounter, applyUpstreamVeto, applyPSDSelection, applyCC1Selection
+from selections.selections import SelectionManager
 from utils.colors import colors
 from utils.dataloader import loadRDF, getRunInfo
 from utils.fitter import eventFit
@@ -42,11 +42,6 @@ doPerBoardPlots = False
 # HE = (runNumber >= 1200)
 HE = (benergy >= 50)  # GeV
 
-# load the gains and pedestals from SiPM fits
-# file_gains = f"results/root/Run{runNumber}/valuemaps_gain.json"
-# file_pedestals_HG = f"results/root/Run{runNumber}/fers_pedestals_hg.json"
-# file_pedestals_LG = f"results/root/Run{runNumber}/fers_pedestals_lg.json"
-
 file_pedestals = f"data/fers/FERS_pedestals_run1259.json"
 file_calibrations = "data/fers/FERS_response.json"
 file_HG2LG = "data/fers/FERS_HG2LG.json"
@@ -60,11 +55,13 @@ if runNumber >= 1350:
     file_deadchannels = None
 
 rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile=jsonFile)
+
 rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
-rdf, rdf_prefilter = vetoMuonCounter(
-    rdf, runNumber, TSmin=200, TSmax=700, cut=-100)
-# rdf, rdf_filterveto = applyUpstreamVeto(rdf, runNumber, applyCut=False)
-rdf = applyUpstreamVeto(rdf, runNumber, applyCut=False)
+sel_mgr = SelectionManager(rdf, runNumber)
+rdf = (sel_mgr
+       .veto_muon_counter(TSmin=200, TSmax=700, cut=-100)
+       .apply_upstream_veto()  # If applyCut=True
+       .get_rdf())
 
 fersboards = buildFERSBoards(run=runNumber)
 
@@ -92,7 +89,6 @@ for gain, calib in GainCalibs:
         rdf, fersboards, pdsub=True, calib=calib, gain=gain)
 # dual readout
 rdf = getFERSEnergyDR(rdf, fersboards, energy=benergy)
-
 rdf = addFERSPosXY(rdf, fersboards)
 
 paths = get_run_paths(runNumber)
@@ -106,7 +102,7 @@ rdfs = OrderedDict()
 # rdf = applyCC1Selection(rdf, runNumber, applyCut=False)
 
 # rdfs["inc"] = rdf
-rdfs["passHaloVeto"] = rdf.Filter("pass_upstream_veto == 1")
+rdfs["passHaloVeto"] = rdf
 # rdfs["MuonLike"] = rdf.Filter("FERS_energyMix_Sci_calib_sum < 10.0")
 # rdfs["passHaloVeto_passPSDEle_passCC1Ele"] = rdf.Filter(
 #    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 1 && pass_upstream_veto == 1")

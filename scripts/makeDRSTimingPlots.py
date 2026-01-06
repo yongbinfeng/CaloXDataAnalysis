@@ -6,7 +6,7 @@ from channels.channel_map import buildFERSBoards, buildDRSBoards, getMCPChannels
 from utils.dataloader import loadRDF, getRunInfo
 from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS
 from utils.html_generator import generate_html
-from selections.selections import vetoMuonCounter, applyUpstreamVeto, applyPSDSelection, applyCC1Selection
+from selections.selections import SelectionManager
 from utils.parser import get_args
 from CMSPLOTS.myFunction import DrawHistos, LHistos2Hist
 from utils.timing import auto_timer
@@ -664,9 +664,12 @@ def main():
     if makeHists:
         rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
         rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
-        rdf, rdf_prefilter = vetoMuonCounter(
-            rdf, runNumber, TSmin=200, TSmax=700, cut=-100)
-        rdf = applyUpstreamVeto(rdf, runNumber, applyCut=False)
+
+        sel_mgr = SelectionManager(rdf, runNumber)
+        rdf = (sel_mgr
+               .veto_muon_counter(TSmin=200, TSmax=700, cut=-100)
+               .apply_upstream_veto()  # If applyCut=True
+               .get_rdf())
 
         # rdfs = OrderedDict()
         # rdf, _ = applyPSDSelection(rdf, runNumber, applyCut=True)

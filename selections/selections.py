@@ -1,146 +1,105 @@
-def filterPrefireEvents(rdf, runNumber, TS=350):
-    # use the hodo trigger to filter prefire events
-    # in cosmic runs
-    from channels.channel_map import buildHodoTriggerChannels
-    trigger_names = buildHodoTriggerChannels(runNumber)
-    if not trigger_names:
-        return rdf, rdf  # No hodo trigger channels available for this run
+class SelectionManager:
+    """
+    A class to manage RDataFrame selections for CaloX data analysis.
+    Maintains a list of nodes to prevent PyROOT memory issues.
+    """
 
-    trigger_name_top, trigger_name_bottom = trigger_names[0], trigger_names[1]
-    print(
-        f"Filtering prefire events with TS >= {TS} using triggers: {trigger_name_top}, {trigger_name_bottom}")
-    # index of the minimum value in the trigger channels
-    rdf = rdf.Define(
-        "TS_fired_up", f"ROOT::VecOps::ArgMin({trigger_name_top})")
-    rdf = rdf.Define(
-        "TS_fired_down", f"ROOT::VecOps::ArgMin({trigger_name_bottom})")
+    def __init__(self, rdf, run_number):
+        self.run_number = run_number
+        # Store nodes in a list to prevent garbage collection
+        self._nodes = [rdf]
+        self.initial_count = rdf.Count().GetValue()
+        self.current_count = self.initial_count
 
-    rdf = rdf.Define(
-        "NormalFired", f"(TS_fired_up >= {TS}) && (TS_fired_down >= {TS})")
+    @property
+    def rdf(self):
+        """Always returns the most recent node in the chain."""
+        return self._nodes[-1]
 
-    rdf_prefilter = rdf
-    rdf = rdf.Filter("NormalFired == 1")
+    def _apply_filter(self, filter_string, label, invert=False):
+        """
+        Internal helper to apply filters and manage memory.
+        Added 'invert' parameter to flip the selection logic.
+        """
+        # If invert is True, wrap the filter string in !( ... )
+        final_filter = f"!({filter_string})" if invert else filter_string
+        final_label = f"NOT_{label}" if invert else label
 
-    return rdf, rdf_prefilter
+        # Create the new filtered node
+        new_rdf = self.rdf.Filter(final_filter, final_label)
 
+        # Trigger an action to print cut-flow and keep node alive
+        new_count = new_rdf.Count().GetValue()
+        print(
+            f"Filter [{final_label}]: {self.current_count} -> {new_count} events.")
 
-def getServiceDRSSumCutValue(channel):
-    values = {
-        "preshower": -1e3,
-        "Cerenkov1": -1e3,
-        "Cerenkov2": -1e3,
-        "Cerenkov3": -1e3,
-        "muon": -1e3
-    }
-    return values.get(channel, -1e3)
+        # Append to node list to maintain reference
+        self._nodes.append(new_rdf)
+        self.current_count = new_count
 
+    def veto_muon_counter(self, TSmin=400, TSmax=600, cut=-80, invert=False):
+        """
+        Vetoes events with muon counter signal.
+        Set invert=True to keep ONLY events with a muon signal.
+        """
+        from channels.channel_map import getDownStreamTTUMuonChannel
+        muon_channel = getDownStreamTTUMuonChannel(run=self.run_number)
 
-def vetoMuonCounter(rdf, runNumber, TSmin=400, TSmax=600, cut=-80):
-    from channels.channel_map import getDownStreamTTUMuonChannel
-    muon_channel = getDownStreamTTUMuonChannel(run=runNumber)
-    if muon_channel is None:
-        print("Muon counter channel not found, skipping veto.")
-        return rdf
+        if muon_channel is None:
+            print("Muon counter channel not found, skipping veto.")
+            return self
 
-    print(
-        f"Vetoing events with muon counter signal between {TSmin} and {TSmax} with cut {cut}")
-    rdf = rdf.Define("MuonCounterMin",
-                     f"MinRange({muon_channel}_blsub, {TSmin}, {TSmax})")
-    rdf = rdf.Define("HasMuonCounterSignal",
-                     f"MuonCounterMin < {cut}")
+        # Definition remains the same
+        rdf_def = self.rdf.Define(
+            "MuonCounterMin", f"MinRange({muon_channel}_blsub, {TSmin}, {TSmax})")
+        self._nodes.append(rdf_def)
 
-    rdf_prefilter = rdf
-    rdf = rdf.Filter("HasMuonCounterSignal == 0")
-    print(
-        f"Events before and after muon counter veto: {rdf_prefilter.Count().GetValue()}, {rdf.Count().GetValue()}")
-    return rdf, rdf_prefilter
+        # Apply filter with the inversion option
+        self._apply_filter(
+            f"MuonCounterMin >= {cut}", "MuonVeto", invert=invert)
+        return self
 
+    def apply_psd_selection(self, is_hadron=False, invert=False):
+        """
+        Applies Pre-shower Detector (PSD) selection.
+        invert=True will flip the logic regardless of is_hadron setting.
+        """
+        from channels.channel_map import getPreShowerChannel
+        preshower_channel = getPreShowerChannel(self.run_number)
 
-def applyPSDSelection(rdf, runNumber, isHadron=False, applyCut=True):
-    from channels.channel_map import getPreShowerChannel
-    preshower_channel = getPreShowerChannel(runNumber)
-    if preshower_channel is None:
-        print("Pre-shower channel not found, skipping PSD selection.")
-        return rdf
+        if preshower_channel is None:
+            return self
 
-    print("Applying PSD selection based on pre-shower channel.")
-    rdf = rdf.Define(f"{preshower_channel}_peak_value",
-                     f"MinRange({preshower_channel}_blsub, 100, 400)")
-    rdf = rdf.Define(f"{preshower_channel}_sum",
-                     f"SumRange({preshower_channel}_blsub, 100, 400)")
+        rdf_def = self.rdf.Define(
+            f"{preshower_channel}_sum", f"SumRange({preshower_channel}_blsub, 100, 400)")
+        self._nodes.append(rdf_def)
 
-    valCut = getServiceDRSSumCutValue("preshower")
-    rdf = rdf.Define("pass_PSDEle_selection",
-                     f"({preshower_channel}_sum < {valCut})")
+        val_cut = -1000.0
+        # Standard logic: Electrons (is_hadron=False) pass if sum < cut
+        condition = f"({preshower_channel}_sum < {val_cut}) == {0 if is_hadron else 1}"
 
-    # rdf = rdf.Define("pass_PSDEle_selection",
-    #                 f"({preshower_channel}_peak_value < -1000.0)")
+        label = "PSD_Hadron" if is_hadron else "PSD_Electron"
+        self._apply_filter(condition, label, invert=invert)
+        return self
 
-    if not applyCut:
-        return rdf
+    def apply_upstream_veto(self, cut=-1000.0, invert=False):
+        """
+        Applies upstream veto based on peak value.
+        invert=True selects events that FAILED the veto (the 'halo' events).
+        """
+        from channels.channel_map import getUpstreamVetoChannel
+        chan_upveto = getUpstreamVetoChannel(self.run_number)
 
-    rdf_prefilter = rdf
-    if not isHadron:
-        rdf = rdf.Filter("pass_PSDEle_selection == 1")
-    else:
-        rdf = rdf.Filter("pass_PSDEle_selection == 0")
-    print(
-        f"Events before and after PSD selection: {rdf_prefilter.Count().GetValue()}, {rdf.Count().GetValue()}")
-    return rdf, rdf_prefilter
+        if not chan_upveto:
+            return self
 
+        rdf_def = self.rdf.Define(
+            f"{chan_upveto}_peak_value", f"ROOT::VecOps::Min({chan_upveto}_blsub)")
+        self._nodes.append(rdf_def)
+        self._apply_filter(f"{chan_upveto}_peak_value > {cut}",
+                           "UpstreamVeto", invert=invert)
+        return self
 
-def applyCC1Selection(rdf, runNumber, isHadron=False, applyCut=True):
-    from channels.channel_map import getCerenkovCounters
-    cerenkov_channels = getCerenkovCounters(runNumber)
-    if cerenkov_channels is None or len(cerenkov_channels) == 0:
-        print("Cerenkov channels not found, skipping CC1 selection.")
-        return rdf
-
-    # Use the first Cerenkov channel for CC1 selection
-    cc1_channel = cerenkov_channels[0]
-
-    print("Applying CC1 selection based on Cerenkov1 channel.")
-    rdf = rdf.Define(f"{cc1_channel}_peak_value",
-                     f"MinRange({cc1_channel}_blsub, 1, 1000)")
-    rdf = rdf.Define(f"{cc1_channel}_sum",
-                     f"SumRange({cc1_channel}_blsub, 1, 1000)")
-
-    valCut = getServiceDRSSumCutValue("Cerenkov1")
-    rdf = rdf.Define("pass_CC1Ele_selection",
-                     f"({cc1_channel}_sum < {valCut})")
-
-    #    rdf = rdf.Define("pass_cc1_selection",
-    #                     f"({cerenkov1_channel}_peak_value > -200.0)")
-    if not applyCut:
-        return rdf
-
-    rdf_prefilter = rdf
-    if not isHadron:
-        rdf = rdf.Filter("pass_CC1Ele_selection == 1")
-    else:
-        rdf = rdf.Filter("pass_CC1Ele_selection == 0")
-    print(
-        f"Events before and after CC1 selection: {rdf_prefilter.Count().GetValue()}, {rdf.Count().GetValue()}")
-    return rdf, rdf_prefilter
-
-
-def applyUpstreamVeto(rdf, runNumber, applyCut=True):
-    from channels.channel_map import getUpstreamVetoChannel
-    chan_upveto = getUpstreamVetoChannel(runNumber)
-
-    rdf = rdf.Define(f"{chan_upveto}_peak_position",
-                     f"ROOT::VecOps::ArgMin({chan_upveto}_blsub)")
-    rdf = rdf.Define(f"{chan_upveto}_peak_value",
-                     f"ROOT::VecOps::Min({chan_upveto}_blsub)")
-
-    rdf = rdf.Define(f"pass_upstream_veto",
-                     f"({chan_upveto}_peak_value > -1000.0)")
-    rdf = rdf.Define("pass_NoSel", "1.0")
-    if not applyCut:
-        return rdf
-
-    rdf_prefilter = rdf
-    rdf = rdf.Filter("pass_upstream_veto == 1")
-    print(
-        f"Events before and after upstream veto: {rdf_prefilter.Count().GetValue()}, {rdf.Count().GetValue()}")
-    return rdf, rdf_prefilter
+    def get_rdf(self):
+        """Returns the final filtered RDataFrame node."""
+        return self.rdf
