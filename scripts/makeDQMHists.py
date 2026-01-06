@@ -12,7 +12,7 @@ from channels.channel_map import (
     getUpstreamVetoChannel,
 )
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
-from utils.auto_compile import ensure_compiled
+from utils.root_setup import setup_root
 from utils.dataloader import getRunInfo, loadRDF
 from utils.parser import get_args
 from utils.plot_helper import get_run_paths, save_hists_to_file
@@ -23,10 +23,7 @@ from variables.fers import getFERSEnergyMax, getFERSEnergySum, vectorizeFERS
 
 auto_timer("Total Execution Time")
 
-ensure_compiled()
-
-# multi-threading support
-ROOT.ROOT.EnableImplicitMT(10)
+setup_root()
 
 debugDRS = False
 

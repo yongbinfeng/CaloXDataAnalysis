@@ -1,19 +1,23 @@
 import ROOT
+from channels.channel_map import (buildDRSBoards, buildFERSBoards,
+                                  buildHodoTriggerChannels, buildHodoPosChannels,
+                                  buildTimeReferenceChannels, getDownStreamMuonChannel,
+                                  getMCPChannels, getServiceDRSChannels,
+                                  getUpstreamVetoChannel)
+from channels.validateMap import DrawDRSBoards, DrawFERSBoards
 from CMSPLOTS.myFunction import DrawHistos, LHistos2Hist
-from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels, getMCPChannels
-from utils.utils import number2string, round_up_to_1eN
-from utils.html_generator import generate_html
-from utils.visualization import visualizeFERSBoards
-from channels.validateMap import DrawFERSBoards, DrawDRSBoards
-from utils.colors import colors
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
+from utils.colors import colors
+from utils.html_generator import generate_html
 from utils.parser import get_args
 from utils.plot_helper import get_run_paths
+from utils.root_setup import setup_root
 from utils.timing import auto_timer
+from utils.utils import number2string, round_up_to_1eN
+from utils.visualization import visualizeFERSBoards
 auto_timer("Total Execution Time")
 
-print("Start running script")
-ROOT.gROOT.SetBatch(True)
+setup_root(n_threads=1, batch_mode=True, load_functions=False)
 
 args = get_args()
 runNumber = args.run

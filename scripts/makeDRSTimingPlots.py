@@ -8,16 +8,14 @@ from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS
 from utils.html_generator import generate_html
 from selections.selections import vetoMuonCounter, applyUpstreamVeto, applyPSDSelection, applyCC1Selection
 from utils.parser import get_args
-from myFunction import DrawHistos, LHistos2Hist
+from CMSPLOTS.myFunction import DrawHistos, LHistos2Hist
 from utils.timing import auto_timer
-from utils.auto_compile import auto_compile
-
+from utils.root_setup import setup_root
 from utils.utils import number2string
 
-ROOT.TH1.AddDirectory(False)  # prevents auto-registration in gDirectory
-
-
 auto_timer("Total Execution Time")
+
+setup_root(n_threads=10, batch_mode=True, load_functions=True)
 
 args = get_args()
 runNumber = args.run
@@ -29,12 +27,6 @@ btype, benergy = getRunInfo(runNumber)
 file_drschannels_bad = "data/drs/badchannels.json"
 with open(file_drschannels_bad, "r") as f:
     drschannels_bad = json.load(f)
-
-# multi-threading support
-ROOT.ROOT.EnableImplicitMT(10)
-ROOT.gROOT.SetBatch(True)  # Disable interactive mode for batch processing
-ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
-
 
 DRSBoards = buildDRSBoards(run=runNumber)
 

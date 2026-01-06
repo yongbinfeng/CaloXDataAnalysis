@@ -1,25 +1,34 @@
 import os
-import ROOT
 from collections import OrderedDict
+import ROOT
 from channels.channel_map import buildFERSBoards
-from utils.dataloader import loadRDF, getRunInfo
-from variables.fers import getFERSEnergySum, vectorizeFERS, calibrateFERSChannels, subtractFERSPedestal, getFERSEnergyWeightedCenter, addFERSPosXY, mixFERSHGLG, getFERSEnergyDR
-from variables.drs import preProcessDRSBoards
-from utils.visualization import visualizeFERSBoards
-from utils.html_generator import generate_html
-from utils.fitter import eventFit
-from utils.colors import colors
+from CMSPLOTS.myFunction import DrawHistos, LHistos2Hist
 from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters
 from selections.selections import vetoMuonCounter, applyUpstreamVeto, applyPSDSelection, applyCC1Selection
+from utils.colors import colors
+from utils.dataloader import loadRDF, getRunInfo
+from utils.fitter import eventFit
+from utils.html_generator import generate_html
 from utils.parser import get_args
-from utils.auto_compile import auto_compile
-from myFunction import DrawHistos, LHistos2Hist
+from utils.plot_helper import get_run_paths
+from utils.root_setup import setup_root
 from utils.timing import auto_timer
-
-ROOT.TH1.AddDirectory(False)  # prevents auto-registration in gDirectory
-
+from utils.visualization import visualizeFERSBoards
+from variables.drs import preProcessDRSBoards
+from variables.fers import (
+    getFERSEnergySum,
+    vectorizeFERS,
+    calibrateFERSChannels,
+    subtractFERSPedestal,
+    getFERSEnergyWeightedCenter,
+    addFERSPosXY,
+    mixFERSHGLG,
+    getFERSEnergyDR
+)
 
 auto_timer("Total Execution Time")
+
+setup_root(n_threads=10, batch_mode=True, load_functions=True)
 
 args = get_args()
 runNumber = args.run
@@ -32,10 +41,6 @@ doPerBoardPlots = False
 
 # HE = (runNumber >= 1200)
 HE = (benergy >= 50)  # GeV
-# multi-threading support
-ROOT.ROOT.EnableImplicitMT(10)
-ROOT.gROOT.SetBatch(True)  # Disable interactive mode for batch processing
-ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
 # load the gains and pedestals from SiPM fits
 # file_gains = f"results/root/Run{runNumber}/valuemaps_gain.json"
@@ -90,16 +95,10 @@ rdf = getFERSEnergyDR(rdf, fersboards, energy=benergy)
 
 rdf = addFERSPosXY(rdf, fersboards)
 
-rootdir = f"results/root/Run{runNumber}/"
-plotdir = f"results/plots/Run{runNumber}/"
-htmldir = f"results/html/Run{runNumber}/"
-
-if not os.path.exists(rootdir):
-    os.makedirs(rootdir)
-if not os.path.exists(plotdir):
-    os.makedirs(plotdir)
-if not os.path.exists(htmldir):
-    os.makedirs(htmldir)
+paths = get_run_paths(runNumber)
+rootdir = paths["root"]
+plotdir = paths["plots"]
+htmldir = paths["html"]
 
 # study PSD and CC1 selections
 rdfs = OrderedDict()
