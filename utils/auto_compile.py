@@ -1,7 +1,6 @@
 """Auto-compile C++ functions if needed."""
 from pathlib import Path
 import ROOT
-import os
 
 
 def ensure_compiled():
@@ -15,6 +14,3 @@ def ensure_compiled():
     else:
         print(f"Loading pre-compiled {so_file}...")
         ROOT.gSystem.Load(str(so_file))
-
-
-ensure_compiled()

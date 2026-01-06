@@ -1,15 +1,29 @@
-from utils.parser import get_args
-from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
-from utils.dataloader import getRunInfo, loadRDF
-from variables.fers import vectorizeFERS, getFERSEnergyMax, getFERSEnergySum
-from variables.drs import preProcessDRSBoards, getDRSStats
-from utils.utils import number2string
-from channels.channel_map import buildDRSBoards, buildFERSBoards, buildTimeReferenceChannels, buildHodoTriggerChannels, buildHodoPosChannels, getUpstreamVetoChannel, getDownStreamMuonChannel, getServiceDRSChannels, getMCPChannels
+import json
 import ROOT
-import os
-from utils.auto_compile import ensure_compiled  # Compiles if needed
-from utils.timing import auto_timer  # noqa
+from channels.channel_map import (
+    buildDRSBoards,
+    buildFERSBoards,
+    buildHodoPosChannels,
+    buildHodoTriggerChannels,
+    buildTimeReferenceChannels,
+    getDownStreamMuonChannel,
+    getMCPChannels,
+    getServiceDRSChannels,
+    getUpstreamVetoChannel,
+)
+from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
+from utils.auto_compile import ensure_compiled
+from utils.dataloader import getRunInfo, loadRDF
+from utils.parser import get_args
+from utils.plot_helper import get_run_paths, save_hists_to_file
+from utils.timing import auto_timer
+from utils.utils import number2string
+from variables.drs import getDRSStats, preProcessDRSBoards
+from variables.fers import getFERSEnergyMax, getFERSEnergySum, vectorizeFERS
+
 auto_timer("Total Execution Time")
+
+ensure_compiled()
 
 # multi-threading support
 ROOT.ROOT.EnableImplicitMT(10)
@@ -561,7 +575,7 @@ def checkDRSPeakTS():
 
 
 def main():
-    # start_time = time.time()
+    paths = get_run_paths(runNumber)
 
     hprofs_conditions = monitorConditions()
     hprofs_energysum = monitorFERSEnergySum()
@@ -617,151 +631,60 @@ def main():
 
     print("\033[94mSave results\033[0m")
 
-    rootdir = f"results/root/Run{runNumber}"
-    if not os.path.exists(rootdir):
-        os.makedirs(rootdir)
-
     # dump stats into a json file
-    if 'stats' in locals() and stats:
-        import json
-        stats_results = {}
-        for channelName, (mean, max_value, sat_frequency) in stats.items():
-            stats_results[channelName] = (mean.GetValue(), max_value.GetValue(), float(
-                sat_frequency.GetValue()) / nEvents)
-        with open(f"{rootdir}/fers_stats.json", "w") as f:
-            json.dump(stats_results, f, indent=4)
+    stats_results = {}
+    for channelName, (mean, max_value, sat_frequency) in stats.items():
+        stats_results[channelName] = (mean.GetValue(), max_value.GetValue(), float(
+            sat_frequency.GetValue()) / nEvents)
+    with open(f"{paths['root']}/fers_stats.json", "w") as f:
+        json.dump(stats_results, f, indent=4)
 
-    if 'pedestals_HG' in locals() and pedestals_HG:
-        import json
-        with open(f"{rootdir}/fers_pedestals_hg.json", "w") as f:
-            json.dump(pedestals_HG, f, indent=4)
-    if 'pedestals_LG' in locals() and pedestals_LG:
-        import json
-        with open(f"{rootdir}/fers_pedestals_lg.json", "w") as f:
-            json.dump(pedestals_LG, f, indent=4)
+    with open(f"{paths['root']}/fers_pedestals_hg.json", "w") as f:
+        json.dump(pedestals_HG, f, indent=4)
+    with open(f"{paths['root']}/fers_pedestals_lg.json", "w") as f:
+        json.dump(pedestals_LG, f, indent=4)
 
     # Save histograms to an output ROOT file
-    if 'hprofs_conditions' in locals() and hprofs_conditions:
-        outfile = ROOT.TFile(f"{rootdir}/conditions_vs_event.root", "RECREATE")
-        for hist in hprofs_conditions:
-            hist.SetDirectory(outfile)
-            hist.Write()
-        outfile.Close()
+    save_hists_to_file(hprofs_conditions,
+                       f"{paths['root']}/conditions_vs_event.root")
 
-    if 'hprofs_energysum' in locals() and hprofs_energysum:
-        outfile = ROOT.TFile(
-            f"{rootdir}/fers_energysum_vs_event.root", "RECREATE")
-        for hist in hprofs_energysum:
-            hist.SetDirectory(outfile)
-            hist.Write()
-        outfile.Close()
+    save_hists_to_file(hprofs_energysum,
+                       f"{paths['root']}/fers_energysum_vs_event.root")
 
-    if 'hists1d_FERS' in locals() and hists1d_FERS:
-        outfile = ROOT.TFile(
-            f"{rootdir}/fers_all_channels_1d.root", "RECREATE")
-        for hist in hists1d_FERS:
-            hist.Write()
-        outfile.Close()
-    # outfile = ROOT.TFile(f"{rootdir}/fers_all_channels_2D.root", "RECREATE")
-    # for hist in hists2d_FERS:
-    #    hist.Write()
-    # outfile.Close()
-    # outfile = ROOT.TFile(
-    #    f"{rootdir}/fers_all_channels_2D_VS_event.root", "RECREATE")
-    # for hist in hists2d_FERS_VS_Event:
-    #    hist.Write()
-    # outfile.Close()
-    #
-    outfile_DRS = ROOT.TFile(f"{rootdir}/drs_vs_ts.root", "RECREATE")
-    for hist in hists2d_DRS_VS_TS:
-        hist.SetDirectory(outfile_DRS)
-        hist.Write()
-    outfile_DRS.Close()
+    save_hists_to_file(hists1d_FERS,
+                       f"{paths['root']}/fers_all_channels_1d.root")
+
+    save_hists_to_file(hists2d_DRS_VS_TS, f"{paths['root']}/drs_vs_ts.root")
     if debugDRS:
-        outfile_DRS_RTSpos = ROOT.TFile(
-            f"{rootdir}/drs_VS_RTSpos.root", "RECREATE")
-        for hist in hists2d_DRS_VS_RTSpos:
-            hist.SetDirectory(outfile_DRS_RTSpos)
-            hist.Write()
-        outfile_DRS_RTSpos.Close()
+        save_hists_to_file(hists2d_DRS_VS_RTSpos,
+                           f"{paths['root']}/drs_VS_RTSpos.root")
+        save_hists_to_file(hists2d_DRS_VS_RTSneg,
+                           f"{paths['root']}/drs_VS_RTSneg.root")
 
-        outfile_DRS_RTSneg = ROOT.TFile(
-            f"{rootdir}/drs_VS_RTSneg.root", "RECREATE")
-        for hist in hists2d_DRS_VS_RTSneg:
-            hist.SetDirectory(outfile_DRS_RTSneg)
-            hist.Write()
-        outfile_DRS_RTSneg.Close()
+    save_hists_to_file(hists2d_DRSPeak_VS_FERS,
+                       f"{paths['root']}/drspeak_vs_fers.root")
 
-    outfile_DRSPeak_VS_FERS = ROOT.TFile(
-        f"{rootdir}/drspeak_vs_fers.root", "RECREATE")
-    for hist in hists2d_DRSPeak_VS_FERS:
-        hist.SetDirectory(outfile_DRSPeak_VS_FERS)
-        hist.Write()
-    outfile_DRSPeak_VS_FERS.Close()
+    save_hists_to_file(hists1d_DRSPeakTS_Cer + hists1d_DRSPeakTS_Sci +
+                       hists2d_DRSPeakTS_Cer_VS_Sci, f"{paths['root']}/drspeakts.root")
 
-    outfile_DRSPeakTS = ROOT.TFile(f"{rootdir}/drspeakts.root", "RECREATE")
-    for hist in hists1d_DRSPeakTS_Cer:
-        hist.SetDirectory(outfile_DRSPeakTS)
-        hist.Write()
-    for hist in hists1d_DRSPeakTS_Sci:
-        hist.SetDirectory(outfile_DRSPeakTS)
-        hist.Write()
-    for hist in hists2d_DRSPeakTS_Cer_VS_Sci:
-        hist.SetDirectory(outfile_DRSPeakTS)
-        hist.Write()
-    outfile_DRSPeakTS.Close()
+    save_hists_to_file(hists2d_time_reference,
+                       f"{paths['root']}/time_reference_channels.root")
 
-    outfile_time_reference = ROOT.TFile(
-        f"{rootdir}/time_reference_channels.root", "RECREATE")
-    for hist in hists2d_time_reference:
-        hist.SetDirectory(outfile_time_reference)
-        hist.Write()
-    outfile_time_reference.Close()
+    save_hists_to_file(hists2d_hodo_trigger,
+                       f"{paths['root']}/hodo_trigger_channels.root")
 
-    if 'hists2d_hodo_trigger' in locals() and hists2d_hodo_trigger:
-        outfile_hodo_trigger = ROOT.TFile(
-            f"{rootdir}/hodo_trigger_channels.root", "RECREATE")
-        for hist in hists2d_hodo_trigger:
-            hist.SetDirectory(outfile_hodo_trigger)
-            hist.Write()
-        outfile_hodo_trigger.Close()
+    save_hists_to_file(hists2d_service_drs,
+                       f"{paths['root']}/service_drs_channels.root")
 
-    if 'hists2d_service_drs' in locals() and hists2d_service_drs:
-        outfile_service_drs = ROOT.TFile(
-            f"{rootdir}/service_drs_channels.root", "RECREATE")
-        for hist in hists2d_service_drs:
-            hist.SetDirectory(outfile_service_drs)
-            hist.Write()
-        outfile_service_drs.Close()
+    save_hists_to_file(hists2d_mcp, f"{paths['root']}/mcp_channels.root")
 
-    if 'hists2d_mcp' in locals() and hists2d_mcp:
-        outfile_mcp = ROOT.TFile(
-            f"{rootdir}/mcp_channels.root", "RECREATE")
-        for hist in hists2d_mcp:
-            hist.SetDirectory(outfile_mcp)
-            hist.Write()
-        outfile_mcp.Close()
+    save_hists_to_file(
+        hists2d_hodo_pos, f"{paths['root']}/hodo_pos_channels.root")
 
-    outfile_hodo_pos = ROOT.TFile(
-        f"{rootdir}/hodo_pos_channels.root", "RECREATE")
-    for hist in hists2d_hodo_pos:
-        hist.SetDirectory(outfile_hodo_pos)
-        hist.Write()
-    outfile_hodo_pos.Close()
+    save_hists_to_file(hists2d_DRSSum_VS_FERS,
+                       f"{paths['root']}/drssum_vs_fers.root")
 
-    outfile_DRSSum_VS_FERS = ROOT.TFile(
-        f"{rootdir}/drssum_vs_fers.root", "RECREATE")
-    for hist in hists2d_DRSSum_VS_FERS:
-        hist.SetDirectory(outfile_DRSSum_VS_FERS)
-        hist.Write()
-    outfile_DRSSum_VS_FERS.Close()
-
-    outfile_FERS_max = ROOT.TFile(
-        f"{rootdir}/fers_max_values.root", "RECREATE")
-    for hist in hists_FERS_max:
-        hist.SetDirectory(outfile_FERS_max)
-        hist.Write()
-    outfile_FERS_max.Close()
+    save_hists_to_file(hists_FERS_max, f"{paths['root']}/fers_max_values.root")
 
 
 if __name__ == "__main__":

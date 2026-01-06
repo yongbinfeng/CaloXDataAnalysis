@@ -8,6 +8,7 @@ from channels.validateMap import DrawFERSBoards, DrawDRSBoards
 from utils.colors import colors
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from utils.parser import get_args
+from utils.plot_helper import get_run_paths
 from utils.timing import auto_timer
 auto_timer("Total Execution Time")
 
@@ -27,16 +28,13 @@ downstream_muon_channel = getDownStreamMuonChannel(run=runNumber)
 service_drs_channels = getServiceDRSChannels(run=runNumber)
 mcp_channels = getMCPChannels(run=runNumber)
 
-
-rootdir = f"results/root/Run{runNumber}/"
-plotdir = f"results/plots/Run{runNumber}/"
-htmldir = f"results/html/Run{runNumber}/"
+paths = get_run_paths(runNumber)
 
 
 def makeConditionsPlots():
     plots = []
-    outdir_plots = f"{plotdir}/Conditions_VS_Event"
-    infile_name = f"{rootdir}/conditions_vs_event.root"
+    outdir_plots = f"{paths['plots']}/Conditions_VS_Event"
+    infile_name = f"{paths['root']}/conditions_vs_event.root"
     infile = ROOT.TFile(infile_name, "READ")
 
     hprofiles_SipmHV = []
@@ -101,7 +99,7 @@ def makeConditionsPlots():
                outdir=outdir_plots, runNumber=runNumber, legendNCols=3, legendPos=legendPos)
     plots.insert(3, output_name + ".png")
 
-    output_html = f"{htmldir}/Conditions/conditions_vs_event.html"
+    output_html = f"{paths['html']}/Conditions/conditions_vs_event.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -109,8 +107,8 @@ def makeConditionsPlots():
 
 def makeFERSSumPlots():
     plots = []
-    outdir_plots = f"{plotdir}/FERS_EnergySum_VS_Event"
-    infile_name = f"{rootdir}/fers_energysum_vs_event.root"
+    outdir_plots = f"{paths['plots']}/FERS_EnergySum_VS_Event"
+    infile_name = f"{paths['root']}/fers_energysum_vs_event.root"
     infile = ROOT.TFile(infile_name, "READ")
 
     hprofiles_Cer_HG_sum = []
@@ -195,7 +193,7 @@ def makeFERSSumPlots():
                outdir=outdir_plots, runNumber=runNumber, legendNCols=2, legendPos=[0.6, 0.85, 0.9, 0.9])
     plots.insert(1, "FERS_Total_LG_EnergySum_VS_Event.png")
 
-    output_html = f"{htmldir}/Conditions/FERS_energysum_vs_event.html"
+    output_html = f"{paths['html']}/Conditions/FERS_energysum_vs_event.html"
     generate_html(plots, outdir_plots,
                   output_html=output_html, plots_per_row=6)
 
@@ -205,9 +203,9 @@ def makeFERSSumPlots():
 def makeFERS1DPlots():
     plots = []
 
-    infile_name = f"{rootdir}fers_all_channels_1d.root"
+    infile_name = f"{paths['root']}/fers_all_channels_1d.root"
     infile = ROOT.TFile(infile_name, "READ")
-    outdir_plots = f"{plotdir}/FERS_1D"
+    outdir_plots = f"{paths['plots']}/FERS_1D"
     for fersboard in fersboards.values():
         boardNo = fersboard.boardNo
         for iTowerX, iTowerY in fersboard.GetListOfTowers():
@@ -246,7 +244,7 @@ def makeFERS1DPlots():
 
             plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/FERS/ChannelADC.html"
+    output_html = f"{paths['html']}/FERS/ChannelADC.html"
     generate_html(plots, outdir_plots,
                   output_html=output_html)
     return output_html
@@ -254,16 +252,16 @@ def makeFERS1DPlots():
 
 def makeFERSStatsPlots(includePedestals=False):
     output_htmls = []
-    outdir_plots = f"{plotdir}/FERS_Stats"
+    outdir_plots = f"{paths['plots']}/FERS_Stats"
     # load the json file
     import json
-    infile_name = f"{rootdir}/fers_stats.json"
+    infile_name = f"{paths['root']}/fers_stats.json"
     with open(infile_name, "r") as f:
         stats = json.load(f)
 
     if includePedestals:
-        infile_name_HG = f"{rootdir}/fers_pedestals_hg.json"
-        infile_name_LG = f"{rootdir}/fers_pedestals_lg.json"
+        infile_name_HG = f"{paths['root']}/fers_pedestals_hg.json"
+        infile_name_LG = f"{paths['root']}/fers_pedestals_lg.json"
         with open(infile_name_HG, "r") as f:
             pedestals_HG = json.load(f)
         with open(infile_name_LG, "r") as f:
@@ -336,7 +334,7 @@ def makeFERSStatsPlots(includePedestals=False):
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
     plots.append(output_name + "_Sci.png")
 
-    output_html = f"{htmldir}/FERS/Channel_Mean.html"
+    output_html = f"{paths['html']}/FERS/Channel_Mean.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     output_htmls.append(output_html)
@@ -362,7 +360,7 @@ def makeFERSStatsPlots(includePedestals=False):
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=8000)
     plots.append(output_name + "_Sci.png")
 
-    output_html = f"{htmldir}/FERS/Channel_Max.html"
+    output_html = f"{paths['html']}/FERS/Channel_Max.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     output_htmls.append(output_html)
@@ -388,7 +386,7 @@ def makeFERSStatsPlots(includePedestals=False):
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=1, nTextDigits=2)
     plots.append(output_name + "_Sci.png")
 
-    output_html = f"{htmldir}/FERS/Channel_SatFreq.html"
+    output_html = f"{paths['html']}/FERS/Channel_SatFreq.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     output_htmls.append(output_html)
@@ -414,7 +412,7 @@ def makeFERSStatsPlots(includePedestals=False):
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=100, zmax=300, nTextDigits=0)
     plots.append(output_name + "_Sci.png")
 
-    output_html = f"{htmldir}/FERS/Channel_Pedestal.html"
+    output_html = f"{paths['html']}/FERS/Channel_Pedestal.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     output_htmls.append(output_html)
@@ -425,8 +423,8 @@ def makeFERSMaxValuePlots():
     plots = []
     xmin = 7500
     xmax = 8500
-    outdir_plots = f"{plotdir}/FERS_MaxValues"
-    infile_name = f"{rootdir}/fers_max_values.root"
+    outdir_plots = f"{paths['plots']}/FERS_MaxValues"
+    infile_name = f"{paths['root']}/fers_max_values.root"
     infile = ROOT.TFile(infile_name, "READ")
     hists_board_cer_HG_max = []
     hists_board_cer_LG_max = []
@@ -525,7 +523,7 @@ def makeFERSMaxValuePlots():
                outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.75, 0.50, 0.9], extraToDraw=extraToDraw)
     plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/FERS/channelmax.html"
+    output_html = f"{paths['html']}/FERS/channelmax.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
@@ -535,8 +533,8 @@ def makeFERSMaxValuePlots():
 
 def makeFERS2DPlots():
     plots = []
-    outdir_plots = f"{plotdir}/FERS_2D"
-    infile_name = f"{rootdir}/fers_all_channels_2d.root"
+    outdir_plots = f"{paths['plots']}/FERS_2D"
+    infile_name = f"{paths['root']}/fers_all_channels_2d.root"
     infile = ROOT.TFile(infile_name, "READ")
     for fersboard in fersboards.values():
         boardNo = fersboard.boardNo
@@ -567,7 +565,7 @@ def makeFERS2DPlots():
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True, extraToDraw=extraToDraw,
                            outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
                 plots.append(output_name + ".png")
-    output_html = f"{htmldir}/FERS/LG_vs_HG.html"
+    output_html = f"{paths['html']}/FERS/LG_vs_HG.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -576,8 +574,8 @@ def makeFERS2DPlots():
 # FERS output VS event
 def trackFERSPlots():
     plots = []
-    outdir_plots = f"{plotdir}/FERS_VS_Event"
-    infile_name = f"{rootdir}/fers_all_channels_2D_VS_event.root"
+    outdir_plots = f"{paths['plots']}/FERS_VS_Event"
+    infile_name = f"{paths['root']}/fers_all_channels_2D_VS_event.root"
     infile = ROOT.TFile(infile_name, "READ")
     for fersboard in fersboards.values():
         boardNo = fersboard.boardNo
@@ -616,7 +614,7 @@ def trackFERSPlots():
                            extraToDraw=extraToDraw,
                            outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
                 plots.append(output_name + ".png")
-    output_html = f"{htmldir}/FERS_VS_Event/index.html"
+    output_html = f"{paths['html']}/FERS_VS_Event/index.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -625,8 +623,8 @@ def trackFERSPlots():
 # DRS VS TS
 def makeDRSVSTSPlots():
     plots = []
-    outdir_plots = f"{plotdir}/DRS_VS_TS"
-    infile_name = f"{rootdir}/drs_vs_ts.root"
+    outdir_plots = f"{paths['plots']}/DRS_VS_TS"
+    infile_name = f"{paths['root']}/drs_vs_ts.root"
     infile = ROOT.TFile(infile_name, "READ")
     for _, DRSBoard in DRSBoards.items():
         for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
@@ -670,7 +668,7 @@ def makeDRSVSTSPlots():
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                            extraToDraw=extraToDraw,
                            outdir=outdir_plots, extraText=var, runNumber=runNumber, addOverflow=True)
-    output_html = f"{htmldir}/DRS/DRS_vs_TS.html"
+    output_html = f"{paths['html']}/DRS/DRS_vs_TS.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
@@ -678,8 +676,8 @@ def makeDRSVSTSPlots():
 
 def makeDRSPeakTSPlots():
     plots = []
-    outdir_plots = f"{plotdir}/DRSPeakTS"
-    infile_name = f"{rootdir}/drspeakts.root"
+    outdir_plots = f"{paths['plots']}/DRSPeakTS"
+    infile_name = f"{paths['root']}/drspeakts.root"
     infile = ROOT.TFile(infile_name, "READ")
     hists_Cer = []
     hists_Sci = []
@@ -746,7 +744,7 @@ def makeDRSPeakTSPlots():
                outdir=outdir_plots, runNumber=runNumber)
     plots.insert(0, "DRS_PeakTS_Combined.png")
 
-    output_html = f"{htmldir}/DRS/DRS_PeakTS.html"
+    output_html = f"{paths['html']}/DRS/DRS_PeakTS.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -755,8 +753,8 @@ def makeDRSPeakTSPlots():
 def makeDRSPeakTSCerVSSciPlots():
     plots = []
     hists = []
-    outdir_plots = f"{plotdir}/DRSPeakTSCerVSSci"
-    infile_name = f"{rootdir}/drspeakts.root"
+    outdir_plots = f"{paths['plots']}/DRSPeakTSCerVSSci"
+    infile_name = f"{paths['root']}/drspeakts.root"
     infile = ROOT.TFile(infile_name, "READ")
 
     # Create a dashed diagonal line from (0,0) to (1000,1000)
@@ -798,7 +796,7 @@ def makeDRSPeakTSCerVSSciPlots():
                outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
     plots.insert(0, output_name + ".png")
 
-    output_html = f"{htmldir}/DRS/DRS_PeakTS_Cer_VS_Sci.html"
+    output_html = f"{paths['html']}/DRS/DRS_PeakTS_Cer_VS_Sci.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -814,9 +812,9 @@ def compareTimeReferencePlots(doSubtractMedian=False):
         ymin = -2500
         ymax = 500
     plots = []
-    infile_name = f"{rootdir}/time_reference_channels.root"
+    infile_name = f"{paths['root']}/time_reference_channels.root"
     infile = ROOT.TFile(infile_name, "READ")
-    outdir_plots = f"{plotdir}/TimeReference"
+    outdir_plots = f"{paths['plots']}/TimeReference"
     for chan_name in time_reference_channels:
         hist_name = f"hist_{chan_name}{suffix}"
         hist = infile.Get(hist_name)
@@ -838,7 +836,7 @@ def compareTimeReferencePlots(doSubtractMedian=False):
                    outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
         plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/TimeReference{suffix}/index.html"
+    output_html = f"{paths['html']}/TimeReference{suffix}/index.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html
@@ -848,9 +846,9 @@ def compareServiceDRSPlots():
     ymin = 500
     ymax = 2500
     plots = []
-    infile_name = f"{rootdir}/service_drs_channels.root"
+    infile_name = f"{paths['root']}/service_drs_channels.root"
     infile = ROOT.TFile(infile_name, "READ")
-    outdir_plots = f"{plotdir}/ServiceDRS"
+    outdir_plots = f"{paths['plots']}/ServiceDRS"
 
     for det_name, chan_name in service_drs_channels.items():
         hist_name = f"hist_{chan_name}_blsub"
@@ -876,7 +874,7 @@ def compareServiceDRSPlots():
                    outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
         plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/ServiceDRS/detectors.html"
+    output_html = f"{paths['html']}/ServiceDRS/detectors.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
 
@@ -887,9 +885,9 @@ def compareMCPPlots():
     ymin = -1500
     ymax = 500
     plots = []
-    infile_name = f"{rootdir}/mcp_channels.root"
+    infile_name = f"{paths['root']}/mcp_channels.root"
     infile = ROOT.TFile(infile_name, "READ")
-    outdir_plots = f"{plotdir}/MCP"
+    outdir_plots = f"{paths['plots']}/MCP"
 
     for det_name, channels in mcp_channels.items():
         for chan_name in channels:
@@ -915,7 +913,7 @@ def compareMCPPlots():
                        outdir=outdir_plots, addOverflow=True, runNumber=runNumber)
             plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/ServiceDRS/MCP.html"
+    output_html = f"{paths['html']}/ServiceDRS/MCP.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -926,8 +924,8 @@ def makeDRSSumVSFERSPlots():
     Check if the sum of FERS and DRS energies are consistent.
     """
     plots = []
-    outdir_plots = f"{plotdir}/DRSSum_VS_FERS"
-    infile_name = f"{rootdir}/drssum_vs_fers.root"
+    outdir_plots = f"{paths['plots']}/DRSSum_VS_FERS"
+    infile_name = f"{paths['root']}/drssum_vs_fers.root"
     infile = ROOT.TFile(infile_name, "READ")
 
     xymax = {
@@ -991,7 +989,7 @@ def makeDRSSumVSFERSPlots():
                        outdir=outdir_plots, addOverflow=True, runNumber=runNumber, extraText=f"{var}")
             plots.insert(0, output_name + ".png")
 
-    output_html = f"{htmldir}/DRS_VS_FERS/DRSSum_vs_FERS.html"
+    output_html = f"{paths['html']}/DRS_VS_FERS/DRSSum_vs_FERS.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -999,8 +997,8 @@ def makeDRSSumVSFERSPlots():
 
 def makeDRSPeakVSFERSPlots():
     plots = []
-    outdir_plots = f"{plotdir}/DRSPeak_VS_FERS"
-    infile_name = f"{rootdir}/drspeak_vs_fers.root"
+    outdir_plots = f"{paths['plots']}/DRSPeak_VS_FERS"
+    infile_name = f"{paths['root']}/drspeak_vs_fers.root"
     infile = ROOT.TFile(infile_name, "READ")
 
     for _, DRSBoard in DRSBoards.items():
@@ -1033,48 +1031,41 @@ def makeDRSPeakVSFERSPlots():
                            dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=None, dologz=True,
                            outdir=outdir_plots, addOverflow=True, runNumber=runNumber, extraText=f"{var}")
 
-    output_html = f"{htmldir}/DRS_VS_FERS/DRSPeak_vs_FERS.html"
+    output_html = f"{paths['html']}/DRS_VS_FERS/DRSPeak_vs_FERS.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
 
 
 def main():
+    print("Starting DQM Plot Generation...\n")
+    # Task Registry: (Label, Function)
+    plot_tasks = [
+        ("Conditions", makeConditionsPlots),
+        ("FERS Sum", makeFERSSumPlots),
+        ("FERS Mapping", lambda: DrawFERSBoards(run=runNumber)),
+        ("DRS Mapping", lambda: DrawDRSBoards(run=runNumber)),
+        ("FERS 1D", makeFERS1DPlots),
+        ("FERS Stats", lambda: makeFERSStatsPlots(includePedestals=True)),
+        ("DRS vs TS", makeDRSVSTSPlots),
+        ("DRS Peak TS", makeDRSPeakTSPlots),
+        ("DRS Peak TS Cer vs Sci", makeDRSPeakTSCerVSSciPlots),
+        ("Service DRS", compareServiceDRSPlots),
+        ("MCP", compareMCPPlots),
+        # ("Time Reference", lambda: compareTimeReferencePlots(True)),
+        ("FERS Max Values", makeFERSMaxValuePlots),
+        ("DRS Sum vs FERS", makeDRSSumVSFERSPlots),
+        ("DRS Peak vs FERS", makeDRSPeakVSFERSPlots),
+    ]
+
     output_htmls = {}
+    for label, func in plot_tasks:
+        print(f"Generating {label} plots...")
+        output_htmls[label] = func()
 
-    output_htmls["conditions plots"] = makeConditionsPlots()
-    output_htmls["fers sum"] = makeFERSSumPlots()
-
-    # validate DRS and FERS boards
-    output_htmls["fers mapping"] = DrawFERSBoards(run=runNumber)
-    output_htmls["drs mapping"] = DrawDRSBoards(run=runNumber)
-
-    output_htmls["fers 1D"] = makeFERS1DPlots()
-    output_htmls["fers stats"] = makeFERSStatsPlots(includePedestals=True)
-
-    output_htmls["drs vs ts"] = makeDRSVSTSPlots()
-    output_htmls["drs peak ts"] = makeDRSPeakTSPlots()
-
-    output_htmls["drs peak ts cer vs ts"] = makeDRSPeakTSCerVSSciPlots()
-
-    output_htmls["drs services"] = compareServiceDRSPlots()
-
-    output_htmls["mcp"] = compareMCPPlots()
-
-    # output_htmls["time reference"] = compareTimeReferencePlots(True)
-
-    output_htmls["fers max values"] = makeFERSMaxValuePlots()
-
-    output_htmls["drs sum vs fers"] = makeDRSSumVSFERSPlots()
-
-    output_htmls["drs peak VS fers"] = makeDRSPeakVSFERSPlots()
-
-    print("\n\n\n")
-    print("*" * 30)
-    for key, value in output_htmls.items():
-        print(f"✅ {key} plots can be viewed at: {value}")
-
-    print("All plots generated successfully.")
+    print("\n" + "*"*30)
+    for label, url in output_htmls.items():
+        print(f"✅ {label} plots: {url}")
 
 
 if __name__ == "__main__":
