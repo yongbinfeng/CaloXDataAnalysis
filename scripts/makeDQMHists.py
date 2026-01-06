@@ -13,7 +13,7 @@ from channels.channel_map import (
 )
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
 from utils.root_setup import setup_root
-from utils.dataloader import getRunInfo, loadRDF
+from utils.dataloader import CaloXDataLoader
 from utils.parser import get_args
 from utils.plot_helper import get_run_paths, save_hists_to_file
 from utils.timing import auto_timer
@@ -29,11 +29,9 @@ debugDRS = False
 
 args = get_args()
 runNumber = args.run
-firstEvent = args.first_event
-lastEvent = args.last_event
-jsonFile = args.json_file
 
-rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
+loader = CaloXDataLoader(json_file=args.json_file)
+rdf = loader.load_rdf(runNumber, args.first_event, args.last_event)
 
 DRSBoards = buildDRSBoards(run=runNumber)
 fersboards = buildFERSBoards(run=runNumber)
@@ -98,7 +96,7 @@ def monitorFERSEnergySum():
         for var in ["Cer", "Sci"]:
             for gain in ["HG", "LG"]:
                 hprof_EnergySum = rdf.Profile1D((
-                    f'hprof_{fersboard.GetEnergySumName(gain=gain, isCer=(var=="Cer"))}_VS_Event',
+                    f'hprof_{fersboard.GetEnergySumName(gain=gain, isCer=(var == "Cer"))}_VS_Event',
                     f"FERS Board - {var} Energy {gain} sum VS Event;Event;{var} Energy {gain} sum",
                     nbins_Event, 0, nEvents),
                     "event_n", fersboard.GetEnergySumName(
@@ -109,7 +107,7 @@ def monitorFERSEnergySum():
     for var in ["Cer", "Sci"]:
         for gain in ["HG", "LG"]:
             hprof_EnergySum = rdf.Profile1D((
-                f'hprof_{fersboards.GetEnergySumName(gain=gain, isCer=(var=="Cer"))}_VS_Event',
+                f'hprof_{fersboards.GetEnergySumName(gain=gain, isCer=(var == "Cer"))}_VS_Event',
                 f"FERS - {var} Energy {gain} sum VS Event;Event;{var} Energy {gain} sum",
                 nbins_Event, 0, nEvents),
                 "event_n", fersboards.GetEnergySumName(

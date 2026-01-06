@@ -6,7 +6,7 @@ from CMSPLOTS.myFunction import DrawHistos, LHistos2Hist
 from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters
 from selections.selections import SelectionManager
 from utils.colors import colors
-from utils.dataloader import loadRDF, getRunInfo
+from utils.dataloader import CaloXDataLoader, getRunInfo
 from utils.fitter import eventFit
 from utils.html_generator import generate_html
 from utils.parser import get_args
@@ -32,9 +32,6 @@ setup_root(n_threads=10, batch_mode=True, load_functions=True)
 
 args = get_args()
 runNumber = args.run
-firstEvent = args.first_event
-lastEvent = args.last_event
-jsonFile = args.json_file
 btype, benergy = getRunInfo(runNumber)
 
 doPerBoardPlots = False
@@ -54,7 +51,8 @@ if runNumber >= 1350:
     file_HG2LG = "data/fers/FERS_HG2LG_Sep.json"
     file_deadchannels = None
 
-rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile=jsonFile)
+loader = CaloXDataLoader(json_file=args.json_file)
+rdf = loader.load_rdf(runNumber, args.first_event, args.last_event)
 
 rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
 sel_mgr = SelectionManager(rdf, runNumber)

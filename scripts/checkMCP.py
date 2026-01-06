@@ -2,25 +2,20 @@ import re
 import ROOT
 from CMSPLOTS.myFunction import DrawHistos
 from channels.channel_map import getMCPChannels
+from utils.dataloader import CaloXDataLoader
 from utils.html_generator import generate_html
-from utils.dataloader import loadRDF
-from variables.drs import preProcessDRSBoards
 from utils.parser import get_args
-from utils.auto_compile import auto_compile
-from utils.timing import auto_timer  # noqa
+from utils.root_setup import setup_root
+from utils.timing import auto_timer
+from variables.drs import preProcessDRSBoards
 auto_timer("Total Execution Time")
 
-ROOT.gROOT.SetBatch(True)  # Run in batch mode
-ROOT.ROOT.EnableImplicitMT(10)
+setup_root(n_threads=10, batch_mode=True, load_functions=True)
 
 
 def main():
-    parser = get_args()
-    runNumber = parser.run
-    firstEvent = parser.first_event
-    lastEvent = parser.last_event
-    jsonFile = parser.json_file
-
+    args = get_args()
+    runNumber = args.run
     TSmin = 500
     TSmax = 700
     RelTSmin = -320
@@ -35,7 +30,9 @@ def main():
 
     outputs_html = {}
 
-    rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
+    loader = CaloXDataLoader(json_file=args.json_file)
+    rdf = loader.load_rdf(runNumber, args.first_event, args.last_event)
+
     rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
 
     # get the MCP peak TS

@@ -3,7 +3,7 @@ import ROOT
 import json
 from collections import OrderedDict
 from channels.channel_map import buildFERSBoards, buildDRSBoards, getMCPChannels
-from utils.dataloader import loadRDF, getRunInfo
+from utils.dataloader import CaloXDataLoader, getRunInfo
 from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS
 from utils.html_generator import generate_html
 from selections.selections import SelectionManager
@@ -19,9 +19,6 @@ setup_root(n_threads=10, batch_mode=True, load_functions=True)
 
 args = get_args()
 runNumber = args.run
-firstEvent = args.first_event
-lastEvent = args.last_event
-jsonFile = args.json_file
 btype, benergy = getRunInfo(runNumber)
 
 file_drschannels_bad = "data/drs/badchannels.json"
@@ -662,7 +659,8 @@ def main():
     makePlots = True
 
     if makeHists:
-        rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
+        loader = CaloXDataLoader(json_file=args.json_file)
+        rdf = loader.load_rdf(runNumber, args.first_event, args.last_event)
         rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
 
         sel_mgr = SelectionManager(rdf, runNumber)

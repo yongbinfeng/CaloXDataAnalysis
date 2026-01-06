@@ -1,13 +1,7 @@
 from channels.CaloXChannel import FERSBoard, DRSBoard, DRSChannel, drs_map, FERSBoards
+from utils.dataloader import IsScanRun
 import json
 from collections import OrderedDict
-
-f_scanruns = "data/scanruns.json"
-with open(f_scanruns, 'r') as f:
-    temp = json.load(f)
-    scanruns = temp["scanruns"]
-    print("Loaded scan runs from", f_scanruns)
-print("Scan runs:", scanruns)
 
 f_triggerdelay = "data/triggerdelay.json"
 with open(f_triggerdelay, 'r') as f:
@@ -228,7 +222,7 @@ def buildDRSBoards(run=316):
     base_DRSBoard_6mm = DRSBoard(boardNo=-1, is6mm=True)
     base_DRSBoard_3mm = DRSBoard(boardNo=-1, is6mm=False)
     DRSBoards = {}
-    if run in scanruns:
+    if IsScanRun(run):
         # no DRS boards in scan runs
         # only FERS
         return DRSBoards
@@ -663,7 +657,7 @@ def buildTimeReferenceChannels(run=316):
     Returns a list of time reference channels.
     """
     time_reference_channels = []
-    if run in scanruns:
+    if IsScanRun(run):
         # no time reference channels in scan runs
         # since no drs boards
         return time_reference_channels
@@ -694,7 +688,7 @@ def buildHodoTriggerChannels(run=316):
     Returns a list of hodoscope trigger channels.
     """
     hodo_trigger_channels = []
-    if run in scanruns:
+    if IsScanRun(run):
         # no hodoscope trigger channels in scan runs
         # since no drs boards
         return hodo_trigger_channels
@@ -717,7 +711,7 @@ def buildHodoPosChannels(run=316):
     Returns a dictionary containing the hodoscope channels for the position measurements
     """
     hodoscope_channels = {}
-    if run in scanruns:
+    if IsScanRun(run):
         # no hodoscope position channels in scan runs
         # since no drs boards
         return hodoscope_channels

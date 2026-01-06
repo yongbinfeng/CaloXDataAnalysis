@@ -1068,8 +1068,16 @@ def main():
         output_htmls[label] = func()
 
     print("\n" + "*"*30)
+    print("Plot Generation Summary:")
     for label, url in output_htmls.items():
-        print(f"✅ {label} plots: {url}")
+        if isinstance(url, str):
+            print(f"✅ {label} plots: {url}")
+        elif isinstance(url, list):
+            print(f"✅ {label} plots:")
+            for u in url:
+                print(f"   - {u}")
+        else:
+            print(f"✅ {label} plots: (output type: {type(url)})")
 
 
 if __name__ == "__main__":
