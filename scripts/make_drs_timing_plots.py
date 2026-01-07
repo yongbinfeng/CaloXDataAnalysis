@@ -1,14 +1,11 @@
-import os
 import ROOT
 import json
-from collections import OrderedDict
-from channels.channel_map import build_fers_boards, build_drs_boards, get_mcp_channels
-from utils.data_loader import CaloXDataLoader, getRunInfo
-from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS
+from channels.channel_map import get_mcp_channels
+from core.analysis_manager import CaloXAnalysisManager
+from variables.drs import calibrateDRSPeakTS
 from utils.html_generator import generate_html
-from selections.selections import SelectionManager
 from utils.parser import get_args
-from cmsplots.my_function import DrawHistos, LHistos2Hist
+from plotting.my_function import DrawHistos, LHistos2Hist
 from utils.timing import auto_timer
 from utils.root_setup import setup_root
 from utils.utils import number_to_string
@@ -19,17 +16,26 @@ setup_root(n_threads=10, batch_mode=True, load_functions=True)
 
 args = get_args()
 run_number = args.run
-btype, benergy = getRunInfo(run_number)
+
+
+analysis = (CaloXAnalysisManager(args)
+            .prepare()                   # Baseline and vectorization
+            .apply_selections())         # Muon and hole vetoes
+
+rdf = analysis.get_rdf()  # Get the final RDF after all transformations
+fersboards = analysis.fersboards
+DRSBoards = analysis.drsboards
+
+benergy = analysis.beam_energy
+run_number = analysis.run_number
+paths = analysis.paths
+rootdir = paths["root"]
+plotdir = paths["plots"]
+htmldir = paths["html"]
 
 file_drschannels_bad = "data/drs/badchannels.json"
 with open(file_drschannels_bad, "r") as f:
     drschannels_bad = json.load(f)
-
-DRSBoards = build_drs_boards(run=run_number)
-
-rootdir = f"results/root/Run{run_number}/"
-plotdir = f"results/plots/Run{run_number}/"
-htmldir = f"results/html/Run{run_number}/"
 
 TSmin = -90
 TSmax = -10
@@ -37,13 +43,6 @@ TSCermin = -70
 TSCermax = -50
 
 varsuffix = "DiffRelPeakTS_US"
-
-if not os.path.exists(rootdir):
-    os.makedirs(rootdir)
-if not os.path.exists(plotdir):
-    os.makedirs(plotdir)
-if not os.path.exists(htmldir):
-    os.makedirs(htmldir)
 
 
 def GetMean(hist, useMode=True):
@@ -371,7 +370,8 @@ def makeDRSPeakTSCerVSSciPlots():
 
             isQuartz = False
 
-            chan_cer = DRSBoard.get_channel_by_tower(i_tower_x, i_tower_y, isCer=True)
+            chan_cer = DRSBoard.get_channel_by_tower(
+                i_tower_x, i_tower_y, isCer=True)
             if chan_cer and chan_cer.isQuartz:
                 isQuartz = True
 
@@ -659,19 +659,7 @@ def main():
     makePlots = True
 
     if makeHists:
-        loader = CaloXDataLoader(json_file=args.json_file)
-        rdf = loader.load_rdf(run_number, args.first_event, args.last_event)
-        rdf = preProcessDRSBoards(rdf, run_number=run_number)
-
-        sel_mgr = SelectionManager(rdf, run_number)
-        rdf = (sel_mgr
-               .veto_muon_counter(TSmin=200, TSmax=700, cut=-100)
-               .apply_upstream_veto()  # If applyCut=True
-               .get_rdf())
-
-        # rdfs = OrderedDict()
-        # rdf, _ = applyPSDSelection(rdf, runNumber, applyCut=True)
-        # rdf, _ = applyCC1Selection(rdf, runNumber, applyCut=True)
+        global rdf
 
         rdf = calibrateDRSPeakTS(rdf, run_number, DRSBoards,
                                  TSminDRS=0, TSmaxDRS=1000, threshold=9.0)
