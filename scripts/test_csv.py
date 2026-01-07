@@ -28,9 +28,9 @@ def write_json(data, file_path):
 def testGetRunInfo(runNum=None):
     from utils.utils import getRunInfo
     if runNum == None:
-        from runconfig import runNumber
-        runNum = runNumber
-    runInfo = getRunInfo(runNumber)
+        from runconfig import run_number
+        runNum = run_number
+    runInfo = getRunInfo(run_number)
     print(runInfo)
 
 

@@ -1,7 +1,7 @@
 # collect all the FERS variables on the fly
 import json
-from configs.plotranges import getFERSSaturationValue
-from channels.gainvalidator import enforce_gain
+from configs.plot_ranges import getFERSSaturationValue
+from channels.gain_validator import enforce_gain
 
 
 def vectorizeFERS(rdf, fersboards):
@@ -11,14 +11,14 @@ def vectorizeFERS(rdf, fersboards):
     with indices directly
     """
     for fersboard in fersboards.values():
-        boardNo = fersboard.boardNo
+        board_no = fersboard.board_no
         for channel in fersboard:
             rdf = rdf.Define(
-                channel.GetChannelName(gain="HG"),
-                f"FERS_Board{boardNo}_energyHG[{channel.channelNo}]")
+                channel.get_channel_name(gain="HG"),
+                f"FERS_Board{board_no}_energyHG[{channel.channel_no}]")
             rdf = rdf.Define(
-                channel.GetChannelName(gain="LG"),
-                f"FERS_Board{boardNo}_energyLG[{channel.channelNo}]"
+                channel.get_channel_name(gain="LG"),
+                f"FERS_Board{board_no}_energyLG[{channel.channel_no}]"
             )
     return rdf
 
@@ -30,22 +30,22 @@ def addFERSPosXY(rdf, fersboards):
     for fersboard in fersboards.values():
         for channel in fersboard:
             rdf = rdf.Define(
-                channel.GetTowerPosName(isX=True),
-                f"{channel.iTowerX}"
+                channel.get_tower_pos_name(isX=True),
+                f"{channel.i_tower_x}"
             )
             # unit cm
             rdf = rdf.Define(
-                channel.GetRealPosName(isX=True),
-                f"{channel.iTowerX * 1.2}"
+                channel.get_real_pos_name(isX=True),
+                f"{channel.i_tower_x * 1.2}"
             )
             rdf = rdf.Define(
-                channel.GetTowerPosName(isX=False),
-                f"{channel.iTowerY}"
+                channel.get_tower_pos_name(isX=False),
+                f"{channel.i_tower_y}"
             )
             # unit cm
             rdf = rdf.Define(
-                channel.GetRealPosName(isX=False),
-                f"{channel.iTowerY * 1.6}"
+                channel.get_real_pos_name(isX=False),
+                f"{channel.i_tower_y * 1.6}"
             )
     return rdf
 
@@ -60,8 +60,8 @@ def subtractFERSPedestal(rdf, fersboards, gain="HG", file_pedestals: dict = None
 
     for fersboard in fersboards.values():
         for channel in fersboard:
-            channelName = channel.GetChannelName(gain=gain)
-            channelNamePDSub = channel.GetChannelName(
+            channelName = channel.get_channel_name(gain=gain)
+            channelNamePDSub = channel.get_channel_name(
                 gain=gain, pdsub=True)
             if f"{channelNamePDSub}" in rdf.GetColumnNames():
                 # already defined
@@ -86,10 +86,10 @@ def mixFERSHGLG(rdf, fersboards, file_HG2LG: str):
 
     for fersboard in fersboards.values():
         for channel in fersboard:
-            channelName_HG = channel.GetChannelName(gain="HG", pdsub=True)
-            channelName_LG = channel.GetChannelName(gain="LG", pdsub=True)
-            channelName_Mix = channel.GetChannelName(gain="Mix")
-            channelName_key = f"FERS_Board{fersboard.boardNo}_{channel.channelNo}"
+            channelName_HG = channel.get_channel_name(gain="HG", pdsub=True)
+            channelName_LG = channel.get_channel_name(gain="LG", pdsub=True)
+            channelName_Mix = channel.get_channel_name(gain="Mix")
+            channelName_key = f"FERS_Board{fersboard.board_no}_{channel.channel_no}"
             if f"{channelName_Mix}" in rdf.GetColumnNames():
                 # already defined
                 continue
@@ -120,14 +120,14 @@ def calibrateFERSChannels(rdf, fersboards, file_calibrations: str, gain="HG", fi
 
     for fersboard in fersboards.values():
         for channel in fersboard:
-            channelNamePDSub = channel.GetChannelName(
+            channelNamePDSub = channel.get_channel_name(
                 gain=gain, pdsub=True)
-            channelNamePDSubCal = channel.GetChannelName(
+            channelNamePDSubCal = channel.get_channel_name(
                 gain=gain, pdsub=True, calib=True)
             if f"{channelNamePDSubCal}" in rdf.GetColumnNames():
                 # already defined
                 continue
-            if str(fersboard.boardNo) in deadchannels and str(channel.channelNo) in deadchannels[str(fersboard.boardNo)]:
+            if str(fersboard.board_no) in deadchannels and str(channel.channel_no) in deadchannels[str(fersboard.board_no)]:
                 print(
                     f"\033[93mChannel {channelNamePDSub} is marked as dead. Channel Masked.\033[0m")
                 rdf = rdf.Define(channelNamePDSubCal, "0.")
@@ -153,53 +153,53 @@ def calibrateFERSChannels(rdf, fersboards, file_calibrations: str, gain="HG", fi
     return rdf
 
 
-def getFERSEnergyMax(rdf, fersboards, gain="HG"):
+def get_fers_energy_max(rdf, fersboards, gain="HG"):
     """
     Define per board max energy
     and per event max energy
     for Cer and Sci
     """
     for fersboard in fersboards.values():
-        rdf = rdf.Define(fersboard.GetEnergyMaxName(gain=gain, isCer=True),
-                         f"std::max({{{', '.join(chan.GetChannelName(gain=gain) for chan in fersboard.GetListOfChannels(isCer=True))}}})")
-        rdf = rdf.Define(fersboard.GetEnergyMaxName(gain=gain, isCer=False),
-                         f"std::max({{{', '.join(chan.GetChannelName(gain=gain) for chan in fersboard.GetListOfChannels(isCer=False))}}})")
+        rdf = rdf.Define(fersboard.get_energy_max_name(gain=gain, isCer=True),
+                         f"std::max({{{', '.join(chan.get_channel_name(gain=gain) for chan in fersboard.get_list_of_channels(isCer=True))}}})")
+        rdf = rdf.Define(fersboard.get_energy_max_name(gain=gain, isCer=False),
+                         f"std::max({{{', '.join(chan.get_channel_name(gain=gain) for chan in fersboard.get_list_of_channels(isCer=False))}}})")
 
-    rdf = rdf.Define(fersboards.GetEnergyMaxName(gain=gain, isCer=True),
-                     f"std::max({{{', '.join(fersboard.GetEnergyMaxName(gain=gain, isCer=True) for fersboard in fersboards.values())}}})")
-    rdf = rdf.Define(fersboards.GetEnergyMaxName(gain=gain, isCer=False),
-                     f"std::max({{{', '.join(fersboard.GetEnergyMaxName(gain=gain, isCer=False) for fersboard in fersboards.values())}}})")
+    rdf = rdf.Define(fersboards.get_energy_max_name(gain=gain, isCer=True),
+                     f"std::max({{{', '.join(fersboard.get_energy_max_name(gain=gain, isCer=True) for fersboard in fersboards.values())}}})")
+    rdf = rdf.Define(fersboards.get_energy_max_name(gain=gain, isCer=False),
+                     f"std::max({{{', '.join(fersboard.get_energy_max_name(gain=gain, isCer=False) for fersboard in fersboards.values())}}})")
     return rdf
 
 
-def getFERSEnergySum(rdf, fersboards, gain="HG", pdsub=False, calib=False):
+def get_fers_energy_sum(rdf, fersboards, gain="HG", pdsub=False, calib=False):
     """
     Calculate the Sci and Cer energy sum for FERS boards, per board and per event.
     """
     # per-board energy sum
     for fersboard in fersboards.values():
-        rdf = rdf.Define(fersboard.GetEnergySumName(gain=gain, isCer=True, pdsub=pdsub, calib=calib),
-                         f"({' + '.join(chan.GetChannelName(gain=gain, pdsub=pdsub, calib=calib) for chan in fersboard.GetListOfChannels(isCer=True))})")
-        rdf = rdf.Define(fersboard.GetEnergySumName(gain=gain, isCer=False, pdsub=pdsub, calib=calib),
-                         f"({' + '.join(chan.GetChannelName(gain=gain, pdsub=pdsub, calib=calib) for chan in fersboard.GetListOfChannels(isCer=False))})")
+        rdf = rdf.Define(fersboard.get_energy_sum_name(gain=gain, isCer=True, pdsub=pdsub, calib=calib),
+                         f"({' + '.join(chan.get_channel_name(gain=gain, pdsub=pdsub, calib=calib) for chan in fersboard.get_list_of_channels(isCer=True))})")
+        rdf = rdf.Define(fersboard.get_energy_sum_name(gain=gain, isCer=False, pdsub=pdsub, calib=calib),
+                         f"({' + '.join(chan.get_channel_name(gain=gain, pdsub=pdsub, calib=calib) for chan in fersboard.get_list_of_channels(isCer=False))})")
 
     # per-event energy sum
-    rdf = rdf.Define(fersboards.GetEnergySumName(gain=gain, isCer=True, pdsub=pdsub, calib=calib),
-                     f"({' + '.join(fersboard.GetEnergySumName(gain=gain, isCer=True, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
-    rdf = rdf.Define(fersboards.GetEnergySumName(gain=gain, isCer=False, pdsub=pdsub, calib=calib),
-                     f"({' + '.join(fersboard.GetEnergySumName(gain=gain, isCer=False, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
+    rdf = rdf.Define(fersboards.get_energy_sum_name(gain=gain, isCer=True, pdsub=pdsub, calib=calib),
+                     f"({' + '.join(fersboard.get_energy_sum_name(gain=gain, isCer=True, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
+    rdf = rdf.Define(fersboards.get_energy_sum_name(gain=gain, isCer=False, pdsub=pdsub, calib=calib),
+                     f"({' + '.join(fersboard.get_energy_sum_name(gain=gain, isCer=False, pdsub=pdsub, calib=calib) for fersboard in fersboards.values())})")
 
     # calculate adhoc lateral leakage correction
     # E_leak = E_{out ring} * f, f=1.0
     for cat in ["Cer", "Sci"]:
         channels_outerring = []
         for fersboard in fersboards.values():
-            for channel in fersboard.GetListOfChannels(isCer=(cat == "Cer")):
-                if abs(channel.iTowerX) >= 8 or abs(channel.iTowerY) >= 6:
+            for channel in fersboard.get_list_of_channels(isCer=(cat == "Cer")):
+                if abs(channel.i_tower_x) >= 8 or abs(channel.i_tower_y) >= 6:
                     channels_outerring.append(
-                        channel.GetChannelName(gain=gain, pdsub=pdsub, calib=calib))
+                        channel.get_channel_name(gain=gain, pdsub=pdsub, calib=calib))
 
-        name_total = fersboards.GetEnergySumName(
+        name_total = fersboards.get_energy_sum_name(
             gain=gain, isCer=(cat == "Cer"), pdsub=pdsub, calib=calib)
         name_outer = name_total + "_OuterRing"
         rdf = rdf.Define(f"{name_outer}",
@@ -215,9 +215,9 @@ def getFERSEnergyDR(rdf, fersboards, energy=0.0):
     #
     # for dual-readout calculation
     #
-    name_cer = fersboards.GetEnergySumName(
+    name_cer = fersboards.get_energy_sum_name(
         gain="Mix", isCer=True, pdsub=True, calib=True)
-    name_sci = fersboards.GetEnergySumName(
+    name_sci = fersboards.get_energy_sum_name(
         gain="Mix", isCer=False, pdsub=True, calib=True)
     name_cer_corr = name_cer + "_LeakCorr"
     name_sci_corr = name_sci + "_LeakCorr"
@@ -266,15 +266,15 @@ def getFERSEnergyWeightedCenter(rdf, fersboards, gain="HG", pdsub=False, calib=F
         x_center = "0."
         y_center = "0."
         for fersboard in fersboards.values():
-            for channel in fersboard.GetListOfChannels(isCer=(var == "Cer")):
-                channelName = channel.GetChannelName(
+            for channel in fersboard.get_list_of_channels(isCer=(var == "Cer")):
+                channelName = channel.get_channel_name(
                     gain=gain, pdsub=pdsub, calib=calib)
-                x_center += f"+ {channel.iTowerX * scaleX} * {channelName}"
-                y_center += f"+ {channel.iTowerY * scaleY} * {channelName}"
+                x_center += f"+ {channel.i_tower_x * scaleX} * {channelName}"
+                y_center += f"+ {channel.i_tower_y * scaleY} * {channelName}"
 
-        rdf = rdf.Define(fersboards.GetEnergyWeightedCenterName(gain=gain, isCer=(var == "Cer"), pdsub=pdsub, calib=calib, isX=True),
-                         f"({x_center}) / ({fersboards.GetEnergySumName(gain=gain, isCer=(var == 'Cer'), pdsub=pdsub, calib=calib)} + 1e-9)")
-        rdf = rdf.Define(fersboards.GetEnergyWeightedCenterName(gain=gain, isCer=(var == "Cer"), pdsub=pdsub, calib=calib, isX=False),
-                         f"({y_center}) / ({fersboards.GetEnergySumName(gain=gain, isCer=(var == 'Cer'), pdsub=pdsub, calib=calib)} + 1e-9)")
+        rdf = rdf.Define(fersboards.get_energy_weighted_center_name(gain=gain, isCer=(var == "Cer"), pdsub=pdsub, calib=calib, isX=True),
+                         f"({x_center}) / ({fersboards.get_energy_sum_name(gain=gain, isCer=(var == 'Cer'), pdsub=pdsub, calib=calib)} + 1e-9)")
+        rdf = rdf.Define(fersboards.get_energy_weighted_center_name(gain=gain, isCer=(var == "Cer"), pdsub=pdsub, calib=calib, isX=False),
+                         f"({y_center}) / ({fersboards.get_energy_sum_name(gain=gain, isCer=(var == 'Cer'), pdsub=pdsub, calib=calib)} + 1e-9)")
 
     return rdf

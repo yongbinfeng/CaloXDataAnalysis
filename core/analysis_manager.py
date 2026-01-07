@@ -1,15 +1,15 @@
 import ROOT
 import os
 import json
-from channels.channel_map import buildFERSBoards, buildDRSBoards
+from channels.channel_map import build_fers_boards, build_drs_boards
 from variables.fers import (
     vectorizeFERS, subtractFERSPedestal, mixFERSHGLG,
-    calibrateFERSChannels, getFERSEnergySum,
+    calibrateFERSChannels, get_fers_energy_sum,
     getFERSEnergyWeightedCenter, getFERSEnergyDR, addFERSPosXY
 )
-from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS, getDRSStats
+from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS, get_drs_stats
 from core.selection_manager import SelectionManager
-from utils.dataloader import getRunInfo
+from utils.data_loader import getRunInfo
 from utils.plot_helper import get_run_paths
 
 
@@ -25,8 +25,8 @@ class CaloXAnalysisManager:
         self.loop_count = 0
 
         self.beam_type, self.beam_energy = getRunInfo(self.run_number)
-        self.fersboards = buildFERSBoards(run=self.run_number)
-        self.drsboards = buildDRSBoards(run=self.run_number)
+        self.fersboards = build_fers_boards(run=self.run_number)
+        self.drsboards = build_drs_boards(run=self.run_number)
         self.paths = get_run_paths(self.run_number)
 
         self.tchain = None
@@ -96,7 +96,7 @@ class CaloXAnalysisManager:
         """Initializes standard baseline subtractions and vectorization."""
         if do_drs and "drs_init" not in self._steps_applied:
             self.rdf = preProcessDRSBoards(
-                self.rdf, runNumber=self.run_number, drsboards=self.drsboards)
+                self.rdf, run_number=self.run_number, drsboards=self.drsboards)
             self._steps_applied.add("drs_init")
 
         if do_fers and "fers_init" not in self._steps_applied:
@@ -144,7 +144,7 @@ class CaloXAnalysisManager:
             self._steps_applied.add("fers_pos_added")
 
         # Define basic sums and centers for the requested gain
-        self.rdf = getFERSEnergySum(
+        self.rdf = get_fers_energy_sum(
             self.rdf, self.fersboards, gain=gain, pdsub=pdsub, calib=calib)
         self.rdf = getFERSEnergyWeightedCenter(
             self.rdf, self.fersboards, gain=gain, pdsub=pdsub, calib=calib)

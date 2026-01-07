@@ -12,15 +12,15 @@ dependencies = []
 
 [project.scripts]
 # Format: command_name = "script_module_name:function_name"
-calox-dqm-hists = "scripts.makeDQMHists:main"
-calox-dqm-plots = "scripts.makeDQMPlots:main"
-calox-servicedrs = "scripts.checkServiceDRS:main"
-calox-checkmcp = "scripts.checkMCP:main"
-calox-energy-plots = "scripts.makeFERSEnergyPlots:main"
-calox-timing-plots = "scripts.makeDRSTimingPlots:main"
+calox-dqm-hists = "scripts.make_dqm_hists:main"
+calox-dqm-plots = "scripts.make_dqm_plots:main"
+calox-servicedrs = "scripts.check_service_drs:main"
+calox-checkmcp = "scripts.check_mcp:main"
+calox-energy-plots = "scripts.make_fers_energy_plots:main"
+calox-timing-plots = "scripts.make_drs_timing_plots:main"
 
 
 [tool.setuptools]
 # This treats the root-level folders as part of the 'calox' package
 # and also includes the new 'scripts' folder
-packages = ["utils", "channels", "variables", "configs", "core", "CMSPLOTS", "scripts"]
+packages = ["utils", "channels", "variables", "configs", "core", "plotting", "scripts"]

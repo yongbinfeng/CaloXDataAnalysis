@@ -1,5 +1,5 @@
-from channels.CaloXChannel import FERSBoard, DRSBoard, DRSChannel, drs_map, FERSBoards
-from utils.dataloader import IsScanRun
+from channels.calox_channel import FERSBoard, DRSBoard, DRSChannel, drs_map, FERSBoards
+from utils.data_loader import is_scan_run
 import json
 from collections import OrderedDict
 
@@ -12,238 +12,238 @@ with open(f_drstriggermap, 'r') as f:
     triggermap = json.load(f)
 
 
-def buildFERSBoards(run=316):
+def build_fers_boards(run=316):
     """
     Build a map for ixy and FERS channels for both boards.
     """
-    base_FERSBoard_6mm = FERSBoard(boardNo=-1, is6mm=True)
-    base_FERSBoard_3mm = FERSBoard(boardNo=-1, is6mm=False)
+    base_FERSBoard_6mm = FERSBoard(board_no=-1, is6mm=True)
+    base_FERSBoard_3mm = FERSBoard(board_no=-1, is6mm=False)
     fersboards = FERSBoards()
     if run == 316:
         # 5 FERS board in 316
-        fersboards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
-        fersboards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
-        fersboards["Board3"] = base_FERSBoard_6mm.copy(boardNo=3)
-        fersboards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
-        fersboards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
+        fersboards["Board1"] = base_FERSBoard_6mm.copy(board_no=1)
+        fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
+        fersboards["Board3"] = base_FERSBoard_6mm.copy(board_no=3)
+        fersboards["Board4"] = base_FERSBoard_6mm.copy(board_no=4)
+        fersboards["Board5"] = base_FERSBoard_6mm.copy(board_no=5)
 
         # positions
-        fersboards["Board1"].MoveTo(6.5, -0.5)
-        fersboards["Board2"].MoveTo(2.5, -0.5)
-        fersboards["Board3"].MoveTo(-1.5, -2.5)
-        fersboards["Board4"].MoveTo(-5.5, -0.5)
-        fersboards["Board5"].MoveTo(-9.5, -0.5)
+        fersboards["Board1"].move_to(6.5, -0.5)
+        fersboards["Board2"].move_to(2.5, -0.5)
+        fersboards["Board3"].move_to(-1.5, -2.5)
+        fersboards["Board4"].move_to(-5.5, -0.5)
+        fersboards["Board5"].move_to(-9.5, -0.5)
 
     elif run == 571:
         # 10 FERS boards in 571
-        fersboards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
-        fersboards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
-        fersboards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
-        fersboards["Board3"] = base_FERSBoard_6mm.copy(boardNo=3)
-        fersboards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
-        fersboards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
-        fersboards["Board8"] = base_FERSBoard_6mm.copy(boardNo=8)
-        fersboards["Board9"] = base_FERSBoard_6mm.copy(boardNo=9)
-        fersboards["Board10"] = base_FERSBoard_6mm.copy(boardNo=10)
-        fersboards["Board11"] = base_FERSBoard_6mm.copy(boardNo=11)
+        fersboards["Board0"] = base_FERSBoard_6mm.copy(board_no=0)
+        fersboards["Board1"] = base_FERSBoard_6mm.copy(board_no=1)
+        fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
+        fersboards["Board3"] = base_FERSBoard_6mm.copy(board_no=3)
+        fersboards["Board4"] = base_FERSBoard_6mm.copy(board_no=4)
+        fersboards["Board5"] = base_FERSBoard_6mm.copy(board_no=5)
+        fersboards["Board8"] = base_FERSBoard_6mm.copy(board_no=8)
+        fersboards["Board9"] = base_FERSBoard_6mm.copy(board_no=9)
+        fersboards["Board10"] = base_FERSBoard_6mm.copy(board_no=10)
+        fersboards["Board11"] = base_FERSBoard_6mm.copy(board_no=11)
         # fersboards["Board12"] = base_FERSBoard_6mm.copy(boardNo=12)
 
-        fersboards["Board0"].MoveTo(-13.5, 3.5)
-        fersboards["Board1"].MoveTo(-9.5, 7.5)
-        fersboards["Board2"].MoveTo(-5.5, 7.5)
-        fersboards["Board3"].MoveTo(-1.5, 9.5)
-        fersboards["Board4"].MoveTo(2.5, 7.5)
-        fersboards["Board5"].MoveTo(6.5, 7.5)
-        fersboards["Board8"].MoveTo(-9.5, -0.5)
-        fersboards["Board9"].MoveTo(-5.5, -0.5)
-        fersboards["Board10"].MoveTo(-1.5, -2.5)
-        fersboards["Board11"].MoveTo(2.5, -0.5)
-        # fersboards["Board12"].MoveTo(6.5, -0.5)
+        fersboards["Board0"].move_to(-13.5, 3.5)
+        fersboards["Board1"].move_to(-9.5, 7.5)
+        fersboards["Board2"].move_to(-5.5, 7.5)
+        fersboards["Board3"].move_to(-1.5, 9.5)
+        fersboards["Board4"].move_to(2.5, 7.5)
+        fersboards["Board5"].move_to(6.5, 7.5)
+        fersboards["Board8"].move_to(-9.5, -0.5)
+        fersboards["Board9"].move_to(-5.5, -0.5)
+        fersboards["Board10"].move_to(-1.5, -2.5)
+        fersboards["Board11"].move_to(2.5, -0.5)
+        # fersboards["Board12"].move_to(6.5, -0.5)
 
     elif run >= 583 and run < 685:
         # include 3mm FERS board in 583
-        fersboards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
-        fersboards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
-        fersboards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
-        fersboards["Board3"] = base_FERSBoard_6mm.copy(boardNo=3)
-        fersboards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
-        fersboards["Board8"] = base_FERSBoard_6mm.copy(boardNo=8)
-        fersboards["Board9"] = base_FERSBoard_6mm.copy(boardNo=9)
-        fersboards["Board10"] = base_FERSBoard_6mm.copy(boardNo=10)
-        fersboards["Board11"] = base_FERSBoard_6mm.copy(boardNo=11)
+        fersboards["Board0"] = base_FERSBoard_6mm.copy(board_no=0)
+        fersboards["Board1"] = base_FERSBoard_6mm.copy(board_no=1)
+        fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
+        fersboards["Board3"] = base_FERSBoard_6mm.copy(board_no=3)
+        fersboards["Board4"] = base_FERSBoard_6mm.copy(board_no=4)
+        fersboards["Board8"] = base_FERSBoard_6mm.copy(board_no=8)
+        fersboards["Board9"] = base_FERSBoard_6mm.copy(board_no=9)
+        fersboards["Board10"] = base_FERSBoard_6mm.copy(board_no=10)
+        fersboards["Board11"] = base_FERSBoard_6mm.copy(board_no=11)
         # fersboards["Board12"] = base_FERSBoard_3mm.copy(boardNo=12)
 
-        fersboards["Board5"] = base_FERSBoard_3mm.copy(boardNo=5)
+        fersboards["Board5"] = base_FERSBoard_3mm.copy(board_no=5)
 
-        fersboards["Board0"].MoveTo(-13.5, 3.5)
-        fersboards["Board1"].MoveTo(-9.5, 7.5)
-        fersboards["Board2"].MoveTo(-5.5, 7.5)
-        fersboards["Board3"].MoveTo(-1.5, 9.5)
-        fersboards["Board4"].MoveTo(2.5, 7.5)
-        fersboards["Board8"].MoveTo(-9.5, -0.5)
-        fersboards["Board9"].MoveTo(-5.5, -0.5)
-        fersboards["Board10"].MoveTo(-1.5, -2.5)
-        fersboards["Board11"].MoveTo(2.5, -0.5)
-        # fersboards["Board12"].MoveTo(6.5, -0.5)
-        fersboards["Board5"].MoveTo(-1.5, 1.875)
+        fersboards["Board0"].move_to(-13.5, 3.5)
+        fersboards["Board1"].move_to(-9.5, 7.5)
+        fersboards["Board2"].move_to(-5.5, 7.5)
+        fersboards["Board3"].move_to(-1.5, 9.5)
+        fersboards["Board4"].move_to(2.5, 7.5)
+        fersboards["Board8"].move_to(-9.5, -0.5)
+        fersboards["Board9"].move_to(-5.5, -0.5)
+        fersboards["Board10"].move_to(-1.5, -2.5)
+        fersboards["Board11"].move_to(2.5, -0.5)
+        # fersboards["Board12"].move_to(6.5, -0.5)
+        fersboards["Board5"].move_to(-1.5, 1.875)
 
     elif run >= 685 and run < 895:
-        fersboards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
-        fersboards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
-        fersboards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
-        fersboards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
-        fersboards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
-        fersboards["Board6"] = base_FERSBoard_6mm.copy(boardNo=6)
+        fersboards["Board0"] = base_FERSBoard_6mm.copy(board_no=0)
+        fersboards["Board1"] = base_FERSBoard_6mm.copy(board_no=1)
+        fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
+        fersboards["Board4"] = base_FERSBoard_6mm.copy(board_no=4)
+        fersboards["Board5"] = base_FERSBoard_6mm.copy(board_no=5)
+        fersboards["Board6"] = base_FERSBoard_6mm.copy(board_no=6)
 
-        fersboards["Board3"] = base_FERSBoard_3mm.copy(boardNo=3)
-        fersboards["Board7"] = base_FERSBoard_3mm.copy(boardNo=7)
+        fersboards["Board3"] = base_FERSBoard_3mm.copy(board_no=3)
+        fersboards["Board7"] = base_FERSBoard_3mm.copy(board_no=7)
 
-        fersboards["Board0"].MoveTo(-5.5, 7.5)
-        fersboards["Board1"].MoveTo(-1.5, 9.5)
-        fersboards["Board2"].MoveTo(2.5, 7.5)
-        fersboards["Board4"].MoveTo(-5.5, -0.5)
-        fersboards["Board5"].MoveTo(-1.5, -2.5)
-        fersboards["Board6"].MoveTo(2.5, -0.5)
+        fersboards["Board0"].move_to(-5.5, 7.5)
+        fersboards["Board1"].move_to(-1.5, 9.5)
+        fersboards["Board2"].move_to(2.5, 7.5)
+        fersboards["Board4"].move_to(-5.5, -0.5)
+        fersboards["Board5"].move_to(-1.5, -2.5)
+        fersboards["Board6"].move_to(2.5, -0.5)
 
-        fersboards["Board3"].MoveTo(-1.5, 1.875)
-        fersboards["Board7"].MoveTo(0.5, 1.875)
+        fersboards["Board3"].move_to(-1.5, 1.875)
+        fersboards["Board7"].move_to(0.5, 1.875)
 
     elif run >= 895 and run < 1100:
-        fersboards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
-        fersboards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
-        fersboards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
-        fersboards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
-        fersboards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
-        fersboards["Board6"] = base_FERSBoard_6mm.copy(boardNo=6)
-        fersboards["Board7"] = base_FERSBoard_6mm.copy(boardNo=7)
-        fersboards["Board8"] = base_FERSBoard_6mm.copy(boardNo=8)
-        fersboards["Board9"] = base_FERSBoard_6mm.copy(boardNo=9)
-        fersboards["Board10"] = base_FERSBoard_6mm.copy(boardNo=10)
-        fersboards["Board12"] = base_FERSBoard_6mm.copy(boardNo=12)
-        fersboards["Board13"] = base_FERSBoard_6mm.copy(boardNo=13)
+        fersboards["Board0"] = base_FERSBoard_6mm.copy(board_no=0)
+        fersboards["Board1"] = base_FERSBoard_6mm.copy(board_no=1)
+        fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
+        fersboards["Board4"] = base_FERSBoard_6mm.copy(board_no=4)
+        fersboards["Board5"] = base_FERSBoard_6mm.copy(board_no=5)
+        fersboards["Board6"] = base_FERSBoard_6mm.copy(board_no=6)
+        fersboards["Board7"] = base_FERSBoard_6mm.copy(board_no=7)
+        fersboards["Board8"] = base_FERSBoard_6mm.copy(board_no=8)
+        fersboards["Board9"] = base_FERSBoard_6mm.copy(board_no=9)
+        fersboards["Board10"] = base_FERSBoard_6mm.copy(board_no=10)
+        fersboards["Board12"] = base_FERSBoard_6mm.copy(board_no=12)
+        fersboards["Board13"] = base_FERSBoard_6mm.copy(board_no=13)
 
-        fersboards["Board3"] = base_FERSBoard_3mm.copy(boardNo=3)
-        fersboards["Board11"] = base_FERSBoard_3mm.copy(boardNo=11)
+        fersboards["Board3"] = base_FERSBoard_3mm.copy(board_no=3)
+        fersboards["Board11"] = base_FERSBoard_3mm.copy(board_no=11)
 
-        fersboards["Board0"].MoveTo(-13.5, 3.5)
-        fersboards["Board1"].MoveTo(-9.5, 7.5)
-        fersboards["Board2"].MoveTo(-5.5, 7.5)
-        fersboards["Board4"].MoveTo(-1.5, 9.5)
-        fersboards["Board5"].MoveTo(2.5, 7.5)
-        fersboards["Board6"].MoveTo(6.5, 7.5)
-        fersboards["Board7"].MoveTo(10.5, 3.5)
-        fersboards["Board8"].MoveTo(-9.5, -0.5)
-        fersboards["Board9"].MoveTo(-5.5, -0.5)
-        fersboards["Board10"].MoveTo(-1.5, -2.5)
-        fersboards["Board12"].MoveTo(2.5, -0.5)
-        fersboards["Board13"].MoveTo(6.5, -0.5)
+        fersboards["Board0"].move_to(-13.5, 3.5)
+        fersboards["Board1"].move_to(-9.5, 7.5)
+        fersboards["Board2"].move_to(-5.5, 7.5)
+        fersboards["Board4"].move_to(-1.5, 9.5)
+        fersboards["Board5"].move_to(2.5, 7.5)
+        fersboards["Board6"].move_to(6.5, 7.5)
+        fersboards["Board7"].move_to(10.5, 3.5)
+        fersboards["Board8"].move_to(-9.5, -0.5)
+        fersboards["Board9"].move_to(-5.5, -0.5)
+        fersboards["Board10"].move_to(-1.5, -2.5)
+        fersboards["Board12"].move_to(2.5, -0.5)
+        fersboards["Board13"].move_to(6.5, -0.5)
 
-        fersboards["Board3"].MoveTo(-1.5, 1.875)
-        fersboards["Board11"].MoveTo(0.5, 1.875)
+        fersboards["Board3"].move_to(-1.5, 1.875)
+        fersboards["Board11"].move_to(0.5, 1.875)
     elif run >= 1173 and run < 1327:
         # test beam
-        fersboards["Board0"] = base_FERSBoard_6mm.copy(boardNo=0)
-        fersboards["Board1"] = base_FERSBoard_6mm.copy(boardNo=1)
-        fersboards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
-        fersboards["Board3"] = base_FERSBoard_6mm.copy(boardNo=3)
-        fersboards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
-        fersboards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
-        fersboards["Board6"] = base_FERSBoard_6mm.copy(boardNo=6)
-        fersboards["Board9"] = base_FERSBoard_6mm.copy(boardNo=9)
-        fersboards["Board10"] = base_FERSBoard_6mm.copy(boardNo=10)
-        fersboards["Board11"] = base_FERSBoard_6mm.copy(boardNo=11)
-        fersboards["Board12"] = base_FERSBoard_6mm.copy(boardNo=12)
-        fersboards["Board13"] = base_FERSBoard_6mm.copy(boardNo=13)
+        fersboards["Board0"] = base_FERSBoard_6mm.copy(board_no=0)
+        fersboards["Board1"] = base_FERSBoard_6mm.copy(board_no=1)
+        fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
+        fersboards["Board3"] = base_FERSBoard_6mm.copy(board_no=3)
+        fersboards["Board4"] = base_FERSBoard_6mm.copy(board_no=4)
+        fersboards["Board5"] = base_FERSBoard_6mm.copy(board_no=5)
+        fersboards["Board6"] = base_FERSBoard_6mm.copy(board_no=6)
+        fersboards["Board9"] = base_FERSBoard_6mm.copy(board_no=9)
+        fersboards["Board10"] = base_FERSBoard_6mm.copy(board_no=10)
+        fersboards["Board11"] = base_FERSBoard_6mm.copy(board_no=11)
+        fersboards["Board12"] = base_FERSBoard_6mm.copy(board_no=12)
+        fersboards["Board13"] = base_FERSBoard_6mm.copy(board_no=13)
 
-        fersboards["Board7"] = base_FERSBoard_3mm.copy(boardNo=7)
-        fersboards["Board8"] = base_FERSBoard_3mm.copy(boardNo=8)
+        fersboards["Board7"] = base_FERSBoard_3mm.copy(board_no=7)
+        fersboards["Board8"] = base_FERSBoard_3mm.copy(board_no=8)
 
-        fersboards["Board0"].MoveTo(-13.5, 3.5)
-        fersboards["Board1"].MoveTo(-9.5, 7.5)
-        fersboards["Board2"].MoveTo(-5.5, 7.5)
-        fersboards["Board3"].MoveTo(-1.5, 9.5)
-        fersboards["Board4"].MoveTo(2.5, 7.5)
-        fersboards["Board5"].MoveTo(6.5, 7.5)
-        fersboards["Board6"].MoveTo(10.5, 3.5)
-        fersboards["Board9"].MoveTo(-9.5, -0.5)
-        fersboards["Board10"].MoveTo(-5.5, -0.5)
-        fersboards["Board11"].MoveTo(-1.5, -2.5)
-        fersboards["Board12"].MoveTo(2.5, -0.5)
-        fersboards["Board13"].MoveTo(6.5, -0.5)
+        fersboards["Board0"].move_to(-13.5, 3.5)
+        fersboards["Board1"].move_to(-9.5, 7.5)
+        fersboards["Board2"].move_to(-5.5, 7.5)
+        fersboards["Board3"].move_to(-1.5, 9.5)
+        fersboards["Board4"].move_to(2.5, 7.5)
+        fersboards["Board5"].move_to(6.5, 7.5)
+        fersboards["Board6"].move_to(10.5, 3.5)
+        fersboards["Board9"].move_to(-9.5, -0.5)
+        fersboards["Board10"].move_to(-5.5, -0.5)
+        fersboards["Board11"].move_to(-1.5, -2.5)
+        fersboards["Board12"].move_to(2.5, -0.5)
+        fersboards["Board13"].move_to(6.5, -0.5)
 
-        fersboards["Board7"].MoveTo(-1.5, 1.875)
-        fersboards["Board8"].MoveTo(0.5, 1.875)
+        fersboards["Board7"].move_to(-1.5, 1.875)
+        fersboards["Board8"].move_to(0.5, 1.875)
 
     elif run >= 1342:
-        fersboards["Board2"] = base_FERSBoard_6mm.copy(boardNo=2)
-        fersboards["Board3"] = base_FERSBoard_6mm.copy(boardNo=3)
-        fersboards["Board4"] = base_FERSBoard_6mm.copy(boardNo=4)
-        fersboards["Board5"] = base_FERSBoard_6mm.copy(boardNo=5)
-        fersboards["Board6"] = base_FERSBoard_6mm.copy(boardNo=6)
-        fersboards["Board7"] = base_FERSBoard_6mm.copy(boardNo=7)
-        fersboards["Board8"] = base_FERSBoard_6mm.copy(boardNo=8)
-        fersboards["Board11"] = base_FERSBoard_6mm.copy(boardNo=11)
-        fersboards["Board12"] = base_FERSBoard_6mm.copy(boardNo=12)
-        fersboards["Board13"] = base_FERSBoard_6mm.copy(boardNo=13)
-        fersboards["Board14"] = base_FERSBoard_6mm.copy(boardNo=14)
-        fersboards["Board15"] = base_FERSBoard_6mm.copy(boardNo=15)
+        fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
+        fersboards["Board3"] = base_FERSBoard_6mm.copy(board_no=3)
+        fersboards["Board4"] = base_FERSBoard_6mm.copy(board_no=4)
+        fersboards["Board5"] = base_FERSBoard_6mm.copy(board_no=5)
+        fersboards["Board6"] = base_FERSBoard_6mm.copy(board_no=6)
+        fersboards["Board7"] = base_FERSBoard_6mm.copy(board_no=7)
+        fersboards["Board8"] = base_FERSBoard_6mm.copy(board_no=8)
+        fersboards["Board11"] = base_FERSBoard_6mm.copy(board_no=11)
+        fersboards["Board12"] = base_FERSBoard_6mm.copy(board_no=12)
+        fersboards["Board13"] = base_FERSBoard_6mm.copy(board_no=13)
+        fersboards["Board14"] = base_FERSBoard_6mm.copy(board_no=14)
+        fersboards["Board15"] = base_FERSBoard_6mm.copy(board_no=15)
 
-        fersboards["Board9"] = base_FERSBoard_3mm.copy(boardNo=9)
-        fersboards["Board10"] = base_FERSBoard_3mm.copy(boardNo=10)
+        fersboards["Board9"] = base_FERSBoard_3mm.copy(board_no=9)
+        fersboards["Board10"] = base_FERSBoard_3mm.copy(board_no=10)
 
-        fersboards["Board2"].MoveTo(-13.5, 3.5)
-        fersboards["Board3"].MoveTo(-9.5, 7.5)
-        fersboards["Board4"].MoveTo(-5.5, 7.5)
-        fersboards["Board5"].MoveTo(-1.5, 9.5)
-        fersboards["Board6"].MoveTo(2.5, 7.5)
-        fersboards["Board7"].MoveTo(6.5, 7.5)
-        fersboards["Board8"].MoveTo(10.5, 3.5)
-        fersboards["Board11"].MoveTo(-9.5, -0.5)
-        fersboards["Board12"].MoveTo(-5.5, -0.5)
-        fersboards["Board13"].MoveTo(-1.5, -2.5)
-        fersboards["Board14"].MoveTo(2.5, -0.5)
-        fersboards["Board15"].MoveTo(6.5, -0.5)
+        fersboards["Board2"].move_to(-13.5, 3.5)
+        fersboards["Board3"].move_to(-9.5, 7.5)
+        fersboards["Board4"].move_to(-5.5, 7.5)
+        fersboards["Board5"].move_to(-1.5, 9.5)
+        fersboards["Board6"].move_to(2.5, 7.5)
+        fersboards["Board7"].move_to(6.5, 7.5)
+        fersboards["Board8"].move_to(10.5, 3.5)
+        fersboards["Board11"].move_to(-9.5, -0.5)
+        fersboards["Board12"].move_to(-5.5, -0.5)
+        fersboards["Board13"].move_to(-1.5, -2.5)
+        fersboards["Board14"].move_to(2.5, -0.5)
+        fersboards["Board15"].move_to(6.5, -0.5)
 
         # 3mm
-        fersboards["Board9"].MoveTo(-1.5, 1.875)
-        fersboards["Board10"].MoveTo(0.5, 1.875)
+        fersboards["Board9"].move_to(-1.5, 1.875)
+        fersboards["Board10"].move_to(0.5, 1.875)
 
     else:
         raise ValueError(f"Unsupported run number {run} for FERS boards.")
-    updateQuartzChannels(fersboards)
+    update_quartz_channels(fersboards)
     return fersboards
 
 
-def buildDRSBoards(run=316):
+def build_drs_boards(run=316):
     """
     Build a map for ixy and DRS channels.
     DRS boards are the same for all runs for now.
     """
-    base_DRSBoard_6mm = DRSBoard(boardNo=-1, is6mm=True)
-    base_DRSBoard_3mm = DRSBoard(boardNo=-1, is6mm=False)
+    base_DRSBoard_6mm = DRSBoard(board_no=-1, is6mm=True)
+    base_DRSBoard_3mm = DRSBoard(board_no=-1, is6mm=False)
     DRSBoards = {}
-    if IsScanRun(run):
+    if is_scan_run(run):
         # no DRS boards in scan runs
         # only FERS
         return DRSBoards
 
     if run < 685:
-        DRSBoards["Board2"] = base_DRSBoard_6mm.copy(boardNo=2)
-        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 5)
-        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 6)
-        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 7)
-        DRSBoards["Board2"].MoveTo(-1.5, -2.5)
-        channel = DRSBoards["Board2"].GetChannelByGroupChannel(3, 4)
-        channel.iTowerX = 1.5
-        channel.iTowerY = -9.5
+        DRSBoards["Board2"] = base_DRSBoard_6mm.copy(board_no=2)
+        DRSBoards["Board2"].remove_channel_by_group_channel(3, 5)
+        DRSBoards["Board2"].remove_channel_by_group_channel(3, 6)
+        DRSBoards["Board2"].remove_channel_by_group_channel(3, 7)
+        DRSBoards["Board2"].move_to(-1.5, -2.5)
+        channel = DRSBoards["Board2"].get_channel_by_group_channel(3, 4)
+        channel.i_tower_x = 1.5
+        channel.i_tower_y = -9.5
         channel.isCer = False
 
-        DRSBoards["Board0"] = base_DRSBoard_6mm.copy(boardNo=0)
-        DRSBoards["Board0"].MoveTo(-1.5, -6.5)
-        channels = DRSBoards["Board0"].GetListOfChannels()
+        DRSBoards["Board0"] = base_DRSBoard_6mm.copy(board_no=0)
+        DRSBoards["Board0"].move_to(-1.5, -6.5)
+        channels = DRSBoards["Board0"].get_list_of_channels()
         for channel in channels:
             if channel.isCer:
-                channel.iTowerY += 1
+                channel.i_tower_y += 1
                 channel.isCer = False
             else:
                 channel.isCer = True
@@ -252,100 +252,100 @@ def buildDRSBoards(run=316):
         prechannel_isCer = 0
         for group in [3, 2]:
             for channel in [7, 6, 5, 4, 3, 2, 1, 0]:
-                channel = DRSBoards["Board0"].GetChannelByGroupChannel(
+                channel = DRSBoards["Board0"].get_channel_by_group_channel(
                     group, channel)
                 temp_channel = channel.__copy__()
-                channel.iTowerX = prechannel_towerX
-                channel.iTowerY = prechannel_towerY
+                channel.i_tower_x = prechannel_towerX
+                channel.i_tower_y = prechannel_towerY
                 channel.isCer = prechannel_isCer
 
-                prechannel_towerX = temp_channel.iTowerX
-                prechannel_towerY = temp_channel.iTowerY
+                prechannel_towerX = temp_channel.i_tower_x
+                prechannel_towerY = temp_channel.i_tower_y
                 prechannel_isCer = temp_channel.isCer
-        channel = DRSBoards["Board0"].GetChannelByGroupChannel(1, 7)
-        channel.iTowerX = prechannel_towerX
-        channel.iTowerY = prechannel_towerY
+        channel = DRSBoards["Board0"].get_channel_by_group_channel(1, 7)
+        channel.i_tower_x = prechannel_towerX
+        channel.i_tower_y = prechannel_towerY
         channel.isCer = prechannel_isCer
-        DRSBoards["Board0"].RemoveChannelByGroupChannel(3, 7)
+        DRSBoards["Board0"].remove_channel_by_group_channel(3, 7)
 
     elif run >= 685 and run < 1003:
-        DRSBoards["Board1"] = base_DRSBoard_6mm.copy(boardNo=1)
-        DRSBoards["Board2"] = base_DRSBoard_6mm.copy(boardNo=2)
+        DRSBoards["Board1"] = base_DRSBoard_6mm.copy(board_no=1)
+        DRSBoards["Board2"] = base_DRSBoard_6mm.copy(board_no=2)
 
         # remove channels that are not used
-        DRSBoards["Board1"].MoveTo(-1.5, 9.5)
-        DRSBoards["Board2"].MoveTo(-1.5, -6.5)
+        DRSBoards["Board1"].move_to(-1.5, 9.5)
+        DRSBoards["Board2"].move_to(-1.5, -6.5)
         # no more cables..
-        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 4)
-        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 5)
-        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 6)
-        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 7)
+        DRSBoards["Board2"].remove_channel_by_group_channel(3, 4)
+        DRSBoards["Board2"].remove_channel_by_group_channel(3, 5)
+        DRSBoards["Board2"].remove_channel_by_group_channel(3, 6)
+        DRSBoards["Board2"].remove_channel_by_group_channel(3, 7)
     elif run >= 1003 and run < 1100:
         # 3 DRS boards in 1003
-        DRSBoards["Board1"] = base_DRSBoard_6mm.copy(boardNo=1)
-        DRSBoards["Board2"] = base_DRSBoard_6mm.copy(boardNo=2)
-        DRSBoards["Board3"] = base_DRSBoard_6mm.copy(boardNo=3)
+        DRSBoards["Board1"] = base_DRSBoard_6mm.copy(board_no=1)
+        DRSBoards["Board2"] = base_DRSBoard_6mm.copy(board_no=2)
+        DRSBoards["Board3"] = base_DRSBoard_6mm.copy(board_no=3)
 
-        DRSBoards["Board1"].MoveTo(-1.5, 9.5)
-        DRSBoards["Board2"].MoveTo(-1.5, 5.5)
-        DRSBoards["Board3"].MoveTo(-1.5, -6.5)
+        DRSBoards["Board1"].move_to(-1.5, 9.5)
+        DRSBoards["Board2"].move_to(-1.5, 5.5)
+        DRSBoards["Board3"].move_to(-1.5, -6.5)
         # all channels are connected.
         # no need to remove
         if run >= 1033:
             # two amplified channels in board 1
-            channel = DRSBoards["Board1"].GetChannelByGroupChannel(0, 0)
-            channel.isAmplified = True
-            channel = DRSBoards["Board1"].GetChannelByGroupChannel(0, 1)
-            channel.isAmplified = True
+            channel = DRSBoards["Board1"].get_channel_by_group_channel(0, 0)
+            channel.is_amplified = True
+            channel = DRSBoards["Board1"].get_channel_by_group_channel(0, 1)
+            channel.is_amplified = True
     elif run >= 1173 and run < 1327:
         # test beam
-        DRSBoards["Board0"] = base_DRSBoard_3mm.copy(boardNo=0)
-        DRSBoards["Board1"] = base_DRSBoard_3mm.copy(boardNo=1)
-        DRSBoards["Board2"] = base_DRSBoard_3mm.copy(boardNo=2)
-        DRSBoards["Board3"] = base_DRSBoard_3mm.copy(boardNo=3)
+        DRSBoards["Board0"] = base_DRSBoard_3mm.copy(board_no=0)
+        DRSBoards["Board1"] = base_DRSBoard_3mm.copy(board_no=1)
+        DRSBoards["Board2"] = base_DRSBoard_3mm.copy(board_no=2)
+        DRSBoards["Board3"] = base_DRSBoard_3mm.copy(board_no=3)
 
-        DRSBoards["Board0"].MoveTo(-1.5, 1.875)
-        DRSBoards["Board1"].MoveTo(-1.5, -0.125)
-        DRSBoards["Board2"].MoveTo(0.5, 1.875)
-        DRSBoards["Board3"].MoveTo(0.5, -0.125)
+        DRSBoards["Board0"].move_to(-1.5, 1.875)
+        DRSBoards["Board1"].move_to(-1.5, -0.125)
+        DRSBoards["Board2"].move_to(0.5, 1.875)
+        DRSBoards["Board3"].move_to(0.5, -0.125)
 
-        DRSBoards["Board4"] = buildDRSBoardTestBeam(boardNo=4)
-        DRSBoards["Board5"] = buildDRSBoardTestBeam(boardNo=5)
-        DRSBoards["Board6"] = buildDRSBoardTestBeam(boardNo=6)
+        DRSBoards["Board4"] = buildDRSBoardTestBeam(board_no=4)
+        DRSBoards["Board5"] = buildDRSBoardTestBeam(board_no=5)
+        DRSBoards["Board6"] = buildDRSBoardTestBeam(board_no=6)
     elif run >= 1342:
         # september 2nd test beam channel maps
-        DRSBoards["Board0"] = base_DRSBoard_3mm.copy(boardNo=0)
-        DRSBoards["Board1"] = base_DRSBoard_3mm.copy(boardNo=1)
-        DRSBoards["Board2"] = base_DRSBoard_3mm.copy(boardNo=2)
-        DRSBoards["Board3"] = base_DRSBoard_3mm.copy(boardNo=3)
+        DRSBoards["Board0"] = base_DRSBoard_3mm.copy(board_no=0)
+        DRSBoards["Board1"] = base_DRSBoard_3mm.copy(board_no=1)
+        DRSBoards["Board2"] = base_DRSBoard_3mm.copy(board_no=2)
+        DRSBoards["Board3"] = base_DRSBoard_3mm.copy(board_no=3)
 
-        DRSBoards["Board0"].MoveTo(-1.5, 1.875)
-        DRSBoards["Board1"].MoveTo(-1.5, -0.125)
-        DRSBoards["Board2"].MoveTo(0.5, 1.875)
-        DRSBoards["Board3"].MoveTo(0.5, -0.125)
+        DRSBoards["Board0"].move_to(-1.5, 1.875)
+        DRSBoards["Board1"].move_to(-1.5, -0.125)
+        DRSBoards["Board2"].move_to(0.5, 1.875)
+        DRSBoards["Board3"].move_to(0.5, -0.125)
         # channels for MCP
-        DRSBoards["Board0"].RemoveChannelByGroupChannel(3, 6)
-        DRSBoards["Board0"].RemoveChannelByGroupChannel(3, 7)
-        DRSBoards["Board1"].RemoveChannelByGroupChannel(3, 6)
-        DRSBoards["Board1"].RemoveChannelByGroupChannel(3, 7)
-        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 6)
-        DRSBoards["Board2"].RemoveChannelByGroupChannel(3, 7)
-        DRSBoards["Board3"].RemoveChannelByGroupChannel(3, 6)
-        DRSBoards["Board3"].RemoveChannelByGroupChannel(3, 7)
+        DRSBoards["Board0"].remove_channel_by_group_channel(3, 6)
+        DRSBoards["Board0"].remove_channel_by_group_channel(3, 7)
+        DRSBoards["Board1"].remove_channel_by_group_channel(3, 6)
+        DRSBoards["Board1"].remove_channel_by_group_channel(3, 7)
+        DRSBoards["Board2"].remove_channel_by_group_channel(3, 6)
+        DRSBoards["Board2"].remove_channel_by_group_channel(3, 7)
+        DRSBoards["Board3"].remove_channel_by_group_channel(3, 6)
+        DRSBoards["Board3"].remove_channel_by_group_channel(3, 7)
 
-        DRSBoards["Board4"] = buildDRSBoardTestBeamSep(boardNo=4)
-        DRSBoards["Board5"] = buildDRSBoardTestBeamSep(boardNo=5)
-        DRSBoards["Board6"] = buildDRSBoardTestBeamSep(boardNo=6)
+        DRSBoards["Board4"] = buildDRSBoardTestBeamSep(board_no=4)
+        DRSBoards["Board5"] = buildDRSBoardTestBeamSep(board_no=5)
+        DRSBoards["Board6"] = buildDRSBoardTestBeamSep(board_no=6)
 
     else:
         raise ValueError(f"Unsupported run number {run} for DRS boards.")
-    updateQuartzChannels(DRSBoards)
+    update_quartz_channels(DRSBoards)
     return DRSBoards
 
 
-def buildDRSBoardTestBeam(boardNo=4):
+def buildDRSBoardTestBeam(board_no=4):
     # hacky way to build the confusing DRS mapping for the test beam
-    if boardNo == 4:
+    if board_no == 4:
         channels_DRS = []
         for ix in range(0, 4):
             for iy in range(0, 8):
@@ -355,37 +355,37 @@ def buildDRSBoardTestBeam(boardNo=4):
                 else:
                     base_iX = -1.5
                     base_iY = 5.5 + 4
-                channelNo = drs_map[ix, iy]
-                groupNo = (channelNo // 8)
-                chanNo = (channelNo % 8)
+                channel_no = drs_map[ix, iy]
+                group_no = (channel_no // 8)
+                chan_no = (channel_no % 8)
                 isCer = True
                 channel = DRSChannel(base_iX + ix, base_iY - iy, isCer,
-                                     chanNo, groupNo, boardNo, is6mm=True, isAmplified=False)
+                                     chan_no, group_no, board_no, is6mm=True, is_amplified=False)
                 channels_DRS.append(channel)
-            drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
-            drsboard.RemoveChannelByGroupChannel(3, 7)
-            drsboard.RemoveChannelByGroupChannel(3, 6)
+            drsboard = DRSBoard(board_no=board_no, channels=channels_DRS)
+            drsboard.remove_channel_by_group_channel(3, 7)
+            drsboard.remove_channel_by_group_channel(3, 6)
         return drsboard
-    elif boardNo == 5:
+    elif board_no == 5:
         channels_DRS = []
         # two remnant channels
         channel = DRSChannel(-0.5, 2.5, True, 0, 0,
-                             boardNo, is6mm=True, isAmplified=False)
+                             board_no, is6mm=True, is_amplified=False)
         channels_DRS.append(channel)
         channel = DRSChannel(-1.5, 2.5, True, 1, 0,
-                             boardNo, is6mm=True, isAmplified=False)
+                             board_no, is6mm=True, is_amplified=False)
         channels_DRS.append(channel)
 
         for ix in range(0, 4):
             for iy in range(0, 4):
                 base_iX = 2.5
                 base_iY = 3.5
-                channelNo = drs_map[ix, iy] + 2
-                groupNo = (channelNo // 8)
-                chanNo = (channelNo % 8)
+                channel_no = drs_map[ix, iy] + 2
+                group_no = (channel_no // 8)
+                chan_no = (channel_no % 8)
                 isCer = True
                 channel = DRSChannel(base_iX + ix, base_iY - iy, isCer,
-                                     chanNo, groupNo, boardNo, is6mm=True, isAmplified=False)
+                                     chan_no, group_no, board_no, is6mm=True, is_amplified=False)
                 channels_DRS.append(channel)
 
         for ix in range(0, 4):
@@ -395,32 +395,32 @@ def buildDRSBoardTestBeam(boardNo=4):
                     base_iY = -1.5
                 else:
                     base_iY = -3.5
-                channelNo = drs_map[ix, iy] + 2
-                groupNo = (channelNo // 8)
-                chanNo = (channelNo % 8)
+                channel_no = drs_map[ix, iy] + 2
+                group_no = (channel_no // 8)
+                chan_no = (channel_no % 8)
                 isCer = True
                 channel = DRSChannel(base_iX + (ix % 2), base_iY + ix//2, isCer,
-                                     chanNo, groupNo, boardNo, is6mm=True, isAmplified=False)
+                                     chan_no, group_no, board_no, is6mm=True, is_amplified=False)
                 channels_DRS.append(channel)
 
         channel = DRSChannel(1.5, -2.5, True, 2, 3,
-                             boardNo, is6mm=True, isAmplified=False)
+                             board_no, is6mm=True, is_amplified=False)
         channels_DRS.append(channel)
         channel = DRSChannel(0.5, -2.5, True, 3, 3,
-                             boardNo, is6mm=True, isAmplified=False)
+                             board_no, is6mm=True, is_amplified=False)
         channels_DRS.append(channel)
         channel = DRSChannel(-0.5, -2.5, True, 4, 3,
-                             boardNo, is6mm=True, isAmplified=False)
+                             board_no, is6mm=True, is_amplified=False)
         channels_DRS.append(channel)
         channel = DRSChannel(-1.5, -2.5, True, 5, 3,
-                             boardNo, is6mm=True, isAmplified=False)
+                             board_no, is6mm=True, is_amplified=False)
         channels_DRS.append(channel)
 
-        drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
+        drsboard = DRSBoard(board_no=board_no, channels=channels_DRS)
 
         return drsboard
 
-    elif boardNo == 6:
+    elif board_no == 6:
         base_iX_R = -1.5
         base_iY_R = -2.5
         base_iX_T = 2.5
@@ -450,18 +450,18 @@ def buildDRSBoardTestBeam(boardNo=4):
         }
         channels_DRS = []
 
-        for (iTowerX, iTowerY), (groupNo, chanNo) in maps_board6.items():
+        for (i_tower_x, i_tower_y), (group_no, chan_no) in maps_board6.items():
             isCer = True
-            channel = DRSChannel(iTowerX, iTowerY, isCer, chanNo,
-                                 groupNo, boardNo, is6mm=True, isAmplified=False)
+            channel = DRSChannel(i_tower_x, i_tower_y, isCer, chan_no,
+                                 group_no, board_no, is6mm=True, is_amplified=False)
             channels_DRS.append(channel)
 
-        drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
+        drsboard = DRSBoard(board_no=board_no, channels=channels_DRS)
         return drsboard
 
 
-def buildDRSBoardTestBeamSep(boardNo=4):
-    if boardNo == 4:
+def buildDRSBoardTestBeamSep(board_no=4):
+    if board_no == 4:
         # top left
         base_iX = -1.5
         base_iY = -2.5
@@ -501,29 +501,29 @@ def buildDRSBoardTestBeamSep(boardNo=4):
 
         channels_DRS = []
 
-        for (iTowerX, iTowerY), (groupNo, chanNo) in maps_board4.items():
+        for (i_tower_x, i_tower_y), (group_no, chan_no) in maps_board4.items():
             isCer = True
-            channel = DRSChannel(iTowerX, iTowerY, isCer, chanNo,
-                                 groupNo, boardNo, is6mm=True, isAmplified=True)
+            channel = DRSChannel(i_tower_x, i_tower_y, isCer, chan_no,
+                                 group_no, board_no, is6mm=True, is_amplified=True)
             channels_DRS.append(channel)
 
         # add four channels for Sci
         channel = DRSChannel(0.5, -5.5, False, 0, 2,
-                             boardNo, is6mm=True, isAmplified=True)
+                             board_no, is6mm=True, is_amplified=True)
         channels_DRS.append(channel)
-        channel = DRSChannel(-0.5, -5.5, False, 1, 2, boardNo,
-                             is6mm=True, isAmplified=True)
+        channel = DRSChannel(-0.5, -5.5, False, 1, 2, board_no,
+                             is6mm=True, is_amplified=True)
         channels_DRS.append(channel)
-        channel = DRSChannel(0.5, -8.5, False, 4, 3, boardNo,
-                             is6mm=True, isAmplified=True)
+        channel = DRSChannel(0.5, -8.5, False, 4, 3, board_no,
+                             is6mm=True, is_amplified=True)
         channels_DRS.append(channel)
-        channel = DRSChannel(-0.5, -8.5, False, 5, 3, boardNo,
-                             is6mm=True, isAmplified=True)
+        channel = DRSChannel(-0.5, -8.5, False, 5, 3, board_no,
+                             is6mm=True, is_amplified=True)
         channels_DRS.append(channel)
 
-        drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
+        drsboard = DRSBoard(board_no=board_no, channels=channels_DRS)
 
-    elif boardNo == 6:
+    elif board_no == 6:
         # top middle
         base_iX = -1.5
         base_iY = 9.5
@@ -564,29 +564,29 @@ def buildDRSBoardTestBeamSep(boardNo=4):
 
         channels_DRS = []
 
-        for (iTowerX, iTowerY), (groupNo, chanNo) in maps_board6.items():
+        for (i_tower_x, i_tower_y), (group_no, chan_no) in maps_board6.items():
             isCer = True
-            channel = DRSChannel(iTowerX, iTowerY, isCer, chanNo,
-                                 groupNo, boardNo, is6mm=True, isAmplified=True)
+            channel = DRSChannel(i_tower_x, i_tower_y, isCer, chan_no,
+                                 group_no, board_no, is6mm=True, is_amplified=True)
             channels_DRS.append(channel)
 
         # add four channels for Sci
-        channel = DRSChannel(0.5, 8.5, False, 4, 0, boardNo,
-                             is6mm=True, isAmplified=True)
+        channel = DRSChannel(0.5, 8.5, False, 4, 0, board_no,
+                             is6mm=True, is_amplified=True)
         channels_DRS.append(channel)
-        channel = DRSChannel(-0.5, 8.5, False, 5, 0, boardNo,
-                             is6mm=True, isAmplified=True)
+        channel = DRSChannel(-0.5, 8.5, False, 5, 0, board_no,
+                             is6mm=True, is_amplified=True)
         channels_DRS.append(channel)
-        channel = DRSChannel(0.5, 5.5, False, 0, 2, boardNo,
-                             is6mm=True, isAmplified=True)
+        channel = DRSChannel(0.5, 5.5, False, 0, 2, board_no,
+                             is6mm=True, is_amplified=True)
         channels_DRS.append(channel)
-        channel = DRSChannel(-0.5, 5.5, False, 1, 2, boardNo,
-                             is6mm=True, isAmplified=True)
+        channel = DRSChannel(-0.5, 5.5, False, 1, 2, board_no,
+                             is6mm=True, is_amplified=True)
         channels_DRS.append(channel)
 
-        drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
+        drsboard = DRSBoard(board_no=board_no, channels=channels_DRS)
 
-    elif boardNo == 5:
+    elif board_no == 5:
         maps_board5 = {
             # iTowerX, iTowerY: (groupNo, chanNo)
             # right
@@ -618,10 +618,10 @@ def buildDRSBoardTestBeamSep(boardNo=4):
         }
         channels_DRS = []
 
-        for (iTowerX, iTowerY), (groupNo, chanNo) in maps_board5.items():
+        for (i_tower_x, i_tower_y), (group_no, chan_no) in maps_board5.items():
             isCer = True
-            channel = DRSChannel(iTowerX, iTowerY, isCer, chanNo,
-                                 groupNo, boardNo, is6mm=True, isAmplified=True)
+            channel = DRSChannel(i_tower_x, i_tower_y, isCer, chan_no,
+                                 group_no, board_no, is6mm=True, is_amplified=True)
             channels_DRS.append(channel)
 
         # 8 channels for 3mm Cer and Sci
@@ -639,25 +639,25 @@ def buildDRSBoardTestBeamSep(boardNo=4):
             ((0.5, -1.875), (3, 6, isCer)),
             ((0.5, -1.875), (3, 7, not isCer)),
         ]
-        for (iTowerX, iTowerY), (groupNo, chanNo, isCer) in maps_board5_3mm:
-            channel = DRSChannel(iTowerX, iTowerY, isCer, chanNo,
-                                 groupNo, boardNo, is6mm=False, isAmplified=True, isQuartz=isCer)
+        for (i_tower_x, i_tower_y), (group_no, chan_no, isCer) in maps_board5_3mm:
+            channel = DRSChannel(i_tower_x, i_tower_y, isCer, chan_no,
+                                 group_no, board_no, is6mm=False, is_amplified=True, isQuartz=isCer)
             channels_DRS.append(channel)
 
-        drsboard = DRSBoard(boardNo=boardNo, channels=channels_DRS)
+        drsboard = DRSBoard(board_no=board_no, channels=channels_DRS)
 
     else:
-        raise ValueError(f"Unsupported board number {boardNo} for test beam.")
+        raise ValueError(f"Unsupported board number {board_no} for test beam.")
 
     return drsboard
 
 
-def buildTimeReferenceChannels(run=316):
+def build_time_reference_channels(run=316):
     """
     Returns a list of time reference channels.
     """
     time_reference_channels = []
-    if IsScanRun(run):
+    if is_scan_run(run):
         # no time reference channels in scan runs
         # since no drs boards
         return time_reference_channels
@@ -683,12 +683,12 @@ def buildTimeReferenceChannels(run=316):
     return time_reference_channels
 
 
-def buildHodoTriggerChannels(run=316):
+def build_hodo_trigger_channels(run=316):
     """
     Returns a list of hodoscope trigger channels.
     """
     hodo_trigger_channels = []
-    if IsScanRun(run):
+    if is_scan_run(run):
         # no hodoscope trigger channels in scan runs
         # since no drs boards
         return hodo_trigger_channels
@@ -706,12 +706,12 @@ def buildHodoTriggerChannels(run=316):
     return hodo_trigger_channels
 
 
-def buildHodoPosChannels(run=316):
+def build_hodo_pos_channels(run=316):
     """
     Returns a dictionary containing the hodoscope channels for the position measurements
     """
     hodoscope_channels = {}
-    if IsScanRun(run):
+    if is_scan_run(run):
         # no hodoscope position channels in scan runs
         # since no drs boards
         return hodoscope_channels
@@ -812,7 +812,7 @@ def findDRSTriggerMap(channel, run=1040):
         return triggermap[str(run)][result]
 
 
-def getUpstreamVetoChannel(run=1184):
+def get_upstream_veto_channel(run=1184):
     if run < 1183:
         return None
     elif run < 1327:
@@ -821,7 +821,7 @@ def getUpstreamVetoChannel(run=1184):
         return "DRS_Board7_Group1_Channel6"
 
 
-def getDownStreamMuonChannel(run=1184):
+def get_downstream_muon_channel(run=1184):
     if run < 1183:
         return None
     elif run < 1327:
@@ -839,7 +839,7 @@ def getDownStreamTTUMuonChannel(run=1184):
         return "DRS_Board7_Group2_Channel4"
 
 
-def getPreShowerChannel(run=1184):
+def get_pre_shower_channel(run=1184):
     """
     Returns the pre-shower channel.
     """
@@ -851,7 +851,7 @@ def getPreShowerChannel(run=1184):
         return "DRS_Board7_Group1_Channel1"
 
 
-def getCerenkovCounters(run=1184):
+def get_cerenkov_counters(run=1184):
     """
     Returns a list of Cerenkov counter channels.
     """
@@ -872,7 +872,7 @@ def getCerenkovCounters(run=1184):
         ]
 
 
-def getMCPChannels(run=1184):
+def get_mcp_channels(run=1184):
     """
     Returns a list of MCP channels.
     """
@@ -896,7 +896,7 @@ def getMCPChannels(run=1184):
         }
 
 
-def getServiceDRSChannels(run=1184):
+def get_service_drs_channels(run=1184):
     """
     Returns a list of service DRS channels.
     """
@@ -946,7 +946,7 @@ def getServiceDRSChannels(run=1184):
         }
 
 
-def getQuartzChannelList():
+def get_quartz_channel_list():
     channels_quartz = []
     # fmt off
     # 3mm region
@@ -983,22 +983,22 @@ def getQuartzChannelList():
     return channels_quartz
 
 
-def updateQuartzChannels(boards):
+def update_quartz_channels(boards):
     """
     Update the quartz channels to match the FERS/DRS board positions.
     """
-    channels_quartz = getQuartzChannelList()
+    channels_quartz = get_quartz_channel_list()
     for board in boards.values():
-        for channel in board.GetListOfChannels(isCer=True):
-            if (channel.iTowerX, channel.iTowerY) in channels_quartz:
+        for channel in board.get_list_of_channels(isCer=True):
+            if (channel.i_tower_x, channel.i_tower_y) in channels_quartz:
                 channel.isQuartz = True
 
 
 if __name__ == "__main__":
     # Example usage
     run_number = 583
-    fers_boards = buildFERSBoards(run=run_number)
-    drs_boards = buildDRSBoards(run=run_number)
+    fers_boards = build_fers_boards(run=run_number)
+    drs_boards = build_drs_boards(run=run_number)
 
     print("FERS Boards:")
     for board_name, board in fers_boards.items():
@@ -1009,6 +1009,6 @@ if __name__ == "__main__":
         print(f"{board_name}: {board}")
 
     print("\nHodoscope Position Channels:")
-    hodo_channels = buildHodoPosChannels(run=run_number)
+    hodo_channels = build_hodo_pos_channels(run=run_number)
     for hodo_type, channels in hodo_channels.items():
         print(f"{hodo_type}: {channels}")

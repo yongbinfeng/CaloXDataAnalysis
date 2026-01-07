@@ -2,34 +2,34 @@ import os
 import ROOT
 import json
 from collections import OrderedDict
-from channels.channel_map import buildFERSBoards, buildDRSBoards, getMCPChannels
-from utils.dataloader import CaloXDataLoader, getRunInfo
+from channels.channel_map import build_fers_boards, build_drs_boards, get_mcp_channels
+from utils.data_loader import CaloXDataLoader, getRunInfo
 from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS
 from utils.html_generator import generate_html
 from selections.selections import SelectionManager
 from utils.parser import get_args
-from CMSPLOTS.myFunction import DrawHistos, LHistos2Hist
+from cmsplots.my_function import DrawHistos, LHistos2Hist
 from utils.timing import auto_timer
 from utils.root_setup import setup_root
-from utils.utils import number2string
+from utils.utils import number_to_string
 
 auto_timer("Total Execution Time")
 
 setup_root(n_threads=10, batch_mode=True, load_functions=True)
 
 args = get_args()
-runNumber = args.run
-btype, benergy = getRunInfo(runNumber)
+run_number = args.run
+btype, benergy = getRunInfo(run_number)
 
 file_drschannels_bad = "data/drs/badchannels.json"
 with open(file_drschannels_bad, "r") as f:
     drschannels_bad = json.load(f)
 
-DRSBoards = buildDRSBoards(run=runNumber)
+DRSBoards = build_drs_boards(run=run_number)
 
-rootdir = f"results/root/Run{runNumber}/"
-plotdir = f"results/plots/Run{runNumber}/"
-htmldir = f"results/html/Run{runNumber}/"
+rootdir = f"results/root/Run{run_number}/"
+plotdir = f"results/plots/Run{run_number}/"
+htmldir = f"results/html/Run{run_number}/"
 
 TSmin = -90
 TSmax = -10
@@ -68,23 +68,23 @@ def checkDRSPeakTS(rdf):
     channelnames_sci = []
 
     for _, DRSBoard in DRSBoards.items():
-        boardNo = DRSBoard.boardNo
-        if boardNo > 3:
+        board_no = DRSBoard.board_no
+        if board_no > 3:
             continue
-        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
-            sTowerX = number2string(iTowerX)
-            sTowerY = number2string(iTowerY)
+        for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
+            sTowerX = number_to_string(i_tower_x)
+            sTowerY = number_to_string(i_tower_y)
 
             channelNames = {}
             for var in ["Cer", "Sci"]:
-                chan_DRS = DRSBoard.GetChannelByTower(
-                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                chan_DRS = DRSBoard.get_channel_by_tower(
+                    i_tower_x, i_tower_y, isCer=(var == "Cer"))
                 if chan_DRS is None:
                     print(
-                        f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
+                        f"Warning: DRS Channel not found for Board{board_no}, Tower({sTowerX}, {sTowerY}), {var}")
                     continue
 
-                channelName = chan_DRS.GetChannelName(blsub=False)
+                channelName = chan_DRS.get_channel_name(blsub=False)
                 if channelName in drschannels_bad:
                     print(
                         f"Warning: DRS Channel {channelName} is marked as bad channel, skipping...")
@@ -93,7 +93,7 @@ def checkDRSPeakTS(rdf):
 
                 h1_DRSPeakTS = rdf.Histo1D((
                     f"hist_DRSPeakTS_{var}_{sTowerX}_{sTowerY}",
-                    f"DRS Peak TS for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var};Peak TS;Counts",
+                    f"DRS Peak TS for Board{board_no}, Tower({sTowerX}, {sTowerY}), {var};Peak TS;Counts",
                     TSmax - TSmin, TSmin, TSmax),
                     f"{channelName}_{varsuffix}"
                 )
@@ -111,12 +111,12 @@ def checkDRSPeakTS(rdf):
 
             if len(channelNames) < 2:
                 print(
-                    f"Warning: Not enough good channels found for Board{boardNo}, Tower({sTowerX}, {sTowerY})")
+                    f"Warning: Not enough good channels found for Board{board_no}, Tower({sTowerX}, {sTowerY})")
                 continue
 
             h2_DRSPeak_Cer_VS_Sci = rdf.Histo2D((
                 f"hist_DRSPeakTS_Cer_VS_Sci_{sTowerX}_{sTowerY}",
-                f"DRS Peak TS - CER VS SCI for Board{boardNo}, Tower({sTowerX}, {sTowerY});SCI Peak TS;CER Peak TS",
+                f"DRS Peak TS - CER VS SCI for Board{board_no}, Tower({sTowerX}, {sTowerY});SCI Peak TS;CER Peak TS",
                 TSmax - TSmin, TSmin, TSmax, TSmax - TSmin, TSmin, TSmax),
                 f'{channelNames["Sci"]}_{varsuffix}',
                 f'{channelNames["Cer"]}_{varsuffix}',
@@ -173,23 +173,23 @@ def checkDRSvsCalibrationTS(rdf):
     rdfs_filtered = []
 
     for _, DRSBoard in DRSBoards.items():
-        boardNo = DRSBoard.boardNo
-        if boardNo > 3:
+        board_no = DRSBoard.board_no
+        if board_no > 3:
             continue
-        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
-            sTowerX = number2string(iTowerX)
-            sTowerY = number2string(iTowerY)
+        for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
+            sTowerX = number_to_string(i_tower_x)
+            sTowerY = number_to_string(i_tower_y)
 
             channelNames = {}
             for var in ["Cer", "Sci"]:
-                chan_DRS = DRSBoard.GetChannelByTower(
-                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                chan_DRS = DRSBoard.get_channel_by_tower(
+                    i_tower_x, i_tower_y, isCer=(var == "Cer"))
                 if chan_DRS is None:
                     print(
-                        f"Warning: DRS Channel not found for Board{boardNo}, Tower({sTowerX}, {sTowerY}), {var}")
+                        f"Warning: DRS Channel not found for Board{board_no}, Tower({sTowerX}, {sTowerY}), {var}")
                     continue
 
-                channelName = chan_DRS.GetChannelName(blsub=False)
+                channelName = chan_DRS.get_channel_name(blsub=False)
                 if channelName in drschannels_bad:
                     print(
                         f"Warning: DRS Channel {channelName} is marked as bad channel, skipping...")
@@ -231,20 +231,20 @@ def makeDRSPeakTSPlots():
     hists_Cer_Plastic = []
     hists_Sci = []
     for _, DRSBoard in DRSBoards.items():
-        boardNo = DRSBoard.boardNo
-        if boardNo > 3:
+        board_no = DRSBoard.board_no
+        if board_no > 3:
             continue
-        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
-            sTowerX = number2string(iTowerX)
-            sTowerY = number2string(iTowerY)
+        for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
+            sTowerX = number_to_string(i_tower_x)
+            sTowerY = number_to_string(i_tower_y)
 
             hists = {}
             channelNos = {}
             isQuartz = False
             colors = [6, 4]
             for var in ["Cer", "Sci"]:
-                chan = DRSBoard.GetChannelByTower(
-                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                chan = DRSBoard.get_channel_by_tower(
+                    i_tower_x, i_tower_y, isCer=(var == "Cer"))
                 hist_name = f"hist_DRSPeakTS_{var}_{sTowerX}_{sTowerY}"
                 hist = infile.Get(hist_name)
 
@@ -259,14 +259,14 @@ def makeDRSPeakTSPlots():
                     channelNos[var] = "N/A"
                 else:
                     hists[var] = hist
-                    channelNos[var] = "(" + str(chan.boardNo) + "," + \
-                        str(chan.groupNo) + "," + str(chan.channelNo) + ")"
+                    channelNos[var] = "(" + str(chan.board_no) + "," + \
+                        str(chan.group_no) + "," + str(chan.channel_no) + ")"
 
                 output_name = f"hist_DRSPeakTS_{sTowerX}_{sTowerY}"
 
             if not hists["Cer"] or not hists["Sci"]:
                 print(
-                    f"Warning: Histograms for Cer or Sci not found for Board {boardNo}, Tower ({iTowerX}, {iTowerY})")
+                    f"Warning: Histograms for Cer or Sci not found for Board {board_no}, Tower ({i_tower_x}, {i_tower_y})")
                 continue
 
             extraToDraw = ROOT.TPaveText(0.20, 0.75, 0.70, 0.90, "NDC")
@@ -275,7 +275,7 @@ def makeDRSPeakTSPlots():
             extraToDraw.SetBorderSize(0)
             extraToDraw.SetTextFont(42)
             extraToDraw.SetTextSize(0.04)
-            extraToDraw.AddText(f"Tower: ({iTowerX}, {iTowerY})")
+            extraToDraw.AddText(f"Tower: ({i_tower_x}, {i_tower_y})")
             extraToDraw.AddText(
                 f"Cer: {channelNos['Cer']}, {GetMean(hists['Cer']):.2f} TS")
             extraToDraw.AddText(
@@ -295,7 +295,7 @@ def makeDRSPeakTSPlots():
             DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], TSmin, TSmax, "Peak TS", 1, hists["Cer"].GetMaximum() * 1.5, "Counts",
                        output_name,
                        dology=False, drawoptions="HIST", mycolors=colors, addOverflow=False, addUnderflow=False, extraToDraw=extraToDraw,
-                       outdir=outdir_plots, runNumber=runNumber, extraText="Quartz + Sci" if isQuartz else "Plastic + Sci")
+                       outdir=outdir_plots, run_number=run_number, extra_text="Quartz + Sci" if isQuartz else "Plastic + Sci")
             plots.append(output_name + ".png")
 
     # summary plots
@@ -321,14 +321,14 @@ def makeDRSPeakTSPlots():
     DrawHistos([hist_Cer_Quartz_Combined, hist_Cer_Plastic_Combined, hist_Sci_Combined], ["Cer Quartz", "Cer Plastic", "Sci"], TSmin, TSmax, "Peak TS", 1, None, "Counts",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2, 6, 4], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.25, 0.75, 0.40, 0.90], extraToDraw=extraToDraw)
+               outdir=outdir_plots, run_number=run_number, legendPos=[0.25, 0.75, 0.40, 0.90], extraToDraw=extraToDraw)
     plots.insert(0, output_name + ".png")
 
     output_name = "DRS_PeakTS_Cer_Combined"
     DrawHistos([hist_Cer_Quartz_Combined, hist_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], TSCermin, TSCermax, "Peak TS", 0, 0.15, "Fraction",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2, 6], addOverflow=False, addUnderflow=False, donormalize=True,
-               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.80, 0.40, 0.90])
+               outdir=outdir_plots, run_number=run_number, legendPos=[0.30, 0.80, 0.40, 0.90])
     plots.insert(1, output_name + ".png")
 
     plots.insert(2, "NEWLINE")
@@ -363,15 +363,15 @@ def makeDRSPeakTSCerVSSciPlots():
     extraToDraw = diagonal_line
 
     for _, DRSBoard in DRSBoards.items():
-        if DRSBoard.boardNo > 3:
+        if DRSBoard.board_no > 3:
             continue
-        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
-            sTowerX = number2string(iTowerX)
-            sTowerY = number2string(iTowerY)
+        for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
+            sTowerX = number_to_string(i_tower_x)
+            sTowerY = number_to_string(i_tower_y)
 
             isQuartz = False
 
-            chan_cer = DRSBoard.GetChannelByTower(iTowerX, iTowerY, isCer=True)
+            chan_cer = DRSBoard.get_channel_by_tower(i_tower_x, i_tower_y, isCer=True)
             if chan_cer and chan_cer.isQuartz:
                 isQuartz = True
 
@@ -397,7 +397,7 @@ def makeDRSPeakTSCerVSSciPlots():
             DrawHistos([hist], "", TSmin, TSmax, "Sci Peak TS", TSmin, TSmax, ytitle,
                        output_name,
                        dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
-                       outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
+                       outdir=outdir_plots, addOverflow=False, run_number=run_number, extraToDraw=extraToDraw)
 
             plots.append(output_name + ".png")
 
@@ -407,7 +407,7 @@ def makeDRSPeakTSCerVSSciPlots():
     DrawHistos([hcombined], "", TSmin, TSmax, "Sci Peak TS", TSmin, TSmax, f"Cer Peak TS",
                output_name,
                dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=None, dologz=True,
-               outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
+               outdir=outdir_plots, addOverflow=False, run_number=run_number, extraToDraw=extraToDraw)
     plots.insert(0, output_name + ".png")
 
     hcombined_Quartz = LHistos2Hist(
@@ -416,7 +416,7 @@ def makeDRSPeakTSCerVSSciPlots():
     DrawHistos([hcombined_Quartz], "", TSmin, TSmax, "Sci Peak TS", TSmin, TSmax, f"Cer (Quartz) Peak TS",
                output_name,
                dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=None, dologz=True,
-               outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
+               outdir=outdir_plots, addOverflow=False, run_number=run_number, extraToDraw=extraToDraw)
     plots.insert(1, output_name + ".png")
 
     hcombined_Plastic = LHistos2Hist(
@@ -425,7 +425,7 @@ def makeDRSPeakTSCerVSSciPlots():
     DrawHistos([hcombined_Plastic], "", TSmin, TSmax, "Sci Peak TS", TSmin, TSmax, f"Cer (Plastic) Peak TS",
                output_name,
                dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=None, dologz=True,
-               outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
+               outdir=outdir_plots, addOverflow=False, run_number=run_number, extraToDraw=extraToDraw)
     plots.insert(2, output_name + ".png")
 
     # average of quartz vs average of plastic
@@ -435,7 +435,7 @@ def makeDRSPeakTSCerVSSciPlots():
     DrawHistos([hcombined_Quartz_vs_Plastic], "", TSmin, TSmax, "Cer Plastic Peak TS", TSmin, TSmax, f"Cer Quartz Peak TS",
                output_name,
                dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=None, dologz=True,
-               outdir=outdir_plots, addOverflow=False, runNumber=runNumber, extraToDraw=extraToDraw)
+               outdir=outdir_plots, addOverflow=False, run_number=run_number, extraToDraw=extraToDraw)
     plots.insert(3, output_name + ".png")
 
     print("quartz:", len(hists_Quartz), "plastic:", len(hists_Plastic))
@@ -457,19 +457,19 @@ def makeDRSvsTSProfPlots():
     hprofs_Cer = []
     hprofs_Sci = []
     for _, DRSBoard in DRSBoards.items():
-        boardNo = DRSBoard.boardNo
-        if boardNo > 3:
+        board_no = DRSBoard.board_no
+        if board_no > 3:
             continue
-        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
-            sTowerX = number2string(iTowerX)
-            sTowerY = number2string(iTowerY)
+        for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
+            sTowerX = number_to_string(i_tower_x)
+            sTowerY = number_to_string(i_tower_y)
 
             hprofs = {}
             isQuartz = False
             colors = [6, 4]
             for var in ["Cer", "Sci"]:
-                chan = DRSBoard.GetChannelByTower(
-                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                chan = DRSBoard.get_channel_by_tower(
+                    i_tower_x, i_tower_y, isCer=(var == "Cer"))
                 hprof_name = f"prof_DRS_vs_TS_{var}_{sTowerX}_{sTowerY}"
                 hprof = infile.Get(hprof_name)
 
@@ -486,7 +486,7 @@ def makeDRSvsTSProfPlots():
 
             if not hprofs["Cer"] or not hprofs["Sci"]:
                 print(
-                    f"Warning: Histograms for Cer or Sci not found for Board {boardNo}, Tower ({iTowerX}, {iTowerY})")
+                    f"Warning: Histograms for Cer or Sci not found for Board {board_no}, Tower ({i_tower_x}, {i_tower_y})")
                 continue
 
             if isQuartz:
@@ -501,7 +501,7 @@ def makeDRSvsTSProfPlots():
             DrawHistos([hprofs["Cer"], hprofs["Sci"]], ["Cer", "Sci"], -200, 100, "Time slice", -10, hprofs["Cer"].GetMaximum() * 1.5, "DRS ADC",
                        output_name,
                        dology=False, drawoptions="HIST", mycolors=colors, addOverflow=False, addUnderflow=False,
-                       outdir=outdir_plots, runNumber=runNumber)
+                       outdir=outdir_plots, run_number=run_number)
             plots.append(output_name + ".png")
 
     # summary plots
@@ -518,13 +518,13 @@ def makeDRSvsTSProfPlots():
     DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined, hprof_Sci_Combined], ["Cer Quartz", "Cer Plastic", "Sci"], -75, 0, "Time slice", 0, None, "DRS ADC",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2, 6, 4], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.25, 0.75, 0.40, 0.90])
+               outdir=outdir_plots, run_number=run_number, legendPos=[0.25, 0.75, 0.40, 0.90])
     plots.insert(0, output_name + ".png")
     output_name = "DRS_vs_TS_Cer_Combined"
     DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], -80, -50, "Time slice", 0, None, "ADC",
                output_name,
                dology=False, drawoptions=["hist,C", "hist,C"], mycolors=[2, 6], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.30, 0.80, 0.40, 0.90], legendoptions=["L", "L"])
+               outdir=outdir_plots, run_number=run_number, legendPos=[0.30, 0.80, 0.40, 0.90], legendoptions=["L", "L"])
     plots.insert(1, output_name + ".png")
 
     plots.insert(2, "NEWLINE")
@@ -552,19 +552,19 @@ def makeDRSvsZProfPlots():
     hprofs_Cer_Quartz = []
     hprofs_Cer_Plastic = []
     for _, DRSBoard in DRSBoards.items():
-        boardNo = DRSBoard.boardNo
-        if boardNo > 3:
+        board_no = DRSBoard.board_no
+        if board_no > 3:
             continue
-        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
-            sTowerX = number2string(iTowerX)
-            sTowerY = number2string(iTowerY)
+        for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
+            sTowerX = number_to_string(i_tower_x)
+            sTowerY = number_to_string(i_tower_y)
 
             hprofs = {}
             isQuartz = False
             colors = [6, 4]
             for var in ["Cer"]:
-                chan = DRSBoard.GetChannelByTower(
-                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                chan = DRSBoard.get_channel_by_tower(
+                    i_tower_x, i_tower_y, isCer=(var == "Cer"))
                 hprof_name = f"prof_DRS_vs_Z_{var}_{sTowerX}_{sTowerY}"
                 hprof = infile.Get(hprof_name)
 
@@ -581,7 +581,7 @@ def makeDRSvsZProfPlots():
 
             if not hprofs["Cer"]:
                 print(
-                    f"Warning: Histograms for Cer not found for Board {boardNo}, Tower ({iTowerX}, {iTowerY})")
+                    f"Warning: Histograms for Cer not found for Board {board_no}, Tower ({i_tower_x}, {i_tower_y})")
                 continue
 
             if isQuartz:
@@ -594,7 +594,7 @@ def makeDRSvsZProfPlots():
             DrawHistos([hprofs["Cer"]], ["Cer"], -100, 300, "Measured Z [cm]", -10, hprofs["Cer"].GetMaximum() * 1.5, "DRS ADC",
                        output_name,
                        dology=False, drawoptions="HIST", mycolors=colors, addOverflow=False, addUnderflow=False,
-                       outdir=outdir_plots, runNumber=runNumber)
+                       outdir=outdir_plots, run_number=run_number)
             plots.append(output_name + ".png")
 
     # summary plots
@@ -606,7 +606,7 @@ def makeDRSvsZProfPlots():
     DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], -10, 200, "Measured Z", 0, None, "DRS ADC",
                output_name,
                dology=False, drawoptions=["C", "C"], mycolors=[2, 6], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, runNumber=runNumber, legendPos=[0.55, 0.80, 0.90, 0.90], legendoptions=["P", "P"])
+               outdir=outdir_plots, run_number=run_number, legendPos=[0.55, 0.80, 0.90, 0.90], legendoptions=["P", "P"])
     plots.insert(0, output_name + ".png")
     plots.insert(1, "NEWLINE")
 
@@ -622,16 +622,16 @@ def makeDRSvsTS2DPlots():
     infile_name = f"{rootdir}/drs_vs_ts_calibrated.root"
     infile = ROOT.TFile(infile_name, "READ")
     for _, DRSBoard in DRSBoards.items():
-        boardNo = DRSBoard.boardNo
-        if boardNo > 3:
+        board_no = DRSBoard.board_no
+        if board_no > 3:
             continue
-        for iTowerX, iTowerY in DRSBoard.GetListOfTowers():
-            sTowerX = number2string(iTowerX)
-            sTowerY = number2string(iTowerY)
+        for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
+            sTowerX = number_to_string(i_tower_x)
+            sTowerY = number_to_string(i_tower_y)
 
             for var in ["Cer", "Sci"]:
-                chan = DRSBoard.GetChannelByTower(
-                    iTowerX, iTowerY, isCer=(var == "Cer"))
+                chan = DRSBoard.get_channel_by_tower(
+                    i_tower_x, i_tower_y, isCer=(var == "Cer"))
                 hist2d_name = f"hist2d_DRS_vs_TS_{var}_{sTowerX}_{sTowerY}"
                 hist2d = infile.Get(hist2d_name)
 
@@ -646,7 +646,7 @@ def makeDRSvsTS2DPlots():
                 DrawHistos([hist2d], "", -200, 100, "Calibrated TS", -200, 1000, "DRS ADC",
                            output_name,
                            dology=False, addOverflow=False, addUnderflow=False, doth2=True, drawoptions="COLZ", zmin=1, zmax=1e4, dologz=True,
-                           outdir=outdir_plots, runNumber=runNumber)
+                           outdir=outdir_plots, run_number=run_number)
 
     output_html = f"{htmldir}/DRS/DRS_VS_TS_relative_to_MCP_2D.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
@@ -660,10 +660,10 @@ def main():
 
     if makeHists:
         loader = CaloXDataLoader(json_file=args.json_file)
-        rdf = loader.load_rdf(runNumber, args.first_event, args.last_event)
-        rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
+        rdf = loader.load_rdf(run_number, args.first_event, args.last_event)
+        rdf = preProcessDRSBoards(rdf, run_number=run_number)
 
-        sel_mgr = SelectionManager(rdf, runNumber)
+        sel_mgr = SelectionManager(rdf, run_number)
         rdf = (sel_mgr
                .veto_muon_counter(TSmin=200, TSmax=700, cut=-100)
                .apply_upstream_veto()  # If applyCut=True
@@ -673,11 +673,11 @@ def main():
         # rdf, _ = applyPSDSelection(rdf, runNumber, applyCut=True)
         # rdf, _ = applyCC1Selection(rdf, runNumber, applyCut=True)
 
-        rdf = calibrateDRSPeakTS(rdf, runNumber, DRSBoards,
+        rdf = calibrateDRSPeakTS(rdf, run_number, DRSBoards,
                                  TSminDRS=0, TSmaxDRS=1000, threshold=9.0)
 
         rdf_prefilterMCP1 = rdf
-        map_mcp_channels = getMCPChannels(runNumber)
+        map_mcp_channels = get_mcp_channels(run_number)
 
         condition = f"{map_mcp_channels['US'][0]}_RelPeakTS > -350 && {map_mcp_channels['US'][0]}_RelPeakTS < -100"
         condition += f" && {map_mcp_channels['US'][0]}_PeakTS > 500 && {map_mcp_channels['US'][0]}_PeakTS < 600"

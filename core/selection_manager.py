@@ -64,8 +64,8 @@ class SelectionManager:
         Applies Pre-shower Detector (PSD) selection.
         invert=True will flip the logic regardless of is_hadron setting.
         """
-        from channels.channel_map import getPreShowerChannel
-        preshower_channel = getPreShowerChannel(self.run_number)
+        from channels.channel_map import get_pre_shower_channel
+        preshower_channel = get_pre_shower_channel(self.run_number)
 
         if preshower_channel is None:
             return self
@@ -89,8 +89,8 @@ class SelectionManager:
         Applies upstream veto based on peak value.
         invert=True selects events that FAILED the veto (the 'halo' events).
         """
-        from channels.channel_map import getUpstreamVetoChannel
-        chan_upveto = getUpstreamVetoChannel(self.run_number)
+        from channels.channel_map import get_upstream_veto_channel
+        chan_upveto = get_upstream_veto_channel(self.run_number)
 
         if not chan_upveto:
             return self

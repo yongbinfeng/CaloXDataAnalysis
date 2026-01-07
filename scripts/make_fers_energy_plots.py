@@ -1,8 +1,8 @@
 import os
 from collections import OrderedDict
 import ROOT
-from CMSPLOTS.myFunction import DrawHistos, LHistos2Hist
-from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters
+from plotting.my_function import DrawHistos, LHistos2Hist
+from configs.plot_ranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters
 from core.analysis_manager import CaloXAnalysisManager
 from utils.colors import colors
 from utils.fitter import eventFit
@@ -33,7 +33,7 @@ rdf = analysis.get_rdf()  # Get the final RDF after all transformations
 fersboards = analysis.fersboards
 
 benergy = analysis.beam_energy
-runNumber = analysis.run_number
+run_number = analysis.run_number
 paths = analysis.paths
 rootdir = paths["root"]
 plotdir = paths["plots"]
@@ -47,11 +47,11 @@ def makeFERSEnergySumHists(rdf=rdf, suffix=""):
     hists_FERS_EnergySum = []
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
+            pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
         for cat in ["cer", "sci"]:
             # per-board sum
             for fersboard in fersboards.values():
-                varname = fersboard.GetEnergySumName(
+                varname = fersboard.get_energy_sum_name(
                     gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib)
                 hist = rdf.Histo1D((
                     f"hist_{varname}_{suffix}",
@@ -61,7 +61,7 @@ def makeFERSEnergySumHists(rdf=rdf, suffix=""):
                 )
                 hists_FERS_EnergySum.append(hist)
             # per-event sum
-            varname = fersboards.GetEnergySumName(
+            varname = fersboards.get_energy_sum_name(
                 gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib)
             hist = rdf.Histo1D((
                 f"hist_{varname}_{suffix}",
@@ -78,12 +78,12 @@ def makeFERSCervsSciHists(rdf=rdf, suffix=""):
     hists_FERS_Cer_vs_Sci = []
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
+            pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
         # per-board Cer vs Sci
         for fersboard in fersboards.values():
-            var_cer = fersboard.GetEnergySumName(
+            var_cer = fersboard.get_energy_sum_name(
                 gain=gain, isCer=True, pdsub=True, calib=calib)
-            var_sci = fersboard.GetEnergySumName(
+            var_sci = fersboard.get_energy_sum_name(
                 gain=gain, isCer=False, pdsub=True, calib=calib)
             hist_Cer_vs_Sci = rdf.Histo2D((
                 f"hist_{var_cer}_VS_{var_sci}_{suffix}",
@@ -96,9 +96,9 @@ def makeFERSCervsSciHists(rdf=rdf, suffix=""):
             hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci)
 
         # per-event Cer vs Sci
-        var_cer = fersboards.GetEnergySumName(
+        var_cer = fersboards.get_energy_sum_name(
             gain=gain, isCer=True, pdsub=True, calib=calib)
-        var_sci = fersboards.GetEnergySumName(
+        var_sci = fersboards.get_energy_sum_name(
             gain=gain, isCer=False, pdsub=True, calib=calib)
         hist_Cer_vs_Sci_Event = rdf.Histo2D((
             f"hist_{var_cer}_VS_{var_sci}_{suffix}",
@@ -117,10 +117,10 @@ def makeFERSDRHists(rdf=rdf, suffix=""):
     calib = True
     gain = "Mix"
     config = getRangesForFERSEnergySums(
-        pdsub=True, calib=True, clip=False, HE=HE, runNumber=runNumber)
-    varname_Cer = fersboards.GetEnergySumName(
+        pdsub=True, calib=True, clip=False, HE=HE, run_number=run_number)
+    varname_Cer = fersboards.get_energy_sum_name(
         gain=gain, isCer=True, pdsub=True, calib=calib)
-    varname_Sci = fersboards.GetEnergySumName(
+    varname_Sci = fersboards.get_energy_sum_name(
         gain=gain, isCer=False, pdsub=True, calib=calib)
     hists_DR = []
     # leakage
@@ -235,9 +235,9 @@ def makeFERSEnergyWeightedCenterHists(rdf=rdf, suffix=""):
     for gain, calib in GainCalibs:
         for cat in ["cer", "sci"]:
             # per-event
-            varname_X = fersboards.GetEnergyWeightedCenterName(
+            varname_X = fersboards.get_energy_weighted_center_name(
                 gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib, isX=True)
-            varname_Y = fersboards.GetEnergyWeightedCenterName(
+            varname_Y = fersboards.get_energy_weighted_center_name(
                 gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib, isX=False)
 
             histX = rdf.Histo1D((
@@ -280,26 +280,26 @@ def makeFERSShowerShapeHists(rdf=rdf, suffix=""):
             hists_tmp_R = []
             hists_tmp_Y_VS_X = []
             for fersboard in fersboards.values():
-                for channel in fersboard.GetListOfChannels(isCer=(cat == "cer")):
-                    channelName = channel.GetChannelName(
+                for channel in fersboard.get_list_of_channels(isCer=(cat == "cer")):
+                    channelName = channel.get_channel_name(
                         gain=gain, pdsub=True, calib=calib)
                     hist = rdf.Histo1D((
                         f"hist_RealX_{channelName}_{suffix}",
                         f"hist_RealX_{channelName}_{suffix}",
                         100, -20, 20),
-                        channel.GetRealPosName(isX=True), channelName
+                        channel.get_real_pos_name(isX=True), channelName
                     )
                     hists_tmp_X.append(hist)
                     hist = rdf.Histo1D((
                         f"hist_RealY_{channelName}_{suffix}",
                         f"hist_RealY_{channelName}_{suffix}",
                         100, -20, 20),
-                        channel.GetRealPosName(isX=False), channelName
+                        channel.get_real_pos_name(isX=False), channelName
                     )
                     hists_tmp_Y.append(hist)
                     # calculate radius
                     rdf = rdf.Define(
-                        "RealR_" + channelName, f"std::sqrt(std::pow({channel.GetRealPosName(isX=True)}, 2) + std::pow({channel.GetRealPosName(isX=False)}, 2))")
+                        "RealR_" + channelName, f"std::sqrt(std::pow({channel.get_real_pos_name(isX=True)}, 2) + std::pow({channel.get_real_pos_name(isX=False)}, 2))")
                     hist = rdf.Histo1D((
                         f"hist_RealR_{channelName}_{suffix}",
                         f"hist_RealR_{channelName}_{suffix}",
@@ -312,7 +312,7 @@ def makeFERSShowerShapeHists(rdf=rdf, suffix=""):
                         f"hist_RealY_VS_RealX_{channelName}_{suffix}",
                         100, -20, 20,
                         100, -20, 20),
-                        channel.GetRealPosName(isX=True), channel.GetRealPosName(
+                        channel.get_real_pos_name(isX=True), channel.get_real_pos_name(
                             isX=False), channelName
                     )
                     hists_tmp_Y_VS_X.append(hist)
@@ -326,9 +326,9 @@ def makeFERSShowerShapeHists(rdf=rdf, suffix=""):
             hists_Y_VS_X.append(
                 (hists_tmp_Y_VS_X, f"hist_RealY_VS_RealX_{gain}_{cat}_{suffix}"))
 
-    nEvents = rdf.Count()
+    n_events = rdf.Count()
 
-    return hists_X, hists_Y,  hists_R, hists_Y_VS_X, nEvents
+    return hists_X, hists_Y,  hists_R, hists_Y_VS_X, n_events
 
 
 def collectFERSStats(rdf):
@@ -336,23 +336,23 @@ def collectFERSStats(rdf):
     # mean
     # and how frequent the saturation value is reached
     for fersboard in fersboards.values():
-        for iTowerX, iTowerY in fersboard.GetListOfTowers():
-            channel_cer = fersboard.GetChannelByTower(
-                iTowerX, iTowerY, isCer=True)
-            channel_sci = fersboard.GetChannelByTower(
-                iTowerX, iTowerY, isCer=False)
+        for i_tower_x, i_tower_y in fersboard.get_list_of_towers():
+            channel_cer = fersboard.get_channel_by_tower(
+                i_tower_x, i_tower_y, isCer=True)
+            channel_sci = fersboard.get_channel_by_tower(
+                i_tower_x, i_tower_y, isCer=False)
 
             for gain, calib in GainCalibs:
-                varname_cer = channel_cer.GetChannelName(
+                varname_cer = channel_cer.get_channel_name(
                     gain=gain, pdsub=True, calib=calib)
-                varname_sci = channel_sci.GetChannelName(
+                varname_sci = channel_sci.get_channel_name(
                     gain=gain, pdsub=True, calib=calib)
                 # rdf = rdf.Define(
                 #    f"{varname_cer}_over_{varname_sci}", f"{varname_cer} / ({varname_sci} + 1e-6)")
 
-                stats[channel_cer.GetChannelName(gain=gain)] = rdf.Mean(
+                stats[channel_cer.get_channel_name(gain=gain)] = rdf.Mean(
                     f"{varname_cer}")
-                stats[channel_sci.GetChannelName(gain=gain)] = rdf.Mean(
+                stats[channel_sci.get_channel_name(gain=gain)] = rdf.Mean(
                     f"{varname_sci}")
 
     return stats
@@ -368,36 +368,36 @@ def makeFERSEnergySumPlots(suffix=""):
     if doPerBoardPlots:
         for gain, calib in GainCalibs:
             config = getRangesForFERSEnergySums(
-                pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
+                pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
             for cat in ["cer", "sci"]:
                 hists = []
                 legends = []
                 for fersboard in fersboards.values():
-                    boardNo = fersboard.boardNo
-                    varname = fersboard.GetEnergySumName(
+                    board_no = fersboard.board_no
+                    varname = fersboard.get_energy_sum_name(
                         gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib)
                     hist_name = f"hist_{varname}_{suffix}"
                     hist = infile.Get(hist_name)
                     if not hist:
                         print(
-                            f"Warning: Histogram {hist_name} for board {boardNo} not found in {infile_name}")
+                            f"Warning: Histogram {hist_name} for board {board_no} not found in {infile_name}")
                         continue
-                    legends.append(str(boardNo))
+                    legends.append(str(board_no))
                     hists.append(hist)
 
                 output_name = f"FERS_Boards_{gain}_{cat}{suffix}"
                 DrawHistos(hists, legends, config["xmin_board"][f"{gain}_{cat}"], config["xmax_board"][f"{gain}_{cat}"], f"{cat.capitalize()} {gain} {config[f'title_{gain}']}", 1, None, "Events",
                            output_name,
                            dology=True, drawoptions="HIST", mycolors=colors, addOverflow=True, addUnderflow=True,
-                           outdir=outdir_plots, runNumber=runNumber, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
+                           outdir=outdir_plots, run_number=run_number, legendNCols=5, legendPos=[0.20, 0.75, 0.90, 0.9])
                 plots.append(output_name + ".png")
 
     # per-event energy sum plot ranges
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
+            pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
         for cat in ["cer", "sci"]:
-            varname = fersboards.GetEnergySumName(
+            varname = fersboards.get_energy_sum_name(
                 gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib)
             hist_name = f"hist_{varname}_{suffix}"
             hist = infile.Get(hist_name)
@@ -409,7 +409,7 @@ def makeFERSEnergySumPlots(suffix=""):
             DrawHistos([hist], "", config["xmin_total"][f"{gain}_{cat}"], config["xmax_total"][f"{gain}_{cat}"], f"{cat.capitalize()} {gain} {config[f'title_{gain}']}", 1, None, "Events",
                        output_name,
                        dology=False, drawoptions="HIST", mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
-                       outdir=outdir_plots, runNumber=runNumber)
+                       outdir=outdir_plots, run_number=run_number)
             plots.insert(0, output_name + ".png")
 
     output_html = f"{htmldir}/FERS/EnergySum_{suffix}.html"
@@ -427,33 +427,33 @@ def makeFERSCerVsSciPlots(suffix=""):
     if doPerBoardPlots:
         for gain, calib in GainCalibs:
             config = getRangesForFERSEnergySums(
-                pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
+                pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
             for fersboard in fersboards.values():
-                boardNo = fersboard.boardNo
-                var_cer = fersboard.GetEnergySumName(
+                board_no = fersboard.board_no
+                var_cer = fersboard.get_energy_sum_name(
                     gain=gain, isCer=True, pdsub=True, calib=calib)
-                var_sci = fersboard.GetEnergySumName(
+                var_sci = fersboard.get_energy_sum_name(
                     gain=gain, isCer=False, pdsub=True, calib=calib)
                 hist_Cer_vs_Sci_name = f"hist_{var_cer}_VS_{var_sci}_{suffix}"
                 hist_Cer_vs_Sci = infile.Get(hist_Cer_vs_Sci_name)
                 if not hist_Cer_vs_Sci:
                     print(
-                        f"Warning: Histogram {hist_Cer_vs_Sci_name} for board {boardNo} not found in {infile_name}")
+                        f"Warning: Histogram {hist_Cer_vs_Sci_name} for board {board_no} not found in {infile_name}")
                     continue
 
-                output_name = f"FERS_Board{boardNo}_Cer_VS_Sci_{gain}{suffix}"
+                output_name = f"FERS_Board{board_no}_Cer_VS_Sci_{gain}{suffix}"
                 DrawHistos([hist_Cer_vs_Sci], "", config["xmin_board"][f"{gain}_sci"], config["xmax_board"][f"{gain}_sci"], f"Sci {gain} {config[f'title_{gain}']}", config["xmin_board"][f"{gain}_cer"], config["xmax_board"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
                            output_name,
                            dology=False, drawoptions=["colz"],
-                           outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+                           outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
                 plots.append(output_name + ".png")
 
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
-        var_cer = fersboards.GetEnergySumName(
+            pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
+        var_cer = fersboards.get_energy_sum_name(
             gain=gain, isCer=True, pdsub=True, calib=calib)
-        var_sci = fersboards.GetEnergySumName(
+        var_sci = fersboards.get_energy_sum_name(
             gain=gain, isCer=False, pdsub=True, calib=calib)
         hist_Cer_vs_Sci_name = f"hist_{var_cer}_VS_{var_sci}_{suffix}"
         hist_Cer_vs_Sci = infile.Get(hist_Cer_vs_Sci_name)
@@ -479,7 +479,7 @@ def makeFERSCerVsSciPlots(suffix=""):
                    output_name,
                    dology=False, drawoptions=["colz"],
                    extraToDraw=extraObjs,
-                   outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+                   outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
         plots.insert(0, output_name + ".png")
 
     output_html = f"{htmldir}/FERS/EnergySum_Cer_VS_Sci_{suffix}.html"
@@ -497,10 +497,10 @@ def makeFERSDRPlots(suffix=""):
     gain = "Mix"
     calib = True
     config = getRangesForFERSEnergySums(
-        pdsub=True, calib=calib, clip=False, HE=HE, runNumber=runNumber)
-    varname_Cer = fersboards.GetEnergySumName(
+        pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
+    varname_Cer = fersboards.get_energy_sum_name(
         gain=gain, isCer=True, pdsub=True, calib=calib)
-    varname_Sci = fersboards.GetEnergySumName(
+    varname_Sci = fersboards.get_energy_sum_name(
         gain=gain, isCer=False, pdsub=True, calib=calib)
 
     # leakage
@@ -514,7 +514,7 @@ def makeFERSDRPlots(suffix=""):
     DrawHistos(hists, ["Cer", "Sci"], 0, 20.0, f"Leakage Energy", 0, None, "Events",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber)
+               outdir=outdir_plots, run_number=run_number)
     plots.append(output_name + ".png")
 
     # leakage + central
@@ -528,7 +528,7 @@ def makeFERSDRPlots(suffix=""):
     DrawHistos(hists, ["Cer", "Sci"], config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"Leakage Corrected Energy {gain} {config[f'title_{gain}']}", 1, None, "Events",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber)
+               outdir=outdir_plots, run_number=run_number)
     plots.append(output_name + ".png")
     plots.append("NEWLINE")
 
@@ -539,7 +539,7 @@ def makeFERSDRPlots(suffix=""):
     DrawHistos([hist], "", 0, 2, "C/S", 0, None, "Events",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2], addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber)
+               outdir=outdir_plots, run_number=run_number)
     plots.append(output_name + ".png")
 
     varname = "fEM"
@@ -549,11 +549,11 @@ def makeFERSDRPlots(suffix=""):
     DrawHistos([hist], "", 0, 1.5, "f_{EM}", 0, None, "Events",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[4], addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber)
+               outdir=outdir_plots, run_number=run_number)
     plots.append(output_name + ".png")
 
     # sum Cer + Sci
-    varname = fersboards.GetEnergySumName(
+    varname = fersboards.get_energy_sum_name(
         gain=gain, isCer=True, pdsub=True, calib=calib)
     varname = varname.replace("Cer", "CerSci")
     hist_name = f"hist_{varname}_{suffix}"
@@ -562,11 +562,11 @@ def makeFERSDRPlots(suffix=""):
     DrawHistos([hist], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"] * 2.5, f"Cer+Sci {gain} {config[f'title_{gain}']}", 1, None, "Events",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[6], addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber)
+               outdir=outdir_plots, run_number=run_number)
     plots.append(output_name + ".png")
 
     # dual readout
-    varname = fersboards.GetEnergySumName(
+    varname = fersboards.get_energy_sum_name(
         gain=gain, isCer=True, pdsub=True, calib=calib)
     for method in ["", "_method2", "_method3"]:
         varname_dr = varname.replace("Cer", "DR") + method
@@ -576,13 +576,13 @@ def makeFERSDRPlots(suffix=""):
         DrawHistos([hist], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], f"DR{method} {gain} {config[f'title_{gain}']}", 1, None, "Events",
                    output_name,
                    dology=False, drawoptions="HIST", mycolors=[1 if method == "" else (7 if method == "_method2" else 8)], addOverflow=True, addUnderflow=True,
-                   outdir=outdir_plots, runNumber=runNumber)
+                   outdir=outdir_plots, run_number=run_number)
         plots.append(output_name + ".png")
 
     # plot sci, cer, and dr energy in the same plot, and fit the energy to get resolution
-    varname_cer = fersboards.GetEnergySumName(
+    varname_cer = fersboards.get_energy_sum_name(
         gain=gain, isCer=True, pdsub=True, calib=calib)
-    varname_sci = fersboards.GetEnergySumName(
+    varname_sci = fersboards.get_energy_sum_name(
         gain=gain, isCer=False, pdsub=True, calib=calib)
     varname_dr = varname_cer.replace("Cer", "DR")
 
@@ -621,7 +621,7 @@ def makeFERSDRPlots(suffix=""):
     DrawHistos([hist_cer, hist_sci, hist_dr, hist_dr_method2, hist_dr_method3], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"], "Energy [GeV]", 0, None, "Events",
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2, 4, 1, 7, 8], addOverflow=True, addUnderflow=True,
-               outdir=outdir_plots, runNumber=runNumber, extraToDraw=[extraToDraw] + tf1s)
+               outdir=outdir_plots, run_number=run_number, extraToDraw=[extraToDraw] + tf1s)
     plots.append(output_name + ".png")
 
     plots.append("NEWLINE")
@@ -634,7 +634,7 @@ def makeFERSDRPlots(suffix=""):
     DrawHistos([hist_Sci_vs_CerSci], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]*2.5, f"Sci+Cer {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Sci {gain} {config[f'title_{gain}']}",
                output_name,
                dology=False, drawoptions=["colz"],
-               outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+               outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
     plots.append(output_name + ".png")
 
     # Draw Cer vs CerSci
@@ -644,7 +644,7 @@ def makeFERSDRPlots(suffix=""):
     DrawHistos([hist_Cer_vs_CerSci], "", config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]*2.5, f"Sci+Cer {gain} {config[f'title_{gain}']}", config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"], f"Cer {gain} {config[f'title_{gain}']}",
                output_name,
                dology=False, drawoptions=["colz"],
-               outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+               outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
     plots.append(output_name + ".png")
 
     # Draw Sci vs fEM
@@ -677,7 +677,7 @@ def makeFERSDRPlots(suffix=""):
         DrawHistos([hist_varname_vs_fEM], "", 0, 1.5, "f_{EM}", config["xmin_total"][f"{gain}_{cat.lower()}"], config["xmax_total"][f"{gain}_{cat.lower()}"], f"{cat} {gain} {config[f'title_{gain}']}",
                    output_name,
                    dology=False, drawoptions=["colz"],
-                   outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True, extraToDraw=[extraToDraw, fit_func])
+                   outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True, extraToDraw=[extraToDraw, fit_func])
         plots.append(output_name + ".png")
 
     # Draw Cer/Sci vs DR/DR_method2
@@ -700,7 +700,7 @@ def makeFERSDRPlots(suffix=""):
                            f"{gain}_{y_range_key}"], f"{cat} {gain} {config[f'title_{gain}']}",
                        output_name,
                        dology=False, drawoptions=["colz"],
-                       outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
+                       outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
             plots.append(output_name + ".png")
 
     output_html = f"{htmldir}/FERS/EnergySum_DR_{suffix}.html"
@@ -717,9 +717,9 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
 
     for gain, calib in GainCalibs:
         for cat in ["cer", "sci"]:
-            varname_X = fersboards.GetEnergyWeightedCenterName(
+            varname_X = fersboards.get_energy_weighted_center_name(
                 gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib, isX=True)
-            varname_Y = fersboards.GetEnergyWeightedCenterName(
+            varname_Y = fersboards.get_energy_weighted_center_name(
                 gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib, isX=False)
 
             extraToDrawBase = ROOT.TPaveText(0.20, 0.85, 0.60, 0.90, "NDC")
@@ -740,7 +740,7 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
                 DrawHistos([histX], "", -15, 15, f"{cat.capitalize()} {gain} EWC X [cm]", 1, None, "Events",
                            output_name,
                            dology=False, drawoptions="HIST", mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
-                           outdir=outdir_plots, runNumber=runNumber, extraToDraw=extraToDraw)
+                           outdir=outdir_plots, run_number=run_number, extraToDraw=extraToDraw)
                 plots.append(output_name + ".png")
             else:
                 print(
@@ -757,7 +757,7 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
                 DrawHistos([histY], "", -15, 15, f"{cat.capitalize()} {gain} EWC Y [cm]", 1, None, "Events",
                            output_name,
                            dology=False, drawoptions="HIST", mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
-                           outdir=outdir_plots, runNumber=runNumber, extraToDraw=extraToDraw)
+                           outdir=outdir_plots, run_number=run_number, extraToDraw=extraToDraw)
                 plots.append(output_name + ".png")
             else:
                 print(
@@ -770,7 +770,7 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
                 DrawHistos([hist2D], "", -15, 15, f"{cat.capitalize()} {gain} EWC X [cm]", -15, 15, f"{cat.capitalize()} {gain} EWC Y [cm]",
                            output_name,
                            dology=False, drawoptions=["colz"], addOverflow=True, addUnderflow=True,
-                           outdir=outdir_plots, runNumber=runNumber, doth2=True, zmin=1, zmax=None)
+                           outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None)
                 plots.append(output_name + ".png")
             else:
                 print(
@@ -798,7 +798,7 @@ def makeFERSShowerShapePlots(suffix=""):
                 DrawHistos([hist_X], "", -20, 20, f"X {cat.capitalize()} {gain} [cm]", 1e-4, 1, "Frac. of Energy",
                            output_name, drawoptions="HIST",
                            dology=True, mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
-                           outdir=outdir_plots, runNumber=runNumber, donormalize=True)
+                           outdir=outdir_plots, run_number=run_number, donormalize=True)
                 plots.append(output_name + ".png")
             else:
                 print(
@@ -811,7 +811,7 @@ def makeFERSShowerShapePlots(suffix=""):
                 DrawHistos([hist_Y], "", -20, 20, f"Y {cat.capitalize()} {gain} [cm]", 1e-4, 1, "Frac. of Energy",
                            output_name, drawoptions="HIST",
                            dology=True, mycolors=[2] if cat == "cer" else [4], addOverflow=True, addUnderflow=True,
-                           outdir=outdir_plots, runNumber=runNumber, donormalize=True)
+                           outdir=outdir_plots, run_number=run_number, donormalize=True)
                 plots.append(output_name + ".png")
             else:
                 print(
@@ -843,7 +843,7 @@ def makeFERSShowerShapePlots(suffix=""):
         DrawHistos(hists_R, ["Cer", "Sci"], 0, 25, f"R [cm]", 1e-4, 1, "Frac. of Energy",
                    output_name,
                    dology=True, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=True,
-                   outdir=outdir_plots, runNumber=runNumber, donormalize=True)
+                   outdir=outdir_plots, run_number=run_number, donormalize=True)
         plots.append(output_name + ".png")
 
         if len(hists_R) == 2:
@@ -858,7 +858,7 @@ def makeFERSShowerShapePlots(suffix=""):
             DrawHistos([hist_ratio], "", 0, 25, f"R [cm]", 0, 1.5, "Cer/Sci",
                        output_name,
                        dology=False, drawoptions="HIST", mycolors=[1], addOverflow=True, addUnderflow=True,
-                       outdir=outdir_plots, runNumber=runNumber)
+                       outdir=outdir_plots, run_number=run_number)
             plots.append(output_name + ".png")
 
     output_html = f"{htmldir}/FERS/ShowerShape_{suffix}.html"
@@ -885,27 +885,27 @@ def makeFERSStatsPlots():
 
     for gain, calib in GainCalibs:
         [h2_Cer, h2_Cer_3mm], [h2_Sci, h2_Sci_3mm] = visualizeFERSBoards(
-            fersboards, stats, suffix=f"Run{runNumber}_{gain}_mean", gain=gain)
+            fersboards, stats, suffix=f"Run{run_number}_{gain}_mean", gain=gain)
 
         h2_Cer_Over_Sci = h2_Cer.Clone(f"h2_Cer_over_Sci_{gain}")
         h2_Cer_Over_Sci.Divide(h2_Sci)
         h2_Cer_3mm_Over_Sci = h2_Cer_3mm.Clone(f"h2_Cer_3mm_over_Sci_{gain}")
         h2_Cer_3mm_Over_Sci.Divide(h2_Sci_3mm)
 
-        output_name = f"FERS_Boards_Run{runNumber}_Stats_Cer_{gain}"
+        output_name = f"FERS_Boards_Run{run_number}_Stats_Cer_{gain}"
         DrawHistos([h2_Cer, h2_Cer_3mm], "", xmin, xmax, "iX", ymin,
                    ymax, "iY", output_name, dology=False, drawoptions=["col,text", "col,text"],
-                   outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer", runNumber=runNumber, zmin=0, zmax=None)
+                   outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Cer", run_number=run_number, zmin=0, zmax=None)
         plots.append(output_name + ".png")
-        output_name = f"FERS_Boards_Run{runNumber}_Stats_Sci_{gain}"
+        output_name = f"FERS_Boards_Run{run_number}_Stats_Sci_{gain}"
         DrawHistos([h2_Sci, h2_Sci_3mm], "", xmin, xmax, "iX", ymin,
                    ymax, "iY", output_name, dology=False, drawoptions=["col,text", "col,text"],
-                   outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Sci", runNumber=runNumber, zmin=0, zmax=None)
+                   outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Sci", run_number=run_number, zmin=0, zmax=None)
         plots.append(output_name + ".png")
-        output_name = f"FERS_Boards_Run{runNumber}_Stats_Cer_over_Sci_{gain}"
+        output_name = f"FERS_Boards_Run{run_number}_Stats_Cer_over_Sci_{gain}"
         DrawHistos([h2_Cer_Over_Sci, h2_Cer_3mm_Over_Sci], "", xmin, xmax, "iX", ymin,
                    ymax, "iY", output_name, dology=False, drawoptions=["col,text", "col,text"],
-                   outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText="Cer / Sci", runNumber=runNumber, zmin=0, zmax=1.5)
+                   outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Cer / Sci", run_number=run_number, zmin=0, zmax=1.5)
         plots.append(output_name + ".png")
 
     output_html = f"{htmldir}/FERS/Stats_Cer_over_Sci.html"
@@ -926,20 +926,20 @@ def makeBoardFits():
     plots = []
     outdir = f"{plotdir}/boardfits"
     for fersboard in fersboards.values():
-        boardNo = fersboard.boardNo
-        hCer = ifile.Get(f"hist_FERS_Board{boardNo}_CerEnergyHG_{suffix}")
-        hSci = ifile.Get(f"hist_FERS_Board{boardNo}_SciEnergyHG_{suffix}")
+        board_no = fersboard.board_no
+        hCer = ifile.Get(f"hist_FERS_Board{board_no}_CerEnergyHG_{suffix}")
+        hSci = ifile.Get(f"hist_FERS_Board{board_no}_SciEnergyHG_{suffix}")
 
         args_cer = getBoardEnergyFitParameters(
-            runNumber, is3mm=fersboard.Is3mm(), isCer=True)
+            run_number, is3mm=fersboard.is_3mm_size(), isCer=True)
         args_sci = getBoardEnergyFitParameters(
-            runNumber, is3mm=fersboard.Is3mm(), isCer=False)
+            run_number, is3mm=fersboard.is_3mm_size(), isCer=False)
 
-        output_name = eventFit(hCer, f"Run{runNumber}_Board{boardNo}_CerHG",
+        output_name = eventFit(hCer, f"Run{run_number}_Board{board_no}_CerHG",
                                outdir=outdir, xlabel="Cer # p.e.",
                                **args_cer)
         plots.append(output_name)
-        output_name = eventFit(hSci, f"Run{runNumber}_Board{boardNo}_SciHG",
+        output_name = eventFit(hSci, f"Run{run_number}_Board{board_no}_SciHG",
                                outdir=outdir, xlabel="Sci # p.e.",
                                **args_sci)
         plots.append(output_name)
@@ -971,7 +971,7 @@ def main():
             hists_energy_weighted_center = makeFERSEnergyWeightedCenterHists(
                 rdf=rdf, suffix=cat)
 
-            hists_shower_shapes_X, hists_shower_shapes_Y, hists_shower_shapes_R, hists_shower_shapes_Y_VS_X, nEvents = makeFERSShowerShapeHists(
+            hists_shower_shapes_X, hists_shower_shapes_Y, hists_shower_shapes_R, hists_shower_shapes_Y_VS_X, n_events = makeFERSShowerShapeHists(
                 rdf=rdf, suffix=cat)
 
             # stats = collectFERSStats(rdf=rdf)
@@ -1018,7 +1018,7 @@ def main():
                     hist.Write()
             print(f"Saved energy weighted center histograms to {outfile_name}")
 
-            nEvts = nEvents.GetValue()
+            nEvts = n_events.GetValue()
             # save shower shape histograms
             # process the shower shape histograms to merge per-channel histograms
             hists_shower_shape = []

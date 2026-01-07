@@ -1,7 +1,5 @@
 import ROOT
-import sys
-sys.path.append("CMSPLOTS")  # noqa
-from myFunction import DrawHistos
+from plotting.my_function import DrawHistos
 
 
 def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", gain="HG", quartzOnly=0):
@@ -20,25 +18,25 @@ def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", gain="HG", quartz
                            int(xmax - xmin), xmin, xmax, int(ymax - ymin) * 4, ymin, ymax)
 
     for FERSBoard in fersboards.values():
-        for iTowerX, iTowerY in FERSBoard.GetListOfTowers():
-            channel_Cer = FERSBoard.GetChannelByTower(
-                iTowerX, iTowerY, isCer=True)
-            channel_Sci = FERSBoard.GetChannelByTower(
-                iTowerX, iTowerY, isCer=False)
+        for i_tower_x, i_tower_y in FERSBoard.get_list_of_towers():
+            channel_Cer = FERSBoard.get_channel_by_tower(
+                i_tower_x, i_tower_y, isCer=True)
+            channel_Sci = FERSBoard.get_channel_by_tower(
+                i_tower_x, i_tower_y, isCer=False)
 
             if quartzOnly == 1 and not channel_Cer.isQuartz:
                 continue
             if quartzOnly == 2 and channel_Cer.isQuartz:
                 continue
 
-            channel_Cer_name = channel_Cer.GetChannelName(gain=gain)
-            channel_Sci_name = channel_Sci.GetChannelName(gain=gain)
+            channel_Cer_name = channel_Cer.get_channel_name(gain=gain)
+            channel_Sci_name = channel_Sci.get_channel_name(gain=gain)
 
             # default encoding based on board and channel numbers
-            cer_encoded = channel_Cer.boardNo * 100 + channel_Cer.channelNo
+            cer_encoded = channel_Cer.board_no * 100 + channel_Cer.channel_no
             if cer_encoded == 0:
                 cer_encoded = 0.001
-            sci_encoded = channel_Sci.boardNo * 100 + channel_Sci.channelNo
+            sci_encoded = channel_Sci.board_no * 100 + channel_Sci.channel_no
             if sci_encoded == 0:
                 sci_encoded = 0.001
 
@@ -46,15 +44,15 @@ def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", gain="HG", quartz
                 cer_encoded = valuemaps[channel_Cer_name]
             if valuemaps and channel_Sci_name in valuemaps:
                 sci_encoded = valuemaps[channel_Sci_name]
-            if FERSBoard.Is3mm():
-                h2_Cer_3mm.Fill(channel_Cer.iTowerX, channel_Cer.iTowerY,
+            if FERSBoard.is_3mm_size():
+                h2_Cer_3mm.Fill(channel_Cer.i_tower_x, channel_Cer.i_tower_y,
                                 cer_encoded)
-                h2_Sci_3mm.Fill(channel_Sci.iTowerX, channel_Sci.iTowerY,
+                h2_Sci_3mm.Fill(channel_Sci.i_tower_x, channel_Sci.i_tower_y,
                                 sci_encoded)
             else:
-                h2_Cer.Fill(channel_Cer.iTowerX, channel_Cer.iTowerY,
+                h2_Cer.Fill(channel_Cer.i_tower_x, channel_Cer.i_tower_y,
                             cer_encoded)
-                h2_Sci.Fill(channel_Sci.iTowerX, channel_Sci.iTowerY,
+                h2_Sci.Fill(channel_Sci.i_tower_x, channel_Sci.i_tower_y,
                             sci_encoded)
 
     h2_Cer.SetMarkerSize(0.60)
@@ -82,36 +80,36 @@ def visualizeDRSBoards(drs_boards, valuemaps=None, suffix="", quartzOnly=0):
                                int(xmax - xmin), xmin, xmax, int(ymax - ymin) * 4, ymin, ymax)
 
     for _, DRSBoard in drs_boards.items():
-        for channel_Sci in DRSBoard.GetListOfChannels(isCer=False):
-            sci_encoded = channel_Sci.boardNo * 100 + \
-                channel_Sci.groupNo * 10 + channel_Sci.channelNo
+        for channel_Sci in DRSBoard.get_list_of_channels(isCer=False):
+            sci_encoded = channel_Sci.board_no * 100 + \
+                channel_Sci.group_no * 10 + channel_Sci.channel_no
             if sci_encoded == 0:
                 sci_encoded = 0.001
-            if valuemaps and channel_Sci.GetChannelName() in valuemaps:
-                sci_encoded = valuemaps[channel_Sci.GetChannelName()]
+            if valuemaps and channel_Sci.get_channel_name() in valuemaps:
+                sci_encoded = valuemaps[channel_Sci.get_channel_name()]
             if not channel_Sci.is6mm:
-                h2_DRS_Sci_3mm.Fill(channel_Sci.iTowerX, channel_Sci.iTowerY,
+                h2_DRS_Sci_3mm.Fill(channel_Sci.i_tower_x, channel_Sci.i_tower_y,
                                     sci_encoded)
             else:
-                h2_DRS_Sci.Fill(channel_Sci.iTowerX, channel_Sci.iTowerY,
+                h2_DRS_Sci.Fill(channel_Sci.i_tower_x, channel_Sci.i_tower_y,
                                 sci_encoded)
-        for channel_Cer in DRSBoard.GetListOfChannels(isCer=True):
-            cer_encoded = channel_Cer.boardNo * 100 + \
-                channel_Cer.groupNo * 10 + channel_Cer.channelNo
+        for channel_Cer in DRSBoard.get_list_of_channels(isCer=True):
+            cer_encoded = channel_Cer.board_no * 100 + \
+                channel_Cer.group_no * 10 + channel_Cer.channel_no
             if quartzOnly == 1 and not channel_Cer.isQuartz:
                 continue
             if quartzOnly == 2 and channel_Cer.isQuartz:
                 continue
             if cer_encoded == 0:
                 cer_encoded = 0.001
-            if valuemaps and channel_Cer.GetChannelName() in valuemaps:
-                cer_encoded = valuemaps[channel_Cer.GetChannelName()]
+            if valuemaps and channel_Cer.get_channel_name() in valuemaps:
+                cer_encoded = valuemaps[channel_Cer.get_channel_name()]
             if not channel_Cer.is6mm:
-                h2_DRS_Cer_3mm.Fill(channel_Cer.iTowerX, channel_Cer.iTowerY,
+                h2_DRS_Cer_3mm.Fill(channel_Cer.i_tower_x, channel_Cer.i_tower_y,
                                     cer_encoded)
             else:
-                h2_DRS_Cer.Fill(channel_Cer.iTowerX,
-                                channel_Cer.iTowerY, cer_encoded)
+                h2_DRS_Cer.Fill(channel_Cer.i_tower_x,
+                                channel_Cer.i_tower_y, cer_encoded)
 
     h2_DRS_Cer.SetMarkerSize(0.60)
     h2_DRS_Sci.SetMarkerSize(0.60)
@@ -121,7 +119,7 @@ def visualizeDRSBoards(drs_boards, valuemaps=None, suffix="", quartzOnly=0):
     return [h2_DRS_Cer, h2_DRS_Cer_3mm], [h2_DRS_Sci, h2_DRS_Sci_3mm]
 
 
-def makeEventDisplay(h2_6mm, h2_3mm, output_name, outdir, runNumber, zmin, zmax, isCer=False, extraToDraw=None):
+def makeEventDisplay(h2_6mm, h2_3mm, output_name, outdir, run_number, zmin, zmax, isCer=False, extraToDraw=None):
     xmax = 14
     xmin = -14
     ymax = 10
@@ -129,8 +127,8 @@ def makeEventDisplay(h2_6mm, h2_3mm, output_name, outdir, runNumber, zmin, zmax,
     W_ref = 1000
     H_ref = 1100
     if isCer:
-        extraText = "Cer"
+        extra_text = "Cer"
     else:
-        extraText = "Sci"
+        extra_text = "Sci"
     DrawHistos([h2_6mm, h2_3mm], "", xmin, xmax, "iX", ymin, ymax, "iY", output_name, dology=False, drawoptions=["col,text", "col,text"],
-               outdir=outdir, doth2=True, W_ref=W_ref, H_ref=H_ref, extraText=extraText, runNumber=runNumber, zmin=zmin, zmax=zmax, extraToDraw=extraToDraw)
+               outdir=outdir, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text=extra_text, run_number=run_number, zmin=zmin, zmax=zmax, extraToDraw=extraToDraw)

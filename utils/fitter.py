@@ -1,11 +1,11 @@
 import ROOT
-from CMSPLOTS.tdrstyle import setTDRStyle
-import CMSPLOTS.CMS_lumi as CMS_lumi
+from plotting.tdrstyle import setTDRStyle
+import plotting.CMS_lumi as CMS_lumi
 import os
 import math
 
 
-def channelFit(hist, outdir, outname, npe_max=3, is3mm=False, runNumber=None):
+def channel_fit(hist, outdir, outname, npe_max=3, is3mm=False, run_number=None):
     # --------------------------
     # 1. Define Observable
     # --------------------------
@@ -27,7 +27,7 @@ def channelFit(hist, outdir, outname, npe_max=3, is3mm=False, runNumber=None):
         dpe_min = 100
         dpe_max = 170
         sigma_guess = 20.0
-        if runNumber and runNumber >= 1100:
+        if run_number and run_number >= 1100:
             # Adjust guesses for newer runs
             dpe_guess = 75.0
             dpe_min = 60
@@ -227,14 +227,14 @@ def channelFit(hist, outdir, outname, npe_max=3, is3mm=False, runNumber=None):
     frame.Draw()
 
     CMS_lumi.lumi_sqrtS = ""
-    CMS_lumi.relPosX = 0.25
+    CMS_lumi.rel_pos_x = 0.25
     # CMS_lumi.extraText = "Internal"
-    CMS_lumi.extraText = ""
+    CMS_lumi.extra_text = ""
 
-    if runNumber is not None:
-        CMS_lumi.lumi_13TeV = f"Cosmic Run {runNumber}"
-        if runNumber >= 1100:
-            CMS_lumi.lumi_13TeV = f"Run {runNumber}"
+    if run_number is not None:
+        CMS_lumi.lumi_13TeV = f"Cosmic Run {run_number}"
+        if run_number >= 1100:
+            CMS_lumi.lumi_13TeV = f"Run {run_number}"
 
     CMS_lumi.CMS_lumi(c, 4, 0)
 
@@ -266,7 +266,7 @@ def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="
              wgausmean=2500, wgausmin=500, wgausmax=2500,
              xmipmean=4000, xmipmin=2000, xmipmax=6000,
              wmipmean=1000, wmipmin=100, wmipmax=2000,
-             runNumber=None):
+             run_number=None):
 
     peak_pos = h.GetBinCenter(h.GetMaximumBin())
     if xfitmax is None:
@@ -507,14 +507,14 @@ def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="
         latex.DrawLatexNDC(0.20, ylabel, f"# MIP = {n_mip:.0f}")
 
     CMS_lumi.lumi_sqrtS = ""
-    CMS_lumi.relPosX = 0.25
+    CMS_lumi.rel_pos_x = 0.25
     # CMS_lumi.extraText = "Internal"
-    CMS_lumi.extraText = "Cer" if "Cer" in suffix else "Sci"
+    CMS_lumi.extra_text = "Cer" if "Cer" in suffix else "Sci"
 
-    if runNumber is not None:
-        CMS_lumi.lumi_13TeV = f"Cosmic Run {runNumber}"
-        if runNumber >= 1100:
-            CMS_lumi.lumi_13TeV = f"Run {runNumber}"
+    if run_number is not None:
+        CMS_lumi.lumi_13TeV = f"Cosmic Run {run_number}"
+        if run_number >= 1100:
+            CMS_lumi.lumi_13TeV = f"Run {run_number}"
 
     CMS_lumi.CMS_lumi(padtop, 4, 0)
 

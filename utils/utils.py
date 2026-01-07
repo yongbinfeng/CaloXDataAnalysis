@@ -1,4 +1,4 @@
-def number2string(n):
+def number_to_string(n):
     s = str(n)
     return s.replace('-', 'm').replace('.', 'p')
 

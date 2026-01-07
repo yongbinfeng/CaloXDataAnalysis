@@ -1,6 +1,6 @@
 import os
 import ROOT
-from utils.utils import number2string
+from utils.utils import number_to_string
 
 
 def get_run_paths(run_number):
@@ -12,7 +12,7 @@ def get_run_paths(run_number):
     }
 
 
-def get_standard_info_pave(fersboard=None, iTowerX=None, iTowerY=None, drsboard=None, extra_lines=None):
+def get_standard_info_pave(fersboard=None, i_tower_x=None, i_tower_y=None, drsboard=None, extra_lines=None):
     """Generates the standard info box (TPaveText) used in histograms."""
     extra = ROOT.TPaveText(0.20, 0.65, 0.60, 0.90, "NDC")
     extra.SetTextAlign(11)
@@ -22,11 +22,11 @@ def get_standard_info_pave(fersboard=None, iTowerX=None, iTowerY=None, drsboard=
     extra.SetTextSize(0.04)
 
     if fersboard:
-        extra.AddText(f"FERS Board: {fersboard.boardNo}")
+        extra.AddText(f"FERS Board: {fersboard.board_no}")
     if drsboard:
-        extra.AddText(f"DRS Board: {drsboard.boardNo}")
-    if iTowerX is not None and iTowerY is not None:
-        extra.AddText(f"Tower: ({iTowerX}, {iTowerY})")
+        extra.AddText(f"DRS Board: {drsboard.board_no}")
+    if i_tower_x is not None and i_tower_y is not None:
+        extra.AddText(f"Tower: ({i_tower_x}, {i_tower_y})")
 
     if extra_lines:
         for line in extra_lines:

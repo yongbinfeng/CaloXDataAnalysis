@@ -1,6 +1,6 @@
-def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False, runNumber=1230) -> dict:
+def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False, run_number=1230) -> dict:
     scale = 1.0
-    if runNumber >= 1350:
+    if run_number >= 1350:
         scaleHG = 0.6
         scaleLG = 0.2
     configs = {}
@@ -100,22 +100,22 @@ def getFERSSaturationValue():
     return 7500
 
 
-def getDRSPlotRanges(subtractMedian=False, isAmplified=False, is6mm=False):
+def get_drs_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False):
     xmin = -50
     xmax = 50
     if subtractMedian:
         xmin = -20
         xmax = 40
-    if isAmplified:
+    if is_amplified:
         xmin = -1000
         xmax = 2500
-    if is6mm and isAmplified:
+    if is6mm and is_amplified:
         xmin = -200
         xmax = 500
     return xmin, xmax
 
 
-def getBoardEnergyFitParameters(runNumber, is3mm=False, isCer=False):
+def getBoardEnergyFitParameters(run_number, is3mm=False, isCer=False):
     args = {}
     args["scanruns"] = {}
     args["cosmicruns"] = {}
@@ -177,8 +177,8 @@ def getBoardEnergyFitParameters(runNumber, is3mm=False, isCer=False):
         "wmipmean": 60, "wmipmin": 10, "wmipmax": 80,
     }
 
-    from utils.utils import IsScanRun
-    isscanrun = IsScanRun(runNumber)
+    from utils.utils import is_scan_run
+    isscanrun = is_scan_run(run_number)
     runtype = "scanruns" if isscanrun else "cosmicruns"
 
     boardtype = "3mm" if is3mm else "6mm"
@@ -187,16 +187,16 @@ def getBoardEnergyFitParameters(runNumber, is3mm=False, isCer=False):
     keystring = boardtype + "_" + channeltype
     if keystring not in args[runtype]:
         raise ValueError(
-            f"Run {runNumber} with board type {boardtype} and channel type {channeltype} not found in energy fit parameters.")
+            f"Run {run_number} with board type {boardtype} and channel type {channeltype} not found in energy fit parameters.")
 
     results = args[runtype][keystring].copy()
     # Update the results with the run number
-    results["runNumber"] = runNumber
+    results["run_number"] = run_number
 
     return results
 
 
-def getEventEnergyFitParameters(runNumber, isCer=False, clip=False):
+def getEventEnergyFitParameters(run_number, isCer=False, clip=False):
     args = {}
     args["scanruns"] = {}
     args["cosmicruns"] = {}
@@ -270,10 +270,10 @@ def getEventEnergyFitParameters(runNumber, isCer=False, clip=False):
         "wgausmean": 200, "wgausmin": 10, "wgausmax": 550
     }
 
-    from utils.utils import IsScanRun
-    isscanrun = IsScanRun(runNumber)
+    from utils.utils import is_scan_run
+    isscanrun = is_scan_run(run_number)
     runtype = "scanruns" if isscanrun else "cosmicruns"
-    if runNumber >= 1150:
+    if run_number >= 1150:
         runtype = "positron"
     if clip:
         runtype += "_clipped"
@@ -282,16 +282,16 @@ def getEventEnergyFitParameters(runNumber, isCer=False, clip=False):
 
     if channeltype not in args[runtype]:
         raise ValueError(
-            f"Run {runNumber} with channel type {channeltype} not found in energy fit parameters.")
+            f"Run {run_number} with channel type {channeltype} not found in energy fit parameters.")
 
     results = args[runtype][channeltype].copy()
-    results["runNumber"] = runNumber
+    results["run_number"] = run_number
 
     # Return a copy to avoid modifying the original dictionary
     return results
 
 
-def getServiceDRSPlotRanges(channel, subtractMedian=True):
+def get_service_drs_plot_ranges(channel, subtractMedian=True):
 
     service_drs_ranges = {
         "DRS_Board7_Group0_Channel0": (2000, -3000),

@@ -1,8 +1,8 @@
 import re
 import ROOT
-from CMSPLOTS.myFunction import DrawHistos
-from channels.channel_map import getMCPChannels
-from utils.dataloader import CaloXDataLoader
+from cmsplots.my_function import DrawHistos
+from channels.channel_map import get_mcp_channels
+from utils.data_loader import CaloXDataLoader
 from utils.html_generator import generate_html
 from utils.parser import get_args
 from utils.root_setup import setup_root
@@ -15,7 +15,7 @@ setup_root(n_threads=10, batch_mode=True, load_functions=True)
 
 def main():
     args = get_args()
-    runNumber = args.run
+    run_number = args.run
     TSmin = 500
     TSmax = 700
     RelTSmin = -320
@@ -31,12 +31,12 @@ def main():
     outputs_html = {}
 
     loader = CaloXDataLoader(json_file=args.json_file)
-    rdf = loader.load_rdf(runNumber, args.first_event, args.last_event)
+    rdf = loader.load_rdf(run_number, args.first_event, args.last_event)
 
-    rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
+    rdf = preProcessDRSBoards(rdf, run_number=run_number)
 
     # get the MCP peak TS
-    map_mcp_channels = getMCPChannels(runNumber)
+    map_mcp_channels = get_mcp_channels(run_number)
 
     # get time reference channel TS
     channels_TF = [
@@ -176,12 +176,12 @@ def main():
     #
     labels = ["Board0", "Board1", "Board2", "Board3"]
     legendPos = [0.20, 0.85, 0.90, 0.9]
-    output_dir = f"results/plots/Run{runNumber}/MCP"
+    output_dir = f"results/plots/Run{run_number}/MCP"
     plots = []
     output_name = f"Time_Reference_Peak_TS"
     DrawHistos(hists_tf, labels, 750, 900, "Peak TS", 0, None, "Counts",
                outputname=output_name, outdir=output_dir,
-               dology=False, mycolors=[1, 2, 3, 4], drawashist=True, runNumber=runNumber,
+               dology=False, mycolors=[1, 2, 3, 4], drawashist=True, run_number=run_number,
                addOverflow=True, addUnderflow=True, legendNCols=4, legendPos=legendPos)
     plots.append(f"{output_name}.png")
     # Special marker to indicate a new line in the HTML
@@ -192,7 +192,7 @@ def main():
         outputname = f"{det}_peak_ts"
         DrawHistos(hists, labels, TSmin, TSmax, "Peak TS", 0, None, "Counts",
                    outputname=outputname, outdir=output_dir,
-                   dology=False, mycolors=[1, 2, 3, 4], drawashist=True, runNumber=runNumber,
+                   dology=False, mycolors=[1, 2, 3, 4], drawashist=True, run_number=run_number,
                    addOverflow=False, addUnderflow=False, legendNCols=4, legendPos=legendPos)
         plots.append(f"{outputname}.png")
 
@@ -202,7 +202,7 @@ def main():
                        outputname=outputname,
                        outdir=output_dir,
                        drawoptions="COLz", zmin=1, zmax=None, dologz=True,
-                       dology=False, runNumber=runNumber,
+                       dology=False, run_number=run_number,
                        addOverflow=True, doth2=True)
             plots.append(f"{outputname}.png")
 
@@ -214,11 +214,11 @@ def main():
                    outputname=outputname,
                    outdir=output_dir,
                    drawoptions="COLz", zmin=1, zmax=None, dologz=True,
-                   dology=False, runNumber=runNumber,
+                   dology=False, run_number=run_number,
                    addOverflow=True, doth2=True)
         plots.append(f"{outputname}.png")
 
-    output_html = f"results/html/Run{runNumber}/ServiceDRS/MCPPeakTS.html"
+    output_html = f"results/html/Run{run_number}/ServiceDRS/MCPPeakTS.html"
     outputs_html["abs"] = generate_html(
         plots, output_dir, plots_per_row=4, output_html=output_html)
 
@@ -243,7 +243,7 @@ def main():
             f"B3: {hists[3].GetMean():.1f} #pm {hists[3].GetRMS():.1f}")
         DrawHistos(hists, labels, RelTSmin, RelTSmax, "Relative Peak TS", 0, hists[0].GetMaximum()*1.5, "Counts",
                    outputname=outputname, outdir=output_dir,
-                   dology=False, mycolors=[1, 2, 3, 4], drawashist=True, runNumber=runNumber,
+                   dology=False, mycolors=[1, 2, 3, 4], drawashist=True, run_number=run_number,
                    addOverflow=False, addUnderflow=False, legendNCols=4, legendPos=legendPos, extraToDraw=extraToDraw)
         plots.append(f"{outputname}.png")
 
@@ -253,7 +253,7 @@ def main():
                        outputname=outputname,
                        outdir=output_dir,
                        drawoptions="COLz", zmin=1, zmax=None, dologz=True,
-                       dology=False, runNumber=runNumber,
+                       dology=False, run_number=run_number,
                        addOverflow=True, doth2=True)
             plots.append(f"{outputname}.png")
 
@@ -265,7 +265,7 @@ def main():
                    outputname=outputname,
                    outdir=output_dir,
                    drawoptions="COLz", zmin=1, zmax=None, dologz=True,
-                   dology=False, runNumber=runNumber,
+                   dology=False, run_number=run_number,
                    addOverflow=True, doth2=True)
         plots.append(f"{outputname}.png")
 
@@ -283,7 +283,7 @@ def main():
                 f"B{idx+1}: {hist.GetMean():.1f} #pm {hist.GetRMS():.1f}")
         DrawHistos(hists, labels[1:], DiffRelTSmin, DiffRelTSmax, "Difference of Relative Peak TS", 0, hists[0].GetMaximum()*1.5, "Counts",
                    outputname=outputname, outdir=output_dir,
-                   dology=False, mycolors=[2, 3, 4], drawashist=True, runNumber=runNumber,
+                   dology=False, mycolors=[2, 3, 4], drawashist=True, run_number=run_number,
                    addOverflow=False, addUnderflow=False, legendNCols=3, legendPos=legendPos, extraToDraw=extraToDraw)
         plots.append(f"{outputname}.png")
 
@@ -304,11 +304,11 @@ def main():
                 f"B{idx}: {hist.GetMean():.1f} #pm {hist.GetRMS():.1f}")
         DrawHistos(hists, labels, DiffRelTSmin_US, DiffRelTSmax_US, "Difference of Relative Peak TS wrt US", 0, hists[1].GetMaximum()*1.5, "Counts",
                    outputname=outputname, outdir=output_dir,
-                   dology=False, mycolors=[1, 2, 3, 4], drawashist=True, runNumber=runNumber,
+                   dology=False, mycolors=[1, 2, 3, 4], drawashist=True, run_number=run_number,
                    addOverflow=False, addUnderflow=False, legendNCols=4, legendPos=legendPos, extraToDraw=extraToDraw)
         plots.append(f"{outputname}.png")
 
-    output_html = f"results/html/Run{runNumber}/ServiceDRS/MCPPeakTS_relative.html"
+    output_html = f"results/html/Run{run_number}/ServiceDRS/MCPPeakTS_relative.html"
     outputs_html["rel"] = generate_html(
         plots, output_dir, plots_per_row=4, output_html=output_html)
 

@@ -3,17 +3,17 @@ import os
 import re
 import json
 from utils.utils import getBranchStats
-from channels.channel_map import findFanoutTimeReferenceDelay, findDRSTriggerMap, getMCPChannels
+from channels.channel_map import findFanoutTimeReferenceDelay, findDRSTriggerMap, get_mcp_channels
 
 
-def preProcessDRSBoards(rdf, debug=False, drsboards=None, runNumber=None):
+def preProcessDRSBoards(rdf, debug=False, drsboards=None, run_number=None):
     import re
     # Get the list of all branch names
     branches = [str(b) for b in rdf.GetColumnNames()]
     pattern = re.compile(r"^DRS_Board\d+_Group\d+_Channel\d+$")
     drs_branches = [b for b in branches if pattern.search(b)]
     # check if the drs stats file already exists
-    stats_file = f"results/root/Run{runNumber}/drs_stat_preprocessed.json"
+    stats_file = f"results/root/Run{run_number}/drs_stat_preprocessed.json"
     if not os.path.exists(stats_file):
         # get the statistics of DRS branches
         print(f"Calculating DRS stats and saving to {stats_file}")
@@ -47,9 +47,9 @@ def preProcessDRSBoards(rdf, debug=False, drsboards=None, runNumber=None):
     if drsboards is not None:
         for _, DRSBoard in drsboards.items():
             for channel in DRSBoard:
-                if channel.is6mm and channel.isAmplified:
+                if channel.is6mm and channel.is_amplified:
                     drs_amplified_channels.append(
-                        channel.GetChannelName(blsub=False))
+                        channel.get_channel_name(blsub=False))
         # print("6mm amplified channels:", drs_amplified_channels)
 
     # find the baseline of each DRS channel (median here)
@@ -94,8 +94,8 @@ def getDRSSum(rdf, DRSBoards, TS_start=0, TS_end=400):
     TS_end = int(TS_end)
     for _, DRSBoard in DRSBoards.items():
         for channel in DRSBoard:
-            channelName_blsub = channel.GetChannelName(blsub=True)
-            channelSumName = channel.GetChannelSumName()
+            channelName_blsub = channel.get_channel_name(blsub=True)
+            channelSumName = channel.get_channel_sum_name()
             rdf = rdf.Define(
                 channelSumName,
                 f"SumRange({channelName_blsub}, {TS_start}, {TS_end})"
@@ -117,11 +117,11 @@ def getDRSPeakTS(rdf, run, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
     TS_end = int(TS_end)
     for _, DRSBoard in DRSBoards.items():
         for channel in DRSBoard:
-            channelName_sub = channel.GetChannelName(blsub=True)
-            channelPeakTSName = channel.GetChannelPeakTSName()
+            channelName_sub = channel.get_channel_name(blsub=True)
+            channelPeakTSName = channel.get_channel_peak_ts_name()
 
             # find the trigger channel for this DRS channel
-            channelName = channel.GetChannelName(blsub=False)
+            channelName = channel.get_channel_name(blsub=False)
             triggerName = findDRSTriggerMap(channelName, run=run)
             triggerPeakTSName = triggerName + "_peakTS"
             triggerDelay = findFanoutTimeReferenceDelay(triggerName, run=run)
@@ -145,7 +145,7 @@ def getDRSPeakTS(rdf, run, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
 
 
 def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS=0, TSmaxDRS=400, threshold=1.0):
-    map_mcp_channels = getMCPChannels(run)
+    map_mcp_channels = get_mcp_channels(run)
 
     # get time reference channel TS
     channels_TF = [
@@ -199,10 +199,10 @@ def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS
 
     # calibration all DRS channels to MCP US channel 0
     for _, DRSBoard in DRSBoards.items():
-        if DRSBoard.boardNo > 3:
+        if DRSBoard.board_no > 3:
             continue
         for channel in DRSBoard:
-            channelName = channel.GetChannelName(blsub=False)
+            channelName = channel.get_channel_name(blsub=False)
 
             # define the relative peak TS with respect to the reference channel
             channel_TS = re.sub(r"_Channel[0-7]", "_Channel8", channelName)
@@ -215,11 +215,11 @@ def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS
 
             # define the difference of relative peak TS with respect to the first channel of US
             rdf = rdf.Define(
-                f"{channelName}_DiffRelPeakTS_US", f"(int){channelName}_RelPeakTS - (int){map_mcp_channels['US'][0]}_RelPeakTS - {value_diffcorrs[DRSBoard.boardNo]}")
+                f"{channelName}_DiffRelPeakTS_US", f"(int){channelName}_RelPeakTS - (int){map_mcp_channels['US'][0]}_RelPeakTS - {value_diffcorrs[DRSBoard.board_no]}")
 
             # align TS
             rdf = rdf.Define(
-                f"{channelName}_AlignedTS", f"TS - (int){channel_TS}_PeakTS - (int){map_mcp_channels['US'][0]}_RelPeakTS - {value_diffcorrs[DRSBoard.boardNo]}"
+                f"{channelName}_AlignedTS", f"TS - (int){channel_TS}_PeakTS - (int){map_mcp_channels['US'][0]}_RelPeakTS - {value_diffcorrs[DRSBoard.board_no]}"
             )
 
             # map aligned TS to real distance in z (cm)
@@ -249,8 +249,8 @@ def getDRSPeak(rdf, DRSBoards, TS_start=0, TS_end=400):
     TS_end = int(TS_end)
     for _, DRSBoard in DRSBoards.items():
         for channel in DRSBoard:
-            channelName_sub = channel.GetChannelName(blsub=True)
-            channelPeakName = channel.GetChannelPeakName()
+            channelName_sub = channel.get_channel_name(blsub=True)
+            channelPeakName = channel.get_channel_peak_name()
             rdf = rdf.Define(
                 channelPeakName,
                 f"MaxRange({channelName_sub}, {TS_start}, {TS_end})"
@@ -258,7 +258,7 @@ def getDRSPeak(rdf, DRSBoards, TS_start=0, TS_end=400):
     return rdf
 
 
-def getDRSStats(rdf, run, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
+def get_drs_stats(rdf, run, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
     """
     Get the statistics of DRS outputs per channel.
     """

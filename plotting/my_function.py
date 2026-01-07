@@ -1,10 +1,8 @@
 import ROOT
 import os
 import sys
-# from CMSPLOTS import CMS_lumi
-# from CMSPLOTS import tdrstyle
-from CMSPLOTS import CMS_lumi
-from CMSPLOTS import tdrstyle
+from plotting import CMS_lumi
+from plotting import tdrstyle
 
 
 class bcolors:
@@ -552,7 +550,7 @@ def TH2ToTH1s(h2, projY=False, label="X"):
     return hs, labels
 
 
-def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outputname, dology=True, showratio=False, dologx=False, lheader=None, donormalize=False, binomialratio=False, yrmax=2.0, yrmin=0.0, yrlabel=None, MCOnly=False, leftlegend=False, mycolors=None, legendPos=None, legendNCols=1, linestyles=None, markerstyles=None, showpull=False, doNewman=False, doPearson=False, ignoreHistError=False, ypullmin=-3.99, ypullmax=3.99, drawashist=False, padsize=(2, 0.9, 1.1), setGridx=False, setGridy=False, drawoptions=None, legendoptions=None, ratiooptions=None, dologz=False, doth2=False, ratiobase=0, redrawihist=-1, extraText=None, noCMS=False, noLumi=False, nMaxDigits=None, nTextDigits=0, addOverflow=False, addUnderflow=False, plotdiff=False, hratiopanel=None, doratios=None, hpulls=None, W_ref=600, H_ref=600, is5TeV=False, outdir="plots", savepdf=True, zmin=0, zmax=2, extralabels=None, extralheader=None, extraToDraw=None, exlegoffset=0.08, runNumber=None, ncolors=None, zlabel="Events", lumitext=None, usePDF=False, usePNG=True):
+def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outputname, dology=True, showratio=False, dologx=False, lheader=None, donormalize=False, binomialratio=False, yrmax=2.0, yrmin=0.0, yrlabel=None, MCOnly=False, leftlegend=False, mycolors=None, legendPos=None, legendNCols=1, linestyles=None, markerstyles=None, showpull=False, doNewman=False, doPearson=False, ignoreHistError=False, ypullmin=-3.99, ypullmax=3.99, drawashist=False, padsize=(2, 0.9, 1.1), setGridx=False, setGridy=False, drawoptions=None, legendoptions=None, ratiooptions=None, dologz=False, doth2=False, ratiobase=0, redrawihist=-1, extra_text=None, noCMS=False, noLumi=False, nMaxDigits=None, nTextDigits=0, addOverflow=False, addUnderflow=False, plotdiff=False, hratiopanel=None, doratios=None, hpulls=None, W_ref=600, H_ref=600, is5TeV=False, outdir="plots", savepdf=True, zmin=0, zmax=2, extralabels=None, extralheader=None, extraToDraw=None, exlegoffset=0.08, run_number=None, ncolors=None, zlabel="Events", lumitext=None, usePDF=False, usePNG=True):
     """
     draw histograms with the CMS tdr style
     """
@@ -585,18 +583,18 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     # change the CMS_lumi variables (see CMS_lumi.py)
     # used with iPeriod = 0, e.g. for simulation-only plots (default is an empty string)
     CMS_lumi.lumi_sqrtS = ""
-    CMS_lumi.relPosX = 0.25
+    CMS_lumi.rel_pos_x = 0.25
     # CMS_lumi.extraText = "Internal"
-    CMS_lumi.extraText = ""
-    if extraText:
-        CMS_lumi.extraText = extraText
+    CMS_lumi.extra_text = ""
+    if extra_text:
+        CMS_lumi.extra_text = extra_text
     elif MCOnly:
-        CMS_lumi.extraText = "Simulation"
+        CMS_lumi.extra_text = "Simulation"
     # CMS_lumi.extraText += " Preliminary"
 
-    if runNumber is not None:
-        from utils.dataloader import getRunInfo
-        btype, benergy = getRunInfo(runNumber)
+    if run_number is not None:
+        from utils.data_loader import getRunInfo
+        btype, benergy = getRunInfo(run_number)
         btypes = {
             "pion": "#pi^{+}",
             "pions": "#pi^{+}",
@@ -606,7 +604,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
             "e+": "e^{+}",
             "mu+": "#mu^{+}",
         }
-        CMS_lumi.lumi_13TeV = f"Run {runNumber}: {btypes.get(btype.lower(), btype.lower())}, {benergy} GeV"
+        CMS_lumi.lumi_13TeV = f"Run {run_number}: {btypes.get(btype.lower(), btype.lower())}, {benergy} GeV"
     else:
         CMS_lumi.lumi_13TeV = ""
 
@@ -651,7 +649,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     W = W_ref
     H = H_ref
 
-    iPeriod = 0
+    i_period = 0
 
     npads = 1 + showratio + showpull
 
@@ -927,23 +925,23 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         myhistos_clone[redrawihist].Draw(
             " ".join(filter(None, [drawoptions[redrawihist], "same"])))
 
-    iPosX = 0
-    plotCMS = True
+    i_pos_x = 0
+    plot_cms = True
     if noCMS:
         # do not draw CMS, only lumi info and extraText
-        plotCMS = False
-        CMS_lumi.cmsText = ""
+        plot_cms = False
+        CMS_lumi.cms_text = ""
         # CMS_lumi.extraText = ""
         # iPosX = 11
     if not is5TeV:
-        iPeriod = 4
+        i_period = 4
     else:
-        iPeriod = 5
+        i_period = 5
     if MCOnly:
-        iPeriod = 0
+        i_period = 0
     if showratio or showpull:
         if not noLumi:
-            CMS_lumi.CMS_lumi(pad1, iPeriod, iPosX, plotCMS=plotCMS)
+            CMS_lumi.CMS_lumi(pad1, i_period, i_pos_x, plot_cms=plot_cms)
         pad1.Update()
         pad1.RedrawAxis()
         # frame = pad1.GetFrame()
@@ -961,7 +959,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
 
     else:
         if not noLumi:
-            CMS_lumi.CMS_lumi(canvas, iPeriod, iPosX, plotCMS=plotCMS)
+            CMS_lumi.CMS_lumi(canvas, i_period, i_pos_x, plot_cms=plot_cms)
         canvas.cd()
         canvas.Update()
         canvas.RedrawAxis()

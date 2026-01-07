@@ -1,11 +1,11 @@
 import argparse
-from configs.runconfig import runNumber, firstEvent, lastEvent, jsonFile
-from utils.dataloader import getRunInfo
+from configs.run_config import run_number, firstEvent, lastEvent, jsonFile
+from utils.data_loader import getRunInfo
 
 
 def get_args():
     parser = argparse.ArgumentParser(description="prepare CaloX data analysis")
-    parser.add_argument("--run", default=runNumber,
+    parser.add_argument("--run", default=run_number,
                         type=int, help="Run number")
     parser.add_argument(
         "--first-event", default=firstEvent, type=int, help="First event")

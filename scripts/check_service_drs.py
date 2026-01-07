@@ -1,11 +1,11 @@
 import ROOT
-from CMSPLOTS.myFunction import DrawHistos
-from channels.channel_map import getPreShowerChannel, getDownStreamMuonChannel, buildHodoPosChannels, getCerenkovCounters, buildFERSBoards, buildDRSBoards, getDownStreamTTUMuonChannel
+from cmsplots.my_function import DrawHistos
+from channels.channel_map import get_pre_shower_channel, get_downstream_muon_channel, build_hodo_pos_channels, get_cerenkov_counters, build_fers_boards, build_drs_boards, getDownStreamTTUMuonChannel
 from utils.html_generator import generate_html
-from utils.dataloader import loadRDF
+from utils.data_loader import loadRDF
 from variables.drs import preProcessDRSBoards
 from variables.fers import vectorizeFERS
-from configs.plotranges import getServiceDRSProcessedInfoRanges
+from configs.plot_ranges import getServiceDRSProcessedInfoRanges
 from selections.selections import applyUpstreamVeto, applyUpstreamVeto, getServiceDRSSumCutValue
 from utils.parser import get_args
 from utils.auto_compile import auto_compile
@@ -16,27 +16,27 @@ ROOT.gROOT.SetBatch(True)  # Run in batch mode
 ROOT.ROOT.EnableImplicitMT(10)
 
 parser = get_args()
-runNumber = parser.run
+run_number = parser.run
 firstEvent = parser.first_event
 lastEvent = parser.last_event
 jsonFile = parser.json_file
 
 
 def analyzePulse(channels, names):
-    rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
+    rdf, rdf_org = loadRDF(run_number, firstEvent, lastEvent, jsonFile)
     rdf = preProcessDRSBoards(rdf)
-    rdf, _ = applyUpstreamVeto(rdf, runNumber)
+    rdf, _ = applyUpstreamVeto(rdf, run_number)
 
-    FERSBoards = buildFERSBoards(run=runNumber)
+    FERSBoards = build_fers_boards(run=run_number)
     rdf = vectorizeFERS(rdf, FERSBoards)
 
     hists = {}
     hists2d = {}
 
-    channel_preshower = getPreShowerChannel(runNumber)
-    # channel_muon = getDownStreamMuonChannel(runNumber)
-    channel_muon = getDownStreamTTUMuonChannel(runNumber)
-    channels_cerenkov = getCerenkovCounters(runNumber)
+    channel_preshower = get_pre_shower_channel(run_number)
+    # channel_muon = get_downstream_muon_channel(runNumber)
+    channel_muon = getDownStreamTTUMuonChannel(run_number)
+    channels_cerenkov = get_cerenkov_counters(run_number)
 
     rdf = rdf.Define(f"{channel_preshower}_peak_position",
                      f"ArgMinRange({channel_preshower}_blsub, 100, 400)")
@@ -99,7 +99,7 @@ def analyzePulse(channels, names):
 
     print("Writing histograms to output file...")
     ofile = ROOT.TFile(
-        f"results/root/Run{runNumber}/drs_service.root", "RECREATE")
+        f"results/root/Run{run_number}/drs_service.root", "RECREATE")
     for name, channel in zip(names, channels):
         for _, hist in hists[channel].items():
             hist.SetDirectory(ofile)
@@ -112,12 +112,12 @@ def analyzePulse(channels, names):
 
 
 def analyzeHodoPeak():
-    hodo_pos_channels = buildHodoPosChannels(run=runNumber)
-    rdf, rdf_org = loadRDF(runNumber, firstEvent, lastEvent, jsonFile)
+    hodo_pos_channels = build_hodo_pos_channels(run=run_number)
+    rdf, rdf_org = loadRDF(run_number, firstEvent, lastEvent, jsonFile)
 
     rdf = preProcessDRSBoards(rdf)
 
-    FERSBoards = buildFERSBoards(run=runNumber)
+    FERSBoards = build_fers_boards(run=run_number)
     rdf = vectorizeFERS(rdf, FERSBoards)
 
     histos1D_diff = {}
@@ -138,7 +138,7 @@ def analyzeHodoPeak():
             rdf = rdf.Define(f"{channel}_peak_value",
                              f"ROOT::VecOps::Min({channel}_blsub)")
 
-    rdf = applyUpstreamVeto(rdf, runNumber, applyCut=False)
+    rdf = applyUpstreamVeto(rdf, run_number, applyCut=False)
 
     conditions = ["pass_upstream_veto", "pass_NoSel"]
 
@@ -259,7 +259,7 @@ def analyzeHodoPeak():
 
     print("Writing histograms to output file...")
     ofile = ROOT.TFile(
-        f"results/root/Run{runNumber}/hodoscope_peaks.root", "RECREATE")
+        f"results/root/Run{run_number}/hodoscope_peaks.root", "RECREATE")
     if not ofile or ofile.IsZombie():
         raise RuntimeError(f"Failed to open output file: {ofile}")
     for cat, hist in histos1D_diff.items():
@@ -297,12 +297,12 @@ def analyzeHodoPeak():
 
 def plotPulse(channels, names):
     infile = ROOT.TFile(
-        f"results/root/Run{runNumber}/drs_service.root", "READ")
+        f"results/root/Run{run_number}/drs_service.root", "READ")
     if not infile or infile.IsZombie():
         raise RuntimeError(f"Failed to open input file: {infile}")
 
     plots = []
-    outdir = f"results/plots/Run{runNumber}/drs_service/"
+    outdir = f"results/plots/Run{run_number}/drs_service/"
 
     for name, channel in zip(names, channels):
         hist = infile.Get(f"{name}_peak_position")
@@ -312,7 +312,7 @@ def plotPulse(channels, names):
             return
         DrawHistos([hist], [name], 0, 1024, "Peak Position", 0, None, "Counts",
                    outputname=f"{name}_peak_position", outdir=outdir,
-                   dology=False, mycolors=[1], drawashist=True, runNumber=runNumber,
+                   dology=False, mycolors=[1], drawashist=True, run_number=run_number,
                    addOverflow=True, addUnderflow=True)
         plots.append(f"{name}_peak_position.png")
 
@@ -324,7 +324,7 @@ def plotPulse(channels, names):
         xmin, xmax = getServiceDRSProcessedInfoRanges(name, "peak_value")
         DrawHistos([hist], [name], xmin, xmax, "Peak Value", 0, None, "Counts",
                    outputname=f"{name}_peak_value", outdir=outdir,
-                   dology=False, mycolors=[1], drawashist=True, runNumber=runNumber,
+                   dology=False, mycolors=[1], drawashist=True, run_number=run_number,
                    addOverflow=True, addUnderflow=True, leftlegend=True)
         plots.append(f"{name}_peak_value.png")
 
@@ -347,7 +347,7 @@ def plotPulse(channels, names):
         extraToDraw.AddText(f"N (sum < {valCut:.2g}): {nele:.0f}")
         DrawHistos([hist], [name], xmin, xmax, "Sum", 1, None, "Counts",
                    outputname=f"{name}_sum", outdir=outdir,
-                   dology=True, mycolors=[1], drawashist=True, runNumber=runNumber,
+                   dology=True, mycolors=[1], drawashist=True, run_number=run_number,
                    addOverflow=True, addUnderflow=True, extraToDraw=extraToDraw)
         plots.append(f"{name}_sum.png")
 
@@ -390,12 +390,12 @@ def plotPulse(channels, names):
             DrawHistos([hist2d], "", xmin, xmax, f"{name1} Sum", ymin, ymax, f"{name2} Sum",
                        outputname=f"{name1}_vs_{name2}_sum2D", outdir=outdir,
                        drawoptions="COLz", zmin=1, zmax=None, dologz=True,
-                       dology=False, runNumber=runNumber, addOverflow=True, doth2=True,
+                       dology=False, run_number=run_number, addOverflow=True, doth2=True,
                        extraToDraw=extraToDraw)
             plots.append(f"{name1}_vs_{name2}_sum2D.png")
 
-    output_html = f"results/html/Run{runNumber}/ServiceDRS/PID.html"
-    generate_html(plots, f"results/plots/Run{runNumber}/drs_service/", plots_per_row=3,
+    output_html = f"results/html/Run{run_number}/ServiceDRS/PID.html"
+    generate_html(plots, f"results/plots/Run{run_number}/drs_service/", plots_per_row=3,
                   output_html=output_html)
 
     return output_html
@@ -403,14 +403,14 @@ def plotPulse(channels, names):
 
 def plotHodoPeak():
     infile = ROOT.TFile(
-        f"results/root/Run{runNumber}/hodoscope_peaks.root", "READ")
+        f"results/root/Run{run_number}/hodoscope_peaks.root", "READ")
     if not infile or infile.IsZombie():
         raise RuntimeError(f"Failed to open input file: {infile}")
 
-    hodo_pos_channels = buildHodoPosChannels(run=runNumber)
+    hodo_pos_channels = build_hodo_pos_channels(run=run_number)
 
     plots = []
-    outdir = f"results/plots/Run{runNumber}/DWC/"
+    outdir = f"results/plots/Run{run_number}/DWC/"
     for group, channels in hodo_pos_channels.items():
         histos1D_diff = []
         histos1D_diff_realtive = []
@@ -446,14 +446,14 @@ def plotHodoPeak():
         outputname = f"{group}_diff_peak"
         DrawHistos(histos1D_diff, labels, -250, 250, "Peak Position Difference", 0, None, "Counts",
                    outputname=outputname, outdir=outdir,
-                   dology=False, mycolors=[1, 1], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True, linestyles=linestyles
+                   dology=False, mycolors=[1, 1], drawashist=True, run_number=run_number, addOverflow=True, addUnderflow=True, linestyles=linestyles
                    )
         plots.append(outputname + ".png")
 
         outputname = f"{group}_diff_peak_relative"
         DrawHistos(histos1D_diff_realtive, labels, -0.5, 0.5, "Peak Position Difference Relative", 0, None, "Counts",
                    outputname=outputname, outdir=outdir,
-                   dology=False, mycolors=[1, 1], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True, linestyles=linestyles
+                   dology=False, mycolors=[1, 1], drawashist=True, run_number=run_number, addOverflow=True, addUnderflow=True, linestyles=linestyles
                    )
         plots.append(outputname + ".png")
 
@@ -461,7 +461,7 @@ def plotHodoPeak():
         DrawHistos(
             histos1D_sum, labels, 600, 1200, "Peak Position Sum", 0, None, "Counts",
             outputname=outputname, outdir=outdir,
-            dology=False, mycolors=[1, 1], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True, linestyles=linestyles
+            dology=False, mycolors=[1, 1], drawashist=True, run_number=run_number, addOverflow=True, addUnderflow=True, linestyles=linestyles
         )
         plots.append(outputname + ".png")
 
@@ -471,7 +471,7 @@ def plotHodoPeak():
             histos1D_right, [
                 "Left No Sel", "Left Pass Veto", "Right No Sel", "Right Pass Veto"], 300, 800, "Peak Position", 0, None, "Counts",
             outputname=outputname, outdir=outdir,
-            dology=False, mycolors=[1, 1, 2, 2], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True, linestyles=[1, 2, 1, 2]
+            dology=False, mycolors=[1, 1, 2, 2], drawashist=True, run_number=run_number, addOverflow=True, addUnderflow=True, linestyles=[1, 2, 1, 2]
         )
         plots.append(outputname + ".png")
 
@@ -482,7 +482,7 @@ def plotHodoPeak():
                 ], 0, 1024, "Left Peak Position", 0, 1024, "Right Peak Position",
                 outputname=outputname, outdir=outdir,
                 drawoptions="COLz", zmin=1, zmax=None, dologz=True,
-                dology=False, runNumber=runNumber, addOverflow=True, doth2=True,
+                dology=False, run_number=run_number, addOverflow=True, doth2=True,
             )
             plots.append(outputname + ".png")
 
@@ -491,7 +491,7 @@ def plotHodoPeak():
             histos1D_left_peak + histos1D_right_peak, ["Left No Sel", "Left Pass Veto",
                                                        "Right No Sel", "Right Pass Veto"], -1500, 100, "Peak Value", 0, None, "Counts",
             outputname=outputname, outdir=outdir,
-            dology=False, mycolors=[1, 1, 2, 2], drawashist=True, runNumber=runNumber, addOverflow=True, addUnderflow=True, linestyles=[1, 2, 1, 2]
+            dology=False, mycolors=[1, 1, 2, 2], drawashist=True, run_number=run_number, addOverflow=True, addUnderflow=True, linestyles=[1, 2, 1, 2]
         )
         plots.append(outputname + ".png")
 
@@ -508,13 +508,13 @@ def plotHodoPeak():
                     -0.4, 0.4, "UD Delta Peak Relative",
                     outputname=outputname, outdir=outdir,
                     drawoptions="COLz", zmin=1, zmax=None, dologz=True,
-                    dology=False, runNumber=runNumber, addOverflow=True, doth2=True,
+                    dology=False, run_number=run_number, addOverflow=True, doth2=True,
                 )
             plots_summary.append(outputname + ".png")
     plots_summary.append("NEWLINE")
 
     plots = plots_summary + plots
-    output_html = f"results/html/Run{runNumber}/ServiceDRS/DWC.html"
+    output_html = f"results/html/Run{run_number}/ServiceDRS/DWC.html"
     generate_html(plots, outdir, plots_per_row=7,
                   output_html=output_html)
 
@@ -522,10 +522,10 @@ def plotHodoPeak():
 
 
 def main():
-    chan_preshower = getPreShowerChannel(runNumber)
-    # chan_muon = getDownStreamMuonChannel()
-    chan_muon = getDownStreamTTUMuonChannel(runNumber)
-    chans_cerenkov = getCerenkovCounters(runNumber)
+    chan_preshower = get_pre_shower_channel(run_number)
+    # chan_muon = get_downstream_muon_channel()
+    chan_muon = getDownStreamTTUMuonChannel(run_number)
+    chans_cerenkov = get_cerenkov_counters(run_number)
     channels = [chan_preshower, chan_muon] + chans_cerenkov
     names = ["preshower", "muon"] + ["Cerenkov" +
                                      str(i) for i in range(1, len(chans_cerenkov) + 1)]
