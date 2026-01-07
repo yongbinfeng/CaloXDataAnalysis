@@ -8,8 +8,8 @@ class SelectionManager:
         self.run_number = run_number
         # Store nodes in a list to prevent garbage collection
         self._nodes = [rdf]
-        self.initial_count = rdf.Count().GetValue()
-        self.current_count = self.initial_count
+        # self.initial_count = rdf.Count().GetValue()
+        # self.current_count = self.initial_count
 
     @property
     def rdf(self):

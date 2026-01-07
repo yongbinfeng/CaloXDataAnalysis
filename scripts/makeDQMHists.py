@@ -614,8 +614,11 @@ def main():
     stats = collectFERSStats()
 
     # pedestals
+    # event loop should be triggered here
     pedestals_HG = collectFERSPedestals(hists1d_FERS, gain="HG")
     pedestals_LG = collectFERSPedestals(hists1d_FRRS_LG, gain="LG")
+
+    print(f"Loops executed after pedestals: {rdf.GetNRuns()}")
 
     print("\033[94mSave results\033[0m")
 

@@ -22,14 +22,13 @@ class CaloXAnalysisManager:
     def __init__(self, args):
         self.args = args
         self.run_number = args.run
+        self.loop_count = 0
 
-        # 1. Initialize Metadata and Hardware Maps
         self.beam_type, self.beam_energy = getRunInfo(self.run_number)
         self.fersboards = buildFERSBoards(run=self.run_number)
         self.drsboards = buildDRSBoards(run=self.run_number)
         self.paths = get_run_paths(self.run_number)
 
-        # 2. Initialize RDataFrame and TChain
         self.tchain = None
         self.rdf_org = None
         self._data_map = None
@@ -83,21 +82,14 @@ class CaloXAnalysisManager:
         if files_added == 0:
             raise RuntimeError(
                 f"Could not load any ROOT files for run {self.run_number}.")
-
         self.rdf_org = ROOT.RDataFrame(self.tchain)
 
-        total_events = self.rdf_org.Count().GetValue()
-
-        if self.args.last_event < 0 or self.args.last_event > total_events:
-            last_event = total_events
-        else:
-            last_event = self.args.last_event
-
         first_event = self.args.first_event
+        last_event = self.args.last_event
+        if last_event < 0:
+            last_event = 1e6
 
-        print(f"\033[94mFiltering events {first_event} to {last_event} "
-              f"in run {self.run_number} (Total: {total_events})\033[0m.")
-
+        ROOT.RDF.Experimental.AddProgressBar(self.rdf_org)
         return self.rdf_org.Filter(f"event_n >= {first_event} && event_n < {last_event}")
 
     def prepare(self, do_drs=True, do_fers=True):
