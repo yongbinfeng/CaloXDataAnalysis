@@ -8,8 +8,9 @@ class SelectionManager:
         self.run_number = run_number
         # Store nodes in a list to prevent garbage collection
         self._nodes = [rdf]
-        # self.initial_count = rdf.Count().GetValue()
-        # self.current_count = self.initial_count
+        # Book the initial count lazily
+        self.initial_count_proxy = rdf.Count()
+        self.filter_reports = []
 
     @property
     def rdf(self):
@@ -25,17 +26,11 @@ class SelectionManager:
         final_filter = f"!({filter_string})" if invert else filter_string
         final_label = f"NOT_{label}" if invert else label
 
-        # Create the new filtered node
         new_rdf = self.rdf.Filter(final_filter, final_label)
-
-        # Trigger an action to print cut-flow and keep node alive
-        # new_count = new_rdf.Count().GetValue()
-        # print(
-        #     f"Filter [{final_label}]: {self.current_count} -> {new_count} events.")
-
-        # # Append to node list to maintain reference
         self._nodes.append(new_rdf)
-        # self.current_count = new_count
+
+        # Book the count for this specific filter stage lazily
+        self.filter_reports.append((final_label, new_rdf.Count()))
 
     def veto_muon_counter(self, TSmin=200, TSmax=700, cut=-100, invert=False):
         """
@@ -103,3 +98,17 @@ class SelectionManager:
     def get_rdf(self):
         """Returns the final filtered RDataFrame node."""
         return self.rdf
+
+    def print_cutflow(self):
+        """
+        Call this ONLY at the end of your script. 
+        The first .GetValue() call here will trigger the ONE slow analysis loop.
+        """
+        print("\n--- Selection Cutflow ---")
+        # Accessing the first proxy triggers the loop for all booked results
+        initial = self.initial_count_proxy.GetValue()
+        print(f"Initial: {initial} events")
+
+        for label, proxy in self.filter_reports:
+            # These are now ready instantly without a new loop
+            print(f"{label}: {proxy.GetValue()} events")

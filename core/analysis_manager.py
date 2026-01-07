@@ -156,8 +156,8 @@ class CaloXAnalysisManager:
         if "selections_applied" in self._steps_applied:
             return self
 
-        sel_mgr = SelectionManager(self.rdf, self.run_number)
-        self.rdf = (sel_mgr
+        self.sel_mgr = SelectionManager(self.rdf, self.run_number)
+        self.rdf = (self.sel_mgr
                     .veto_muon_counter()
                     .apply_upstream_veto()
                     .get_rdf())
