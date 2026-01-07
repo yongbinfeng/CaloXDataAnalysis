@@ -23,4 +23,4 @@ calox-timing-plots = "scripts.makeDRSTimingPlots:main"
 [tool.setuptools]
 # This treats the root-level folders as part of the 'calox' package
 # and also includes the new 'scripts' folder
-packages = ["utils", "channels", "variables", "configs", "selections", "CMSPLOTS", "scripts"]
+packages = ["utils", "channels", "variables", "configs", "core", "CMSPLOTS", "scripts"]

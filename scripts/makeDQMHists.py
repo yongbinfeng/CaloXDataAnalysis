@@ -12,14 +12,14 @@ from channels.channel_map import (
     getUpstreamVetoChannel,
 )
 from configs.plotranges import getDRSPlotRanges, getServiceDRSPlotRanges
+from core.analysis_manager import CaloXAnalysisManager
 from utils.root_setup import setup_root
-from utils.dataloader import CaloXDataLoader
 from utils.parser import get_args
 from utils.plot_helper import get_run_paths, save_hists_to_file
 from utils.timing import auto_timer
 from utils.utils import number2string
-from variables.drs import getDRSStats, preProcessDRSBoards
-from variables.fers import getFERSEnergyMax, getFERSEnergySum, vectorizeFERS
+from variables.drs import getDRSStats
+from variables.fers import getFERSEnergyMax, getFERSEnergySum
 
 auto_timer("Total Execution Time")
 
@@ -28,13 +28,12 @@ setup_root()
 debugDRS = False
 
 args = get_args()
-runNumber = args.run
 
-loader = CaloXDataLoader(json_file=args.json_file)
-rdf = loader.load_rdf(runNumber, args.first_event, args.last_event)
-
-DRSBoards = buildDRSBoards(run=runNumber)
-fersboards = buildFERSBoards(run=runNumber)
+analysis = CaloXAnalysisManager(args).prepare()
+rdf = analysis.get_rdf()
+runNumber = analysis.run_number
+DRSBoards = analysis.drsboards
+fersboards = analysis.fersboards
 
 # Get total number of entries
 n_entries = rdf.Count().GetValue()
@@ -42,11 +41,8 @@ nEvents = int(n_entries)
 nbins_Event = min(max(int(nEvents / 100), 1), 500)
 print(f"Total number of events to process: {nEvents} in run {runNumber}")
 
-rdf = vectorizeFERS(rdf, fersboards)
 rdf = getFERSEnergyMax(rdf, fersboards, gain="HG")
 rdf = getFERSEnergyMax(rdf, fersboards, gain="LG")
-rdf = preProcessDRSBoards(
-    rdf, debug=debugDRS, drsboards=DRSBoards, runNumber=runNumber)
 rdf = getDRSStats(rdf, runNumber, DRSBoards, 0, 1000, 9)
 
 rdf = getFERSEnergySum(rdf, fersboards, gain="HG")

@@ -29,15 +29,15 @@ class SelectionManager:
         new_rdf = self.rdf.Filter(final_filter, final_label)
 
         # Trigger an action to print cut-flow and keep node alive
-        new_count = new_rdf.Count().GetValue()
-        print(
-            f"Filter [{final_label}]: {self.current_count} -> {new_count} events.")
+        # new_count = new_rdf.Count().GetValue()
+        # print(
+        #     f"Filter [{final_label}]: {self.current_count} -> {new_count} events.")
 
-        # Append to node list to maintain reference
+        # # Append to node list to maintain reference
         self._nodes.append(new_rdf)
-        self.current_count = new_count
+        # self.current_count = new_count
 
-    def veto_muon_counter(self, TSmin=400, TSmax=600, cut=-80, invert=False):
+    def veto_muon_counter(self, TSmin=200, TSmax=700, cut=-100, invert=False):
         """
         Vetoes events with muon counter signal.
         Set invert=True to keep ONLY events with a muon signal.

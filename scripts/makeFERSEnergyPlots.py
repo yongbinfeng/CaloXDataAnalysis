@@ -1,115 +1,46 @@
 import os
 from collections import OrderedDict
 import ROOT
-from channels.channel_map import buildFERSBoards
 from CMSPLOTS.myFunction import DrawHistos, LHistos2Hist
 from configs.plotranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters
-from selections.selections import SelectionManager
+from core.analysis_manager import CaloXAnalysisManager
 from utils.colors import colors
-from utils.dataloader import CaloXDataLoader, getRunInfo
 from utils.fitter import eventFit
 from utils.html_generator import generate_html
 from utils.parser import get_args
-from utils.plot_helper import get_run_paths
 from utils.root_setup import setup_root
 from utils.timing import auto_timer
 from utils.visualization import visualizeFERSBoards
-from variables.drs import preProcessDRSBoards
-from variables.fers import (
-    getFERSEnergySum,
-    vectorizeFERS,
-    calibrateFERSChannels,
-    subtractFERSPedestal,
-    getFERSEnergyWeightedCenter,
-    addFERSPosXY,
-    mixFERSHGLG,
-    getFERSEnergyDR
-)
 
 auto_timer("Total Execution Time")
 
+args = get_args()
 setup_root(n_threads=10, batch_mode=True, load_functions=True)
 
-args = get_args()
-runNumber = args.run
-btype, benergy = getRunInfo(runNumber)
-
-doPerBoardPlots = False
-
-# HE = (runNumber >= 1200)
-HE = (benergy >= 50)  # GeV
-
-file_pedestals = f"data/fers/FERS_pedestals_run1259.json"
-file_calibrations = "data/fers/FERS_response.json"
-file_HG2LG = "data/fers/FERS_HG2LG.json"
-file_deadchannels = f"data/fers/deadchannels.json"
-
-
-if runNumber >= 1350:
-    file_pedestals = f"data/fers/FERS_pedestals_run1425.json"
-    file_calibrations = "data/fers/FERS_response_Sep.json"
-    file_HG2LG = "data/fers/FERS_HG2LG_Sep.json"
-    file_deadchannels = None
-
-loader = CaloXDataLoader(json_file=args.json_file)
-rdf = loader.load_rdf(runNumber, args.first_event, args.last_event)
-
-rdf = preProcessDRSBoards(rdf, runNumber=runNumber)
-sel_mgr = SelectionManager(rdf, runNumber)
-rdf = (sel_mgr
-       .veto_muon_counter(TSmin=200, TSmax=700, cut=-100)
-       .apply_upstream_veto()  # If applyCut=True
-       .get_rdf())
-
-fersboards = buildFERSBoards(run=runNumber)
-
-rdf = vectorizeFERS(rdf, fersboards)
-# subtract pedestals
-rdf = subtractFERSPedestal(
-    rdf, fersboards, gain="HG", file_pedestals=file_pedestals)
-rdf = subtractFERSPedestal(
-    rdf, fersboards, gain="LG", file_pedestals=file_pedestals)
-# mix HG and LG
-rdf = mixFERSHGLG(
-    rdf, fersboards, file_HG2LG=file_HG2LG)
-# calibrate Mix gain
-rdf = calibrateFERSChannels(
-    rdf, fersboards, file_calibrations=file_calibrations, gain="Mix", file_deadchannels=file_deadchannels)
+analysis = (CaloXAnalysisManager(args)
+            .prepare()                   # Baseline and vectorization
+            .calibrate_fers()            # Pedestals, mixing, and response
+            .apply_selections())         # Muon and hole vetoes
 
 GainCalibs = [("HG", False), ("LG", False), ("Mix", True)]
-# GainCalibs = [("HG", False), ("LG", False)]
 
 # calculate energy sums
 for gain, calib in GainCalibs:
-    rdf = getFERSEnergySum(rdf, fersboards, pdsub=True,
-                           calib=calib, gain=gain)
-    rdf = getFERSEnergyWeightedCenter(
-        rdf, fersboards, pdsub=True, calib=calib, gain=gain)
-# dual readout
-rdf = getFERSEnergyDR(rdf, fersboards, energy=benergy)
-rdf = addFERSPosXY(rdf, fersboards)
+    analysis = analysis.define_physics_variables(
+        gain=gain, calib=calib, pdsub=True)
 
-paths = get_run_paths(runNumber)
+rdf = analysis.get_rdf()  # Get the final RDF after all transformations
+fersboards = analysis.fersboards
+
+benergy = analysis.beam_energy
+runNumber = analysis.run_number
+paths = analysis.paths
 rootdir = paths["root"]
 plotdir = paths["plots"]
 htmldir = paths["html"]
 
-# study PSD and CC1 selections
-rdfs = OrderedDict()
-# rdf = applyPSDSelection(rdf, runNumber, applyCut=False)
-# rdf = applyCC1Selection(rdf, runNumber, applyCut=False)
-
-# rdfs["inc"] = rdf
-rdfs["passHaloVeto"] = rdf
-# rdfs["MuonLike"] = rdf.Filter("FERS_energyMix_Sci_calib_sum < 10.0")
-# rdfs["passHaloVeto_passPSDEle_passCC1Ele"] = rdf.Filter(
-#    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 1 && pass_upstream_veto == 1")
-# rdfs["passPSDEle_failCC1Ele"] = rdf.Filter(
-#    "pass_PSDEle_selection == 1 && pass_CC1Ele_selection == 0")
-# rdfs["failPSDEle_passCC1Ele"] = rdf.Filter(
-#    "pass_PSDEle_selection == 0 && pass_CC1Ele_selection == 1")
-# rdfs["failPSDEle_failCC1Ele"] = rdf.Filter(
-#    "pass_PSDEle_selection == 0 && pass_CC1Ele_selection == 0")
+doPerBoardPlots = False
+HE = (benergy >= 50)  # GeV
 
 
 def makeFERSEnergySumHists(rdf=rdf, suffix=""):
@@ -1018,6 +949,10 @@ def makeBoardFits():
                   output_html=output_html)
     print(f"Generated HTML file: {output_html}")
     return output_html
+
+
+rdfs = OrderedDict()
+rdfs["passHaloVeto"] = rdf
 
 
 def main():
