@@ -104,25 +104,34 @@ class CaloXAnalysisManager:
             self._steps_applied.add("fers_init")
         return self
 
+    def _get_calibration_paths(self, version="Sep", pedestal_run=None):
+        """Helper to centralize calibration file path logic."""
+        # Logic moved from calibrate_fers to a central helper
+        p_run = pedestal_run if pedestal_run else (
+            1425 if self.run_number >= 1350 else 1259)
+
+        return {
+            "pedestal": f"data/fers/FERS_pedestals_run{p_run}.json",
+            "response": f"data/fers/FERS_response_{version}.json",
+            "mixing": f"data/fers/FERS_HG2LG_{version}.json"
+        }
+
     def calibrate_fers(self, pedestal_run=None, version="Sep"):
         """Chains FERS pedestal subtraction, HG/LG mixing, and gain calibrations."""
         if f"fers_calib_{version}" in self._steps_applied:
             return self
 
-        # Automatically determine pedestal run if not provided
-        p_run = pedestal_run if pedestal_run else (
-            1425 if self.run_number >= 1350 else 1259)
-        p_path = f"data/fers/FERS_pedestals_run{p_run}.json"
-        c_path = f"data/fers/FERS_response_{version}.json"
-        m_path = f"data/fers/FERS_HG2LG_{version}.json"
+        paths = self._get_calibration_paths(version, pedestal_run)
 
+        # The updated functions in variables/fers.py now check for existing columns internally
         self.rdf = subtractFERSPedestal(
-            self.rdf, self.fersboards, gain="HG", file_pedestals=p_path)
+            self.rdf, self.fersboards, gain="HG", file_pedestals=paths["pedestal"])
         self.rdf = subtractFERSPedestal(
-            self.rdf, self.fersboards, gain="LG", file_pedestals=p_path)
-        self.rdf = mixFERSHGLG(self.rdf, self.fersboards, file_HG2LG=m_path)
+            self.rdf, self.fersboards, gain="LG", file_pedestals=paths["pedestal"])
+        self.rdf = mixFERSHGLG(self.rdf, self.fersboards,
+                               file_HG2LG=paths["mixing"])
         self.rdf = calibrateFERSChannels(
-            self.rdf, self.fersboards, file_calibrations=c_path, gain="Mix")
+            self.rdf, self.fersboards, file_calibrations=paths["response"], gain="Mix")
 
         self._steps_applied.add(f"fers_calib_{version}")
         return self
@@ -151,7 +160,6 @@ class CaloXAnalysisManager:
     def apply_selections(self):
         """
         Applies standard muon and halo vetoes via SelectionManager.
-        Updates internal RDF to ensure node lifetime is managed by this class.
         """
         if "selections_applied" in self._steps_applied:
             return self

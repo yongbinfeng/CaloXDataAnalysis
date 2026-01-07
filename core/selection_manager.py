@@ -32,6 +32,10 @@ class SelectionManager:
         # Book the count for this specific filter stage lazily
         self.filter_reports.append((final_label, new_rdf.Count()))
 
+    def _column_exists(self, name):
+        """Check if a column already exists to prevent re-definition errors."""
+        return name in [str(c) for c in self.rdf.GetColumnNames()]
+
     def veto_muon_counter(self, TSmin=200, TSmax=700, cut=-100, invert=False):
         """
         Vetoes events with muon counter signal.
@@ -44,14 +48,15 @@ class SelectionManager:
             print("Muon counter channel not found, skipping veto.")
             return self
 
-        # Definition remains the same
-        rdf_def = self.rdf.Define(
-            "MuonCounterMin", f"MinRange({muon_channel}_blsub, {TSmin}, {TSmax})")
-        self._nodes.append(rdf_def)
+        col_name = "MuonCounterMin"
+        if not self._column_exists(col_name):
+            rdf_def = self.rdf.Define(
+                col_name, f"MinRange({muon_channel}_blsub, {TSmin}, {TSmax})")
+            self._nodes.append(rdf_def)
 
         # Apply filter with the inversion option
         self._apply_filter(
-            f"MuonCounterMin >= {cut}", "MuonVeto", invert=invert)
+            f"{col_name} >= {cut}", "MuonVeto", invert=invert)
         return self
 
     def apply_psd_selection(self, is_hadron=False, invert=False):
@@ -65,13 +70,15 @@ class SelectionManager:
         if preshower_channel is None:
             return self
 
-        rdf_def = self.rdf.Define(
-            f"{preshower_channel}_sum", f"SumRange({preshower_channel}_blsub, 100, 400)")
-        self._nodes.append(rdf_def)
+        col_name = f"{preshower_channel}_sum"
+        if not self._column_exists(col_name):
+            rdf_def = self.rdf.Define(
+                col_name, f"SumRange({preshower_channel}_blsub, 100, 400)")
+            self._nodes.append(rdf_def)
 
         val_cut = -1000.0
         # Standard logic: Electrons (is_hadron=False) pass if sum < cut
-        condition = f"({preshower_channel}_sum < {val_cut}) == {0 if is_hadron else 1}"
+        condition = f"({col_name} < {val_cut}) == {0 if is_hadron else 1}"
 
         label = "PSD_Hadron" if is_hadron else "PSD_Electron"
         self._apply_filter(condition, label, invert=invert)
@@ -88,10 +95,13 @@ class SelectionManager:
         if not chan_upveto:
             return self
 
-        rdf_def = self.rdf.Define(
-            f"{chan_upveto}_peak_value", f"ROOT::VecOps::Min({chan_upveto}_blsub)")
-        self._nodes.append(rdf_def)
-        self._apply_filter(f"{chan_upveto}_peak_value > {cut}",
+        col_name = f"{chan_upveto}_peak_value"
+        if not self._column_exists(col_name):
+            rdf_def = self.rdf.Define(
+                col_name, f"ROOT::VecOps::Min({chan_upveto}_blsub)")
+            self._nodes.append(rdf_def)
+
+        self._apply_filter(f"{col_name} > {cut}",
                            "UpstreamVeto", invert=invert)
         return self
 
