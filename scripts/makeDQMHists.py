@@ -25,8 +25,6 @@ auto_timer("Total Execution Time")
 
 setup_root()
 
-debugDRS = False
-
 args = get_args()
 
 analysis = CaloXAnalysisManager(args).prepare()
@@ -35,18 +33,17 @@ runNumber = analysis.run_number
 DRSBoards = analysis.drsboards
 fersboards = analysis.fersboards
 
-# Get total number of entries
-n_entries = rdf.Count().GetValue()
-nEvents = int(n_entries)
-nbins_Event = min(max(int(nEvents / 100), 1), 500)
-print(f"Total number of events to process: {nEvents} in run {runNumber}")
-
 rdf = getFERSEnergyMax(rdf, fersboards, gain="HG")
 rdf = getFERSEnergyMax(rdf, fersboards, gain="LG")
 rdf = getDRSStats(rdf, runNumber, DRSBoards, 0, 1000, 9)
 
 rdf = getFERSEnergySum(rdf, fersboards, gain="HG")
 rdf = getFERSEnergySum(rdf, fersboards, gain="LG")
+
+
+debugDRS = False
+nEvents = 60000
+nbins_Event = 500
 
 
 def monitorConditions():

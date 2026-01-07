@@ -86,12 +86,7 @@ class CaloXAnalysisManager:
 
         self.rdf_org = ROOT.RDataFrame(self.tchain)
 
-        # Check if the TChain/RDF is actually usable
-        try:
-            total_events = self.rdf_org.Count().GetValue()
-        except Exception as e:
-            raise RuntimeError(
-                f"RDataFrame initialization failed for run {self.run_number}: {e}")
+        total_events = self.rdf_org.Count().GetValue()
 
         if self.args.last_event < 0 or self.args.last_event > total_events:
             last_event = total_events
