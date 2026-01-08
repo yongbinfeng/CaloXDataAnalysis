@@ -983,7 +983,7 @@ def main():
             # with open(f"{rootdir}/fers_stats_cer_ovs_sci.json", "w") as f:
             #     json.dump(stats_results, f, indent=4)
 
-            analysis.sel_mgr.print_cutflow()
+            # analysis.sel_mgr.print_cutflow()
 
             # save histograms to ROOT files
             outfile_name = f"{rootdir}/fers_energy_sum_{cat}.root"

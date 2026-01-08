@@ -37,17 +37,51 @@ def _cpu_seconds() -> Optional[float]:
     return (u.ru_utime + u.ru_stime) + (c.ru_utime + c.ru_stime)
 
 
+# In yongbinfeng/caloxdataanalysis/CaloXDataAnalysis-main/utils/timing.py
+
+_global_mgr = None  # Global registry for the manager
+
+
+def register_manager(mgr):
+    """Register the CaloXAnalysisManager to be reported at exit."""
+    global _global_mgr
+    _global_mgr = mgr
+
+
 def _print_report(rep: _Report):
     elapsed = time.perf_counter() - rep.t0
     cpu = _cpu_seconds()
     rss = _maxrss_mib()
-    parts = [f"wall={elapsed:.3f}s"]
+
+    print(f"\n{'='*50}", file=sys.stderr)
+    print(f"{'FINAL ANALYSIS REPORT':^50}", file=sys.stderr)
+    print(f"{'='*50}", file=sys.stderr)
+
+    # Header: Script/Label Name
+    print(f" Target: {rep.label}", file=sys.stderr)
+    print(f"{'-'*50}", file=sys.stderr)
+
+    # Resource Metrics aligned with f-strings
+    print(f" {'Wall Time:':<15} {elapsed:>10.3f} s", file=sys.stderr)
     if cpu is not None:
-        parts.append(f"cpu={cpu:.3f}s")
+        print(f" {'CPU Time:':<15} {cpu:>10.3f} s", file=sys.stderr)
     if rss is not None:
-        parts.append(f"rss={rss:.2f}MiB")
-    msg = f"[time] {rep.label}: " + "  ".join(parts)
-    print(msg, file=sys.stderr)
+        print(f" {'Max RSS:':<15} {rss:>10.2f} MiB", file=sys.stderr)
+
+    # Global Manager Metrics (Loop count and Cutflow)
+    global _global_mgr
+    if _global_mgr:
+        print(f"{'-'*50}", file=sys.stderr)
+        print(f" {'RDF Loops:':<15} {_global_mgr.rdf.GetNRuns():>10}",
+              file=sys.stderr)
+
+        # SelectionManager usually handles its own header/formatting
+        if hasattr(_global_mgr, 'sel_mgr'):
+            _global_mgr.sel_mgr.print_cutflow()
+
+        _global_mgr = None  # Clean up to prevent duplicate reports
+
+    print(f"{'='*50}\n", file=sys.stderr)
 
 
 def auto_timer(label: Optional[str] = None):

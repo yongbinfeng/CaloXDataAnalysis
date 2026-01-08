@@ -11,6 +11,7 @@ from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS, get_drs_stats
 from core.selection_manager import SelectionManager
 from utils.data_loader import getRunInfo
 from utils.plot_helper import get_run_paths
+from utils.timing import register_manager
 
 
 class CaloXAnalysisManager:
@@ -22,7 +23,7 @@ class CaloXAnalysisManager:
     def __init__(self, args):
         self.args = args
         self.run_number = args.run
-        self.loop_count = 0
+        register_manager(self)
 
         self.beam_type, self.beam_energy = getRunInfo(self.run_number)
         self.fersboards = build_fers_boards(run=self.run_number)
