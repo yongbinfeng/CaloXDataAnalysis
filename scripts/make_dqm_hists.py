@@ -1,15 +1,10 @@
 import json
 import ROOT
 from channels.channel_map import (
-    build_drs_boards,
-    build_fers_boards,
     build_hodo_pos_channels,
-    build_hodo_trigger_channels,
     build_time_reference_channels,
-    get_downstream_muon_channel,
     get_mcp_channels,
     get_service_drs_channels,
-    get_upstream_veto_channel,
 )
 from configs.plot_ranges import get_drs_plot_ranges, get_service_drs_plot_ranges
 from core.analysis_manager import CaloXAnalysisManager

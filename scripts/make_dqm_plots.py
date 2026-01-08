@@ -1,9 +1,7 @@
 import ROOT
 from channels.channel_map import (build_drs_boards, build_fers_boards,
-                                  build_hodo_trigger_channels, build_hodo_pos_channels,
-                                  build_time_reference_channels, get_downstream_muon_channel,
-                                  get_mcp_channels, get_service_drs_channels,
-                                  get_upstream_veto_channel)
+                                  build_time_reference_channels,
+                                  get_mcp_channels, get_service_drs_channels)
 from channels.validate_map import DrawDRSBoards, DrawFERSBoards
 from plotting.my_function import DrawHistos, LHistos2Hist
 from configs.plot_ranges import get_drs_plot_ranges, get_service_drs_plot_ranges
@@ -25,10 +23,6 @@ run_number = args.run
 DRSBoards = build_drs_boards(run=run_number)
 fersboards = build_fers_boards(run=run_number)
 time_reference_channels = build_time_reference_channels(run=run_number)
-hodo_trigger_channels = build_hodo_trigger_channels(run=run_number)
-hodo_pos_channels = build_hodo_pos_channels(run=run_number)
-upstream_veto_channel = get_upstream_veto_channel(run=run_number)
-downstream_muon_channel = get_downstream_muon_channel(run=run_number)
 service_drs_channels = get_service_drs_channels(run=run_number)
 mcp_channels = get_mcp_channels(run=run_number)
 
