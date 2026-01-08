@@ -1,5 +1,5 @@
 from channels.channel_map import get_service_drs_channels
-from configs.selection_values import get_service_drs_cut_values
+from configs.selection_values import get_service_drs_cut
 
 
 class SelectionManager:
@@ -46,26 +46,22 @@ class SelectionManager:
             # If we are filtering, the count of the resulting node is the statistic
             self.stats_proxies.append((label, self.rdf.Count()))
 
-    def apply_muon_counter_veto(self, TSmin=200, TSmax=700, label_only=False):
+    def apply_muon_counter_veto(self, label_only=False):
         muon_channel = get_service_drs_channels(
             self.run_number).get("TTUMuonVeto")
         if not muon_channel:
             raise ValueError(
                 "Muon counter channel not found for this run. Can not apply muon counter veto.")
 
-        val_cut = get_service_drs_cut_values("TTUMuonVeto")
+        ts_min, ts_max, val_cut, method = get_service_drs_cut("TTUMuonVeto")
 
-        # 1. Calculation
         calc_col = "MuonCounterMin"
         self._apply_define(
-            calc_col, f"MinRange({muon_channel}_blsub, {TSmin}, {TSmax})")
-
-        # 2. Boolean Label
+            calc_col, f"{method}Range({muon_channel}_blsub, {ts_min}, {ts_max})")
         label = "passMuonCounterVeto"
         condition = f"{calc_col} >= {val_cut}"
         self._apply_define(label, condition)
 
-        # 3. Action
         if not label_only:
             self._update_chain(self.rdf.Filter(condition, f"{label}_Filter"))
 
@@ -78,18 +74,16 @@ class SelectionManager:
             raise ValueError(
                 "PSD channel not found for this run. Can not apply PSD selection.")
 
-        val_cut = get_service_drs_cut_values("PSD")
+        ts_min, ts_max, value_cut, method = get_service_drs_cut("PSD")
 
-        # 1. Calculation
         calc_col = f"{psd_chan}_sum"
-        self._apply_define(calc_col, f"SumRange({psd_chan}_blsub, 100, 400)")
+        self._apply_define(
+            calc_col, f"{method}Range({psd_chan}_blsub, {ts_min}, {ts_max})")
 
-        # 2. Boolean Label
         label = "passPSDSelection"
-        condition = f"{calc_col} < {val_cut}" if not is_hadron else f"{calc_col} >= {val_cut}"
+        condition = f"{calc_col} < {value_cut}" if not is_hadron else f"{calc_col} >= {value_cut}"
         self._apply_define(label, condition)
 
-        # 3. Action
         if not label_only:
             self._update_chain(self.rdf.Filter(condition, f"{label}_Filter"))
 
@@ -103,16 +97,15 @@ class SelectionManager:
             raise ValueError(
                 "Hole veto channel not found for this run. Can not apply hole veto.")
 
-        val_cut = get_service_drs_cut_values("HoleVeto")
+        ts_min, ts_max, value_cut, method = get_service_drs_cut("HoleVeto")
 
-        # 1. Calculation
         calc_col = f"{chan_holeveto}_peak_value"
         self._apply_define(
-            calc_col, f"ROOT::VecOps::Min({chan_holeveto}_blsub)")
+            calc_col, f"{method}Range({chan_holeveto}_blsub, {ts_min}, {ts_max})")
 
         # 2. Boolean Label
         label = "passHoleVeto"
-        condition = f"{calc_col} > {val_cut}"
+        condition = f"{calc_col} > {value_cut}"
         self._apply_define(label, condition)
 
         # 3. Action

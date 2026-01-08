@@ -5,7 +5,7 @@ from channels.channel_map import build_hodo_pos_channels, get_service_drs_channe
 from utils.html_generator import generate_html
 from core.analysis_manager import CaloXAnalysisManager
 from configs.plot_ranges import getServiceDRSProcessedInfoRanges
-from configs.selection_values import get_service_drs_cut_values
+from configs.selection_values import get_service_drs_cut
 from utils.parser import get_args
 from utils.plot_helper import save_hists_to_file
 from utils.root_setup import setup_root
@@ -32,32 +32,14 @@ def analyzePulse(channels):
     hists = {}
     hists2d = {}
 
-    # customized ways to define the peak position, peak value, and sum for each channel
-    channel = channels["PSD"]
-    rdf = rdf.Define(f"{channel}_peak_position",
-                     f"ArgMinRange({channel}_blsub, 100, 400)")
-    rdf = rdf.Define(f"{channel}_peak_value",
-                     f"MinRange({channel}_blsub, 100, 400)")
-    rdf = rdf.Define(f"{channel}_sum",
-                     f"SumRange({channel}_blsub, 100, 400)")
-
-    channel = channels["TTUMuonVeto"]
-    rdf = rdf.Define(f"{channel}_peak_position",
-                     f"ROOT::VecOps::ArgMin({channel}_blsub)")
-    rdf = rdf.Define(f"{channel}_peak_value",
-                     f"ROOT::VecOps::Min({channel}_blsub)")
-    rdf = rdf.Define(f"{channel}_sum",
-                     f"SumRange({channel}_blsub, {channel}_peak_position - 50, {channel}_peak_position + 50)")
-
     for det, channel in channels.items():
-        if not det.startswith("Cer"):
-            continue
+        ts_min, ts_max, value_cut, method = get_service_drs_cut(det)
         rdf = rdf.Define(f"{channel}_peak_position",
-                         f"ROOT::VecOps::ArgMin({channel}_blsub)")
+                         f"ArgMinRange({channel}_blsub, {ts_min}, {ts_max})")
         rdf = rdf.Define(f"{channel}_peak_value",
-                         f"ROOT::VecOps::Min({channel}_blsub)")
+                         f"MinRange({channel}_blsub, {ts_min}, {ts_max})")
         rdf = rdf.Define(f"{channel}_sum",
-                         f"SumRange({channel}_blsub, 0, 1000)")
+                         f"SumRange({channel}_blsub, {ts_min}, {ts_max})")
 
     # create histograms
     for det, channel in channels.items():
@@ -295,17 +277,17 @@ def plotPulse(channels):
             print(f"Histogram {det}_sum not found in {infile.GetName()}")
             return
         xmin, xmax = getServiceDRSProcessedInfoRanges(det, "sum")
-        valCut = get_service_drs_cut_values(det)
-        nhad = hist.Integral(hist.FindBin(valCut), 10000)
-        nele = hist.Integral(0, hist.FindBin(valCut))
+        _, _, value_cut, _ = get_service_drs_cut(det)
+        nhad = hist.Integral(hist.FindBin(value_cut), 10000)
+        nele = hist.Integral(0, hist.FindBin(value_cut))
         extraToDraw = ROOT.TPaveText(0.23, 0.75, 0.55, 0.85, "NDC")
         extraToDraw.SetFillColor(0)
         extraToDraw.SetBorderSize(0)
         extraToDraw.SetTextAlign(11)
         extraToDraw.SetTextFont(42)
         extraToDraw.SetTextSize(0.04)
-        extraToDraw.AddText(f"N (sum > {valCut:.2g}): {nhad:.0f}")
-        extraToDraw.AddText(f"N (sum < {valCut:.2g}): {nele:.0f}")
+        extraToDraw.AddText(f"N (sum > {value_cut:.2g}): {nhad:.0f}")
+        extraToDraw.AddText(f"N (sum < {value_cut:.2g}): {nele:.0f}")
         DrawHistos([hist], [det], xmin, xmax, "Sum", 1, None, "Counts",
                    outputname=f"{det}_sum", outdir=outdir,
                    dology=True, mycolors=[1], drawashist=True, run_number=run_number,
@@ -324,10 +306,10 @@ def plotPulse(channels):
                 return
             xmin, xmax = getServiceDRSProcessedInfoRanges(det1, "sum")
             ymin, ymax = getServiceDRSProcessedInfoRanges(det2, "sum")
-            valCut1 = get_service_drs_cut_values(det1)
-            valCut2 = get_service_drs_cut_values(det2)
-            xPass = hist2d.GetXaxis().FindBin(valCut1)
-            yPass = hist2d.GetYaxis().FindBin(valCut2)
+            _, _, value_cut1, _ = get_service_drs_cut(det1)
+            _, _, value_cut2, _ = get_service_drs_cut(det2)
+            xPass = hist2d.GetXaxis().FindBin(value_cut1)
+            yPass = hist2d.GetYaxis().FindBin(value_cut2)
             nPP = hist2d.Integral(xPass, 1000, yPass, 1000)
             nPF = hist2d.Integral(xPass, 1000, 0, yPass - 1)
             nFP = hist2d.Integral(0, xPass - 1, yPass, 1000)
@@ -341,13 +323,13 @@ def plotPulse(channels):
             name1_txt = det1.replace("Cerenkov", "Cer")
             name2_txt = det2.replace("Cerenkov", "Cer")
             extraToDraw.AddText(
-                f"N ({name1_txt} > {valCut1:.2g}, {name2_txt} > {valCut2:.2g}): {nPP:.0f}")
+                f"N ({name1_txt} > {value_cut1:.2g}, {name2_txt} > {value_cut2:.2g}): {nPP:.0f}")
             extraToDraw.AddText(
-                f"N ({name1_txt} > {valCut1:.2g}, {name2_txt} < {valCut2:.2g}): {nPF:.0f}")
+                f"N ({name1_txt} > {value_cut1:.2g}, {name2_txt} < {value_cut2:.2g}): {nPF:.0f}")
             extraToDraw.AddText(
-                f"N ({name1_txt} < {valCut1:.2g}, {name2_txt} > {valCut2:.2g}): {nFP:.0f}")
+                f"N ({name1_txt} < {value_cut1:.2g}, {name2_txt} > {value_cut2:.2g}): {nFP:.0f}")
             extraToDraw.AddText(
-                f"N ({name1_txt} < {valCut1:.2g}, {name2_txt} < {valCut2:.2g}): {nFF:.0f}")
+                f"N ({name1_txt} < {value_cut1:.2g}, {name2_txt} < {value_cut2:.2g}): {nFF:.0f}")
             DrawHistos([hist2d], "", xmin, xmax, f"{det1} Sum", ymin, ymax, f"{det2} Sum",
                        outputname=f"{det1}_vs_{det2}_sum2D", outdir=outdir,
                        drawoptions="COLz", zmin=1, zmax=None, dologz=True,

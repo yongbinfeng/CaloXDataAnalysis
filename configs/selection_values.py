@@ -1,10 +1,12 @@
-def get_service_drs_cut_values(service_drs: str) -> float:
-    values = {
-        "HoleVeto": -1000.0,
-        "PSD": -9000.0,
-        "TTUMuonVeto": -100.0,
-        "Cer474": -1000.0,
-        "Cer519": -1000.0,
-        "Cer537": -1000.0,
+def get_service_drs_cut(service_drs: str) -> tuple:
+    # Returns (ts_min, ts_max, value_cut, method)
+    cut_default = (0, 1000, -5e4, "Sum")
+    cuts = {
+        "HoleVeto": (100, 350, -1000.0, "Min"),
+        "PSD": (100, 400, -9000.0, "Sum"),
+        "TTUMuonVeto": (100, 400, -2e3, "Sum"),
+        "Cer474": (800, 950, -3000.0, "Sum"),
+        "Cer519": (400, 600, -3000.0, "Sum"),
+        "Cer537": (400, 600, -3000.0, "Sum"),
     }
-    return values.get(service_drs, -1000.0)
+    return cuts.get(service_drs, cut_default)
