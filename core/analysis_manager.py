@@ -157,17 +157,17 @@ class CaloXAnalysisManager:
 
         return self
 
-    def apply_selections(self):
+    def apply_selections(self, label_only=False):
         """
-        Applies standard muon and halo vetoes via SelectionManager.
+        Applies standard muon and hole vetoes via SelectionManager.
         """
         if "selections_applied" in self._steps_applied:
             return self
 
         self.sel_mgr = SelectionManager(self.rdf, self.run_number)
         self.rdf = (self.sel_mgr
-                    .veto_muon_counter()
-                    .apply_upstream_veto()
+                    .apply_muon_counter_veto(label_only=label_only)
+                    .apply_hole_veto(label_only=label_only)
                     .get_rdf())
 
         self._steps_applied.add("selections_applied")

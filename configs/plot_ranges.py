@@ -329,25 +329,25 @@ def get_service_drs_plot_ranges(channel, subtractMedian=True):
 
 def getServiceDRSProcessedInfoRanges(channel, cat):
     service_drs_ranges = {
-        "muon": {
+        "TTUMuonVeto": {
             "peak_value": (-500, 50),
             "sum": (-2e3, 500)
         },
-        "preshower": {
+        "PSD": {
             # "peak_value": (-3000, 50),
             # "sum": (-7e4, 1e4)
             "peak_value": (-1000, 50),
-            "sum": (-1e4, 500)
+            "sum": (-2e4, 500)
         },
-        "Cerenkov1": {
+        "Cer474": {
             "peak_value": (-1500, 50),
             "sum": (-1e4, 2e3)
         },
-        "Cerenkov2": {
+        "Cer519": {
             "peak_value": (-1500, 50),
             "sum": (-1e4, 2e3)
         },
-        "Cerenkov3": {
+        "Cer537": {
             "peak_value": (-1500, 50),
             "sum": (-1e4, 2e3)
         },

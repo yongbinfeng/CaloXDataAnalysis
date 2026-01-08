@@ -812,13 +812,13 @@ def findDRSTriggerMap(channel, run=1040):
         return triggermap[str(run)][result]
 
 
-def get_upstream_veto_channel(run=1184):
+def get_hole_veto_channel(run=1184):
     if run < 1183:
         return None
     elif run < 1327:
         return "DRS_Board7_Group1_Channel6"
     else:
-        return "DRS_Board7_Group1_Channel6"
+        return get_service_drs_channels(run)["HoleVeto"]
 
 
 def get_downstream_muon_channel(run=1184):
@@ -830,13 +830,13 @@ def get_downstream_muon_channel(run=1184):
         return "DRS_Board7_Group1_Channel0"
 
 
-def getDownStreamTTUMuonChannel(run=1184):
+def get_downstream_ttu_muon_channel(run=1184):
     if run < 1183:
         return None
     elif run < 1327:
         return None
     else:
-        return "DRS_Board7_Group2_Channel4"
+        return get_service_drs_channels(run)["TTUMuonVeto"]
 
 
 def get_pre_shower_channel(run=1184):
@@ -848,7 +848,7 @@ def get_pre_shower_channel(run=1184):
     elif run < 1327:
         return "DRS_Board7_Group1_Channel1"
     else:
-        return "DRS_Board7_Group1_Channel1"
+        return get_service_drs_channels(run)["PSD"]
 
 
 def get_cerenkov_counters(run=1184):

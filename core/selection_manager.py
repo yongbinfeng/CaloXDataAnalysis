@@ -1,124 +1,144 @@
+from channels.channel_map import get_service_drs_channels
+from configs.selection_values import get_service_drs_cut_values
+
+
 class SelectionManager:
     """
-    A class to manage RDataFrame selections for CaloX data analysis.
-    Maintains a list of nodes to prevent PyROOT memory issues.
+    Manages RDataFrame selections for CaloX data analysis.
+    Supports physical filtering and boolean labeling for ML or N-1 studies.
     """
 
     def __init__(self, rdf, run_number):
         self.run_number = run_number
-        # Store nodes in a list to prevent garbage collection
         self._nodes = [rdf]
-        # Book the initial count lazily
+        self._defined_columns = set(str(c) for c in rdf.GetColumnNames())
+
+        # Stats tracking
         self.initial_count_proxy = rdf.Count()
-        self.filter_reports = []
+        self.stats_proxies = []  # List of (label, result_proxy)
+
+        self._apply_define("passNone", "1.0")
 
     @property
     def rdf(self):
-        """Always returns the most recent node in the chain."""
+        """Returns the current head of the RDataFrame graph."""
         return self._nodes[-1]
 
-    def _apply_filter(self, filter_string, label, invert=False):
-        """
-        Internal helper to apply filters and manage memory.
-        Added 'invert' parameter to flip the selection logic.
-        """
-        # If invert is True, wrap the filter string in !( ... )
-        final_filter = f"!({filter_string})" if invert else filter_string
-        final_label = f"NOT_{label}" if invert else label
+    def _update_chain(self, new_node):
+        """Internal helper to safely advance the RDF graph and prevent memory issues."""
+        self._nodes.append(new_node)
+        return new_node
 
-        new_rdf = self.rdf.Filter(final_filter, final_label)
-        self._nodes.append(new_rdf)
+    def _apply_define(self, col_name, expression):
+        """Defines a column only if it does not already exist."""
+        if col_name not in self._defined_columns:
+            new_rdf = self.rdf.Define(col_name, expression)
+            self._update_chain(new_rdf)
+            self._defined_columns.add(col_name)
+        return self.rdf
 
-        # Book the count for this specific filter stage lazily
-        self.filter_reports.append((final_label, new_rdf.Count()))
+    def _register_stats(self, label, condition, label_only):
+        """Tracks selection statistics regardless of filter/label mode."""
+        if label_only:
+            # If we aren't filtering, we count how many 'true' values exist in the label column
+            self.stats_proxies.append((label, self.rdf.Sum(label)))
+        else:
+            # If we are filtering, the count of the resulting node is the statistic
+            self.stats_proxies.append((label, self.rdf.Count()))
 
-    def _column_exists(self, name):
-        """Check if a column already exists to prevent re-definition errors."""
-        return name in [str(c) for c in self.rdf.GetColumnNames()]
+    def apply_muon_counter_veto(self, TSmin=200, TSmax=700, label_only=False):
+        muon_channel = get_service_drs_channels(
+            self.run_number).get("TTUMuonVeto")
+        if not muon_channel:
+            raise ValueError(
+                "Muon counter channel not found for this run. Can not apply muon counter veto.")
 
-    def veto_muon_counter(self, TSmin=200, TSmax=700, cut=-100, invert=False):
-        """
-        Vetoes events with muon counter signal.
-        Set invert=True to keep ONLY events with a muon signal.
-        """
-        from channels.channel_map import getDownStreamTTUMuonChannel
-        muon_channel = getDownStreamTTUMuonChannel(run=self.run_number)
+        val_cut = get_service_drs_cut_values("TTUMuonVeto")
 
-        if muon_channel is None:
-            print("Muon counter channel not found, skipping veto.")
-            return self
+        # 1. Calculation
+        calc_col = "MuonCounterMin"
+        self._apply_define(
+            calc_col, f"MinRange({muon_channel}_blsub, {TSmin}, {TSmax})")
 
-        col_name = "MuonCounterMin"
-        if not self._column_exists(col_name):
-            rdf_def = self.rdf.Define(
-                col_name, f"MinRange({muon_channel}_blsub, {TSmin}, {TSmax})")
-            self._nodes.append(rdf_def)
+        # 2. Boolean Label
+        label = "passMuonCounterVeto"
+        condition = f"{calc_col} >= {val_cut}"
+        self._apply_define(label, condition)
 
-        # Apply filter with the inversion option
-        self._apply_filter(
-            f"{col_name} >= {cut}", "MuonVeto", invert=invert)
+        # 3. Action
+        if not label_only:
+            self._update_chain(self.rdf.Filter(condition, f"{label}_Filter"))
+
+        self._register_stats(label, condition, label_only)
         return self
 
-    def apply_psd_selection(self, is_hadron=False, invert=False):
-        """
-        Applies Pre-shower Detector (PSD) selection.
-        invert=True will flip the logic regardless of is_hadron setting.
-        """
-        from channels.channel_map import get_pre_shower_channel
-        preshower_channel = get_pre_shower_channel(self.run_number)
+    def apply_psd_selection(self, is_hadron=False, label_only=False):
+        psd_chan = get_service_drs_channels(self.run_number).get("PSD")
+        if not psd_chan:
+            raise ValueError(
+                "PSD channel not found for this run. Can not apply PSD selection.")
 
-        if preshower_channel is None:
-            return self
+        val_cut = get_service_drs_cut_values("PSD")
 
-        col_name = f"{preshower_channel}_sum"
-        if not self._column_exists(col_name):
-            rdf_def = self.rdf.Define(
-                col_name, f"SumRange({preshower_channel}_blsub, 100, 400)")
-            self._nodes.append(rdf_def)
+        # 1. Calculation
+        calc_col = f"{psd_chan}_sum"
+        self._apply_define(calc_col, f"SumRange({psd_chan}_blsub, 100, 400)")
 
-        val_cut = -1000.0
-        # Standard logic: Electrons (is_hadron=False) pass if sum < cut
-        condition = f"({col_name} < {val_cut}) == {0 if is_hadron else 1}"
+        # 2. Boolean Label
+        label = "passPSDSelection"
+        condition = f"{calc_col} < {val_cut}" if not is_hadron else f"{calc_col} >= {val_cut}"
+        self._apply_define(label, condition)
 
-        label = "PSD_Hadron" if is_hadron else "PSD_Electron"
-        self._apply_filter(condition, label, invert=invert)
+        # 3. Action
+        if not label_only:
+            self._update_chain(self.rdf.Filter(condition, f"{label}_Filter"))
+
+        self._register_stats(label, condition, label_only)
         return self
 
-    def apply_upstream_veto(self, cut=-1000.0, invert=False):
-        """
-        Applies upstream veto based on peak value.
-        invert=True selects events that FAILED the veto (the 'halo' events).
-        """
-        from channels.channel_map import get_upstream_veto_channel
-        chan_upveto = get_upstream_veto_channel(self.run_number)
+    def apply_hole_veto(self, label_only=False):
+        chan_holeveto = get_service_drs_channels(
+            self.run_number).get("HoleVeto")
+        if not chan_holeveto:
+            raise ValueError(
+                "Hole veto channel not found for this run. Can not apply hole veto.")
 
-        if not chan_upveto:
-            return self
+        val_cut = get_service_drs_cut_values("HoleVeto")
 
-        col_name = f"{chan_upveto}_peak_value"
-        if not self._column_exists(col_name):
-            rdf_def = self.rdf.Define(
-                col_name, f"ROOT::VecOps::Min({chan_upveto}_blsub)")
-            self._nodes.append(rdf_def)
+        # 1. Calculation
+        calc_col = f"{chan_holeveto}_peak_value"
+        self._apply_define(
+            calc_col, f"ROOT::VecOps::Min({chan_holeveto}_blsub)")
 
-        self._apply_filter(f"{col_name} > {cut}",
-                           "UpstreamVeto", invert=invert)
+        # 2. Boolean Label
+        label = "passHoleVeto"
+        condition = f"{calc_col} > {val_cut}"
+        self._apply_define(label, condition)
+
+        # 3. Action
+        if not label_only:
+            self._update_chain(self.rdf.Filter(condition, f"{label}_Filter"))
+
+        self._register_stats(label, condition, label_only)
         return self
 
     def get_rdf(self):
-        """Returns the final filtered RDataFrame node."""
+        """Returns the final RDataFrame node."""
         return self.rdf
 
     def print_cutflow(self):
-        """
-        Call this ONLY at the end of your script. 
-        The first .GetValue() call here will trigger the ONE slow analysis loop.
-        """
-        print("\n--- Selection Cutflow ---")
-        # Accessing the first proxy triggers the loop for all booked results
-        initial = self.initial_count_proxy.GetValue()
-        print(f"Initial: {initial} events")
+        """Triggers the event loop and prints results."""
+        print(f"\n{'='*50}")
+        print(f"{'Selection Cutflow (Run ' + str(self.run_number) + ')':^50}")
+        print(f"{'='*50}")
 
-        for label, proxy in self.filter_reports:
-            # These are now ready instantly without a new loop
-            print(f"{label}: {proxy.GetValue()} events")
+        initial = self.initial_count_proxy.GetValue()
+        print(f"{'Initial Events':<35} | {initial:>10}")
+        print(f"{'-'*50}")
+
+        for label, proxy in self.stats_proxies:
+            # proxy.GetValue() returns either Count or Sum result
+            count = int(proxy.GetValue())
+            print(f"{label:<35} | {count:>10}")
+
+        print(f"{'='*50}\n")
