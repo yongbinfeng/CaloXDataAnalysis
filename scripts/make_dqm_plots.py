@@ -871,7 +871,7 @@ def compareServiceDRSPlots():
 
         ymin, ymax = get_service_drs_plot_ranges(
             chan_name, subtractMedian=True)
-        DrawHistos([hist], "", 0, 1024, "Time Slice", ymin, ymax, "Counts",
+        DrawHistos([hist], "", 0, 1024, "Time Slice", ymin, ymax, "ADC",
                    output_name,
                    dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e4, dologz=True,
                    extraToDraw=extraToDraw,

@@ -933,7 +933,7 @@ def get_service_drs_channels(run=1184):
             "DWC2Down": "DRS_Board7_Group0_Channel7",
             "MuonVeto": "DRS_Board7_Group1_Channel0",
             "PSD": "DRS_Board7_Group1_Channel1",
-            "HaloVeto": "DRS_Board7_Group1_Channel6",
+            "HoleVeto": "DRS_Board7_Group1_Channel6",
             "NC": "DRS_Board7_Group1_Channel7",
             "T3": "DRS_Board7_Group2_Channel0",
             "T4": "DRS_Board7_Group2_Channel1",
