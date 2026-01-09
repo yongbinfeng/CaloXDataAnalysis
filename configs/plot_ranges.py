@@ -341,15 +341,15 @@ def getServiceDRSProcessedInfoRanges(channel, cat):
         },
         "Cer474": {
             "peak_value": (-1500, 50),
-            "sum": (-1e4, 2e3)
+            "sum": (-3e4, 2e3)
         },
         "Cer519": {
             "peak_value": (-1500, 50),
-            "sum": (-1e4, 2e3)
+            "sum": (-3e4, 2e3)
         },
         "Cer537": {
             "peak_value": (-1500, 50),
-            "sum": (-1e4, 2e3)
+            "sum": (-3e4, 2e3)
         },
     }
     if channel in service_drs_ranges:

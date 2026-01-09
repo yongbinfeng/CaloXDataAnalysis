@@ -30,7 +30,6 @@ def analyzePulse(channels):
     rdf = rdf_org.Filter("passHoleVeto")
 
     hists = {}
-    hists2d = {}
 
     for det, channel in channels.items():
         ts_min, ts_max, value_cut, method = get_service_drs_cut(det)
@@ -41,9 +40,21 @@ def analyzePulse(channels):
         rdf = rdf.Define(f"{channel}_sum",
                          f"SumRange({channel}_blsub, {ts_min}, {ts_max})")
 
+    # rdf = rdf.Filter(f"{channels['PSD']}_sum > -1e3")
+    # rdf = rdf.Filter(
+    #    f"{channels['PSD']}_sum < -1e3").Filter(f"{channels['PSD']}_sum >= -5e3")
+    # rdf = rdf.Filter(f"{channels['TTUMuonVeto']}_sum > -5e3")
+
     # create histograms
     for det, channel in channels.items():
         hists[channel] = {}
+        hists[channel]["ADC_VS_TS"] = rdf.Histo2D(
+            (f"{det}_ADC_vs_TS",
+             f"ADC vs Time Slice {channel};Time Slice;ADC Counts;Counts",
+             1024, 0, 1024, 500, -3000, 1000),
+            "TS",
+            f"{channel}_blsub"
+        )
         hists[channel]["peak_position"] = rdf.Histo1D(
             (f"{det}_peak_position",
              f"Peak Position {channel};Time Slice;Counts", 128, 0, 1024),
@@ -69,10 +80,10 @@ def analyzePulse(channels):
                 continue
             channel1 = channels[det1]
             channel2 = channels[det2]
-            hists2d[f"{det1}_vs_{det2}"] = {}
+            hists[f"{det1}_vs_{det2}"] = {}
             xmin, xmax = getServiceDRSProcessedInfoRanges(det1, "sum")
             ymin, ymax = getServiceDRSProcessedInfoRanges(det2, "sum")
-            hists2d[f"{det1}_vs_{det2}"]["sum2D"] = rdf.Histo2D(
+            hists[f"{det1}_vs_{det2}"]["sum2D"] = rdf.Histo2D(
                 (f"{det1}_sum_vs_{det2}_sum",
                  f"{det1} vs {det2} Sum;{det1} Sum;{det2} Sum;Counts",
                  500, xmin, xmax, 500, ymin, ymax),
@@ -81,12 +92,9 @@ def analyzePulse(channels):
             )
 
     output_hists = []
-    for channel in channels.values():
-        for _, hist in hists[channel].items():
+    for _, hists_map in hists.items():
+        for _, hist in hists_map.items():
             output_hists.append(hist)
-    for _, map2d in hists2d.items():
-        for _, hist2d in map2d.items():
-            output_hists.append(hist2d)
 
     return output_hists
 
@@ -249,6 +257,17 @@ def plotPulse(channels):
     outdir = f"{paths['plots']}/drs_service/"
 
     for det in channels.keys():
+        hist = infile.Get(f"{det}_ADC_vs_TS")
+        if not hist:
+            print(
+                f"Histogram {det}_ADC_vs_TS not found in {infile.GetName()}")
+            return
+        DrawHistos([hist], [], 0, 1024, "Time Slice", -3000, 1000, "ADC Counts",
+                   outputname=f"{det}_ADC_vs_TS", outdir=outdir,
+                   drawoptions="COLz", zmin=1, zmax=None, dologz=True,
+                   dology=False, run_number=run_number, addOverflow=True, doth2=True)
+        plots.append(f"{det}_ADC_vs_TS.png")
+
         hist = infile.Get(f"{det}_peak_position")
         if not hist:
             print(
@@ -338,7 +357,7 @@ def plotPulse(channels):
             plots.append(f"{det1}_vs_{det2}_sum2D.png")
 
     output_html = f"{paths['html']}/ServiceDRS/PID.html"
-    generate_html(plots, outdir, plots_per_row=3,
+    generate_html(plots, outdir, plots_per_row=4,
                   output_html=output_html)
 
     return output_html
