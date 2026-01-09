@@ -47,14 +47,16 @@ ROOT::VecOps::RVec<float> clipToZero(const ROOT::VecOps::RVec<float> &vec)
 
 float SumRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j)
 {
-    if (i >= v.size() || j > v.size() || i >= j)
+    j = std::min(j, v.size());
+    if (i >= j)
         return 0.0;
     return std::accumulate(v.begin() + i, v.begin() + j, 0.0f);
 }
 
 float MaxRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j)
 {
-    if (i >= v.size() || j > v.size() || i >= j)
+    j = std::min(j, v.size());
+    if (i >= j)
         return 0.0;
     float maxVal = v[i];
     for (size_t k = i + 1; k < j; ++k)
@@ -65,7 +67,8 @@ float MaxRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j)
 
 float MinRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j)
 {
-    if (i >= v.size() || j > v.size() || i >= j)
+    j = std::min(j, v.size());
+    if (i >= j)
         return 0.0;
     float minVal = v[i];
     for (size_t k = i + 1; k < j; ++k)
@@ -76,7 +79,8 @@ float MinRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j)
 
 size_t ArgMinRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j, float threshold = 0.0f)
 {
-    if (i >= v.size() || j > v.size() || i >= j)
+    j = std::min(j, v.size());
+    if (i >= j)
         return 0; // return 0 if the range is invalid
     auto minIt = std::min_element(v.begin() + i, v.begin() + j);
     if (*minIt > threshold)
@@ -86,8 +90,9 @@ size_t ArgMinRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j, float
 
 size_t ArgMaxRange(const ROOT::VecOps::RVec<float> &v, size_t i, size_t j, float threshold = 0.0f)
 {
-    if (i >= v.size() || j > v.size() || i >= j)
-        return -1; // return -1 if the range is invalid
+    j = std::min(j, v.size());
+    if (i >= j)
+        return 0; // return 0 if the range is invalid
     auto maxIt = std::max_element(v.begin() + i, v.begin() + j);
     if (*maxIt < threshold)
         return 0; // return 0 if the maximum value is below the threshold

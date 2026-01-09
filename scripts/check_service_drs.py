@@ -39,7 +39,7 @@ def analyzePulse(channels):
         rdf = rdf.Define(f"{channel}_peak_value",
                          f"MinRange({channel}_blsub, {ts_min}, {ts_max})")
         rdf = rdf.Define(f"{channel}_sum",
-                         f"SumRange({channel}_blsub, {ts_min}, {ts_max})")
+                         f"SumRange({channel}_blsub, {channel}_peak_position - 50, {channel}_peak_position + 100)")
 
     # rdf = rdf.Filter(f"{channels['PSD']}_sum > -1e3")
     # rdf = rdf.Filter(
@@ -309,10 +309,15 @@ def plotPulse(channels):
         extraToDraw.SetTextSize(0.04)
         extraToDraw.AddText(f"N (sum > {value_cut:.2g}): {nhad:.0f}")
         extraToDraw.AddText(f"N (sum < {value_cut:.2g}): {nele:.0f}")
+        # add the cut line
+        line = ROOT.TLine(value_cut, 0, value_cut, hist.GetMaximum())
+        line.SetLineColor(ROOT.kRed)
+        line.SetLineWidth(2)
+        line.SetLineStyle(ROOT.kDashed)
         DrawHistos([hist], [det], xmin, xmax, "Sum", 1, None, "Counts",
                    outputname=f"{det}_sum", outdir=outdir,
                    dology=True, mycolors=[1], drawashist=True, run_number=run_number,
-                   addOverflow=True, addUnderflow=True, extraToDraw=extraToDraw)
+                   addOverflow=True, addUnderflow=True, extraToDraw=[extraToDraw, line])
         plots.append(f"{det}_sum.png")
 
         # make a cdf plot based on sum
@@ -320,15 +325,23 @@ def plotPulse(channels):
         hist.GetXaxis().SetRange(0, hist.GetNbinsX()+1)
         hist_cdf = hist.GetCumulative()
         hist_cdf.Scale(1.0 / hist.Integral())
+        # add the cut line
+        line = ROOT.TLine(value_cut, 0, value_cut, 1)
+        line.SetLineColor(ROOT.kRed)
+        line.SetLineWidth(2)
+        line.SetLineStyle(ROOT.kDashed)
         DrawHistos([hist_cdf], [det], xmin, xmax, "Sum", 0, 1.3, "Cumulative Fraction",
                    outputname=f"{det}_sum_cdf", outdir=outdir,
                    dology=False, mycolors=[1], drawashist=True, run_number=run_number,
-                   addOverflow=False, addUnderflow=False, legendPos=[0.3, 0.80, 0.5, 0.85])
+                   addOverflow=False, addUnderflow=False, legendPos=[0.3, 0.80, 0.5, 0.85], extraToDraw=line)
         plots.append(f"{det}_sum_cdf.png")
 
     output_html = f"{paths['html']}/ServiceDRS/PID.html"
+    intro_text = """This page shows the pulse shape analysis for the service DRS channels for particle identification.
+    No selection is applied unless specified.
+    """
     generate_html(plots, outdir, plots_per_row=5,
-                  output_html=output_html)
+                  output_html=output_html, intro_text=intro_text)
     output_htmls.append(output_html)
 
     plots = []
@@ -369,17 +382,27 @@ def plotPulse(channels):
                 f"N ({name1_txt} < {value_cut1:.2g}, {name2_txt} > {value_cut2:.2g}): {nFP:.0f}")
             extraToDraw.AddText(
                 f"N ({name1_txt} < {value_cut1:.2g}, {name2_txt} < {value_cut2:.2g}): {nFF:.0f}")
+            # add cut lines
+            line1 = ROOT.TLine(value_cut1, ymin, value_cut1, ymax)
+            line2 = ROOT.TLine(xmin, value_cut2, xmax, value_cut2)
+            for line in [line2, line1]:
+                line.SetLineWidth(2)
+                line.SetLineStyle(ROOT.kDashed)
+                line.SetLineColor(ROOT.kRed)
             DrawHistos([hist2d], "", xmin, xmax, f"{det1} Sum", ymin, ymax, f"{det2} Sum",
                        outputname=f"{det1}_vs_{det2}_sum2D", outdir=outdir,
                        drawoptions="COLz", zmin=1, zmax=None, dologz=True,
                        dology=False, run_number=run_number, addOverflow=True, doth2=True,
-                       extraToDraw=extraToDraw)
+                       extraToDraw=[extraToDraw, line1, line2])
             plots.append(f"{det1}_vs_{det2}_sum2D.png")
         plots.append("NEWLINE")
 
     output_html = f"{paths['html']}/ServiceDRS/PID_correlation.html"
+    intro_text = """This page shows the correlation plots of the service DRS channels for particle identification.
+    No selection is applied unless specified.
+    """
     generate_html(plots, outdir, plots_per_row=6,
-                  output_html=output_html)
+                  output_html=output_html, intro_text=intro_text)
 
     output_htmls.append(output_html)
 
