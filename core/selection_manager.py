@@ -37,101 +37,92 @@ class SelectionManager:
             self._defined_columns.add(col_name)
         return self.rdf
 
-    def _register_stats(self, label, condition, label_only):
+    def _register_stats(self, label, flag_only):
         """Tracks selection statistics regardless of filter/label mode."""
-        if label_only:
-            # If we aren't filtering, we count how many 'true' values exist in the label column
+        if flag_only:
+            # Sum the boolean column to count 'True' occurrences
             self.stats_proxies.append((label, self.rdf.Sum(label)))
         else:
-            # If we are filtering, the count of the resulting node is the statistic
+            # Count the remaining events in the filtered graph
             self.stats_proxies.append((label, self.rdf.Count()))
 
-    def apply_muon_counter_veto(self, label_only=False):
-        muon_channel = get_service_drs_channels(
-            self.run_number).get("TTUMuonVeto")
-        if not muon_channel:
+    def _apply_selection(self, det, flag_only=False, apply_veto=False):
+        channel = get_service_drs_channels(self.run_number).get(det)
+        if not channel:
             raise ValueError(
-                "Muon counter channel not found for this run. Can not apply muon counter veto.")
+                f"Channel for {det} not found for run {self.run_number}.")
 
-        ts_min, ts_max, val_cut, method = get_service_drs_cut("TTUMuonVeto")
+        ts_min, ts_max, val_cut, method = get_service_drs_cut(det)
 
-        calc_col = "MuonCounterMin"
+        # 1. Define Calculation
+        calc_col = f"{det}_firingVal"
         self._apply_define(
-            calc_col, f"{method}Range({muon_channel}_blsub, {ts_min}, {ts_max})")
-        label = "passMuonCounterVeto"
-        condition = f"{calc_col} >= {val_cut}"
-        self._apply_define(label, condition)
+            calc_col, f"{method}Range({channel}_blsub, {ts_min}, {ts_max})")
 
-        if not label_only:
-            self._update_chain(self.rdf.Filter(condition, f"{label}_Filter"))
+        # 2. Define Boolean Label (Is the detector firing?)
+        firing_label = f"is{det}Fired"
+        self._apply_define(firing_label, f"{calc_col} < {val_cut}")
 
-        self._register_stats(label, condition, label_only)
+        # 3. Determine Cut Logic (Selection vs Veto)
+        # We create a specific 'pass' column to ensure Sum() works in flag_only mode
+        pass_label = f"is_{det}_{'vetoed' if apply_veto else 'fired'}"
+        cut_str = f"{firing_label} == 0" if apply_veto else f"{firing_label} == 1"
+        self._apply_define(pass_label, cut_str)
+
+        # 4. Filter or Label
+        if not flag_only:
+            self._update_chain(self.rdf.Filter(pass_label, f"{det}_Filter"))
+
+        self._register_stats(pass_label, flag_only)
         return self
 
-    def apply_psd_selection(self, is_hadron=False, label_only=False):
-        psd_chan = get_service_drs_channels(self.run_number).get("PSD")
-        if not psd_chan:
-            raise ValueError(
-                "PSD channel not found for this run. Can not apply PSD selection.")
+    def apply_muon_counter_veto(self, flag_only=False, apply_veto=True):
+        return self._apply_selection("TTUMuonVeto", flag_only, apply_veto)
 
-        ts_min, ts_max, value_cut, method = get_service_drs_cut("PSD")
+    def apply_psd_selection(self, flag_only=False, apply_veto=True):
+        return self._apply_selection("PSD", flag_only, apply_veto)
 
-        calc_col = f"{psd_chan}_sum"
-        self._apply_define(
-            calc_col, f"{method}Range({psd_chan}_blsub, {ts_min}, {ts_max})")
+    def apply_hole_veto(self, flag_only=False, apply_veto=True):
+        return self._apply_selection("HoleVeto", flag_only, apply_veto)
 
-        label = "passPSDSelection"
-        condition = f"{calc_col} < {value_cut}" if not is_hadron else f"{calc_col} >= {value_cut}"
-        self._apply_define(label, condition)
+    def apply_cer474_selection(self, flag_only=False, apply_veto=True):
+        return self._apply_selection("Cer474", flag_only, apply_veto)
 
-        if not label_only:
-            self._update_chain(self.rdf.Filter(condition, f"{label}_Filter"))
+    def apply_cer519_selection(self, flag_only=False, apply_veto=True):
+        return self._apply_selection("Cer519", flag_only, apply_veto)
 
-        self._register_stats(label, condition, label_only)
-        return self
-
-    def apply_hole_veto(self, label_only=False):
-        chan_holeveto = get_service_drs_channels(
-            self.run_number).get("HoleVeto")
-        if not chan_holeveto:
-            raise ValueError(
-                "Hole veto channel not found for this run. Can not apply hole veto.")
-
-        ts_min, ts_max, value_cut, method = get_service_drs_cut("HoleVeto")
-
-        calc_col = f"{chan_holeveto}_peak_value"
-        self._apply_define(
-            calc_col, f"{method}Range({chan_holeveto}_blsub, {ts_min}, {ts_max})")
-
-        # 2. Boolean Label
-        label = "passHoleVeto"
-        condition = f"{calc_col} > {value_cut}"
-        self._apply_define(label, condition)
-
-        # 3. Action
-        if not label_only:
-            self._update_chain(self.rdf.Filter(condition, f"{label}_Filter"))
-
-        self._register_stats(label, condition, label_only)
-        return self
+    def apply_cer537_selection(self, flag_only=False, apply_veto=True):
+        return self._apply_selection("Cer537", flag_only, apply_veto)
 
     def get_rdf(self):
         """Returns the final RDataFrame node."""
         return self.rdf
 
     def print_cutflow(self):
-        """Triggers the event loop and prints results."""
-        print(f"\n{'='*50}")
-        print(f"{'Selection Cutflow (Run ' + str(self.run_number) + ')':^50}")
-        print(f"{'='*50}")
+        """Triggers the event loop and prints results with cumulative and step efficiency."""
+        # Table Header
+        header = f"{'Step':<30} | {'Count':>10} | {'Total Eff.':>11} | {'Step Eff.':>11}"
+        print(f"\n{'='*72}")
+        print(f"{'Selection Cutflow (Run ' + str(self.run_number) + ')':^72}")
+        print(f"{'='*72}")
+        print(header)
+        print(f"{'-'*72}")
 
         initial = self.initial_count_proxy.GetValue()
-        print(f"{'Initial Events':<35} | {initial:>10}")
-        print(f"{'-'*50}")
+        print(f"{'Initial Events':<30} | {initial:>10} | {'100.0%':>11} | {'-':>11}")
 
+        prev_count = initial
         for label, proxy in self.stats_proxies:
-            # proxy.GetValue() returns either Count or Sum result
             count = int(proxy.GetValue())
-            print(f"{label:<35} | {count:>10}")
 
-        print(f"{'='*50}\n")
+            # Efficiencies
+            total_eff = (count / initial * 100) if initial > 0 else 0
+            step_eff = (count / prev_count * 100) if prev_count > 0 else 0
+
+            print(
+                f"{label:<30} | {count:>10} | {total_eff:>10.2f}% | {step_eff:>10.2f}%")
+
+            # Advance prev_count for the next iteration
+            prev_count = count
+
+        print(f"{'='*72}\n")

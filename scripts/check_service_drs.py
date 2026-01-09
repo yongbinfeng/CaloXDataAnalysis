@@ -20,14 +20,14 @@ run_number = args.run
 
 analysis = (CaloXAnalysisManager(args)
             .prepare()
-            .apply_selections(label_only=True))
+            .apply_selections(flag_only=True))
 rdf_org = analysis.get_rdf()
 paths = analysis.paths
 
 
 def analyzePulse(channels):
     # only look at the ones passing the hole veto
-    rdf = rdf_org.Filter("passHoleVeto")
+    rdf = rdf_org.Filter("isHoleVetoFired == 0", "Pass Hole Veto")
 
     hists = {}
 
@@ -121,7 +121,7 @@ def analyzeHodoPeak():
             rdf = rdf.Define(f"{channel}_peak_value",
                              f"ROOT::VecOps::Min({channel}_blsub)")
 
-    conditions = ["passHoleVeto", "passNone"]
+    conditions = ["is_HoleVeto_vetoed", "passNone"]
 
     rdf_filtered = rdf
     maps_mean = {}
@@ -253,6 +253,7 @@ def plotPulse(channels):
     if not infile or infile.IsZombie():
         raise RuntimeError(f"Failed to open input file: {infile}")
 
+    output_htmls = []
     plots = []
     outdir = f"{paths['plots']}/drs_service/"
 
@@ -324,6 +325,13 @@ def plotPulse(channels):
                    addOverflow=False, addUnderflow=False, legendPos=[0.3, 0.80, 0.5, 0.85])
         plots.append(f"{det}_sum_cdf.png")
 
+    output_html = f"{paths['html']}/ServiceDRS/PID.html"
+    generate_html(plots, outdir, plots_per_row=5,
+                  output_html=output_html)
+    output_htmls.append(output_html)
+
+    plots = []
+
     # 2D plots
     for idx1, det1 in enumerate(channels.keys()):
         for idx2, det2 in enumerate(channels.keys()):
@@ -367,11 +375,13 @@ def plotPulse(channels):
                        extraToDraw=extraToDraw)
             plots.append(f"{det1}_vs_{det2}_sum2D.png")
 
-    output_html = f"{paths['html']}/ServiceDRS/PID.html"
+    output_html = f"{paths['html']}/ServiceDRS/PID_correlation.html"
     generate_html(plots, outdir, plots_per_row=5,
                   output_html=output_html)
 
-    return output_html
+    output_htmls.append(output_html)
+
+    return output_htmls
 
 
 def plotHodoPeak():
@@ -393,7 +403,7 @@ def plotHodoPeak():
         histos2D_left_vs_right = []
         histos1D_left_peak = []
         histos1D_right_peak = []
-        for sel in ["passNone", "passHoleVeto"]:
+        for sel in ["passNone", "is_HoleVeto_vetoed"]:
             cat = f"{group}_{sel}"
             hdiff = infile.Get(f"{cat}_delta_peak")
             hdiff_relat = infile.Get(f"{cat}_delta_peak_relative")
