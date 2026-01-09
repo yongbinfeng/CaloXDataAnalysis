@@ -329,6 +329,10 @@ def get_service_drs_plot_ranges(channel, subtractMedian=True):
 
 def getServiceDRSProcessedInfoRanges(channel, cat):
     service_drs_ranges = {
+        "HoleVeto": {
+            "peak_value": (-1500, 50),
+            "sum": (-1e4, 2e3)
+        },
         "TTUMuonVeto": {
             "peak_value": (-1000, 50),
             "sum": (-1e4, 2e3)

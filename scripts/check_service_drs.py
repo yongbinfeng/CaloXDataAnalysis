@@ -27,7 +27,8 @@ paths = analysis.paths
 
 def analyzePulse(channels):
     # only look at the ones passing the hole veto
-    rdf = rdf_org.Filter("isHoleVetoFired == 0", "Pass Hole Veto")
+    # rdf = rdf_org.Filter("isHoleVetoFired == 0", "Pass Hole Veto")
+    rdf = rdf_org
 
     hists = {}
 
@@ -374,9 +375,10 @@ def plotPulse(channels):
                        dology=False, run_number=run_number, addOverflow=True, doth2=True,
                        extraToDraw=extraToDraw)
             plots.append(f"{det1}_vs_{det2}_sum2D.png")
+        plots.append("NEWLINE")
 
     output_html = f"{paths['html']}/ServiceDRS/PID_correlation.html"
-    generate_html(plots, outdir, plots_per_row=5,
+    generate_html(plots, outdir, plots_per_row=6,
                   output_html=output_html)
 
     output_htmls.append(output_html)
@@ -506,7 +508,7 @@ def plotHodoPeak():
 
 def main():
     channels = OrderedDict()
-    for det in ["PSD", "TTUMuonVeto", "Cer474", "Cer519", "Cer537"]:
+    for det in ["HoleVeto", "PSD", "TTUMuonVeto", "Cer474", "Cer519", "Cer537"]:
         channel = get_service_drs_channels(run_number).get(det)
         channels[det] = channel
     hists_pid = analyzePulse(channels)
