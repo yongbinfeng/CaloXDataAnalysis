@@ -313,6 +313,17 @@ def plotPulse(channels):
                    addOverflow=True, addUnderflow=True, extraToDraw=extraToDraw)
         plots.append(f"{det}_sum.png")
 
+        # make a cdf plot based on sum
+        # include over/underflow
+        hist.GetXaxis().SetRange(0, hist.GetNbinsX()+1)
+        hist_cdf = hist.GetCumulative()
+        hist_cdf.Scale(1.0 / hist.Integral())
+        DrawHistos([hist_cdf], [det], xmin, xmax, "Sum", 0, 1.3, "Cumulative Fraction",
+                   outputname=f"{det}_sum_cdf", outdir=outdir,
+                   dology=False, mycolors=[1], drawashist=True, run_number=run_number,
+                   addOverflow=False, addUnderflow=False, legendPos=[0.3, 0.80, 0.5, 0.85])
+        plots.append(f"{det}_sum_cdf.png")
+
     # 2D plots
     for idx1, det1 in enumerate(channels.keys()):
         for idx2, det2 in enumerate(channels.keys()):
@@ -357,7 +368,7 @@ def plotPulse(channels):
             plots.append(f"{det1}_vs_{det2}_sum2D.png")
 
     output_html = f"{paths['html']}/ServiceDRS/PID.html"
-    generate_html(plots, outdir, plots_per_row=4,
+    generate_html(plots, outdir, plots_per_row=5,
                   output_html=output_html)
 
     return output_html
