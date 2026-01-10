@@ -211,3 +211,5 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
         f.write(html_header + html_body + html_footer)
 
     print(f"✅ HTML viewer generated at: {output_html_abs}")
+
+    return output_html_abs

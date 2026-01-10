@@ -1,6 +1,6 @@
 # collect all the FERS variables on the fly
 import json
-from configs.plot_ranges import getFERSSaturationValue
+from configs.plot_config import getFERSSaturationValue
 from channels.gain_validator import enforce_gain
 
 

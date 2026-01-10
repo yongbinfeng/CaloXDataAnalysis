@@ -4,8 +4,8 @@ from plotting.my_function import DrawHistos
 from channels.channel_map import build_hodo_pos_channels, get_service_drs_channels
 from utils.html_generator import generate_html
 from core.analysis_manager import CaloXAnalysisManager
-from configs.plot_ranges import getServiceDRSProcessedInfoRanges
-from configs.selection_values import get_service_drs_cut
+from configs.plot_config import getServiceDRSProcessedInfoRanges
+from configs.selection_config import get_service_drs_cut
 from utils.parser import get_args
 from utils.plot_helper import save_hists_to_file
 from utils.root_setup import setup_root
@@ -20,7 +20,9 @@ run_number = args.run
 
 analysis = (CaloXAnalysisManager(args)
             .prepare()
-            .apply_selections(flag_only=True))
+            .apply_hole_veto(flag_only=True)
+            .apply_particle_filter("pion", flag_only=False)
+            )
 rdf_org = analysis.get_rdf()
 paths = analysis.paths
 
@@ -42,8 +44,8 @@ def analyzePulse(channels):
                          f"SumRange({channel}_blsub, {channel}_peak_position - 50, {channel}_peak_position + 100)")
 
     # rdf = rdf.Filter(f"{channels['PSD']}_sum > -1e3")
-    # rdf = rdf.Filter(
-    #    f"{channels['PSD']}_sum < -1e3").Filter(f"{channels['PSD']}_sum >= -5e3")
+    rdf = rdf.Filter(
+        f"{channels['PSD']}_sum < -1e3").Filter(f"{channels['PSD']}_sum >= -5e3")
     # rdf = rdf.Filter(f"{channels['TTUMuonVeto']}_sum > -5e3")
 
     # create histograms
@@ -340,8 +342,8 @@ def plotPulse(channels):
     intro_text = """This page shows the pulse shape analysis for the service DRS channels for particle identification.
     No selection is applied unless specified.
     """
-    generate_html(plots, outdir, plots_per_row=5,
-                  output_html=output_html, intro_text=intro_text)
+    output_html = generate_html(plots, outdir, plots_per_row=5,
+                                output_html=output_html, intro_text=intro_text)
     output_htmls.append(output_html)
 
     plots = []
@@ -401,8 +403,8 @@ def plotPulse(channels):
     intro_text = """This page shows the correlation plots of the service DRS channels for particle identification.
     No selection is applied unless specified.
     """
-    generate_html(plots, outdir, plots_per_row=6,
-                  output_html=output_html, intro_text=intro_text)
+    output_html = generate_html(plots, outdir, plots_per_row=6,
+                                output_html=output_html, intro_text=intro_text)
 
     output_htmls.append(output_html)
 
@@ -523,8 +525,8 @@ def plotHodoPeak():
 
     plots = plots_summary + plots
     output_html = f"{paths['html']}/ServiceDRS/DWC.html"
-    generate_html(plots, outdir, plots_per_row=7,
-                  output_html=output_html)
+    output_html = generate_html(plots, outdir, plots_per_row=7,
+                                output_html=output_html)
 
     return output_html
 

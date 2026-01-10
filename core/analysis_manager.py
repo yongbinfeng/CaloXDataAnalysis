@@ -158,20 +158,29 @@ class CaloXAnalysisManager:
 
         return self
 
-    def apply_selections(self, flag_only=False):
+    def apply_hole_veto(self, flag_only=False):
         """
-        Applies standard muon and hole vetoes via SelectionManager.
+        Applies hole vetoes via SelectionManager.
         """
-        if "selections_applied" in self._steps_applied:
+        if "hole_veto_applied" in self._steps_applied:
             return self
 
         self.sel_mgr = SelectionManager(self.rdf, self.run_number)
         self.rdf = (self.sel_mgr
-                    .apply_muon_counter_veto(flag_only=flag_only)
                     .apply_hole_veto(flag_only=flag_only)
                     .get_rdf())
 
-        self._steps_applied.add("selections_applied")
+        self._steps_applied.add("hole_veto_applied")
+        return self
+
+    def apply_particle_filter(self, particle_type, flag_only=False):
+        """Syncs with SelectionManager to filter the RDF by particle type."""
+        if not hasattr(self, 'sel_mgr'):
+            self.sel_mgr = SelectionManager(self.rdf, self.run_number)
+
+        # Update the internal RDF by calling the new SelectionManager method
+        self.rdf = self.sel_mgr.apply_particle_selection(
+            particle_type, flag_only).get_rdf()
         return self
 
     def get_rdf(self):

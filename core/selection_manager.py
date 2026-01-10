@@ -1,5 +1,5 @@
 from channels.channel_map import get_service_drs_channels
-from configs.selection_values import get_service_drs_cut
+from configs.selection_config import get_service_drs_cut, get_particle_selection
 
 
 class SelectionManager:
@@ -93,6 +93,23 @@ class SelectionManager:
 
     def apply_cer537_selection(self, flag_only=False, apply_veto=True):
         return self._apply_selection("Cer537", flag_only, apply_veto)
+
+    def apply_particle_selection(self, particle_type, flag_only=False):
+        """
+        Applies a suite of cuts to select a specific particle type.
+        """
+        requirements = get_particle_selection(particle_type)
+        if not requirements:
+            raise ValueError(f"Unknown particle type: {particle_type}")
+
+        for detector, should_fire in requirements.items():
+            # If should_fire is True, we want 'fired'.
+            # If should_fire is False, we want 'vetoed' (apply_veto=True).
+            apply_veto = not should_fire
+            self._apply_selection(
+                detector, flag_only=flag_only, apply_veto=apply_veto)
+
+        return self
 
     def get_rdf(self):
         """Returns the final RDataFrame node."""
