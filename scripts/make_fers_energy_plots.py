@@ -2,7 +2,7 @@ import os
 from collections import OrderedDict
 import ROOT
 from plotting.my_function import DrawHistos, LHistos2Hist
-from configs.plot_ranges import getRangesForFERSEnergySums, getBoardEnergyFitParameters
+from configs.plot_config import getRangesForFERSEnergySums, getBoardEnergyFitParameters
 from core.analysis_manager import CaloXAnalysisManager
 from utils.colors import colors
 from utils.fitter import eventFit
@@ -20,7 +20,8 @@ setup_root(n_threads=10, batch_mode=True, load_functions=True)
 analysis = (CaloXAnalysisManager(args)
             .prepare()                   # Baseline and vectorization
             .calibrate_fers()            # Pedestals, mixing, and response
-            .apply_selections())         # Muon and hole vetoes
+            .apply_hole_veto(flag_only=True)
+            )
 
 GainCalibs = [("HG", False), ("LG", False), ("Mix", True)]
 
@@ -29,7 +30,6 @@ for gain, calib in GainCalibs:
     analysis = analysis.define_physics_variables(
         gain=gain, calib=calib, pdsub=True)
 
-rdf = analysis.get_rdf()  # Get the final RDF after all transformations
 fersboards = analysis.fersboards
 
 benergy = analysis.beam_energy
@@ -43,7 +43,7 @@ doPerBoardPlots = False
 HE = (benergy >= 50)  # GeV
 
 
-def makeFERSEnergySumHists(rdf=rdf, suffix=""):
+def makeFERSEnergySumHists(rdf, suffix=""):
     hists_FERS_EnergySum = []
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
@@ -74,7 +74,7 @@ def makeFERSEnergySumHists(rdf=rdf, suffix=""):
     return hists_FERS_EnergySum
 
 
-def makeFERSCervsSciHists(rdf=rdf, suffix=""):
+def makeFERSCervsSciHists(rdf, suffix=""):
     hists_FERS_Cer_vs_Sci = []
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
@@ -113,7 +113,7 @@ def makeFERSCervsSciHists(rdf=rdf, suffix=""):
     return hists_FERS_Cer_vs_Sci
 
 
-def makeFERSDRHists(rdf=rdf, suffix=""):
+def makeFERSDRHists(rdf, suffix=""):
     calib = True
     gain = "Mix"
     config = getRangesForFERSEnergySums(
@@ -230,7 +230,7 @@ def makeFERSDRHists(rdf=rdf, suffix=""):
     return hists_DR
 
 
-def makeFERSEnergyWeightedCenterHists(rdf=rdf, suffix=""):
+def makeFERSEnergyWeightedCenterHists(rdf, suffix=""):
     hists_FERS_EnergyWeightedCenter = []
     for gain, calib in GainCalibs:
         for cat in ["cer", "sci"]:
@@ -267,7 +267,7 @@ def makeFERSEnergyWeightedCenterHists(rdf=rdf, suffix=""):
     return hists_FERS_EnergyWeightedCenter
 
 
-def makeFERSShowerShapeHists(rdf=rdf, suffix=""):
+def makeFERSShowerShapeHists(rdf, suffix=""):
     hists_X = []
     hists_Y = []
     hists_R = []
@@ -356,6 +356,11 @@ def collectFERSStats(rdf):
                     f"{varname_sci}")
 
     return stats
+
+
+"""
+plotting
+"""
 
 
 def makeFERSEnergySumPlots(suffix=""):
@@ -951,8 +956,12 @@ def makeBoardFits():
     return output_html
 
 
+rdf = analysis.get_rdf()  # Get the final RDF after all transformations
+rdf_ele = analysis.get_particle_analysis("electron")
+
 rdfs = OrderedDict()
-rdfs["passHaloVeto"] = rdf
+rdfs["inclusive"] = rdf
+rdfs["electron"] = rdf_ele
 
 
 def main():
@@ -962,17 +971,16 @@ def main():
 
     for cat, rdf in rdfs.items():
         if makeHists:
-            hists_raw = makeFERSEnergySumHists(rdf=rdf, suffix=cat)
+            hists_raw = makeFERSEnergySumHists(rdf, suffix=cat)
 
-            hists_cer_vs_sci_raw = makeFERSCervsSciHists(rdf=rdf, suffix=cat)
+            hists_cer_vs_sci_raw = makeFERSCervsSciHists(rdf, suffix=cat)
 
-            hists_dr = makeFERSDRHists(rdf=rdf, suffix=cat)
-
+            hists_dr = makeFERSDRHists(rdf, suffix=cat)
             hists_energy_weighted_center = makeFERSEnergyWeightedCenterHists(
-                rdf=rdf, suffix=cat)
+                rdf, suffix=cat)
 
             hists_shower_shapes_X, hists_shower_shapes_Y, hists_shower_shapes_R, hists_shower_shapes_Y_VS_X, n_events = makeFERSShowerShapeHists(
-                rdf=rdf, suffix=cat)
+                rdf, suffix=cat)
 
             # stats = collectFERSStats(rdf=rdf)
 

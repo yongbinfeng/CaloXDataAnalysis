@@ -21,10 +21,10 @@ run_number = args.run
 analysis = (CaloXAnalysisManager(args)
             .prepare()
             .apply_hole_veto(flag_only=True)
-            .apply_particle_filter("pion", flag_only=False)
             )
-rdf_org = analysis.get_rdf()
 paths = analysis.paths
+# rdf_org = analysis.get_particle_analysis("electron")
+rdf_org = analysis.get_rdf()
 
 
 def analyzePulse(channels):
@@ -43,10 +43,8 @@ def analyzePulse(channels):
         rdf = rdf.Define(f"{channel}_sum",
                          f"SumRange({channel}_blsub, {channel}_peak_position - 50, {channel}_peak_position + 100)")
 
-    # rdf = rdf.Filter(f"{channels['PSD']}_sum > -1e3")
-    rdf = rdf.Filter(
-        f"{channels['PSD']}_sum < -1e3").Filter(f"{channels['PSD']}_sum >= -5e3")
-    # rdf = rdf.Filter(f"{channels['TTUMuonVeto']}_sum > -5e3")
+    # rdf = rdf.Filter(
+    #    f"{channels['PSD']}_sum < -1e3").Filter(f"{channels['PSD']}_sum >= -5e3")
 
     # create histograms
     for det, channel in channels.items():

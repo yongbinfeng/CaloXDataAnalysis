@@ -35,6 +35,7 @@ class CaloXAnalysisManager:
         self._data_map = None
         self.rdf = self._load_rdf()
 
+        self.branches = {}  # Registry for branched particle managers
         # Track state to prevent re-definitions
         self._steps_applied = set()
 
@@ -173,15 +174,29 @@ class CaloXAnalysisManager:
         self._steps_applied.add("hole_veto_applied")
         return self
 
-    def apply_particle_filter(self, particle_type, flag_only=False):
-        """Syncs with SelectionManager to filter the RDF by particle type."""
-        if not hasattr(self, 'sel_mgr'):
-            self.sel_mgr = SelectionManager(self.rdf, self.run_number)
+    def get_particle_analysis(self, particle_type, flag_only=False):
+        """
+        Creates an independent branch. Inherits any global filters 
+        (like hole veto) already applied to self.rdf.
+        """
+        branch_mgr = SelectionManager(self.rdf, self.run_number)
+        branch_mgr.apply_particle_selection(particle_type, flag_only)
 
-        # Update the internal RDF by calling the new SelectionManager method
-        self.rdf = self.sel_mgr.apply_particle_selection(
-            particle_type, flag_only).get_rdf()
-        return self
+        # Register for automatic reporting
+        self.branches[particle_type.lower()] = branch_mgr
+        return branch_mgr.get_rdf()
+
+    def report_all(self):
+        """Prints the global cutflow (hole veto) and all particle branches."""
+        print(f"\n{'#'*72}\n{'COMBINED ANALYSIS SUMMARY':^72}\n{'#'*72}")
+
+        if hasattr(self, 'sel_mgr'):
+            print("\n>>> GLOBAL SELECTIONS (Applied to all branches)")
+            self.sel_mgr.print_cutflow()
+
+        for name, mgr in self.branches.items():
+            print(f"\n>>> PARTICLE BRANCH: {name.upper()}")
+            mgr.print_cutflow()
 
     def get_rdf(self):
         """Returns the final processed RDataFrame node for booking."""

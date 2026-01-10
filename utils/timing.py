@@ -75,9 +75,7 @@ def _print_report(rep: _Report):
         print(f" {'RDF Loops:':<15} {_global_mgr.rdf.GetNRuns():>10}",
               file=sys.stderr)
 
-        # SelectionManager usually handles its own header/formatting
-        if hasattr(_global_mgr, 'sel_mgr'):
-            _global_mgr.sel_mgr.print_cutflow()
+        _global_mgr.report_all()
 
         _global_mgr = None  # Clean up to prevent duplicate reports
 

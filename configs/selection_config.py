@@ -19,25 +19,25 @@ def get_particle_selection(particle_type: str) -> dict:
     selections = {
         # Muon: PSD veto + TTUMuon passing
         "muon": {
+            "TTUMuonVeto": True,
             "PSD": False,
-            "TTUMuonVeto": True
         },
         # Pions: PSD veto + TTUMuon veto + Cherenkov passing
         "pion": {
-            "PSD": False,
             "TTUMuonVeto": False,
+            "PSD": False,
             "Cer474": True, "Cer519": True, "Cer537": True
         },
         # Electrons: PSD pass + TTUMuon veto + Cherenkov passing
         "electron": {
-            "PSD": True,
             "TTUMuonVeto": False,
+            "PSD": True,
             "Cer474": True, "Cer519": True, "Cer537": True
         },
         # Protons: PSD veto + TTUMuon veto + Cherenkov veto
         "proton": {
-            "PSD": False,
             "TTUMuonVeto": False,
+            "PSD": False,
             "Cer474": False, "Cer519": False, "Cer537": False
         },
     }

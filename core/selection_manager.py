@@ -76,23 +76,8 @@ class SelectionManager:
         self._register_stats(pass_label, flag_only)
         return self
 
-    def apply_muon_counter_veto(self, flag_only=False, apply_veto=True):
-        return self._apply_selection("TTUMuonVeto", flag_only, apply_veto)
-
-    def apply_psd_selection(self, flag_only=False, apply_veto=True):
-        return self._apply_selection("PSD", flag_only, apply_veto)
-
     def apply_hole_veto(self, flag_only=False, apply_veto=True):
         return self._apply_selection("HoleVeto", flag_only, apply_veto)
-
-    def apply_cer474_selection(self, flag_only=False, apply_veto=True):
-        return self._apply_selection("Cer474", flag_only, apply_veto)
-
-    def apply_cer519_selection(self, flag_only=False, apply_veto=True):
-        return self._apply_selection("Cer519", flag_only, apply_veto)
-
-    def apply_cer537_selection(self, flag_only=False, apply_veto=True):
-        return self._apply_selection("Cer537", flag_only, apply_veto)
 
     def apply_particle_selection(self, particle_type, flag_only=False):
         """
@@ -115,31 +100,34 @@ class SelectionManager:
         """Returns the final RDataFrame node."""
         return self.rdf
 
-    def print_cutflow(self):
-        """Triggers the event loop and prints results with cumulative and step efficiency."""
-        # Table Header
-        header = f"{'Step':<30} | {'Count':>10} | {'Total Eff.':>11} | {'Step Eff.':>11}"
-        print(f"\n{'='*72}")
-        print(f"{'Selection Cutflow (Run ' + str(self.run_number) + ')':^72}")
-        print(f"{'='*72}")
-        print(header)
-        print(f"{'-'*72}")
-
+    def get_cutflow_dict(self):
+        """Returns results as a dictionary. Triggers the event loop."""
         initial = self.initial_count_proxy.GetValue()
-        print(f"{'Initial Events':<30} | {initial:>10} | {'100.0%':>11} | {'-':>11}")
+        stats = {"initial": initial, "steps": []}
 
         prev_count = initial
         for label, proxy in self.stats_proxies:
             count = int(proxy.GetValue())
-
-            # Efficiencies
-            total_eff = (count / initial * 100) if initial > 0 else 0
-            step_eff = (count / prev_count * 100) if prev_count > 0 else 0
-
-            print(
-                f"{label:<30} | {count:>10} | {total_eff:>10.2f}% | {step_eff:>10.2f}%")
-
-            # Advance prev_count for the next iteration
+            stats["steps"].append({
+                "label": label,
+                "count": count,
+                "total_eff": (count / initial * 100) if initial > 0 else 0,
+                "step_eff": (count / prev_count * 100) if prev_count > 0 else 0
+            })
             prev_count = count
+        return stats
 
+    def print_cutflow(self):
+        """UI wrapper for get_cutflow_dict."""
+        data = self.get_cutflow_dict()
+        header = f"{'Step':<30} | {'Count':>10} | {'Total Eff.':>11} | {'Step Eff.':>11}"
+        print(
+            f"\n{'='*72}\n{'Selection Cutflow (Run ' + str(self.run_number) + ')':^72}\n{'='*72}")
+        print(header + f"\n{'-'*72}")
+        print(
+            f"{'Initial Events':<30} | {data['initial']:>10} | {'100.0%':>11} | {'-':>11}")
+
+        for s in data["steps"]:
+            print(
+                f"{s['label']:<30} | {s['count']:>10} | {s['total_eff']:>10.2f}% | {s['step_eff']:>10.2f}%")
         print(f"{'='*72}\n")
