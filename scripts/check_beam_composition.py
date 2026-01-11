@@ -68,6 +68,8 @@ def check_composition_with_table():
     # 4. Save to JSON
     json_path = os.path.join(
         analysis.paths['root'], f"beam_composition.json")
+    if not os.path.exists(os.path.dirname(json_path)):
+        os.makedirs(os.path.dirname(json_path))
     with open(json_path, "w") as f:
         json.dump(output_data, f, indent=4)
 
@@ -87,7 +89,10 @@ def check_composition_with_table():
         ax.set_title(f"{title}\n(Total Events: {total_val})",
                      fontsize=16, pad=20)
 
-        full_path = os.path.join(analysis.paths['plots'], filename)
+        full_path = os.path.join(
+            analysis.paths['plots'] + "/ServiceDRS", filename)
+        if not os.path.exists(os.path.dirname(full_path)):
+            os.makedirs(os.path.dirname(full_path))
         plt.savefig(full_path, bbox_inches='tight')
         plt.close()
         return filename
@@ -102,7 +107,7 @@ def check_composition_with_table():
     generate_html(
         png_files=[plot_before,
                    plot_after],
-        png_dir=analysis.paths['plots'],
+        png_dir=analysis.paths['plots'] + "/ServiceDRS",
         plots_per_row=4,
         output_html=output_html,
         intro_text=f"Beam Composition Summary before and after hole veto"
