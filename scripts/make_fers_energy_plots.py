@@ -417,7 +417,7 @@ def makeFERSEnergySumPlots(suffix=""):
                        outdir=outdir_plots, run_number=run_number)
             plots.insert(0, output_name + ".png")
 
-    output_html = f"{htmldir}/FERS/EnergySum_{suffix}.html"
+    output_html = f"{htmldir}/FERS/{suffix}/EnergySum.html"
     generate_html(plots, outdir_plots, plots_per_row=6,
                   output_html=output_html)
     return output_html
@@ -487,7 +487,7 @@ def makeFERSCerVsSciPlots(suffix=""):
                    outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
         plots.insert(0, output_name + ".png")
 
-    output_html = f"{htmldir}/FERS/EnergySum_Cer_VS_Sci_{suffix}.html"
+    output_html = f"{htmldir}/FERS/{suffix}/EnergySum_Cer_VS_Sci.html"
     generate_html(plots, outdir_plots, plots_per_row=3,
                   output_html=output_html)
     return output_html
@@ -708,7 +708,7 @@ def makeFERSDRPlots(suffix=""):
                        outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None, addOverflow=True, addUnderflow=True)
             plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/FERS/EnergySum_DR_{suffix}.html"
+    output_html = f"{htmldir}/FERS/{suffix}/EnergySum_DR.html"
     generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html)
     return output_html
@@ -781,7 +781,7 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
                 print(
                     f"Warning: Histogram {hist2D_name} not found in {infile_name}")
 
-    output_html = f"{htmldir}/FERS/EnergyWeightedCenter_{suffix}.html"
+    output_html = f"{htmldir}/FERS/{suffix}/EnergyWeightedCenter.html"
     generate_html(plots, outdir_plots, plots_per_row=3,
                   output_html=output_html)
     return output_html
@@ -866,7 +866,7 @@ def makeFERSShowerShapePlots(suffix=""):
                        outdir=outdir_plots, run_number=run_number)
             plots.append(output_name + ".png")
 
-    output_html = f"{htmldir}/FERS/ShowerShape_{suffix}.html"
+    output_html = f"{htmldir}/FERS/{suffix}/ShowerShape.html"
     generate_html(plots, outdir_plots, plots_per_row=6,
                   output_html=output_html)
     return output_html
@@ -956,12 +956,17 @@ def makeBoardFits():
     return output_html
 
 
-rdf = analysis.get_rdf()  # Get the final RDF after all transformations
-rdf_ele = analysis.get_particle_analysis("electron")
+# rdf = analysis.get_rdf()  # Get the final RDF after all transformations
 
 rdfs = OrderedDict()
-rdfs["inclusive"] = rdf
-rdfs["electron"] = rdf_ele
+if analysis.beam_type == "e+":
+    rdfs["electron"] = analysis.get_particle_analysis("electron")
+    rdfs["muon"] = analysis.get_particle_analysis("muon")
+    rdfs["pion"] = analysis.get_particle_analysis("pion")
+else:
+    rdfs["proton"] = analysis.get_particle_analysis("proton")
+    rdfs["pion"] = analysis.get_particle_analysis("pion")
+    rdfs["muon"] = analysis.get_particle_analysis("muon")
 
 
 def main():
@@ -969,43 +974,52 @@ def main():
     makePlots = True
     outputs_html = {}
 
-    for cat, rdf in rdfs.items():
-        if makeHists:
-            hists_raw = makeFERSEnergySumHists(rdf, suffix=cat)
+    # 1. Booking Phase: Create containers for lazy ResultProxies
+    booked_results = {}
 
-            hists_cer_vs_sci_raw = makeFERSCervsSciHists(rdf, suffix=cat)
+    if makeHists:
+        for cat, rdf in rdfs.items():
+            # Book all actions. These return ResultProxies, not actual data yet.
+            booked_results[cat] = {
+                "energy_sum": makeFERSEnergySumHists(rdf, suffix=cat),
+                "cer_vs_sci": makeFERSCervsSciHists(rdf, suffix=cat),
+                "dr": makeFERSDRHists(rdf, suffix=cat),
+                "weighted_center": makeFERSEnergyWeightedCenterHists(rdf, suffix=cat),
+                "shower_shape_data": makeFERSShowerShapeHists(rdf, suffix=cat)
+            }
 
-            hists_dr = makeFERSDRHists(rdf, suffix=cat)
-            hists_energy_weighted_center = makeFERSEnergyWeightedCenterHists(
-                rdf, suffix=cat)
+        all_proxies = []
+        for cat in booked_results:
+            res = booked_results[cat]
+            all_proxies.extend(res["energy_sum"])
+            all_proxies.extend(res["cer_vs_sci"])
+            all_proxies.extend(res["dr"])
+            all_proxies.extend(res["weighted_center"])
 
-            hists_shower_shapes_X, hists_shower_shapes_Y, hists_shower_shapes_R, hists_shower_shapes_Y_VS_X, n_events = makeFERSShowerShapeHists(
-                rdf, suffix=cat)
+            # Shower shape data is a tuple: (ss_X, ss_Y, ss_R, ss_YX, n_events_proxy)
+            ss_X, ss_Y, ss_R, ss_YX, n_evt_proxy = res["shower_shape_data"]
 
-            # stats = collectFERSStats(rdf=rdf)
+            # Extract proxies from the (proxy, name) tuples returned by the functions
+            for hists_showers in [ss_X, ss_Y, ss_R, ss_YX]:
+                for hists_proxies, h_combined_name in hists_showers:
+                    all_proxies.extend(hists_proxies)
 
-            # import json
-            # stats_results = {}
-            # for channelName, mean in stats.items():
-            #     stats_results[channelName] = mean.GetValue()
-            # with open(f"{rootdir}/fers_stats_cer_ovs_sci.json", "w") as f:
-            #     json.dump(stats_results, f, indent=4)
+            all_proxies.append(n_evt_proxy)
 
-            # analysis.sel_mgr.print_cutflow()
+        ROOT.RDF.RunGraphs(all_proxies)
 
-            # save histograms to ROOT files
-            outfile_name = f"{rootdir}/fers_energy_sum_{cat}.root"
-            with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-                for hist in hists_raw:
-                    hist.SetDirectory(outfile)
-                    hist.Write()
-            print(f"Saved raw histograms to {outfile_name}")
+        for cat in rdfs.keys():
+            res = booked_results[cat]
 
-            # save cer vs sci histograms
+            # --- Saving standard histograms ---
+            outfile_sum = f"{rootdir}/fers_energy_sum_{cat}.root"
+            with ROOT.TFile(outfile_sum, "RECREATE") as f:
+                for h in res["energy_sum"]:
+                    h.Write()
 
             outfile_name = f"{rootdir}/fers_energy_sum_cer_vs_sci_{cat}.root"
             with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-                for hist in hists_cer_vs_sci_raw:
+                for hist in res["cer_vs_sci"]:
                     hist.SetDirectory(outfile)
                     hist.Write()
             print(f"Saved CER vs SCI histograms to {outfile_name}")
@@ -1013,7 +1027,7 @@ def main():
             # save dr histograms
             outfile_name = f"{rootdir}/fers_DR_{cat}.root"
             with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-                for hist in hists_dr:
+                for hist in res["dr"]:
                     hist.SetDirectory(outfile)
                     hist.Write()
             print(f"Saved DR histograms to {outfile_name}")
@@ -1021,62 +1035,53 @@ def main():
             # save energy weighted center histograms
             outfile_name = f"{rootdir}/fers_energy_weighted_center_{cat}.root"
             with ROOT.TFile(outfile_name, "RECREATE") as outfile:
-                for hist in hists_energy_weighted_center:
+                for hist in res["weighted_center"]:
                     hist.SetDirectory(outfile)
                     hist.Write()
-            print(f"Saved energy weighted center histograms to {outfile_name}")
+            print(f"Saved Energy Weighted Center histograms to {outfile_name}")
 
-            nEvts = n_events.GetValue()
-            # save shower shape histograms
-            # process the shower shape histograms to merge per-channel histograms
+            # # --- Processing Shower Shapes ---
+            # # Retrieve booked shower shape proxies and the event count
+            ss_X, ss_Y, ss_R, ss_YX, n_events_proxy = res["shower_shape_data"]
+            nEvts = n_events_proxy.GetValue()  # Already triggered, returns immediately
+
             hists_shower_shape = []
-            for hists_X, hname_X in hists_shower_shapes_X:
-                hists_X_new = [h.GetValue() for h in hists_X]
-                hist_combined = LHistos2Hist(hists_X_new, hname_X)
-                # normalize to number of events
-                hist_combined.Scale(1.0 / nEvts)
-                hists_shower_shape.append(hist_combined)
-            for hists_Y, hname_Y in hists_shower_shapes_Y:
-                hists_Y_new = [h.GetValue() for h in hists_Y]
-                hist_combined = LHistos2Hist(hists_Y_new, hname_Y)
-                hist_combined.Scale(1.0 / nEvts)
-                hists_shower_shape.append(hist_combined)
-            for hists_R, hname_R in hists_shower_shapes_R:
-                hists_R_new = [h.GetValue() for h in hists_R]
-                hist_combined = LHistos2Hist(hists_R_new, hname_R)
-                hist_combined.Scale(1.0 / nEvts)
-                hists_shower_shape.append(hist_combined)
-            for hists_Y_VS_X, hname_Y_VS_X in hists_shower_shapes_Y_VS_X:
-                hists_Y_VS_X_new = [h.GetValue() for h in hists_Y_VS_X]
-                hist_combined = LHistos2Hist(hists_Y_VS_X_new, hname_Y_VS_X)
-                hist_combined.Scale(1.0 / nEvts)
-                hists_shower_shape.append(hist_combined)
-            outfile_name = f"{rootdir}/fers_shower_shape_{cat}.root"
-            with ROOT.TFile(outfile_name, "RECREATE") as outfile:
+
+            # Use LHistos2Hist to merge and then scale
+            # loop over X, Y, R, YvsX
+            for hists_showers in [ss_X, ss_Y, ss_R, ss_YX]:
+                # loop over different gains and calib types
+                for hists_proxies, h_combined_name in hists_showers:
+                    # one hists_proxies is a list of ResultProxies for different channels
+                    hists_list = [h.GetValue() for h in hists_proxies]
+                    hist_combined = LHistos2Hist(hists_list, h_combined_name)
+                    hist_combined.Scale(1.0 / nEvts)
+                    hists_shower_shape.append(hist_combined)
+
+            # Save merged shower shapes
+            outfile_ss = f"{rootdir}/fers_shower_shape_{cat}.root"
+            with ROOT.TFile(outfile_ss, "RECREATE") as outfile:
                 for hist in hists_shower_shape:
-                    # Python won't try to delete
                     ROOT.SetOwnership(hist, False)
-                    histC = hist.Clone()
-                    histC.SetDirectory(outfile)
-                    histC.Write()
-            print(f"Saved shower shape histograms to {outfile_name}")
+                    hist.Write()
 
         # make plots
         if makePlots:
-            outputs_html[f"raw_{cat}"] = makeFERSEnergySumPlots(suffix=cat)
+            for cat in rdfs.keys():
+                outputs_html[f"raw_{cat}"] = makeFERSEnergySumPlots(suffix=cat)
 
-            outputs_html[f"cer_vs_sci_raw_{cat}"] = makeFERSCerVsSciPlots(
-                suffix=cat)
+                outputs_html[f"cer_vs_sci_raw_{cat}"] = makeFERSCerVsSciPlots(
+                    suffix=cat)
 
-            outputs_html[f"dr_{cat}"] = makeFERSDRPlots(suffix=cat)
+                outputs_html[f"dr_{cat}"] = makeFERSDRPlots(suffix=cat)
 
-            outputs_html[f"energy_weighted_center_{cat}"] = makeFERSEnergyWeightedCenterPlots(
-                suffix=cat)
+                outputs_html[f"energy_weighted_center_{cat}"] = makeFERSEnergyWeightedCenterPlots(
+                    suffix=cat)
 
-            outputs_html[f"shower_shape_{cat}"] = makeFERSShowerShapePlots(
-                suffix=cat)
+                outputs_html[f"shower_shape_{cat}"] = makeFERSShowerShapePlots(
+                    suffix=cat)
 
-            # outputs_html[f"stats_cer_ovs_sci"] = makeFERSStatsPlots()
+                # outputs_html[f"stats_cer_ovs_sci"] = makeFERSStatsPlots()
 
     print("Generated HTML files:")
     for key, html in outputs_html.items():
