@@ -956,12 +956,13 @@ def makeBoardFits():
     return output_html
 
 
-# rdf = analysis.get_rdf()  # Get the final RDF after all transformations
+rdf = analysis.get_rdf()  # Get the final RDF after all transformations
 
 rdfs = OrderedDict()
+rdfs["inclusive"] = rdf
 if analysis.beam_type == "e+":
     rdfs["electron"] = analysis.get_particle_analysis("electron")
-    rdfs["muon"] = analysis.get_particle_analysis("muon")
+    #rdfs["muon"] = analysis.get_particle_analysis("muon")
     rdfs["pion"] = analysis.get_particle_analysis("pion")
 else:
     rdfs["proton"] = analysis.get_particle_analysis("proton")
