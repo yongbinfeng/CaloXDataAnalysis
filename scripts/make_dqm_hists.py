@@ -6,7 +6,7 @@ from channels.channel_map import (
     get_mcp_channels,
     get_service_drs_channels,
 )
-from configs.plot_ranges import get_drs_plot_ranges, get_service_drs_plot_ranges
+from configs.plot_config import get_drs_plot_ranges, get_service_drs_plot_ranges, get_fers_saturation_value
 from core.analysis_manager import CaloXAnalysisManager
 from utils.root_setup import setup_root
 from utils.parser import get_args
@@ -168,8 +168,7 @@ def collectFERSPedestals(hists1d_FERS, gain="HG"):
 
 
 def collectFERSStats():
-    from configs.plot_ranges import getFERSSaturationValue
-    saturation_value = getFERSSaturationValue()
+    saturation_value = get_fers_saturation_value()
     stats = {}
     # mean, max,
     # and how frequent the saturation value is reached

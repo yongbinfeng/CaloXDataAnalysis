@@ -1,6 +1,6 @@
 # collect all the FERS variables on the fly
 import json
-from configs.plot_config import getFERSSaturationValue
+from configs.plot_config import get_fers_saturation_value
 from channels.gain_validator import enforce_gain
 
 
@@ -98,7 +98,7 @@ def mixFERSHGLG(rdf, fersboards, file_HG2LG: str):
                     f"HG2LG ratio for channel {channelName_HG} not found in {file_HG2LG}.")
             incep, ratio = HG2LG_ratios[channelName_key]
             rdf = rdf.Define(channelName_Mix,
-                             f"({channelName_HG} < {getFERSSaturationValue()}) ? {channelName_HG} : ({channelName_LG} - {incep})/{ratio}")
+                             f"({channelName_HG} < {get_fers_saturation_value()}) ? {channelName_HG} : ({channelName_LG} - {incep})/{ratio}")
 
     return rdf
 

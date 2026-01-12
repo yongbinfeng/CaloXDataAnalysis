@@ -103,11 +103,11 @@ def check_composition_with_table():
                               "Composition Post-Veto", f"comp_after_run{analysis.run_number}.png")
 
     output_html = os.path.join(
-        analysis.paths['html'], f"ServiceDRS/composition_run{analysis.run_number}.html")
+        analysis.paths['html'], f"ServiceDRS/beam_composition.html")
     generate_html(
         png_files=[plot_before,
                    plot_after],
-        png_dir=analysis.paths['plots'] + "/ServiceDRS",
+        png_dir=analysis.paths['plots'] + "/drs_service",
         plots_per_row=4,
         output_html=output_html,
         intro_text=f"Beam Composition Summary before and after hole veto"

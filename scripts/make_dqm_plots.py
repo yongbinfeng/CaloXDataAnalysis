@@ -4,7 +4,7 @@ from channels.channel_map import (build_drs_boards, build_fers_boards,
                                   get_mcp_channels, get_service_drs_channels)
 from channels.validate_map import DrawDRSBoards, DrawFERSBoards
 from plotting.my_function import DrawHistos, LHistos2Hist
-from configs.plot_ranges import get_drs_plot_ranges, get_service_drs_plot_ranges
+from configs.plot_config import get_drs_plot_ranges, get_service_drs_plot_ranges
 from utils.colors import colors
 from utils.html_generator import generate_html
 from utils.parser import get_args
@@ -16,6 +16,8 @@ from utils.visualization import visualizeFERSBoards
 auto_timer("Total Execution Time")
 
 setup_root(n_threads=1, batch_mode=True, load_functions=False)
+
+doDetailedPlots = False
 
 args = get_args()
 run_number = args.run
@@ -332,7 +334,7 @@ def makeFERSStatsPlots(includePedestals=False):
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Sci", run_number=run_number, zmin=0, zmax=8000)
     plots.append(output_name + "_Sci.png")
 
-    output_html = f"{paths['html']}/FERS/Channel_Mean.html"
+    output_html = f"{paths['html']}/FERS/Stat/Channel_Mean.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     output_htmls.append(output_html)
@@ -358,7 +360,7 @@ def makeFERSStatsPlots(includePedestals=False):
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Sci", run_number=run_number, zmin=0, zmax=8000)
     plots.append(output_name + "_Sci.png")
 
-    output_html = f"{paths['html']}/FERS/Channel_Max.html"
+    output_html = f"{paths['html']}/FERS/Stat/Channel_Max.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     output_htmls.append(output_html)
@@ -384,7 +386,7 @@ def makeFERSStatsPlots(includePedestals=False):
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Sci", run_number=run_number, zmin=0, zmax=1, nTextDigits=2)
     plots.append(output_name + "_Sci.png")
 
-    output_html = f"{paths['html']}/FERS/Channel_SatFreq.html"
+    output_html = f"{paths['html']}/FERS/Stat/Channel_SatFreq.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     output_htmls.append(output_html)
@@ -410,7 +412,7 @@ def makeFERSStatsPlots(includePedestals=False):
                outdir=outdir_plots, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Sci", run_number=run_number, zmin=100, zmax=300, nTextDigits=0)
     plots.append(output_name + "_Sci.png")
 
-    output_html = f"{paths['html']}/FERS/Channel_Pedestal.html"
+    output_html = f"{paths['html']}/FERS/Stat/Channel_Pedestal.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     output_htmls.append(output_html)
@@ -727,11 +729,12 @@ def makeDRSPeakTSPlots():
             hists_Cer.append(hists["Cer"])
             hists_Sci.append(hists["Sci"])
 
-            DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], 400, 600, "Peak TS", 1, None, "Counts",
-                       output_name,
-                       dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False, extraToDraw=extraToDraw,
-                       outdir=outdir_plots, run_number=run_number)
-            plots.append(output_name + ".png")
+            if doDetailedPlots:
+                DrawHistos([hists["Cer"], hists["Sci"]], ["Cer", "Sci"], 400, 600, "Peak TS", 1, None, "Counts",
+                           output_name,
+                           dology=False, drawoptions="HIST", mycolors=[2, 4], addOverflow=True, addUnderflow=False, extraToDraw=extraToDraw,
+                           outdir=outdir_plots, run_number=run_number)
+                plots.append(output_name + ".png")
 
     # summary plots
     hist_Cer_Combined = LHistos2Hist(hists_Cer, "hist_DRSPeakTS_Cer_Combined")
@@ -778,12 +781,13 @@ def makeDRSPeakTSCerVSSciPlots():
 
             hists.append(hist)
 
-            DrawHistos([hist], "", 400, 600, "Sci Peak TS", 400, 600, f"Cer Peak TS",
-                       output_name,
-                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
-                       outdir=outdir_plots, addOverflow=False, run_number=run_number, extraToDraw=extraToDraw)
+            if doDetailedPlots:
+                DrawHistos([hist], "", 400, 600, "Sci Peak TS", 400, 600, f"Cer Peak TS",
+                           output_name,
+                           dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
+                           outdir=outdir_plots, addOverflow=False, run_number=run_number, extraToDraw=extraToDraw)
 
-            plots.append(output_name + ".png")
+                plots.append(output_name + ".png")
 
     # summary plots
     hcombined = LHistos2Hist(hists, "hist_DRSPeakTS_Cer_VS_Sci_Combined")
@@ -957,12 +961,13 @@ def makeDRSSumVSFERSPlots():
 
                     hists.append(hist)
 
-                    output_name = histname.replace("hist_", "")
-                    DrawHistos([hist], "", 0, tmp[1], gain, 0, tmp[0], "DRSSum",
-                               output_name,
-                               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True,
-                               outdir=outdir_plots, addOverflow=True, run_number=run_number, extra_text=f"{var}")
-                    plots.append(output_name + ".png")
+                    if doDetailedPlots:
+                        output_name = histname.replace("hist_", "")
+                        DrawHistos([hist], "", 0, tmp[1], gain, 0, tmp[0], "DRSSum",
+                                   output_name,
+                                   dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=zmax, dologz=True,
+                                   outdir=outdir_plots, addOverflow=True, run_number=run_number, extra_text=f"{var}")
+                        plots.append(output_name + ".png")
 
     # summary plots
     for var in ["Cer", "Sci"]:
@@ -1043,9 +1048,7 @@ def main():
         ("FERS Sum", makeFERSSumPlots),
         ("FERS Mapping", lambda: DrawFERSBoards(run=run_number)),
         ("DRS Mapping", lambda: DrawDRSBoards(run=run_number)),
-        ("FERS 1D", makeFERS1DPlots),
         ("FERS Stats", lambda: makeFERSStatsPlots(includePedestals=True)),
-        ("DRS vs TS", makeDRSVSTSPlots),
         ("DRS Peak TS", makeDRSPeakTSPlots),
         ("DRS Peak TS Cer vs Sci", makeDRSPeakTSCerVSSciPlots),
         ("Service DRS", compareServiceDRSPlots),
@@ -1053,8 +1056,12 @@ def main():
         # ("Time Reference", lambda: compareTimeReferencePlots(True)),
         ("FERS Max Values", makeFERSMaxValuePlots),
         ("DRS Sum vs FERS", makeDRSSumVSFERSPlots),
-        ("DRS Peak vs FERS", makeDRSPeakVSFERSPlots),
     ]
+
+    if doDetailedPlots:
+        plot_tasks.append(("FERS 1D", makeFERS1DPlots))
+        plot_tasks.append(("DRS vs TS", makeDRSVSTSPlots))
+        plot_tasks.append(("DRS Peak vs FERS", makeDRSPeakVSFERSPlots))
 
     output_htmls = {}
     for label, func in plot_tasks:

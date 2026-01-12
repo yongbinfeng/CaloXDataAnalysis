@@ -19,7 +19,7 @@ def is_scan_run(run_number):
 def getRunInfo(run_number):
     global _RUN_INFO_CACHE
     if _RUN_INFO_CACHE is None:
-        f_runinfo = "data/RunlistAugust.json"
+        f_runinfo = "data/Runlist.json"
         if os.path.exists(f_runinfo):
             with open(f_runinfo, 'r') as f:
                 _RUN_INFO_CACHE = json.load(f)

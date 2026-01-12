@@ -59,6 +59,6 @@ def generate_submission_script(input_files):
     
 if __name__ == "__main__":
     import json
-    data = open("data_org_TB.json", "r")
+    data = open("../data/data_org.json", "r")
     input_files = json.load(data)
     generate_submission_script(input_files)

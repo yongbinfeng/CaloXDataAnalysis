@@ -47,7 +47,7 @@ def makeFERSEnergySumHists(rdf, suffix=""):
     hists_FERS_EnergySum = []
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
+            pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number, beam_energy=benergy)
         for cat in ["cer", "sci"]:
             # per-board sum
             for fersboard in fersboards.values():
@@ -78,7 +78,7 @@ def makeFERSCervsSciHists(rdf, suffix=""):
     hists_FERS_Cer_vs_Sci = []
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
+            pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number, beam_energy=benergy)
         # per-board Cer vs Sci
         for fersboard in fersboards.values():
             var_cer = fersboard.get_energy_sum_name(
@@ -117,7 +117,7 @@ def makeFERSDRHists(rdf, suffix=""):
     calib = True
     gain = "Mix"
     config = getRangesForFERSEnergySums(
-        pdsub=True, calib=True, clip=False, HE=HE, run_number=run_number)
+        pdsub=True, calib=True, clip=False, HE=HE, run_number=run_number, beam_energy=benergy)
     varname_Cer = fersboards.get_energy_sum_name(
         gain=gain, isCer=True, pdsub=True, calib=calib)
     varname_Sci = fersboards.get_energy_sum_name(
@@ -373,7 +373,7 @@ def makeFERSEnergySumPlots(suffix=""):
     if doPerBoardPlots:
         for gain, calib in GainCalibs:
             config = getRangesForFERSEnergySums(
-                pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
+                pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number, beam_energy=benergy)
             for cat in ["cer", "sci"]:
                 hists = []
                 legends = []
@@ -400,7 +400,7 @@ def makeFERSEnergySumPlots(suffix=""):
     # per-event energy sum plot ranges
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
+            pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number, beam_energy=benergy)
         for cat in ["cer", "sci"]:
             varname = fersboards.get_energy_sum_name(
                 gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib)
@@ -432,7 +432,7 @@ def makeFERSCerVsSciPlots(suffix=""):
     if doPerBoardPlots:
         for gain, calib in GainCalibs:
             config = getRangesForFERSEnergySums(
-                pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
+                pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number, beam_energy=benergy)
             for fersboard in fersboards.values():
                 board_no = fersboard.board_no
                 var_cer = fersboard.get_energy_sum_name(
@@ -455,7 +455,7 @@ def makeFERSCerVsSciPlots(suffix=""):
 
     for gain, calib in GainCalibs:
         config = getRangesForFERSEnergySums(
-            pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
+            pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number, beam_energy=benergy)
         var_cer = fersboards.get_energy_sum_name(
             gain=gain, isCer=True, pdsub=True, calib=calib)
         var_sci = fersboards.get_energy_sum_name(
@@ -471,8 +471,8 @@ def makeFERSCerVsSciPlots(suffix=""):
             # make a TF1 for Cer = Sci
             f11 = ROOT.TF1("f11", "x", 0, 120)
             f12 = ROOT.TF1("f12", "0.5 * x", 0, 120)
-            line_x = ROOT.TLine(80, 0, 80, 120)
-            line_y = ROOT.TLine(0, 80, 120, 80)
+            line_x = ROOT.TLine(benergy, 0, benergy, 120)
+            line_y = ROOT.TLine(0, benergy, 120, benergy)
 
             extraObjs = [f11, f12, line_x, line_y]
             for line in extraObjs:
@@ -502,7 +502,7 @@ def makeFERSDRPlots(suffix=""):
     gain = "Mix"
     calib = True
     config = getRangesForFERSEnergySums(
-        pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number)
+        pdsub=True, calib=calib, clip=False, HE=HE, run_number=run_number, beam_energy=benergy)
     varname_Cer = fersboards.get_energy_sum_name(
         gain=gain, isCer=True, pdsub=True, calib=calib)
     varname_Sci = fersboards.get_energy_sum_name(
@@ -607,7 +607,7 @@ def makeFERSDRPlots(suffix=""):
     # fit with gaus, plot the parameters
     tf1s = []
     for cat, hist in [("Cer", hist_cer), ("Sci", hist_sci), ("DR", hist_dr), ("DR method2", hist_dr_method2), ("DR method3", hist_dr_method3)]:
-        if hist:
+        if hist and hist.Integral() > 0:
             fit_result = hist.Fit("gaus", "S")
             if fit_result.IsValid():
                 fit_func = hist.GetFunction("gaus")
@@ -627,7 +627,7 @@ def makeFERSDRPlots(suffix=""):
                output_name,
                dology=False, drawoptions="HIST", mycolors=[2, 4, 1, 7, 8], addOverflow=True, addUnderflow=True,
                outdir=outdir_plots, run_number=run_number, extraToDraw=[extraToDraw] + tf1s)
-    plots.append(output_name + ".png")
+    plots.insert(0, output_name + ".png")
 
     plots.append("NEWLINE")
 
@@ -658,8 +658,12 @@ def makeFERSDRPlots(suffix=""):
         varname = varname_Sci if cat == "Sci" else varname_Cer
         hist_varname_vs_fEM_name = f"hist_{varname}_VS_{var_fem}_{suffix}"
         hist_varname_vs_fEM = infile.Get(hist_varname_vs_fEM_name)
+        if hist_varname_vs_fEM.GetEntries() == 0:
+            print(
+                f"Warning: Histogram {hist_varname_vs_fEM_name} in {infile_name} has zero events")
+            continue
         hist_prof = hist_varname_vs_fEM.ProfileX()
-        hist_prof.Fit("pol1")
+        #hist_prof.Fit("pol1")
         hist_prof.SetLineColor(ROOT.kRed)
         hist_prof.SetMarkerColor(ROOT.kRed)
         fit_result = hist_prof.Fit("pol1", "S", "", 0.4, 0.8)
@@ -669,7 +673,7 @@ def makeFERSDRPlots(suffix=""):
         extraToDraw.SetBorderSize(0)
         extraToDraw.SetTextFont(42)
         extraToDraw.SetTextSize(0.04)
-        if fit_result.IsValid():
+        if fit_result and fit_result.Get() and fit_result.IsValid():
             fit_func = hist_prof.GetFunction("pol1")
             p0 = fit_func.GetParameter(0)
             p1 = fit_func.GetParameter(1)
@@ -853,10 +857,10 @@ def makeFERSShowerShapePlots(suffix=""):
 
         if len(hists_R) == 2:
             # plot ratio of Cer/Sci
-            hists_R[0].Scale(1.0 / hists_R[0].Integral(0,
-                             hists_R[0].GetNbinsX() + 1))
-            hists_R[1].Scale(1.0 / hists_R[1].Integral(0,
-                             hists_R[1].GetNbinsX() + 1))
+            hists_R[0].Scale(1.0 / (hists_R[0].Integral(0,
+                             hists_R[0].GetNbinsX() + 1) + 1e-6))
+            hists_R[1].Scale(1.0 / (hists_R[1].Integral(0,
+                             hists_R[1].GetNbinsX() + 1) + 1e-6))
             hist_ratio = hists_R[1].Clone()
             hist_ratio.Divide(hists_R[0])
             output_name = f"FERS_ShowerShape_RealR_Cer_over_Sci_{gain}_{suffix}"
@@ -962,7 +966,7 @@ rdfs = OrderedDict()
 rdfs["inclusive"] = rdf
 if analysis.beam_type == "e+":
     rdfs["electron"] = analysis.get_particle_analysis("electron")
-    #rdfs["muon"] = analysis.get_particle_analysis("muon")
+    # rdfs["muon"] = analysis.get_particle_analysis("muon")
     rdfs["pion"] = analysis.get_particle_analysis("pion")
 else:
     rdfs["proton"] = analysis.get_particle_analysis("proton")
@@ -1056,7 +1060,7 @@ def main():
                     # one hists_proxies is a list of ResultProxies for different channels
                     hists_list = [h.GetValue() for h in hists_proxies]
                     hist_combined = LHistos2Hist(hists_list, h_combined_name)
-                    hist_combined.Scale(1.0 / nEvts)
+                    hist_combined.Scale(1.0 / (nEvts+1e-6))
                     hists_shower_shape.append(hist_combined)
 
             # Save merged shower shapes

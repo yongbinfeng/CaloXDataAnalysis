@@ -1,5 +1,4 @@
-def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False, run_number=1230) -> dict:
-    scale = 1.0
+def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False, run_number=1230, beam_energy=80) -> dict:
     if run_number >= 1350:
         scaleHG = 0.6
         scaleLG = 0.2
@@ -35,9 +34,9 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False, r
         },
         "xmax_total": {
             "HG_cer": 2.5e5 * scaleHG,
-            "LG_cer": 9e4 * scaleLG,
+            "LG_cer": 2e4 * scaleLG,
             "HG_sci": 1e6 * scaleHG,
-            "LG_sci": 5e5 * scaleLG,
+            "LG_sci": 2e5 * scaleLG,
             "Mix_cer": 90,
             "Mix_sci": 90
         },
@@ -73,9 +72,9 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False, r
         },
         "xmax_total": {
             "HG_cer": 2e5 * scaleHG,
-            "LG_cer": 8e4 * scaleLG,
+            "LG_cer": 3e4 * scaleLG,
             "HG_sci": 8e5 * scaleHG,
-            "LG_sci": 4e5 * scaleLG,
+            "LG_sci": 2e5 * scaleLG,
             "Mix_cer": 90,
             "Mix_sci": 90
         }
@@ -84,16 +83,23 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False, r
     if pdsub:
         config = configs["pbsub"]
     if HE:
-        config["xmax_total"]["HG_cer"] = 2e5 * scaleHG
-        config["xmax_total"]["LG_cer"] = 5e4 * scaleLG
-        config["xmax_total"]["HG_sci"] = 1e6 * scaleHG
-        config["xmax_total"]["LG_sci"] = 1e5 * scaleLG
-        config["xmax_total"]["Mix_cer"] = 150
-        config["xmax_total"]["Mix_sci"] = 150
+        config["xmax_total"]["HG_cer"] = 1e5 * scaleHG
+        config["xmax_total"]["LG_cer"] = 1e4 * scaleLG
+        config["xmax_total"]["HG_sci"] = 5e5 * scaleHG
+        config["xmax_total"]["LG_sci"] = 3e4 * scaleLG
+        config["xmax_total"]["Mix_cer"] = 80
+        config["xmax_total"]["Mix_sci"] = 80
+    # temporary fix; these can/should probably be improved later on...
+    config["xmax_total"]["HG_cer"] *= beam_energy / 50
+    config["xmax_total"]["LG_cer"] *= beam_energy / 50
+    config["xmax_total"]["HG_sci"] *= beam_energy / 50
+    config["xmax_total"]["LG_sci"] *= beam_energy / 50
+    config["xmax_total"]["Mix_cer"] *= beam_energy / 50
+    config["xmax_total"]["Mix_sci"] *= beam_energy / 50
     return config
 
 
-def getFERSSaturationValue():
+def get_fers_saturation_value():
     # This is the saturation value for the FERS channels
     # return 8191
     # return 7800

@@ -14,11 +14,8 @@ echo $SLURM_NODELIST
 """
 JOBTMP="/tmp/root_cache_RUNNUMBER"
 
-#singularity_cmd = "singularity run --cleanenv --bind /lustre:/lustre -B /usr/lib64/libgif.so.7:/usr/lib64/libgif.so.7 -B /usr/lib64/libtiff.so.5:/usr/lib64/libtiff.so.5 -B /usr/lib64/libjpeg.so.62:/usr/lib64/libjpeg.so.62 -B /usr/lib64/libjbig.so.2.1:/usr/lib64/libjbig.so.2.1 /lustre/work/yofeng/SimulationEnv/alma9forgeant4_sbox/"
 singularity_cmd = "singularity run --cleanenv --bind /lustre:/lustre /lustre/work/yofeng/SimulationEnv/alma9forgeant4_v3.sif"
-#run_cmd = "cd SCRIPTDIR && python makeDQMHists.py --run RUNNUMBER && python makeDQMPlots.py --run RUNNUMBER && python checkServiceDRS.py --run RUNNUMBER && python makeFERSEnergyPlots.py --run RUNNUMBER && python checkMCP.py --run RUNNUMBER && python makeDRSPeakTS.py --run RUNNUMBER"
-#run_cmd = "cd SCRIPTDIR && python makeDRSTimingPlots.py --run RUNNUMBER"
-run_cmd = "mkdir -p JOBTMP; export PCM_CACHE_DIR=JOBTMP; export TMPDIR=JOBTMP; cd SCRIPTDIR && python makeFERSEnergyPlots.py --run RUNNUMBER"
+run_cmd = "mkdir -p JOBTMP; export PCM_CACHE_DIR=JOBTMP; export TMPDIR=JOBTMP; cd SCRIPTDIR && python scripts/make_dqm_hists.py --run RUNNUMBER && python scripts/make_dqm_plots.py --run RUNNUMBER && python scripts/check_service_drs.py --run RUNNUMBER && python scripts/make_fers_energy_plots.py --run RUNNUMBER && python scripts/check_beam_composition.py --run RUNNUMBER"
 
 import os
 
@@ -27,7 +24,7 @@ print("Current directory: ", current_dir)
 
 script_dir = os.path.abspath(os.path.join(current_dir, ".."))
 log_dir = os.path.abspath(os.path.join(current_dir, "log"))
-jobname_prefix = "makeDQMPlots"
+jobname_prefix = "calox"
 
 
 if not os.path.exists(log_dir):
@@ -38,7 +35,7 @@ if not os.path.exists(log_dir):
 def generate_submission_script(runlist):
     fnames = []
     for i, run_number in enumerate(runlist):
-        jobname = f"{jobname_prefix}_{i}"
+        jobname = f"{jobname_prefix}_{run_number}"
         run_cmd_tmp = run_cmd.replace("SCRIPTDIR", script_dir).replace("JOBTMP",JOBTMP).replace("RUNNUMBER", str(run_number))
         run_cmd_tmp = singularity_cmd + " bash -c \"" + run_cmd_tmp + "\""
 
@@ -53,13 +50,13 @@ def generate_submission_script(runlist):
             f.write(env_cmd)
             f.write(run_cmd_tmp)
 
-        fnames.append(fname)
+        fnames.append([run_number, fname])
 
     submit_sh = f"{current_dir}/submit_all.sh"
     with open(submit_sh, "w") as f:
         f.write("#!/bin/bash\n")
-        for fname in fnames:
-            f.write(f"sbatch {fname}\n")
+        for run_number, fname in fnames:
+            f.write(f"sbatch --job-name=calox{run_number} {fname}\n")
 
     os.system(f"chmod +x {submit_sh}")
 
@@ -69,5 +66,5 @@ def generate_submission_script(runlist):
     
     
 if __name__ == "__main__":
-    runList = range(1349, 1528)
+    runList = range(1350, 1528)
     generate_submission_script(runlist=runList)
