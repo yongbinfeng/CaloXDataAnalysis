@@ -12,7 +12,7 @@ def check_composition_with_table():
     args = get_args()
     setup_root(n_threads=10, batch_mode=True)
 
-    # 1. Initialize and branch
+    # Initialize and branch
     analysis = (CaloXAnalysisManager(args)
                 .prepare()
                 .apply_hole_veto(flag_only=True))
@@ -65,7 +65,7 @@ def check_composition_with_table():
         }
     }
 
-    # 4. Save to JSON
+    # Save to JSON
     json_path = os.path.join(
         analysis.paths['root'], f"beam_composition.json")
     if not os.path.exists(os.path.dirname(json_path)):
@@ -107,7 +107,7 @@ def check_composition_with_table():
     generate_html(
         png_files=[plot_before,
                    plot_after],
-        png_dir=analysis.paths['plots'] + "/drs_service",
+        png_dir=analysis.paths['plots'] + "/ServiceDRS",
         plots_per_row=4,
         output_html=output_html,
         intro_text=f"Beam Composition Summary before and after hole veto"

@@ -199,8 +199,8 @@ def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS
 
     # calibration all DRS channels to MCP US channel 0
     for _, DRSBoard in DRSBoards.items():
-        if DRSBoard.board_no > 3:
-            continue
+        # if DRSBoard.board_no > 3:
+        #    continue
         for channel in DRSBoard:
             channelName = channel.get_channel_name(blsub=False)
 

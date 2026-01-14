@@ -1,102 +1,105 @@
 import os
+import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from pathlib import Path
 
 
-def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.html", intro_text=""):
+def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.html", title="PNG Plot Viewer", intro_text=""):
     """
-    Generate an HTML file to view PNG plots with an optional introductory text.
-    Supports **bold** via markdown-style syntax.
+    Generate a compact HTML file to view PNG plots.
+    :param title: Configurable main heading for the page.
+    :param intro_text: Optional text displayed in a box below the header. Supports **bold**.
     """
     html_dir = os.path.dirname(os.path.abspath(output_html))
-    png_dir_abs = os.path.abspath(png_dir)
-    output_html_abs = os.path.abspath(output_html)
-
     real_png_files = [f for f in png_files if f != "NEWLINE"]
     png_paths = [os.path.join(png_dir, f) for f in real_png_files]
     rel_paths = [os.path.relpath(p, start=html_dir) for p in png_paths]
-
     path_map = dict(zip(real_png_files, rel_paths))
 
     timestamp = datetime.now(ZoneInfo("Europe/Zurich")
                              ).strftime("%B %d, %Y, %I:%M %p %Z")
 
-    # Format the intro text:
-    # 1. Handle Newlines
-    # 2. Convert **bold** to <b> tags
+    # Format the intro text
     formatted_intro = intro_text.replace("\n", "<br>")
-    import re
     formatted_intro = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', formatted_intro)
 
     html_header = f"""<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>PNG Plot Viewer</title>
+  <title>{title}</title>
   <style>
     body {{
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      padding: 30px;
+      padding: 10px 20px;
       margin: 0;
-      line-height: 1.6;
+      line-height: 1.4;
       color: #333;
     }}
-    h1 {{
-      font-size: 24px;
-      margin-bottom: 5px;
-      color: #1a1a1a;
-    }}
-    .timestamp {{
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 20px;
-    }}
-    .intro-text {{
-      background: #f8f9fa;
-      border-left: 5px solid #007bff;
-      padding: 20px;
-      margin-bottom: 30px;
-      font-size: 16px;
-      border-radius: 0 4px 4px 0;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }}
-    .controls {{
+    .top-bar {{
+      display: flex;
+      align-items: center;
+      gap: 30px; /* Space between title and filters */
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 15px;
       position: sticky;
       top: 0;
       background: white;
-      padding: 15px 0;
-      z-index: 10;
-      border-bottom: 1px solid #eee;
-      margin-bottom: 25px;
+      z-index: 100;
+    }}
+    .title-group {{
+      display: flex;
+      flex-direction: column;
+      min-width: fit-content;
+    }}
+    h1 {{
+      font-size: 20px;
+      margin: 0;
+      color: #1a1a1a;
+      white-space: nowrap;
+    }}
+    .timestamp {{
+      font-size: 11px;
+      color: #888;
+      white-space: nowrap;
+    }}
+    .controls {{
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }}
     input[type="text"] {{
-      font-size: 16px;
-      padding: 8px 12px;
-      width: 350px;
+      font-size: 14px;
+      padding: 4px 10px;
+      width: 250px;
       border: 1px solid #ccc;
       border-radius: 4px;
+    }}
+    .intro-text {{
+      background: #f8f9fa;
+      border-left: 4px solid #007bff;
+      padding: 10px 16px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      border-radius: 0 4px 4px 0;
     }}
     .grid {{
       display: grid;
       grid-template-columns: repeat({plots_per_row}, 1fr);
-      gap: 25px;
+      gap: 15px;
     }}
     .plot {{
       border: 1px solid #e1e4e8;
-      padding: 12px;
+      padding: 8px;
       text-align: center;
       border-radius: 6px;
       background: #fff;
-      transition: box-shadow 0.2s;
-    }}
-    .plot:hover {{
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }}
     .filename {{
       font-weight: 600;
-      font-size: 13px;
-      margin-bottom: 10px;
+      font-size: 12px;
+      margin-bottom: 8px;
       word-break: break-all;
       color: #444;
     }}
@@ -105,28 +108,37 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
       height: auto;
       border-radius: 2px;
     }}
-    @media (max-width: 1200px) {{ .grid {{ grid-template-columns: repeat(2, 1fr); }} }}
-    @media (max-width: 600px) {{ .grid {{ grid-template-columns: 1fr; }} }}
+    button {{
+      padding: 4px 12px;
+      cursor: pointer;
+      font-size: 13px;
+    }}
+    @media (max-width: 1100px) {{ .grid {{ grid-template-columns: repeat(2, 1fr); }} }}
+    @media (max-width: 800px) {{ 
+      .top-bar {{ flex-direction: column; align-items: flex-start; gap: 10px; }}
+    }}
   </style>
 </head>
 <body>
 
-  <h1>PNG Plot Viewer</h1>
-  <div class="timestamp">Generated on: {timestamp}</div>
+  <div class="top-bar">
+    <div class="title-group">
+      <h1>{title}</h1>
+      <div class="timestamp">{timestamp}</div>
+    </div>
+    <div class="controls">
+      <input type="text" id="filterInput" placeholder="Filter by filename..." onkeyup="filterPlots()">
+      <label><input type="checkbox" id="regexToggle" onchange="filterPlots()"> Regex</label>
+      <label><input type="checkbox" id="caseToggle" onchange="filterPlots()"> Case</label>
+      <button onclick="clearFilter()">Clear</button>
+    </div>
+  </div>
 
   {f'<div class="intro-text">{formatted_intro}</div>' if intro_text else ''}
-
-  <div class="controls">
-    <input type="text" id="filterInput" placeholder="Filter by filename..." onkeyup="filterPlots()">
-    <label style="margin-left:15px"><input type="checkbox" id="regexToggle" onchange="filterPlots()"> Regex</label>
-    <label style="margin-left:10px"><input type="checkbox" id="caseToggle" onchange="filterPlots()"> Case</label>
-    <button onclick="clearFilter()" style="margin-left:20px; padding: 8px 12px; cursor:pointer;">Clear</button>
-  </div>
 
   <div id="plotContainer">
 """
 
-    # ... [Rest of the body logic remains the same] ...
     html_body = ""
     current_row_plots = []
 
@@ -153,7 +165,6 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
             current_row_plots.append(filename)
     html_body += create_grid_html(current_row_plots)
 
-    # ... [Script section remains the same as previous version] ...
     html_footer = """  </div>
   <script>
     function getQueryParams() {
@@ -210,6 +221,4 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
     with open(output_html, "w") as f:
         f.write(html_header + html_body + html_footer)
 
-    print(f"✅ HTML viewer generated at: {output_html_abs}")
-
-    return output_html_abs
+    return os.path.abspath(output_html)

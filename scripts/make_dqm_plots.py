@@ -523,7 +523,7 @@ def makeFERSMaxValuePlots():
                outdir=outdir_plots, run_number=run_number, legendPos=[0.30, 0.75, 0.50, 0.9], extraToDraw=extraToDraw)
     plots.append(output_name + ".png")
 
-    output_html = f"{paths['html']}/FERS/channelmax.html"
+    output_html = f"{paths['html']}/FERS/Stat/Channel_Max_1D.html"
     generate_html(plots, outdir_plots, plots_per_row=2,
                   output_html=output_html)
     return output_html

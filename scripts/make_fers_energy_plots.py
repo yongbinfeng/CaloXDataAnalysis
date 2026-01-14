@@ -663,7 +663,7 @@ def makeFERSDRPlots(suffix=""):
                 f"Warning: Histogram {hist_varname_vs_fEM_name} in {infile_name} has zero events")
             continue
         hist_prof = hist_varname_vs_fEM.ProfileX()
-        #hist_prof.Fit("pol1")
+        # hist_prof.Fit("pol1")
         hist_prof.SetLineColor(ROOT.kRed)
         hist_prof.SetMarkerColor(ROOT.kRed)
         fit_result = hist_prof.Fit("pol1", "S", "", 0.4, 0.8)
@@ -964,7 +964,7 @@ rdf = analysis.get_rdf()  # Get the final RDF after all transformations
 
 rdfs = OrderedDict()
 rdfs["inclusive"] = rdf
-if analysis.beam_type == "e+":
+if analysis.beam_type in ["e+", "positron", "e-", "electron", "positrons", "electrons"]:
     rdfs["electron"] = analysis.get_particle_analysis("electron")
     # rdfs["muon"] = analysis.get_particle_analysis("muon")
     rdfs["pion"] = analysis.get_particle_analysis("pion")

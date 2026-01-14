@@ -401,7 +401,7 @@ def plotPulse(channels):
     intro_text = """This page shows the correlation plots of the service DRS channels for particle identification.
     No selection is applied unless specified.
     """
-    output_html = generate_html(plots, outdir, plots_per_row=6,
+    output_html = generate_html(plots, outdir, plots_per_row=5,
                                 output_html=output_html, intro_text=intro_text)
 
     output_htmls.append(output_html)
