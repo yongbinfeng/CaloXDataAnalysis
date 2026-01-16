@@ -5,7 +5,8 @@ from channels.channel_map import build_fers_boards, build_drs_boards
 from variables.fers import (
     vectorizeFERS, subtractFERSPedestal, mixFERSHGLG,
     calibrateFERSChannels, get_fers_energy_sum,
-    getFERSEnergyWeightedCenter, getFERSEnergyDR, addFERSPosXY
+    getFERSEnergyWeightedCenter, getFERSEnergyDR, addFERSPosXY,
+    buildTTUHodo
 )
 from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS, get_drs_stats
 from core.selection_manager import SelectionManager
@@ -94,7 +95,7 @@ class CaloXAnalysisManager:
         ROOT.RDF.Experimental.AddProgressBar(self.rdf_org)
         return self.rdf_org.Filter(f"event_n >= {first_event} && event_n < {last_event}")
 
-    def prepare(self, do_drs=True, do_fers=True):
+    def prepare(self, do_drs=True, do_fers=True, do_hodo=True):
         """Initializes standard baseline subtractions and vectorization."""
         if do_drs and "drs_init" not in self._steps_applied:
             self.rdf = preProcessDRSBoards(
@@ -104,6 +105,10 @@ class CaloXAnalysisManager:
         if do_fers and "fers_init" not in self._steps_applied:
             self.rdf = vectorizeFERS(self.rdf, self.fersboards)
             self._steps_applied.add("fers_init")
+
+        if do_hodo and "hodo_init" not in self._steps_applied:
+            self.rdf = buildTTUHodo(self.rdf)
+            self._steps_applied.add("hodo_init")
         return self
 
     def _get_calibration_paths(self, version="Sep", pedestal_run=None):

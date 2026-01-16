@@ -278,3 +278,28 @@ def getFERSEnergyWeightedCenter(rdf, fersboards, gain="HG", pdsub=False, calib=F
                          f"({y_center}) / ({fersboards.get_energy_sum_name(gain=gain, isCer=(var == 'Cer'), pdsub=pdsub, calib=calib)} + 1e-9)")
 
     return rdf
+
+
+def buildTTUHodo(rdf, val_cut=4000):
+    """
+    Build TTU Hodoscope hit information in RDF.
+    """
+    ttuhodo_x_name = "FERS_Board1_energyHG"
+    ttuhodo_y_name = "FERS_Board0_energyHG"
+    # find number of hits
+    # by summing boolean array where energy deposit > threshold
+    hit_x_expr = f"ROOT::VecOps::Sum( ( {ttuhodo_x_name} > {val_cut} ) )"
+    hit_y_expr = f"ROOT::VecOps::Sum( ( {ttuhodo_y_name} > {val_cut} ) )"
+    rdf = rdf.Define("TTU_Hodo_nHitX", hit_x_expr)
+    rdf = rdf.Define("TTU_Hodo_nHitY", hit_y_expr)
+    # get the channel index with max energy deposit
+    rdf = rdf.Define("TTU_Hodo_MaxChannelX",
+                     f"ROOT::VecOps::ArgMax( {ttuhodo_x_name} )")
+    rdf = rdf.Define("TTU_Hodo_MaxChannelY",
+                     f"ROOT::VecOps::ArgMax( {ttuhodo_y_name} )")
+    # map to the real hodo channel
+    rdf = rdf.Define("TTU_Hodo_X",
+                     f"get_x_index( TTU_Hodo_MaxChannelX )")
+    rdf = rdf.Define("TTU_Hodo_Y",
+                     f"get_y_index( TTU_Hodo_MaxChannelY )")
+    return rdf
