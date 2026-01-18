@@ -1,10 +1,17 @@
+"""
+TTU Hodoscope Check Script
+
+Plots TTU Hodoscope hit distributions and positions.
+"""
+
 import ROOT
-from plotting.my_function import DrawHistos
-from utils.html_generator import generate_html
 from core.analysis_manager import CaloXAnalysisManager
 from configs.plot_config import get_ttu_hodo_ranges
 from utils.parser import get_args
 from utils.plot_helper import save_hists_to_file
+from core.plot_manager import PlotManager
+from configs.plot_style import PlotStyle
+from plotting.calox_plot_helper import create_pave_text
 from utils.root_setup import setup_root
 from utils.timing import auto_timer
 
@@ -24,8 +31,15 @@ rdf_org = analysis.get_rdf()
 
 hodo_min, hodo_max, hodo_nbins = get_ttu_hodo_ranges()
 
+# Styles
+STYLE_XY = PlotStyle(dology=False, drawoptions="HIST",
+                     mycolors=[1, 2])
+STYLE_2D_LOG = PlotStyle(dology=False, dologz=True,
+                         drawoptions="COLZ", zmin=1, zmax=None)
+
 
 def makeTTUHodoHits(rdf, suffix=""):
+    """Book TTU Hodoscope histograms."""
     h_nhit_x = rdf.Histo1D(
         (f"h_nhit_x_{suffix}", "Number of hits in X;N_{hits} (X);Entries",
          10, -0.5, 9.5),
@@ -34,7 +48,6 @@ def makeTTUHodoHits(rdf, suffix=""):
         (f"h_nhit_y_{suffix}", "Number of hits in Y;N_{hits} (Y);Entries",
          10, -0.5, 9.5),
         "TTU_Hodo_nHitY")
-    # hit position
     h_x_pos = rdf.Histo1D(
         (f"h_x_pos_{suffix}", "Hodo X Position;X Channel;Entries",
          hodo_nbins, hodo_min, hodo_max),
@@ -54,75 +67,99 @@ def makeTTUHodoHits(rdf, suffix=""):
 
 
 def plotTTUHodoHits():
-    infilename = paths['root'] + "/ttuhodo_nhits.root"
-    infile = ROOT.TFile.Open(infilename, "READ")
-    plots = []
-    outdir = paths['plots'] + "/ttuhodo"
-    for suffix in ['inc', 'holeveto']:
-        # number of hits
-        h_nhit_x = infile.Get(f"h_nhit_x_{suffix}")
-        h_nhit_y = infile.Get(f"h_nhit_y_{suffix}")
-        # get efficiency
-        eff_x = h_nhit_x.Integral(h_nhit_x.FindBin(1), h_nhit_x.GetNbinsX(
-        )+1) / (h_nhit_x.Integral(0, h_nhit_x.GetNbinsX()+1) + 1e-6)
-        eff_y = h_nhit_y.Integral(h_nhit_y.FindBin(1), h_nhit_y.GetNbinsX(
-        )+1) / (h_nhit_y.Integral(0, h_nhit_y.GetNbinsX()+1) + 1e-6)
+    """Plot TTU Hodoscope distributions using PlotManager."""
+    infilename = f"{paths['root']}/ttuhodo_nhits.root"
 
-        extraToDraw = ROOT.TPaveText(0.20, 0.80, 0.90, 0.90, "NDC")
-        extraToDraw.SetTextAlign(11)
-        extraToDraw.SetFillColorAlpha(0, 0)
-        extraToDraw.SetBorderSize(0)
-        extraToDraw.SetTextFont(42)
-        extraToDraw.SetTextSize(0.04)
-        extraToDraw.AddText(f"Eff X : {eff_x:.3f}")
-        extraToDraw.AddText(f"Eff Y : {eff_y:.3f}")
+    with PlotManager(paths['root'], paths['plots'], paths['html'], run_number) as pm:
+        pm.set_output_dir("ttuhodo")
+        infile = ROOT.TFile.Open(infilename, "READ")
 
-        DrawHistos(
-            [h_nhit_x, h_nhit_y], [
-                'X', 'Y'], -1, 6, f"nHits ({suffix})", 1, None, "Events",
-            outputname=f"ttuhodo_nhits_{suffix}", outdir=outdir,
-            mycolors=[1, 2], drawashist=True, run_number=run_number, addOverflow=True, addUnderflow=True, extraToDraw=extraToDraw)
-        plots.append(f'ttuhodo_nhits_{suffix}.png')
+        for suffix in ['inc', 'holeveto']:
+            # Number of hits
+            h_nhit_x = infile.Get(f"h_nhit_x_{suffix}")
+            h_nhit_y = infile.Get(f"h_nhit_y_{suffix}")
 
-        # hit position
-        h_x_pos = infile.Get(f"h_x_pos_{suffix}")
-        h_y_pos = infile.Get(f"h_y_pos_{suffix}")
-        DrawHistos(
-            [h_x_pos, h_y_pos], [
-                'X', 'Y'], hodo_min, hodo_max, f"Hit Position ({suffix}) [cm]", 1, None, "Events",
-            outputname=f"ttuhodo_hitpos_{suffix}", outdir=outdir,
-            mycolors=[1, 2], drawashist=True, run_number=run_number, addOverflow=True, addUnderflow=True)
-        plots.append(f'ttuhodo_hitpos_{suffix}.png')
+            if h_nhit_x and h_nhit_y:
+                # Calculate efficiency
+                eff_x = h_nhit_x.Integral(h_nhit_x.FindBin(1), h_nhit_x.GetNbinsX() + 1) / \
+                    (h_nhit_x.Integral(0, h_nhit_x.GetNbinsX() + 1) + 1e-6)
+                eff_y = h_nhit_y.Integral(h_nhit_y.FindBin(1), h_nhit_y.GetNbinsX() + 1) / \
+                    (h_nhit_y.Integral(0, h_nhit_y.GetNbinsX() + 1) + 1e-6)
 
-        # 2D hit position
-        h_xy_pos = infile.Get(f"h_xy_pos_{suffix}")
-        DrawHistos(
-            [h_xy_pos], [], hodo_min, hodo_max, "Hodo X [cm]", hodo_min, hodo_max, "Hodo Y [cm]", outputname=f"ttuhodo_hitpos_xy_{suffix}", outdir=outdir,
-            drawoptions="COLz", zmin=1, zmax=None, dologz=True,
-            dology=False, run_number=run_number, addOverflow=True, doth2=True)
-        plots.append(f'ttuhodo_hitpos_xy_{suffix}.png')
+                pave = create_pave_text(0.20, 0.80, 0.90, 0.90)
+                pave.AddText(f"Eff X : {eff_x:.3f}")
+                pave.AddText(f"Eff Y : {eff_y:.3f}")
 
-    output_html = paths['html'] + "/TTUHodo/ttuhodo_hits.html"
-    output_html = generate_html(plots, outdir,
-                                plots_per_row=3, output_html=output_html, title="TTU Hodoscope Hits",
-                                intro_text="Plots showing the TTU Hodoscope hit distributions: number of hits and hit positions, both inclusive and with hole veto applied.\n If no hits are recorded, the corresponding entries will be underflow bins (-1).")
-    print(f"Generated HTML: {output_html}")
+                pm.plot_1d(
+                    [h_nhit_x, h_nhit_y],
+                    f"ttuhodo_nhits_{suffix}",
+                    f"nHits ({suffix})",
+                    (-1, 6),
+                    yrange=(1, None),
+                    legends=['X', 'Y'],
+                    style=STYLE_XY,
+                    extraToDraw=pave
+                )
+
+            # Hit positions
+            h_x_pos = infile.Get(f"h_x_pos_{suffix}")
+            h_y_pos = infile.Get(f"h_y_pos_{suffix}")
+
+            if h_x_pos and h_y_pos:
+                pm.plot_1d(
+                    [h_x_pos, h_y_pos],
+                    f"ttuhodo_hitpos_{suffix}",
+                    f"Hit Position ({suffix}) [cm]",
+                    (hodo_min, hodo_max),
+                    yrange=(1, None),
+                    legends=['X', 'Y'],
+                    style=STYLE_XY
+                )
+
+            # 2D hit position
+            h_xy_pos = infile.Get(f"h_xy_pos_{suffix}")
+            if h_xy_pos:
+                pm.plot_2d(
+                    h_xy_pos,
+                    f"ttuhodo_hitpos_xy_{suffix}",
+                    "Hodo X [cm]",
+                    (hodo_min, hodo_max),
+                    "Hodo Y [cm]",
+                    (hodo_min, hodo_max),
+                    style=STYLE_2D_LOG
+                )
+
+        infile.Close()
+
+        intro_text = """Plots showing the TTU Hodoscope hit distributions: number of hits and hit positions, 
+both inclusive and with hole veto applied.
+If no hits are recorded, the corresponding entries will be underflow bins (-1)."""
+
+        output_html = pm.generate_html(
+            "TTUHodo/ttuhodo_hits.html",
+            plots_per_row=3,
+            title="TTU Hodoscope Hits",
+            intro_text=intro_text
+        )
+        print(f"Generated HTML: {output_html}")
+        return output_html
 
 
 def main():
     output_path = paths['root']
-    # rdf = rdf_org.Filter("TTU_Hodo_nHitX > 0 && TTU_Hodo_nHitY > 0",
-    #                     "At least one hit in both X and Y TTU Hodoscope")
     rdf = rdf_org
+
     hists = makeTTUHodoHits(rdf, "inc")
-    # with hole veto
+
+    # With hole veto
     rdf_hole_veto = rdf.Filter("is_HoleVeto_vetoed", "Apply Hole Veto")
     hists_veto = makeTTUHodoHits(rdf_hole_veto, "holeveto")
-    # run the rdf
+
+    # Run the RDF
     ROOT.RDF.RunGraphs(hists + hists_veto)
     save_hists_to_file(
         hists + hists_veto,
-        output_path + "/ttuhodo_nhits.root"
+        f"{output_path}/ttuhodo_nhits.root"
     )
     plotTTUHodoHits()
 

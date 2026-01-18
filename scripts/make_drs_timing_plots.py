@@ -1,14 +1,22 @@
-import ROOT
+"""
+DRS Timing Plots Script.
+
+Analyzes DRS peak timing relative to MCP for timing calibration.
+"""
+
 import json
+import ROOT
 from channels.channel_map import get_mcp_channels
 from core.analysis_manager import CaloXAnalysisManager
-from variables.drs import calibrateDRSPeakTS
-from utils.html_generator import generate_html
+from core.plot_manager import PlotManager
+from configs.plot_style import PlotStyle, STYLE_2D_COLZ
+from plotting.calox_plot_helper import create_pave_text
+from plotting.my_function import LHistos2Hist
 from utils.parser import get_args
-from plotting.my_function import DrawHistos, LHistos2Hist
-from utils.timing import auto_timer
 from utils.root_setup import setup_root
+from utils.timing import auto_timer
 from utils.utils import number_to_string
+from variables.drs import calibrateDRSPeakTS
 
 auto_timer("Total Execution Time")
 
@@ -18,7 +26,7 @@ args = get_args()
 run_number = args.run
 
 analysis = (CaloXAnalysisManager(args)
-            .prepare()                   # Baseline and vectorization
+            .prepare()
             .apply_hole_veto(flag_only=True)
             )
 
@@ -36,32 +44,66 @@ file_drschannels_bad = "data/drs/badchannels.json"
 with open(file_drschannels_bad, "r") as f:
     drschannels_bad = json.load(f)
 
-# rdf = analysis.get_rdf()
 rdf = analysis.get_particle_analysis("pion")
 
+# Configuration constants
 TSmin = -90
 TSmax = -10
 TSCermin = -70
 TSCermax = -50
-
 varsuffix = "DiffRelPeakTS_US"
+
+# Common plot styles
+STYLE_CER_SCI = PlotStyle(
+    dology=False,
+    drawoptions="HIST",
+    mycolors=[2, 4],
+    addOverflow=False,
+    addUnderflow=False
+)
+
+STYLE_CER_QUARTZ_PLASTIC_SCI = PlotStyle(
+    dology=False,
+    drawoptions="HIST",
+    mycolors=[2, 6, 4],
+    addOverflow=False,
+    addUnderflow=False,
+    legendPos=[0.25, 0.75, 0.40, 0.90]
+)
+
+STYLE_CER_QUARTZ_PLASTIC = PlotStyle(
+    dology=False,
+    drawoptions=["hist,C", "hist,C"],
+    mycolors=[2, 6],
+    addOverflow=False,
+    addUnderflow=False,
+    legendPos=[0.30, 0.80, 0.40, 0.90]
+)
+
+STYLE_2D_LOG = PlotStyle(
+    dology=False,
+    dologz=True,
+    drawoptions="COLZ",
+    addOverflow=False,
+    addUnderflow=False,
+    zmin=1,
+    zmax=1e2
+)
 
 
 def GetMean(hist, useMode=True):
+    """Get mean or mode of histogram."""
     if useMode:
-        # peak position of peakTS
         bin_max = hist.GetMaximumBin()
         mean = hist.GetBinCenter(bin_max)
     else:
-        # average position of peakTS
         mean = hist.GetMean()
     return mean
 
 
 def checkDRSPeakTS(rdf):
-    h1s_DRSPeakTS = {}
-    h1s_DRSPeakTS["Cer"] = []
-    h1s_DRSPeakTS["Sci"] = []
+    """Book DRS peak timing histograms."""
+    h1s_DRSPeakTS = {"Cer": [], "Sci": []}
     h2s_DRSPeakTS_Cer_VS_Sci = []
 
     channelnames_quartz = []
@@ -70,8 +112,6 @@ def checkDRSPeakTS(rdf):
 
     for _, DRSBoard in DRSBoards.items():
         board_no = DRSBoard.board_no
-        # if board_no > 3:
-        #    continue
         for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
             sTowerX = number_to_string(i_tower_x)
             sTowerY = number_to_string(i_tower_y)
@@ -124,50 +164,54 @@ def checkDRSPeakTS(rdf):
             )
             h2s_DRSPeakTS_Cer_VS_Sci.append(h2_DRSPeak_Cer_VS_Sci)
 
-    # average of quartz, plastic and sci channels
+    # Define average TS variables
     rdf = rdf.Define("Cer_Quartz_AvgPeakTS",
                      f"({'+'.join(channelnames_quartz)})/{len(channelnames_quartz)}")
     rdf = rdf.Define("Cer_Plastic_AvgPeakTS",
                      f"({'+'.join(channelnames_plastic)})/{len(channelnames_plastic)}")
     rdf = rdf.Define("Sci_AvgPeakTS",
                      f"({'+'.join(channelnames_sci)})/{len(channelnames_sci)}")
+
+    # Book average histograms
     h1_Cer_Quartz_AvgPeakTS = rdf.Histo1D((
         "hist_DRSPeakTS_Cer_Quartz_Avg",
-        f"DRS Peak TS Avg for Cer Quartz;Peak TS;Counts",
+        "DRS Peak TS Avg for Cer Quartz;Peak TS;Counts",
         TSmax - TSmin, TSmin, TSmax),
         "Cer_Quartz_AvgPeakTS"
     )
     h1s_DRSPeakTS["Cer"].append(h1_Cer_Quartz_AvgPeakTS)
+
     h1_Cer_Plastic_AvgPeakTS = rdf.Histo1D((
         "hist_DRSPeakTS_Cer_Plastic_Avg",
-        f"DRS Peak TS Avg for Cer Plastic;Peak TS;Counts",
+        "DRS Peak TS Avg for Cer Plastic;Peak TS;Counts",
         TSmax - TSmin, TSmin, TSmax),
         "Cer_Plastic_AvgPeakTS"
     )
     h1s_DRSPeakTS["Cer"].append(h1_Cer_Plastic_AvgPeakTS)
+
     h1_Sci_AvgPeakTS = rdf.Histo1D((
         "hist_DRSPeakTS_Sci_Avg",
-        f"DRS Peak TS Avg for Sci;Peak TS;Counts",
+        "DRS Peak TS Avg for Sci;Peak TS;Counts",
         TSmax - TSmin, TSmin, TSmax),
         "Sci_AvgPeakTS"
     )
     h1s_DRSPeakTS["Sci"].append(h1_Sci_AvgPeakTS)
-    # avg of quartz vs avg of plastic
+
+    # Quartz vs Plastic average
     h2_DRSPeak_Cer_Quartz_VS_Plastic = rdf.Histo2D((
         "hist_DRSPeakTS_Cer_Quartz_VS_Cer_Plastic_Avg",
-        f"DRS Peak TS - CER Quartz VS CER Plastic Avg;Cer Plastic Peak TS;Cer Quartz Peak TS",
+        "DRS Peak TS - CER Quartz VS CER Plastic Avg;Cer Plastic Peak TS;Cer Quartz Peak TS",
         TSmax - TSmin, TSmin, TSmax, TSmax - TSmin, TSmin, TSmax),
         "Cer_Plastic_AvgPeakTS",
         "Cer_Quartz_AvgPeakTS",
     )
     h2s_DRSPeakTS_Cer_VS_Sci.append(h2_DRSPeak_Cer_Quartz_VS_Plastic)
+
     return h1s_DRSPeakTS["Cer"], h1s_DRSPeakTS["Sci"], h2s_DRSPeakTS_Cer_VS_Sci
 
 
 def checkDRSvsCalibrationTS(rdf):
-    """
-    shower shapes vs z (calibrated time)
-    """
+    """Book shower shape vs calibrated time histograms."""
     hprofs_DRS_VS_TS = []
     hprofs_DRS_VS_Z = []
     hists2d_DRS_VS_TS = []
@@ -175,8 +219,6 @@ def checkDRSvsCalibrationTS(rdf):
 
     for _, DRSBoard in DRSBoards.items():
         board_no = DRSBoard.board_no
-        # if board_no > 3:
-        #    continue
         for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
             sTowerX = number_to_string(i_tower_x)
             sTowerY = number_to_string(i_tower_y)
@@ -203,40 +245,42 @@ def checkDRSvsCalibrationTS(rdf):
                 rdf_filtered = rdf.Filter(f"{channelName}_hasSignal")
 
                 hprof_DRS_VS_TS = rdf_filtered.Profile1D((
-                    f"prof_DRS_vs_TS_{var}_{sTowerX}_{sTowerY}", "", 400, -300, 100), f"{channelName}_AlignedTS", f"{channelName}_blsub")
+                    f"prof_DRS_vs_TS_{var}_{sTowerX}_{sTowerY}", "", 400, -300, 100),
+                    f"{channelName}_AlignedTS", f"{channelName}_blsub")
 
                 hist2d_DRS_VS_TS = rdf_filtered.Histo2D((
-                    f"hist2d_DRS_vs_TS_{var}_{sTowerX}_{sTowerY}", "", 400, -300, 100, 100, -200, 1000), f"{channelName}_AlignedTS", f"{channelName}_blsub")
+                    f"hist2d_DRS_vs_TS_{var}_{sTowerX}_{sTowerY}", "", 400, -300, 100, 100, -200, 1000),
+                    f"{channelName}_AlignedTS", f"{channelName}_blsub")
 
                 if var != "Sci":
-                    # map aligned TS to real distance in z (cm)
-                    # only for Cer (Quartz and Plastic) channels for now
                     hprof_DRS_VS_Z = rdf_filtered.Profile1D((
-                        f"prof_DRS_vs_Z_{var}_{sTowerX}_{sTowerY}", "", 200, -100, 600), f"{channelName}_MeasuredZ", f"{channelName}_blsub")
+                        f"prof_DRS_vs_Z_{var}_{sTowerX}_{sTowerY}", "", 200, -100, 600),
+                        f"{channelName}_MeasuredZ", f"{channelName}_blsub")
                     hprofs_DRS_VS_Z.append(hprof_DRS_VS_Z)
 
                 rdfs_filtered.append(rdf_filtered)
-
                 hprofs_DRS_VS_TS.append(hprof_DRS_VS_TS)
                 hists2d_DRS_VS_TS.append(hist2d_DRS_VS_TS)
+
     return hprofs_DRS_VS_TS, hists2d_DRS_VS_TS, hprofs_DRS_VS_Z, rdfs_filtered
 
 
-def makeDRSPeakTSPlots():
-    plots = []
-    outdir_plots = f"{plotdir}/DRSPeakTS_rel_us"
+def makeDRSPeakTSPlots(pm: PlotManager):
+    """Generate DRS peak TS plots using PlotManager."""
+    pm.reset_plots().set_output_dir("DRSPeakTS_rel_us")
     infile_name = f"{rootdir}/drspeakts_rel_us.root"
     infile = ROOT.TFile(infile_name, "READ")
+
     hists_Cer = []
     hists_Cer_Quartz = []
     hists_Cer_Plastic = []
     hists_Sci = []
+
     for _, DRSBoard in DRSBoards.items():
         board_no = DRSBoard.board_no
-        # so far only works well
-        # for the central boards
         if board_no > 3:
             continue
+
         for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
             sTowerX = number_to_string(i_tower_x)
             sTowerY = number_to_string(i_tower_y)
@@ -244,6 +288,7 @@ def makeDRSPeakTSPlots():
             hists = {}
             channelNos = {}
             isQuartz = False
+
             for var in ["Cer", "Sci"]:
                 chan = DRSBoard.get_channel_by_tower(
                     i_tower_x, i_tower_y, isCer=(var == "Cer"))
@@ -260,48 +305,37 @@ def makeDRSPeakTSPlots():
                     channelNos[var] = "N/A"
                 else:
                     hists[var] = hist
-                    channelNos[var] = "(" + str(chan.board_no) + "," + \
-                        str(chan.group_no) + "," + str(chan.channel_no) + ")"
+                    channelNos[var] = f"({chan.board_no},{chan.group_no},{chan.channel_no})"
 
-                output_name = f"hist_DRSPeakTS_{sTowerX}_{sTowerY}"
+            output_name = f"hist_DRSPeakTS_{sTowerX}_{sTowerY}"
 
-            # if not hists["Cer"] or not hists["Sci"]:
             if not hists["Cer"] and not hists["Sci"]:
                 print(
-                    f"Warning: Histograms for Cer or Sci not found for Board {board_no}, Tower ({i_tower_x}, {i_tower_y})")
+                    f"Warning: No histograms found for Board {board_no}, Tower ({i_tower_x}, {i_tower_y})")
                 continue
 
+            # Build plot components
             colors = []
             hists_to_draw = []
             labels = []
 
-            extraToDraw = ROOT.TPaveText(0.20, 0.75, 0.70, 0.90, "NDC")
-            extraToDraw.SetTextAlign(11)
-            extraToDraw.SetFillColorAlpha(0, 0)
-            extraToDraw.SetBorderSize(0)
-            extraToDraw.SetTextFont(42)
-            extraToDraw.SetTextSize(0.04)
-            extraToDraw.AddText(f"Tower: ({i_tower_x}, {i_tower_y})")
+            pave = create_pave_text(0.20, 0.75, 0.70, 0.90)
+            pave.AddText(f"Tower: ({i_tower_x}, {i_tower_y})")
+
             if hists["Cer"]:
                 colors.append(2 if isQuartz else 6)
                 hists_to_draw.append(hists["Cer"])
                 labels.append("Quartz Cer" if isQuartz else "Plastic Cer")
-                extraToDraw.AddText(
+                pave.AddText(
                     f"Cer: {channelNos['Cer']}, {GetMean(hists['Cer']):.2f} TS")
             if hists["Sci"]:
                 colors.append(4)
                 hists_to_draw.append(hists["Sci"])
                 labels.append("Sci")
-                extraToDraw.AddText(
+                pave.AddText(
                     f"Sci: {channelNos['Sci']}, {GetMean(hists['Sci']):.2f} TS")
-            # if isQuartz:
-            #    extraToDraw.AddText("Cer: Quartz")
-            # else:
-            #    extraToDraw.AddText("Cer: Plastic")
 
             if hists["Cer"] and hists["Sci"]:
-                # this is for combine cer and sci channels and compare
-                # so fill only when both histograms are present
                 if isQuartz:
                     hists_Cer_Quartz.append(hists["Cer"])
                 else:
@@ -309,95 +343,127 @@ def makeDRSPeakTSPlots():
                 hists_Cer.append(hists["Cer"])
                 hists_Sci.append(hists["Sci"])
 
-            DrawHistos(hists_to_draw, labels, TSmin, TSmax, "Peak TS", 1, None, "Counts",
-                       output_name,
-                       dology=False, drawoptions="HIST", mycolors=colors, addOverflow=False, addUnderflow=False, extraToDraw=extraToDraw,
-                       outdir=outdir_plots, run_number=run_number, extra_text="Quartz + Sci" if isQuartz else "Plastic + Sci")
-            plots.append(output_name + ".png")
+            style = PlotStyle(
+                dology=False,
+                drawoptions="HIST",
+                mycolors=colors,
+                addOverflow=False,
+                addUnderflow=False,
+                extra_text="Quartz + Sci" if isQuartz else "Plastic + Sci"
+            )
 
-    # summary plots
+            pm.plot_1d(
+                hists_to_draw,
+                output_name,
+                "Peak TS",
+                (TSmin, TSmax),
+                ylabel="Counts",
+                yrange=(1, None),
+                legends=labels,
+                style=style,
+                extraToDraw=pave
+            )
+
+    # Summary plots
     hist_Cer_Combined = LHistos2Hist(hists_Cer, "hist_DRSPeakTS_Cer_Combined")
     hist_Sci_Combined = LHistos2Hist(hists_Sci, "hist_DRSPeakTS_Sci_Combined")
     hist_Cer_Quartz_Combined = LHistos2Hist(
         hists_Cer_Quartz, "hist_DRSPeakTS_Cer_Quartz_Combined")
     hist_Cer_Plastic_Combined = LHistos2Hist(
         hists_Cer_Plastic, "hist_DRSPeakTS_Cer_Plastic_Combined")
-    output_name = "DRS_PeakTS_Combined"
-    extraToDraw = ROOT.TPaveText(0.50, 0.75, 0.90, 0.90, "NDC")
-    extraToDraw.SetTextAlign(11)
-    extraToDraw.SetFillColorAlpha(0, 0)
-    extraToDraw.SetBorderSize(0)
-    extraToDraw.SetTextFont(42)
-    extraToDraw.SetTextSize(0.04)
-    extraToDraw.AddText(
+
+    # Combined plot with stats
+    pave_combined = create_pave_text(0.50, 0.75, 0.90, 0.90)
+    pave_combined.AddText(
         f"Quartz: {GetMean(hist_Cer_Quartz_Combined):.2f} TS")
-    extraToDraw.AddText(
+    pave_combined.AddText(
         f"Plastic: {GetMean(hist_Cer_Plastic_Combined):.2f} TS")
-    extraToDraw.AddText(
-        f"Sci: {GetMean(hist_Sci_Combined):.2f} TS")
-    DrawHistos([hist_Cer_Quartz_Combined, hist_Cer_Plastic_Combined, hist_Sci_Combined], ["Cer Quartz", "Cer Plastic", "Sci"], TSmin, TSmax, "Peak TS", 1, None, "Counts",
-               output_name,
-               dology=False, drawoptions="HIST", mycolors=[2, 6, 4], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, run_number=run_number, legendPos=[0.25, 0.75, 0.40, 0.90], extraToDraw=extraToDraw)
-    plots.insert(0, output_name + ".png")
+    pave_combined.AddText(f"Sci: {GetMean(hist_Sci_Combined):.2f} TS")
 
-    output_name = "DRS_PeakTS_Cer_Combined"
-    DrawHistos([hist_Cer_Quartz_Combined, hist_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], TSCermin, TSCermax, "Peak TS", 0, 0.01, "Fraction",
-               output_name,
-               dology=False, drawoptions="HIST", mycolors=[2, 6], addOverflow=False, addUnderflow=False, donormalize=True,
-               outdir=outdir_plots, run_number=run_number, legendPos=[0.30, 0.80, 0.40, 0.90])
-    plots.insert(1, output_name + ".png")
+    pm.plot_1d(
+        [hist_Cer_Quartz_Combined, hist_Cer_Plastic_Combined, hist_Sci_Combined],
+        "DRS_PeakTS_Combined",
+        "Peak TS",
+        (TSmin, TSmax),
+        ylabel="Counts",
+        yrange=(1, None),
+        legends=["Cer Quartz", "Cer Plastic", "Sci"],
+        style=STYLE_CER_QUARTZ_PLASTIC_SCI,
+        extraToDraw=pave_combined,
+        prepend=True
+    )
 
-    plots.insert(2, "NEWLINE")
+    pm.plot_1d(
+        [hist_Cer_Quartz_Combined, hist_Cer_Plastic_Combined],
+        "DRS_PeakTS_Cer_Combined",
+        "Peak TS",
+        (TSCermin, TSCermax),
+        ylabel="Fraction",
+        yrange=(0, 0.01),
+        legends=["Cer Quartz", "Cer Plastic"],
+        style=PlotStyle(
+            dology=False,
+            drawoptions="HIST",
+            mycolors=[2, 6],
+            addOverflow=False,
+            addUnderflow=False,
+            legendPos=[0.30, 0.80, 0.40, 0.90],
+            donormalize=True
+        ),
+        prepend=True
+    )
 
-    output_html = f"{htmldir}/DRS/DRSPeakTS_relative_to_MCP.html"
-    generate_html(plots, outdir_plots, plots_per_row=4,
-                  output_html=output_html, title="DRS Peak Position",
-                  intro_text="Event-by-event DRS peak (channel-wise shower max) positions with respect to MCP for different towers.\n For now only the central DRS boards are included."
-                  )
+    pm.add_newline()
 
+    output_html = pm.generate_html(
+        "DRS/DRSPeakTS_relative_to_MCP.html",
+        plots_per_row=4,
+        title="DRS Peak Position",
+        intro_text="Event-by-event DRS peak (channel-wise shower max) positions with respect to MCP for different towers.\n For now only the central DRS boards are included."
+    )
+
+    # Save combined histograms
     outfile_name = f"{rootdir}/drspeakts_rel_us_combined.root"
     outfile = ROOT.TFile(outfile_name, "RECREATE")
     for h in [hist_Cer_Combined, hist_Sci_Combined, hist_Cer_Quartz_Combined, hist_Cer_Plastic_Combined]:
         h.SetDirectory(outfile)
         h.Write()
     outfile.Close()
+
     return output_html
 
 
-def makeDRSPeakTSCerVSSciPlots():
-    plots = []
-    hists = []
-    hists_Quartz = []
-    hists_Plastic = []
-    outdir_plots = f"{plotdir}/DRSPeakTSCerVSSci_rel_us"
+def makeDRSPeakTSCerVSSciPlots(pm: PlotManager):
+    """Generate DRS peak TS Cer vs Sci correlation plots using PlotManager."""
+    pm.reset_plots().set_output_dir("DRSPeakTSCerVSSci_rel_us")
     infile_name = f"{rootdir}/drspeakts_rel_us.root"
     infile = ROOT.TFile(infile_name, "READ")
 
-    # Create a dashed diagonal line from (0,0) to (1000,1000)
+    hists = []
+    hists_Quartz = []
+    hists_Plastic = []
+
+    # Diagonal reference line
     diagonal_line = ROOT.TLine(0, 0, 1000, 1000)
-    diagonal_line.SetLineStyle(2)  # 2 = dashed
+    diagonal_line.SetLineStyle(2)
     diagonal_line.SetLineWidth(1)
     diagonal_line.SetLineColor(ROOT.kRed)
-    extraToDraw = diagonal_line
 
     for _, DRSBoard in DRSBoards.items():
         if DRSBoard.board_no > 3:
             continue
+
         for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
             sTowerX = number_to_string(i_tower_x)
             sTowerY = number_to_string(i_tower_y)
 
-            isQuartz = False
-
             chan_cer = DRSBoard.get_channel_by_tower(
                 i_tower_x, i_tower_y, isCer=True)
-            if chan_cer and chan_cer.isQuartz:
-                isQuartz = True
+            isQuartz = chan_cer and chan_cer.isQuartz
 
             hist_name = f"hist_DRSPeakTS_Cer_VS_Sci_{sTowerX}_{sTowerY}"
             hist = infile.Get(hist_name)
-            output_name = hist_name[5:]
+            output_name = f"DRSPeakTS_Cer_VS_Sci_{sTowerX}_{sTowerY}"
             output_name += "_Quartz" if isQuartz else "_Plastic"
 
             if not hist:
@@ -411,85 +477,109 @@ def makeDRSPeakTSCerVSSciPlots():
             else:
                 hists_Plastic.append(hist)
 
-            ytitle = "Cer (Quartz)" if isQuartz else "Cer (Plastic)"
-            ytitle += " Peak TS"
+            ytitle = f"Cer ({'Quartz' if isQuartz else 'Plastic'}) Peak TS"
 
-            DrawHistos([hist], "", TSmin, TSmax, "Sci Peak TS", TSmin, TSmax, ytitle,
-                       output_name,
-                       dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=1e2, dologz=True,
-                       outdir=outdir_plots, addOverflow=False, run_number=run_number, extraToDraw=extraToDraw)
+            pm.plot_2d(
+                hist,
+                output_name,
+                "Sci Peak TS",
+                (TSmin, TSmax),
+                ytitle,
+                (TSmin, TSmax),
+                style=STYLE_2D_LOG,
+                extraToDraw=diagonal_line
+            )
 
-            plots.append(output_name + ".png")
-
-    # summary plots
+    # Summary plots
     hcombined = LHistos2Hist(hists, "hist_DRSPeakTS_Cer_VS_Sci_Combined")
-    output_name = "DRS_PeakTS_Cer_VS_Sci_Combined"
-    DrawHistos([hcombined], "", TSmin, TSmax, "Sci Peak TS", TSmin, TSmax, f"Cer Peak TS",
-               output_name,
-               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=None, dologz=True,
-               outdir=outdir_plots, addOverflow=False, run_number=run_number, extraToDraw=extraToDraw)
-    plots.insert(0, output_name + ".png")
+    pm.plot_2d(
+        hcombined,
+        "DRS_PeakTS_Cer_VS_Sci_Combined",
+        "Sci Peak TS",
+        (TSmin, TSmax),
+        "Cer Peak TS",
+        (TSmin, TSmax),
+        style=PlotStyle(dology=False, dologz=True, drawoptions="COLZ",
+                        addOverflow=False, zmin=1, zmax=None),
+        extraToDraw=diagonal_line,
+        prepend=True
+    )
 
     hcombined_Quartz = LHistos2Hist(
         hists_Quartz, "hist_DRSPeakTS_Cer_VS_Sci_Quartz_Combined")
-    output_name = "DRS_PeakTS_Cer_Quartz_VS_Sci_Combined"
-    DrawHistos([hcombined_Quartz], "", TSmin, TSmax, "Sci Peak TS", TSmin, TSmax, f"Cer (Quartz) Peak TS",
-               output_name,
-               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=None, dologz=True,
-               outdir=outdir_plots, addOverflow=False, run_number=run_number, extraToDraw=extraToDraw)
-    plots.insert(1, output_name + ".png")
+    pm.plot_2d(
+        hcombined_Quartz,
+        "DRS_PeakTS_Cer_Quartz_VS_Sci_Combined",
+        "Sci Peak TS",
+        (TSmin, TSmax),
+        "Cer (Quartz) Peak TS",
+        (TSmin, TSmax),
+        style=PlotStyle(dology=False, dologz=True, drawoptions="COLZ",
+                        addOverflow=False, zmin=1, zmax=None),
+        extraToDraw=diagonal_line,
+        prepend=True
+    )
 
     hcombined_Plastic = LHistos2Hist(
         hists_Plastic, "hist_DRSPeakTS_Cer_VS_Sci_Plastic_Combined")
-    output_name = "DRS_PeakTS_Cer_Plastic_VS_Sci_Combined"
-    DrawHistos([hcombined_Plastic], "", TSmin, TSmax, "Sci Peak TS", TSmin, TSmax, f"Cer (Plastic) Peak TS",
-               output_name,
-               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=None, dologz=True,
-               outdir=outdir_plots, addOverflow=False, run_number=run_number, extraToDraw=extraToDraw)
-    plots.insert(2, output_name + ".png")
+    pm.plot_2d(
+        hcombined_Plastic,
+        "DRS_PeakTS_Cer_Plastic_VS_Sci_Combined",
+        "Sci Peak TS",
+        (TSmin, TSmax),
+        "Cer (Plastic) Peak TS",
+        (TSmin, TSmax),
+        style=PlotStyle(dology=False, dologz=True, drawoptions="COLZ",
+                        addOverflow=False, zmin=1, zmax=None),
+        extraToDraw=diagonal_line,
+        prepend=True
+    )
 
-    # average of quartz vs average of plastic
+    # Quartz vs Plastic average
     hcombined_Quartz_vs_Plastic = infile.Get(
         "hist_DRSPeakTS_Cer_Quartz_VS_Cer_Plastic_Avg")
-    output_name = "DRS_PeakTS_Cer_Quartz_VS_Cer_Plastic_Avg"
-    DrawHistos([hcombined_Quartz_vs_Plastic], "", TSmin, TSmax, "Cer Plastic Peak TS", TSmin, TSmax, f"Cer Quartz Peak TS",
-               output_name,
-               dology=False, drawoptions="COLZ", doth2=True, zmin=1, zmax=None, dologz=True,
-               outdir=outdir_plots, addOverflow=False, run_number=run_number, extraToDraw=extraToDraw)
-    plots.insert(3, output_name + ".png")
+    if hcombined_Quartz_vs_Plastic:
+        pm.plot_2d(
+            hcombined_Quartz_vs_Plastic,
+            "DRS_PeakTS_Cer_Quartz_VS_Cer_Plastic_Avg",
+            "Cer Plastic Peak TS",
+            (TSmin, TSmax),
+            "Cer Quartz Peak TS",
+            (TSmin, TSmax),
+            style=PlotStyle(dology=False, dologz=True, drawoptions="COLZ",
+                            addOverflow=False, zmin=1, zmax=None),
+            extraToDraw=diagonal_line,
+            prepend=True
+        )
 
-    print("quartz:", len(hists_Quartz), "plastic:", len(hists_Plastic))
+    print(f"quartz: {len(hists_Quartz)}, plastic: {len(hists_Plastic)}")
 
-    output_html = f"{htmldir}/DRS/DRSPeakTS_Cer_VS_Sci_relative_to_MCP.html"
-    generate_html(plots, outdir_plots, plots_per_row=4,
-                  output_html=output_html)
-
-    return output_html
+    return pm.generate_html("DRS/DRSPeakTS_Cer_VS_Sci_relative_to_MCP.html", plots_per_row=4)
 
 
-def makeDRSvsTSProfPlots():
-    plots = []
-    outdir_plots = f"{plotdir}/DRS_vs_ts_calibrated"
+def makeDRSvsTSProfPlots(pm: PlotManager):
+    """Generate profiled DRS ADC vs calibrated TS plots using PlotManager."""
+    pm.reset_plots().set_output_dir("DRS_vs_ts_calibrated")
     infile_name = f"{rootdir}/drs_vs_ts_calibrated.root"
     infile = ROOT.TFile(infile_name, "READ")
+
     hprofs_Cer_Quartz = []
     hprofs_Cer_Plastic = []
     hprofs_Cer = []
     hprofs_Sci = []
     xtitle = "TS"
     ytitle = "Average DRS ADC"
+
     for _, DRSBoard in DRSBoards.items():
         board_no = DRSBoard.board_no
-        # if board_no > 3:
-        #    continue
         for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
             sTowerX = number_to_string(i_tower_x)
             sTowerY = number_to_string(i_tower_y)
 
             hprofs = {}
             isQuartz = False
-            colors = [6, 4]
             channelNos = {}
+
             for var in ["Cer", "Sci"]:
                 chan = DRSBoard.get_channel_by_tower(
                     i_tower_x, i_tower_y, isCer=(var == "Cer"))
@@ -497,7 +587,6 @@ def makeDRSvsTSProfPlots():
                 hprof = infile.Get(hprof_name)
 
                 if var == "Cer" and chan.isQuartz:
-                    colors = [2, 4]
                     isQuartz = True
 
                 if not hprof:
@@ -506,38 +595,31 @@ def makeDRSvsTSProfPlots():
                     hprofs[var] = None
                 else:
                     hprofs[var] = hprof.ProjectionX()
-                    channelNos[var] = "(" + str(chan.board_no) + "," + \
-                        str(chan.group_no) + "," + str(chan.channel_no) + ")"
+                    channelNos[var] = f"({chan.board_no},{chan.group_no},{chan.channel_no})"
 
-            # if not hprofs["Cer"] or not hprofs["Sci"]:
             if not hprofs["Cer"] and not hprofs["Sci"]:
                 print(
-                    f"Warning: Histograms for Cer or Sci not found for Board {board_no}, Tower ({i_tower_x}, {i_tower_y})")
+                    f"Warning: No histograms found for Board {board_no}, Tower ({i_tower_x}, {i_tower_y})")
                 continue
 
-            extraToDraw = ROOT.TPaveText(0.20, 0.75, 0.70, 0.90, "NDC")
-            extraToDraw.SetTextAlign(11)
-            extraToDraw.SetFillColorAlpha(0, 0)
-            extraToDraw.SetBorderSize(0)
-            extraToDraw.SetTextFont(42)
-            extraToDraw.SetTextSize(0.04)
-            extraToDraw.AddText(f"Tower: ({i_tower_x}, {i_tower_y})")
+            # Build plot components
+            pave = create_pave_text(0.20, 0.75, 0.70, 0.90)
+            pave.AddText(f"Tower: ({i_tower_x}, {i_tower_y})")
 
             colors = []
             hists_to_draw = []
             labels = []
+
             if hprofs["Cer"]:
                 colors.append(2 if isQuartz else 6)
                 hists_to_draw.append(hprofs["Cer"])
                 labels.append("Quartz Cer" if isQuartz else "Plastic Cer")
-                extraToDraw.AddText(
-                    f"Cer: {channelNos['Cer']}")
+                pave.AddText(f"Cer: {channelNos['Cer']}")
             if hprofs["Sci"]:
                 colors.append(4)
                 hists_to_draw.append(hprofs["Sci"])
                 labels.append("Sci")
-                extraToDraw.AddText(
-                    f"Sci: {channelNos['Sci']}")
+                pave.AddText(f"Sci: {channelNos['Sci']}")
 
             if hprofs["Cer"] and hprofs["Sci"]:
                 if isQuartz:
@@ -549,13 +631,25 @@ def makeDRSvsTSProfPlots():
 
             output_name = f"prof_DRS_vs_TS_{sTowerX}_{sTowerY}"
 
-            DrawHistos(hists_to_draw, labels, -200, 100, xtitle, -10, None, ytitle,
-                       output_name,
-                       dology=False, drawoptions="HIST", mycolors=colors, addOverflow=False, addUnderflow=False,
-                       outdir=outdir_plots, run_number=run_number, extraToDraw=extraToDraw)
-            plots.append(output_name + ".png")
+            pm.plot_1d(
+                hists_to_draw,
+                output_name,
+                xtitle,
+                (-200, 100),
+                ylabel=ytitle,
+                yrange=(-10, None),
+                legends=labels,
+                style=PlotStyle(
+                    dology=False,
+                    drawoptions="HIST",
+                    mycolors=colors,
+                    addOverflow=False,
+                    addUnderflow=False
+                ),
+                extraToDraw=pave
+            )
 
-    # summary plots
+    # Summary plots
     hprof_Cer_Combined = LHistos2Hist(
         hprofs_Cer, "prof_DRS_vs_TS_Cer_Combined")
     hprof_Sci_Combined = LHistos2Hist(
@@ -564,28 +658,44 @@ def makeDRSvsTSProfPlots():
         hprofs_Cer_Quartz, "prof_DRS_vs_TS_Cer_Quartz_Combined")
     hprof_Cer_Plastic_Combined = LHistos2Hist(
         hprofs_Cer_Plastic, "prof_DRS_vs_TS_Cer_Plastic_Combined")
-    output_name = "DRS_vs_TS_Cer_Sci_Combined"
+
     hprof_Cer_Quartz_Combined.GetXaxis().SetRangeUser(-80, -55)
-    DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined, hprof_Sci_Combined], ["Cer Quartz", "Cer Plastic", "Sci"], -75, 0, xtitle, 0, None, ytitle,
-               output_name,
-               dology=False, drawoptions="HIST", mycolors=[2, 6, 4], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, run_number=run_number, legendPos=[0.25, 0.75, 0.40, 0.90])
-    plots.insert(0, output_name + ".png")
-    output_name = "DRS_vs_TS_Cer_Combined"
-    DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], -80, -50, xtitle, 0, None, ytitle,
-               output_name,
-               dology=False, drawoptions=["hist,C", "hist,C"], mycolors=[2, 6], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, run_number=run_number, legendPos=[0.30, 0.80, 0.40, 0.90], legendoptions=["L", "L"])
-    plots.insert(1, output_name + ".png")
 
-    plots.insert(2, "NEWLINE")
+    pm.plot_1d(
+        [hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined, hprof_Sci_Combined],
+        "DRS_vs_TS_Cer_Sci_Combined",
+        xtitle,
+        (-75, 0),
+        ylabel=ytitle,
+        yrange=(0, None),
+        legends=["Cer Quartz", "Cer Plastic", "Sci"],
+        style=STYLE_CER_QUARTZ_PLASTIC_SCI,
+        prepend=True
+    )
 
-    output_html = f"{htmldir}/DRS/DRS_VS_TS_relative_to_MCP.html"
-    generate_html(plots, outdir_plots, plots_per_row=4,
-                  output_html=output_html, title="Profiled DRS ADC vs TS",
-                  intro_text="Average DRS ADC vs calibrated time slice (TS) for Cer and Sci channels. For each event, the time slice is measured relative to the MCP signal.")
+    pm.plot_1d(
+        [hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined],
+        "DRS_vs_TS_Cer_Combined",
+        xtitle,
+        (-80, -50),
+        ylabel=ytitle,
+        yrange=(0, None),
+        legends=["Cer Quartz", "Cer Plastic"],
+        style=STYLE_CER_QUARTZ_PLASTIC,
+        legendoptions=["L", "L"],
+        prepend=True
+    )
 
-    # save combined histograms to root file
+    pm.add_newline()
+
+    output_html = pm.generate_html(
+        "DRS/DRS_VS_TS_relative_to_MCP.html",
+        plots_per_row=4,
+        title="Profiled DRS ADC vs TS",
+        intro_text="Average DRS ADC vs calibrated time slice (TS) for Cer and Sci channels. For each event, the time slice is measured relative to the MCP signal."
+    )
+
+    # Save combined histograms
     outfile_name = f"{rootdir}/drs_vs_ts_calibrated_combined.root"
     outfile = ROOT.TFile(outfile_name, "RECREATE")
     for h in [hprof_Cer_Combined, hprof_Sci_Combined, hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined]:
@@ -596,24 +706,25 @@ def makeDRSvsTSProfPlots():
     return output_html
 
 
-def makeDRSvsZProfPlots():
-    plots = []
-    outdir_plots = f"{plotdir}/DRS_vs_ts_calibrated"
+def makeDRSvsZProfPlots(pm: PlotManager):
+    """Generate profiled DRS ADC vs measured Z plots using PlotManager."""
+    pm.reset_plots().set_output_dir("DRS_vs_ts_calibrated")
     infile_name = f"{rootdir}/drs_vs_ts_calibrated.root"
     infile = ROOT.TFile(infile_name, "READ")
+
     hprofs_Cer_Quartz = []
     hprofs_Cer_Plastic = []
+
     for _, DRSBoard in DRSBoards.items():
         board_no = DRSBoard.board_no
         if board_no > 3:
             continue
+
         for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
             sTowerX = number_to_string(i_tower_x)
             sTowerY = number_to_string(i_tower_y)
 
-            hprofs = {}
             isQuartz = False
-            colors = [6, 4]
             for var in ["Cer"]:
                 chan = DRSBoard.get_channel_by_tower(
                     i_tower_x, i_tower_y, isCer=(var == "Cer"))
@@ -621,89 +732,115 @@ def makeDRSvsZProfPlots():
                 hprof = infile.Get(hprof_name)
 
                 if var == "Cer" and chan.isQuartz:
-                    colors = [2, 4]
                     isQuartz = True
 
                 if not hprof:
                     print(
                         f"Warning: Histogram {hprof_name} not found in {infile_name}")
-                    hprofs[var] = None
+                    continue
+
+                hprof_proj = hprof.ProjectionX()
+
+                if isQuartz:
+                    hprofs_Cer_Quartz.append(hprof_proj)
                 else:
-                    hprofs[var] = hprof.ProjectionX()
+                    hprofs_Cer_Plastic.append(hprof_proj)
 
-            if not hprofs["Cer"]:
-                print(
-                    f"Warning: Histograms for Cer not found for Board {board_no}, Tower ({i_tower_x}, {i_tower_y})")
-                continue
+                output_name = f"prof_DRS_vs_Z_{sTowerX}_{sTowerY}"
+                colors = [2, 4] if isQuartz else [6, 4]
 
-            if isQuartz:
-                hprofs_Cer_Quartz.append(hprofs["Cer"])
-            else:
-                hprofs_Cer_Plastic.append(hprofs["Cer"])
+                pm.plot_1d(
+                    [hprof_proj],
+                    output_name,
+                    "Measured Z [cm]",
+                    (-100, 300),
+                    ylabel="DRS ADC",
+                    yrange=(-10, hprof_proj.GetMaximum() * 1.5),
+                    legends=["Cer"],
+                    style=PlotStyle(
+                        dology=False,
+                        drawoptions="HIST",
+                        mycolors=colors,
+                        addOverflow=False,
+                        addUnderflow=False
+                    )
+                )
 
-            output_name = f"prof_DRS_vs_Z_{sTowerX}_{sTowerY}"
-
-            DrawHistos([hprofs["Cer"]], ["Cer"], -100, 300, "Measured Z [cm]", -10, hprofs["Cer"].GetMaximum() * 1.5, "DRS ADC",
-                       output_name,
-                       dology=False, drawoptions="HIST", mycolors=colors, addOverflow=False, addUnderflow=False,
-                       outdir=outdir_plots, run_number=run_number)
-            plots.append(output_name + ".png")
-
-    # summary plots
+    # Summary plots
     hprof_Cer_Quartz_Combined = LHistos2Hist(
         hprofs_Cer_Quartz, "prof_DRS_vs_Z_Cer_Quartz_Combined")
     hprof_Cer_Plastic_Combined = LHistos2Hist(
         hprofs_Cer_Plastic, "prof_DRS_vs_Z_Cer_Plastic_Combined")
-    output_name = "DRS_vs_Z_Cer_Combined"
-    DrawHistos([hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined], ["Cer Quartz", "Cer Plastic"], -10, 200, "Measured Z", 0, None, "DRS ADC",
-               output_name,
-               dology=False, drawoptions=["C", "C"], mycolors=[2, 6], addOverflow=False, addUnderflow=False,
-               outdir=outdir_plots, run_number=run_number, legendPos=[0.55, 0.80, 0.90, 0.90], legendoptions=["P", "P"])
-    plots.insert(0, output_name + ".png")
-    plots.insert(1, "NEWLINE")
 
-    output_html = f"{htmldir}/DRS/DRS_VS_Z_relative_to_MCP.html"
-    generate_html(plots, outdir_plots, plots_per_row=4,
-                  output_html=output_html)
-    return output_html
+    pm.plot_1d(
+        [hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined],
+        "DRS_vs_Z_Cer_Combined",
+        "Measured Z",
+        (-10, 200),
+        ylabel="DRS ADC",
+        yrange=(0, None),
+        legends=["Cer Quartz", "Cer Plastic"],
+        style=PlotStyle(
+            dology=False,
+            drawoptions=["C", "C"],
+            mycolors=[2, 6],
+            addOverflow=False,
+            addUnderflow=False,
+            legendPos=[0.55, 0.80, 0.90, 0.90]
+        ),
+        legendoptions=["P", "P"],
+        prepend=True
+    )
+    pm.add_newline()
+
+    return pm.generate_html("DRS/DRS_VS_Z_relative_to_MCP.html", plots_per_row=4)
 
 
-def makeDRSvsTS2DPlots():
-    plots = []
-    outdir_plots = f"{plotdir}/DRS_vs_ts_calibrated"
+def makeDRSvsTS2DPlots(pm: PlotManager):
+    """Generate 2D DRS ADC vs calibrated TS plots using PlotManager."""
+    pm.reset_plots().set_output_dir("DRS_vs_ts_calibrated")
     infile_name = f"{rootdir}/drs_vs_ts_calibrated.root"
     infile = ROOT.TFile(infile_name, "READ")
+
     for _, DRSBoard in DRSBoards.items():
         board_no = DRSBoard.board_no
         if board_no > 3:
             continue
+
         for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
             sTowerX = number_to_string(i_tower_x)
             sTowerY = number_to_string(i_tower_y)
 
             for var in ["Cer", "Sci"]:
-                chan = DRSBoard.get_channel_by_tower(
-                    i_tower_x, i_tower_y, isCer=(var == "Cer"))
                 hist2d_name = f"hist2d_DRS_vs_TS_{var}_{sTowerX}_{sTowerY}"
                 hist2d = infile.Get(hist2d_name)
-
                 output_name = f"hist2d_DRS_vs_TS_{sTowerX}_{sTowerY}_{var}"
-                plots.append(output_name + ".png")
 
                 if not hist2d:
                     print(
                         f"Warning: Histogram {hist2d_name} not found in {infile_name}")
+                    pm.add_plot(output_name)  # Placeholder
                     continue
 
-                DrawHistos([hist2d], "", -200, 100, "Calibrated TS", -200, 1000, "DRS ADC",
-                           output_name,
-                           dology=False, addOverflow=False, addUnderflow=False, doth2=True, drawoptions="COLZ", zmin=1, zmax=1e4, dologz=True,
-                           outdir=outdir_plots, run_number=run_number)
+                pm.plot_2d(
+                    hist2d,
+                    output_name,
+                    "Calibrated TS",
+                    (-200, 100),
+                    "DRS ADC",
+                    (-200, 1000),
+                    style=PlotStyle(
+                        dology=False,
+                        dologz=True,
+                        drawoptions="COLZ",
+                        addOverflow=False,
+                        addUnderflow=False,
+                        zmin=1,
+                        zmax=1e4
+                    )
+                )
 
-    output_html = f"{htmldir}/DRS/DRS_VS_TS_relative_to_MCP_2D.html"
-    generate_html(plots, outdir_plots, plots_per_row=4,
-                  output_html=output_html)
-    return output_html
+    return pm.generate_html("DRS/DRS_VS_TS_relative_to_MCP_2D.html", plots_per_row=4)
 
 
 def main():
@@ -728,26 +865,14 @@ def main():
         rdf_prefilterMCP2 = rdf_prefilterMCP1.Define(
             "MCP0_DeltaRelPeakTS", f"{map_mcp_channels['DS'][0]}_RelPeakTS - {map_mcp_channels['US'][0]}_RelPeakTS")
 
-        # requirement on Downstream MCP and also the delta between US and DS
-        # so that MCP timing is reliable (this is probably too tight; can be relaxed later)
-        # condition = f"{map_mcp_channels['DS'][0]}_RelPeakTS > -350 && {map_mcp_channels['DS'][0]}_RelPeakTS < -100"
-        # condition += f" && {map_mcp_channels['DS'][0]}_PeakTS > 500 && {map_mcp_channels['DS'][0]}_PeakTS < 600"
-        # condition += f" && {map_mcp_channels['DS'][0]}_Peak < -300.0"
-        # condition += f" && MCP0_DeltaRelPeakTS > 0 && MCP0_DeltaRelPeakTS < 6"
-        # rdf = rdf_prefilterMCP2.Filter(condition,
-        #                               "Filter on MCP DS channel 0 Peak TS and DeltaRelPeakTS")
         rdf = rdf_prefilterMCP2
-        # rdf_old = rdf
-        # event_ns = list(rdf_old.Take["unsigned int"]("event_n").GetValue())
-        # print("event numbers in this run:", event_ns)
-        # rdf = rdf_old.Filter(
-        #    f"event_n == {event_ns[0]}", "Select first event only for DRS timing checks")
 
         hists1d_DRSPeakTS_Cer, hists1d_DRSPeakTS_Sci, hists2d_DRSPeakTS_Cer_VS_Sci = checkDRSPeakTS(
             rdf)
         hprofs_DRS_VS_TS, hists2d_DRS_VS_TS, hprofs_DRS_VS_Z, rdfs_filtered = checkDRSvsCalibrationTS(
             rdf)
 
+        # Save DRS Peak TS histograms
         outfile_DRSPeakTS = ROOT.TFile(
             f"{rootdir}/drspeakts_rel_us.root", "RECREATE")
         for hist in hists1d_DRSPeakTS_Cer:
@@ -761,6 +886,7 @@ def main():
             hist.Write()
         outfile_DRSPeakTS.Close()
 
+        # Save DRS vs TS histograms
         outfile_DRS_VS_TS = ROOT.TFile(
             f"{rootdir}/drs_vs_ts_calibrated.root", "RECREATE")
         for hprof in hprofs_DRS_VS_TS:
@@ -775,18 +901,21 @@ def main():
         outfile_DRS_VS_TS.Close()
 
     if makePlots:
-        output_html_DRSPeakTS = makeDRSPeakTSPlots()
-        output_html_DRSPeakTSCerVSSci = makeDRSPeakTSCerVSSciPlots()
-        output_html_DRS_VS_TS_Prof = makeDRSvsTSProfPlots()
-        # output_html_DRS_VS_TS_2D = makeDRSvsTS2DPlots()
-        output_html_DRS_VS_Z_Prof = makeDRSvsZProfPlots()
-        print(f"DRS Peak TS plots saved to {output_html_DRSPeakTS}")
-        print(
-            f"DRS Peak TS Cer VS Sci plots saved to {output_html_DRSPeakTSCerVSSci}")
-        print(
-            f"DRS VS TS profiled plots saved to {output_html_DRS_VS_TS_Prof}")
-        # print(f"DRS VS TS 2D plots saved to {output_html_DRS_VS_TS_2D}")
-        print(f"DRS VS Z profiled plots saved to {output_html_DRS_VS_Z_Prof}")
+        with PlotManager(rootdir, plotdir, htmldir, run_number) as pm:
+            output_html_DRSPeakTS = makeDRSPeakTSPlots(pm)
+            output_html_DRSPeakTSCerVSSci = makeDRSPeakTSCerVSSciPlots(pm)
+            output_html_DRS_VS_TS_Prof = makeDRSvsTSProfPlots(pm)
+            # output_html_DRS_VS_TS_2D = makeDRSvsTS2DPlots(pm)
+            output_html_DRS_VS_Z_Prof = makeDRSvsZProfPlots(pm)
+
+            print(f"DRS Peak TS plots saved to {output_html_DRSPeakTS}")
+            print(
+                f"DRS Peak TS Cer VS Sci plots saved to {output_html_DRSPeakTSCerVSSci}")
+            print(
+                f"DRS VS TS profiled plots saved to {output_html_DRS_VS_TS_Prof}")
+            # print(f"DRS VS TS 2D plots saved to {output_html_DRS_VS_TS_2D}")
+            print(
+                f"DRS VS Z profiled plots saved to {output_html_DRS_VS_Z_Prof}")
 
 
 if __name__ == "__main__":
