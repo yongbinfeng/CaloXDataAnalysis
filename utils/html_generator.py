@@ -5,11 +5,6 @@ from zoneinfo import ZoneInfo
 
 
 def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.html", title="PNG Plot Viewer", intro_text=""):
-    """
-    Generate a compact HTML file to view PNG plots.
-    :param title: Configurable main heading for the page.
-    :param intro_text: Optional text displayed in a box below the header. Supports **bold**.
-    """
     html_dir = os.path.dirname(os.path.abspath(output_html))
     real_png_files = [f for f in png_files if f != "NEWLINE"]
     png_paths = [os.path.join(png_dir, f) for f in real_png_files]
@@ -19,9 +14,35 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
     timestamp = datetime.now(ZoneInfo("Europe/Zurich")
                              ).strftime("%B %d, %Y, %I:%M %p %Z")
 
-    # Format the intro text
-    formatted_intro = intro_text.replace("\n", "<br>")
-    formatted_intro = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', formatted_intro)
+    # --- Intro Text Processing (Bold and Bullets) ---
+    # 1. Bold text: **word** -> <b>word</b>
+    processed_intro = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', intro_text)
+
+    # 2. Bullet points: Lines starting with * or -
+    lines = processed_intro.split('\n')
+    formatted_lines = []
+    in_list = False
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(('* ', '- ')):
+            if not in_list:
+                formatted_lines.append(
+                    '<ul style="margin: 5px 0; padding-left: 20px;">')
+                in_list = True
+            # Remove the marker (* or -) and wrap in <li>
+            content = stripped[2:].strip()
+            formatted_lines.append(f'<li>{content}</li>')
+        else:
+            if in_list:
+                formatted_lines.append('</ul>')
+                in_list = False
+            formatted_lines.append(line + "<br>")
+
+    if in_list:
+        formatted_lines.append('</ul>')
+
+    formatted_intro = "".join(formatted_lines)
 
     html_header = f"""<!DOCTYPE html>
 <html>
@@ -29,98 +50,25 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
   <meta charset="UTF-8">
   <title>{title}</title>
   <style>
-    body {{
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      padding: 10px 20px;
-      margin: 0;
-      line-height: 1.4;
-      color: #333;
-    }}
-    .top-bar {{
-      display: flex;
-      align-items: center;
-      gap: 30px; /* Space between title and filters */
-      padding: 10px 0;
-      border-bottom: 1px solid #eee;
-      margin-bottom: 15px;
-      position: sticky;
-      top: 0;
-      background: white;
-      z-index: 100;
-    }}
-    .title-group {{
-      display: flex;
-      flex-direction: column;
-      min-width: fit-content;
-    }}
-    h1 {{
-      font-size: 20px;
-      margin: 0;
-      color: #1a1a1a;
-      white-space: nowrap;
-    }}
-    .timestamp {{
-      font-size: 11px;
-      color: #888;
-      white-space: nowrap;
-    }}
-    .controls {{
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }}
-    input[type="text"] {{
-      font-size: 14px;
-      padding: 4px 10px;
-      width: 250px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }}
-    .intro-text {{
-      background: #f8f9fa;
-      border-left: 4px solid #007bff;
-      padding: 10px 16px;
-      margin-bottom: 15px;
-      font-size: 14px;
-      border-radius: 0 4px 4px 0;
-    }}
-    .grid {{
-      display: grid;
-      grid-template-columns: repeat({plots_per_row}, 1fr);
-      gap: 15px;
-    }}
-    .plot {{
-      border: 1px solid #e1e4e8;
-      padding: 8px;
-      text-align: center;
-      border-radius: 6px;
-      background: #fff;
-    }}
-    .filename {{
-      font-weight: 600;
-      font-size: 12px;
-      margin-bottom: 8px;
-      word-break: break-all;
-      color: #444;
-    }}
-    img {{
-      max-width: 100%;
-      height: auto;
-      border-radius: 2px;
-    }}
-    button {{
-      padding: 4px 12px;
-      cursor: pointer;
-      font-size: 13px;
-    }}
+    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 10px 20px; margin: 0; line-height: 1.4; color: #333; }}
+    .top-bar {{ display: flex; align-items: center; gap: 30px; padding: 10px 0; border-bottom: 1px solid #eee; margin-bottom: 15px; position: sticky; top: 0; background: white; z-index: 100; }}
+    .title-group {{ display: flex; flex-direction: column; min-width: fit-content; }}
+    h1 {{ font-size: 20px; margin: 0; color: #1a1a1a; white-space: nowrap; }}
+    .timestamp {{ font-size: 11px; color: #888; white-space: nowrap; }}
+    .controls {{ display: flex; align-items: center; gap: 12px; }}
+    input[type="text"] {{ font-size: 14px; padding: 4px 10px; width: 250px; border: 1px solid #ccc; border-radius: 4px; }}
+    .intro-text {{ background: #f8f9fa; border-left: 4px solid #007bff; padding: 10px 16px; margin-bottom: 15px; font-size: 14px; border-radius: 0 4px 4px 0; }}
+    .intro-text li {{ margin-bottom: 4px; }}
+    .grid {{ display: grid; grid-template-columns: repeat({plots_per_row}, 1fr); gap: 15px; }}
+    .plot {{ border: 1px solid #e1e4e8; padding: 8px; text-align: center; border-radius: 6px; background: #fff; }}
+    .filename {{ font-weight: 600; font-size: 12px; margin-bottom: 8px; word-break: break-all; color: #444; }}
+    img {{ max-width: 100%; height: auto; border-radius: 2px; }}
+    button {{ padding: 4px 12px; cursor: pointer; font-size: 13px; }}
     @media (max-width: 1100px) {{ .grid {{ grid-template-columns: repeat(2, 1fr); }} }}
-    @media (max-width: 800px) {{ 
-      .top-bar {{ flex-direction: column; align-items: flex-start; gap: 10px; }}
-    }}
+    @media (max-width: 800px) {{ .top-bar {{ flex-direction: column; align-items: flex-start; gap: 10px; }} }}
   </style>
 </head>
 <body>
-
   <div class="top-bar">
     <div class="title-group">
       <h1>{title}</h1>
@@ -133,9 +81,7 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
       <button onclick="clearFilter()">Clear</button>
     </div>
   </div>
-
   {f'<div class="intro-text">{formatted_intro}</div>' if intro_text else ''}
-
   <div id="plotContainer">
 """
 
@@ -189,8 +135,7 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
         let match = false;
         if (useRegex) {
           try {
-            const escaped = input.replace(/[-\\/\\^$+?.()|[\\]{{}}]/g, '\\\\$&').replace(/\\*/g, '.*').replace(/\\?/g, '.');
-            const regex = new RegExp(escaped, caseSensitive ? "" : "i");
+            const regex = new RegExp(input, caseSensitive ? "" : "i");
             match = regex.test(name);
           } catch (e) { match = false; }
         } else {
@@ -216,9 +161,7 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
 </body>
 </html>
 """
-
-    os.makedirs(os.path.dirname(output_html), exist_ok=True)
+    os.makedirs(os.path.dirname(output_html) or '.', exist_ok=True)
     with open(output_html, "w") as f:
         f.write(html_header + html_body + html_footer)
-
     return os.path.abspath(output_html)

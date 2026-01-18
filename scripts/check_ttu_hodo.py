@@ -1,11 +1,8 @@
 import ROOT
-from collections import OrderedDict
 from plotting.my_function import DrawHistos
-from channels.channel_map import build_hodo_pos_channels, get_service_drs_channels
 from utils.html_generator import generate_html
 from core.analysis_manager import CaloXAnalysisManager
-from configs.plot_config import getServiceDRSProcessedInfoRanges
-from configs.selection_config import get_service_drs_cut
+from configs.plot_config import get_ttu_hodo_ranges
 from utils.parser import get_args
 from utils.plot_helper import save_hists_to_file
 from utils.root_setup import setup_root
@@ -25,6 +22,8 @@ analysis = (CaloXAnalysisManager(args)
 paths = analysis.paths
 rdf_org = analysis.get_rdf()
 
+hodo_min, hodo_max, hodo_nbins = get_ttu_hodo_ranges()
+
 
 def makeTTUHodoHits(rdf, suffix=""):
     h_nhit_x = rdf.Histo1D(
@@ -38,16 +37,16 @@ def makeTTUHodoHits(rdf, suffix=""):
     # hit position
     h_x_pos = rdf.Histo1D(
         (f"h_x_pos_{suffix}", "Hodo X Position;X Channel;Entries",
-         64, -0.5, 63.5),
+         hodo_nbins, hodo_min, hodo_max),
         "TTU_Hodo_X")
     h_y_pos = rdf.Histo1D(
         (f"h_y_pos_{suffix}", "Hodo Y Position;Y Channel;Entries",
-         64, -0.5, 63.5),
+         hodo_nbins, hodo_min, hodo_max),
         "TTU_Hodo_Y")
     h_xy_pos = rdf.Histo2D(
         (f"h_xy_pos_{suffix}", "Hodo XY Position;X Channel;Y Channel;Entries",
-         64, -0.5, 63.5,
-         64, -0.5, 63.5),
+         hodo_nbins, hodo_min, hodo_max,
+         hodo_nbins, hodo_min, hodo_max),
         "TTU_Hodo_X",
         "TTU_Hodo_Y")
 
@@ -90,7 +89,7 @@ def plotTTUHodoHits():
         h_y_pos = infile.Get(f"h_y_pos_{suffix}")
         DrawHistos(
             [h_x_pos, h_y_pos], [
-                'X', 'Y'], -0.5, 63.5, f"Hit Position ({suffix})", 1, None, "Events",
+                'X', 'Y'], hodo_min, hodo_max, f"Hit Position ({suffix}) [cm]", 1, None, "Events",
             outputname=f"ttuhodo_hitpos_{suffix}", outdir=outdir,
             mycolors=[1, 2], drawashist=True, run_number=run_number, addOverflow=True, addUnderflow=True)
         plots.append(f'ttuhodo_hitpos_{suffix}.png')
@@ -98,7 +97,7 @@ def plotTTUHodoHits():
         # 2D hit position
         h_xy_pos = infile.Get(f"h_xy_pos_{suffix}")
         DrawHistos(
-            [h_xy_pos], [], -0.5, 63.5, "Hodo X", -0.5, 63.5, "Hodo Y", outputname=f"ttuhodo_hitpos_xy_{suffix}", outdir=outdir,
+            [h_xy_pos], [], hodo_min, hodo_max, "Hodo X [cm]", hodo_min, hodo_max, "Hodo Y [cm]", outputname=f"ttuhodo_hitpos_xy_{suffix}", outdir=outdir,
             drawoptions="COLz", zmin=1, zmax=None, dologz=True,
             dology=False, run_number=run_number, addOverflow=True, doth2=True)
         plots.append(f'ttuhodo_hitpos_xy_{suffix}.png')

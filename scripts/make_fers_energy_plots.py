@@ -2,7 +2,7 @@ import os
 from collections import OrderedDict
 import ROOT
 from plotting.my_function import DrawHistos, LHistos2Hist
-from configs.plot_config import getRangesForFERSEnergySums, getBoardEnergyFitParameters
+from configs.plot_config import getRangesForFERSEnergySums, getBoardEnergyFitParameters, get_ttu_hodo_ranges
 from core.analysis_manager import CaloXAnalysisManager
 from utils.colors import colors
 from utils.fitter import eventFit
@@ -20,7 +20,7 @@ setup_root(n_threads=10, batch_mode=True, load_functions=True)
 analysis = (CaloXAnalysisManager(args)
             .prepare()                   # Baseline and vectorization
             .calibrate_fers()            # Pedestals, mixing, and response
-            .apply_hole_veto(flag_only=False)
+            .apply_hole_veto(flag_only=True)
             )
 
 GainCalibs = [("HG", False), ("LG", False), ("Mix", True)]
@@ -233,6 +233,8 @@ def makeFERSDRHists(rdf, suffix=""):
 def makeFERSEnergyWeightedCenterHists(rdf, suffix=""):
     hists_FERS_EnergyWeightedCenter = []
     for gain, calib in GainCalibs:
+        if gain != "Mix":
+            continue
         for cat in ["cer", "sci"]:
             # per-event
             varname_X = fersboards.get_energy_weighted_center_name(
@@ -263,13 +265,27 @@ def makeFERSEnergyWeightedCenterHists(rdf, suffix=""):
                 varname_Y
             )
             hists_FERS_EnergyWeightedCenter.append(hist2D)
+            hist2D_energy = rdf.Histo2D((
+                f"hist_{varname_Y}_VS_{varname_X}_WithEnergy_{suffix}",
+                f"hist_{varname_Y}_VS_{varname_X}_WithEnergy_{suffix}",
+                300, -15, 15,
+                300, -15, 15),
+                varname_X,
+                varname_Y,
+                fersboards.get_energy_sum_name(
+                    gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib)
+            )
+            hists_FERS_EnergyWeightedCenter.append(hist2D_energy)
 
     return hists_FERS_EnergyWeightedCenter
 
 
 def makeFERSEWCvsHodoHists(rdf, suffix=""):
     hists_EWC_vs_Hodo = []
+    hodo_min, hodo_max, hodo_nbins = get_ttu_hodo_ranges()
     for gain, calib in GainCalibs:
+        if gain != "Mix":
+            continue
         for cat in ["cer", "sci"]:
             # per-event
             varname_X = fersboards.get_energy_weighted_center_name(
@@ -281,7 +297,7 @@ def makeFERSEWCvsHodoHists(rdf, suffix=""):
             hist2D_X_vs_HodoX = rdf.Histo2D((
                 f"hist_{varname_X}_VS_HodoX_{suffix}",
                 f"hist_{varname_X}_VS_HodoX_{suffix}",
-                300, -0.5, 63.5,
+                hodo_nbins, hodo_min, hodo_max,
                 300, -15, 15),
                 "TTU_Hodo_X",
                 varname_X
@@ -290,7 +306,7 @@ def makeFERSEWCvsHodoHists(rdf, suffix=""):
             hist2D_Y_vs_HodoY = rdf.Histo2D((
                 f"hist_{varname_Y}_VS_HodoY_{suffix}",
                 f"hist_{varname_Y}_VS_HodoY_{suffix}",
-                300, -0.5, 63.5,
+                hodo_nbins, hodo_min, hodo_max,
                 300, -15, 15),
                 "TTU_Hodo_Y",
                 varname_Y
@@ -301,7 +317,7 @@ def makeFERSEWCvsHodoHists(rdf, suffix=""):
             hist2D_X_vs_HodoX_energy = rdf.Histo2D((
                 f"hist_{varname_X}_VS_HodoX_WithEnergy_{suffix}",
                 f"hist_{varname_X}_VS_HodoX_WithEnergy_{suffix}",
-                300, -0.5, 63.5,
+                hodo_nbins, hodo_min, hodo_max,
                 300, -15, 15),
                 "TTU_Hodo_X",
                 varname_X,
@@ -312,7 +328,7 @@ def makeFERSEWCvsHodoHists(rdf, suffix=""):
             hist2D_Y_vs_HodoY_energy = rdf.Histo2D((
                 f"hist_{varname_Y}_VS_HodoY_WithEnergy_{suffix}",
                 f"hist_{varname_Y}_VS_HodoY_WithEnergy_{suffix}",
-                300, -0.5, 63.5,
+                hodo_nbins, hodo_min, hodo_max,
                 300, -15, 15),
                 "TTU_Hodo_Y",
                 varname_Y,
@@ -320,6 +336,30 @@ def makeFERSEWCvsHodoHists(rdf, suffix=""):
                     gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib)
             )
             hists_EWC_vs_Hodo.append(hist2D_Y_vs_HodoY_energy)
+
+            # hodo (X,Y)
+            hist2D_HodoY_vs_HodoX = rdf.Histo2D((
+                f"hist_HodoY_VS_HodoX_{suffix}",
+                f"hist_HodoY_VS_HodoX_{suffix}",
+                hodo_nbins, hodo_min, hodo_max,
+                hodo_nbins, hodo_min, hodo_max),
+                "TTU_Hodo_X",
+                "TTU_Hodo_Y"
+            )
+            hists_EWC_vs_Hodo.append(hist2D_HodoY_vs_HodoX)
+
+            # hodo (X,Y) with z = energy
+            hist2D_HodoY_vs_HodoX_energy = rdf.Histo2D((
+                f"hist_HodoY_VS_HodoX_WithEnergy_{suffix}",
+                f"hist_HodoY_VS_HodoX_WithEnergy_{suffix}",
+                hodo_nbins, hodo_min, hodo_max,
+                hodo_nbins, hodo_min, hodo_max),
+                "TTU_Hodo_X",
+                "TTU_Hodo_Y",
+                fersboards.get_energy_sum_name(
+                    gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib)
+            )
+            hists_EWC_vs_Hodo.append(hist2D_HodoY_vs_HodoX_energy)
 
     return hists_EWC_vs_Hodo
 
@@ -331,6 +371,8 @@ def makeFERSShowerShapeHists(rdf, suffix=""):
     hists_Y_VS_X = []
 
     for gain, calib in GainCalibs:
+        if gain != "Mix":
+            continue
         for cat in ["cer", "sci"]:
             hists_tmp_X = []
             hists_tmp_Y = []
@@ -414,10 +456,9 @@ def collectFERSStats(rdf):
 
     return stats
 
-
-"""
-plotting
-"""
+# -------------------------
+# plotting
+# -------------------------
 
 
 def makeFERSEnergySumPlots(suffix=""):
@@ -782,6 +823,8 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
     outdir_plots = f"{plotdir}/FERS_EnergyWeightedCenter_{suffix}"
 
     for gain, calib in GainCalibs:
+        if gain != "Mix":
+            continue
         for cat in ["cer", "sci"]:
             varname_X = fersboards.get_energy_weighted_center_name(
                 gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib, isX=True)
@@ -835,15 +878,33 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
                 output_name = f"FERS_Total_{gain}_{cat}_EWC_Y_vs_X{suffix}"
                 DrawHistos([hist2D], "", -15, 15, f"{cat.capitalize()} {gain} EWC X [cm]", -15, 15, f"{cat.capitalize()} {gain} EWC Y [cm]",
                            output_name,
-                           dology=False, drawoptions=["colz"], addOverflow=True, addUnderflow=True,
+                           dology=False, drawoptions=["colz"], addOverflow=False, addUnderflow=False,
                            outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None)
                 plots.append(output_name + ".png")
             else:
                 print(
                     f"Warning: Histogram {hist2D_name} not found in {infile_name}")
 
+            hist2D_name_WithEnergy = f"hist_{varname_Y}_VS_{varname_X}_WithEnergy_{suffix}"
+            hist2D_WithEnergy = infile.Get(hist2D_name_WithEnergy)
+            if hist2D_WithEnergy and hist2D:
+                # divide by number of events to have average energy
+                hist2D_WithEnergy.Divide(hist2D)
+                if cat == "sci":
+                    zmin = 0.7 * benergy
+                    zmax = 1.2 * benergy
+                else:
+                    zmin = 0.5 * benergy
+                    zmax = 1.1 * benergy
+                output_name = f"FERS_Total_{gain}_{cat}_EWC_Y_vs_X_WithEnergy{suffix}"
+                DrawHistos([hist2D_WithEnergy], "", -15, 15, f"{cat.capitalize()} {gain} EWC X [cm]", -15, 15, f"{cat.capitalize()} {gain} EWC Y [cm]",
+                           output_name,
+                           dology=False, drawoptions=["colz"], addOverflow=False, addUnderflow=False,
+                           outdir=outdir_plots, run_number=run_number, doth2=True, zmin=zmin, zmax=zmax, zlabel=f"Avg Energy {cat} {gain}")
+                plots.append(output_name + ".png")
+
     output_html = f"{htmldir}/FERS/{suffix}/EnergyWeightedCenter.html"
-    generate_html(plots, outdir_plots, plots_per_row=3,
+    generate_html(plots, outdir_plots, plots_per_row=4,
                   output_html=output_html, title="FERS Energy Weighted Center")
     return output_html
 
@@ -853,6 +914,8 @@ def makeFERSEWCvsHodoPlots(suffix=""):
     infile_name = f"{rootdir}/fers_ewc_vs_hodo_{suffix}.root"
     infile = ROOT.TFile(infile_name, "READ")
     outdir_plots = f"{plotdir}/FERS_EWC_vs_Hodo_{suffix}"
+
+    hodo_min, hodo_max, hodo_nbins = get_ttu_hodo_ranges()
 
     for gain, calib in GainCalibs:
         # only do mix
@@ -869,9 +932,9 @@ def makeFERSEWCvsHodoPlots(suffix=""):
             hist2D_X_vs_HodoX = infile.Get(hist2D_name_X_vs_HodoX)
             if hist2D_X_vs_HodoX:
                 output_name = f"FERS_Total_{gain}_{cat}_EWC_X_vs_HodoX{suffix}"
-                DrawHistos([hist2D_X_vs_HodoX], "", -0.5, 63.5, f"Hodo X", -15, 15, f"{cat.capitalize()} {gain} EWC X",
+                DrawHistos([hist2D_X_vs_HodoX], "", hodo_min, hodo_max, f"Hodo X [cm]", -15, 15, f"{cat.capitalize()} {gain} EWC X [cm]",
                            output_name,
-                           dology=False, drawoptions=["colz"], addOverflow=True, addUnderflow=True,
+                           dology=False, drawoptions=["colz"], addOverflow=False, addUnderflow=False,
                            outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None)
                 plots.append(output_name + ".png")
 
@@ -883,9 +946,9 @@ def makeFERSEWCvsHodoPlots(suffix=""):
             hist2D_Y_vs_HodoY = infile.Get(hist2D_name_Y_vs_HodoY)
             if hist2D_Y_vs_HodoY:
                 output_name = f"FERS_Total_{gain}_{cat}_EWC_Y_vs_HodoY{suffix}"
-                DrawHistos([hist2D_Y_vs_HodoY], "", -0.5, 63.5, f"Hodo Y", -15, 15, f"{cat.capitalize()} {gain} EWC Y",
+                DrawHistos([hist2D_Y_vs_HodoY], "", hodo_min, hodo_max, f"Hodo Y [cm]", -15, 15, f"{cat.capitalize()} {gain} EWC Y [cm]",
                            output_name,
-                           dology=False, drawoptions=["colz"], addOverflow=True, addUnderflow=True,
+                           dology=False, drawoptions=["colz"], addOverflow=False, addUnderflow=False,
                            outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None)
                 plots.append(output_name + ".png")
             else:
@@ -906,9 +969,9 @@ def makeFERSEWCvsHodoPlots(suffix=""):
                 # divide by number of events to have average energy
                 hist2D_X_vs_HodoX_WithEnergy.Divide(hist2D_X_vs_HodoX)
                 output_name = f"FERS_Total_{gain}_{cat}_EWC_X_vs_HodoX_WithEnergy{suffix}"
-                DrawHistos([hist2D_X_vs_HodoX_WithEnergy], "", -0.5, 63.5, f"Hodo X", -15, 15, f"{cat.capitalize()} {gain} EWC X",
+                DrawHistos([hist2D_X_vs_HodoX_WithEnergy], "", hodo_min, hodo_max, f"Hodo X [cm]", -15, 15, f"{cat.capitalize()} {gain} EWC X [cm]",
                            output_name,
-                           dology=False, drawoptions=["colz"], addOverflow=True, addUnderflow=True,
+                           dology=False, drawoptions=["colz"], addOverflow=False, addUnderflow=False,
                            outdir=outdir_plots, run_number=run_number, doth2=True, zmin=zmin, zmax=zmax, zlabel=f"Avg Energy {cat} {gain}")
                 plots.append(output_name + ".png")
             else:
@@ -922,18 +985,52 @@ def makeFERSEWCvsHodoPlots(suffix=""):
                 # divide by number of events to have average energy
                 hist2D_Y_vs_HodoY_WithEnergy.Divide(hist2D_Y_vs_HodoY)
                 output_name = f"FERS_Total_{gain}_{cat}_EWC_Y_vs_HodoY_WithEnergy{suffix}"
-                DrawHistos([hist2D_Y_vs_HodoY_WithEnergy], "", -0.5, 63.5, f"Hodo Y", -15, 15, f"{cat.capitalize()} {gain} EWC Y",
+                DrawHistos([hist2D_Y_vs_HodoY_WithEnergy], "", hodo_min, hodo_max, f"Hodo Y [cm]", -15, 15, f"{cat.capitalize()} {gain} EWC Y [cm]",
                            output_name,
-                           dology=False, drawoptions=["colz"], addOverflow=True, addUnderflow=True,
+                           dology=False, drawoptions=["colz"], addOverflow=False, addUnderflow=False,
                            outdir=outdir_plots, run_number=run_number, doth2=True, zmin=zmin, zmax=zmax, zlabel=f"Avg Energy {cat} {gain}")
                 plots.append(output_name + ".png")
             else:
                 print(
                     f"Warning: Histogram {hist2D_name_Y_vs_HodoY_WithEnergy} not found in {infile_name}")
 
+            # HodoY vs HodoX
+            hist2D_name_HodoX_vs_HodoY = f"hist_HodoY_VS_HodoX_{suffix}"
+            hist2D_HodoX_vs_HodoY = infile.Get(hist2D_name_HodoX_vs_HodoY)
+            if hist2D_HodoX_vs_HodoY:
+                output_name = f"FERS_Total_{gain}_{cat}_HodoY_vs_HodoX{suffix}"
+                DrawHistos([hist2D_HodoX_vs_HodoY], "", hodo_min, hodo_max, f"Hodo X [cm]", hodo_min, hodo_max, f"Hodo Y [cm]",
+                           output_name,
+                           dology=False, drawoptions=["colz"], addOverflow=False, addUnderflow=False,
+                           outdir=outdir_plots, run_number=run_number, doth2=True, zmin=1, zmax=None)
+                plots.append(output_name + ".png")
+            else:
+                print(
+                    f"Warning: Histogram {hist2D_name_HodoX_vs_HodoY} not found in {infile_name}")
+
+            hist2D_name_HodoX_vs_HodoY_withEnergy = f"hist_HodoY_VS_HodoX_WithEnergy_{suffix}"
+            hist2D_HodoX_vs_HodoY_withEnergy = infile.Get(
+                hist2D_name_HodoX_vs_HodoY_withEnergy)
+            if hist2D_HodoX_vs_HodoY_withEnergy and hist2D_HodoX_vs_HodoY:
+                # divide by number of events to have average energy
+                hist2D_HodoX_vs_HodoY_withEnergy.Divide(hist2D_HodoX_vs_HodoY)
+
+                output_name = f"FERS_Total_{gain}_{cat}_HodoY_vs_HodoX_WithEnergy{suffix}"
+                DrawHistos([hist2D_HodoX_vs_HodoY_withEnergy], "", hodo_min, hodo_max, f"Hodo X [cm]", hodo_min, hodo_max, f"Hodo Y [cm]",
+                           output_name,
+                           dology=False, drawoptions=["colz"], addOverflow=False, addUnderflow=False,
+                           outdir=outdir_plots, run_number=run_number, doth2=True, zmin=zmin, zmax=zmax, zlabel=f"Avg Energy {cat} {gain}")
+                plots.append(output_name + ".png")
+            else:
+                print(
+                    f"Warning: Histogram {hist2D_name_HodoX_vs_HodoY_withEnergy} not found in {infile_name}")
+
     output_html = f"{htmldir}/FERS/{suffix}/EWC_vs_Hodo.html"
-    generate_html(plots, outdir_plots, plots_per_row=4,
-                  output_html=output_html, title="FERS Energy Weighted Center vs Hodoscope")
+    intro_text = """Hodo positions are from TTU hodoscope reconstructed positions, vs FERS energy weighted center positions.
+The right two plots are the beam position using hodoscope, and the average energy as a function of position."""
+    generate_html(plots, outdir_plots, plots_per_row=6,
+                  output_html=output_html, title="TTU Hodoscope and vs FERS EWC",
+                  intro_text=intro_text)
     return output_html
 
 
@@ -944,6 +1041,8 @@ def makeFERSShowerShapePlots(suffix=""):
     outdir_plots = f"{plotdir}/FERS_ShowerShape_{suffix}"
 
     for gain, calib in GainCalibs:
+        if gain != "Mix":
+            continue
         hists_R = []
         for cat in ["cer", "sci"]:
             hist_X_name = f"hist_RealX_{gain}_{cat}_{suffix}"
@@ -1117,7 +1216,7 @@ if analysis.beam_type in ["e+", "positron", "e-", "electron", "positrons", "elec
 else:
     rdfs["proton"] = analysis.get_particle_analysis("proton")
     rdfs["pion"] = analysis.get_particle_analysis("pion")
-    rdfs["muon"] = analysis.get_particle_analysis("muon")
+    # rdfs["muon"] = analysis.get_particle_analysis("muon")
 
 
 def main():

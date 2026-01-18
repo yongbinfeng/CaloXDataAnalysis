@@ -99,6 +99,13 @@ def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False, r
     return config
 
 
+def get_ttu_hodo_ranges():
+    xmin = -0.032
+    xmax = 4.064
+    nbins = 64
+    return xmin, xmax, nbins
+
+
 def get_fers_saturation_value():
     # This is the saturation value for the FERS channels
     # return 8191
