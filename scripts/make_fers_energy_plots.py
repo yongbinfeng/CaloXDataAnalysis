@@ -292,15 +292,16 @@ def makeFERSEnergyWeightedCenterHists(rdf, suffix=""):
                 varname_X, varname_Y)
             hists_FERS_EnergyWeightedCenter.append(hist2D)
 
-            hist2D_energy = rdf.Histo2D((
-                f"hist_{varname_Y}_VS_{varname_X}_WithEnergy_{suffix}",
-                f"hist_{varname_Y}_VS_{varname_X}_WithEnergy_{suffix}",
+            # average energy with respect to EWC
+            hprof2D_energy = rdf.Profile2D((
+                f"hprof_{varname_Y}_VS_{varname_X}_WithEnergy_{suffix}",
+                f"hprof_{varname_Y}_VS_{varname_X}_WithEnergy_{suffix}",
                 300, -15, 15, 300, -15, 15),
                 varname_X, varname_Y,
                 fersboards.get_energy_sum_name(
                     gain=gain, isCer=(cat == "cer"), pdsub=True, calib=calib)
             )
-            hists_FERS_EnergyWeightedCenter.append(hist2D_energy)
+            hists_FERS_EnergyWeightedCenter.append(hprof2D_energy)
 
     return hists_FERS_EnergyWeightedCenter
 
@@ -335,29 +336,24 @@ def makeFERSEWCvsHodoHists(rdf, suffix=""):
                 hodo_nbins, hodo_min, hodo_max, 300, -15, 15),
                 "TTU_Hodo_Y", varname_Y))
 
-            # With energy weighting
-            hists_EWC_vs_Hodo.append(rdf.Histo2D((
-                f"hist_{varname_X}_VS_HodoX_WithEnergy_{suffix}",
-                f"hist_{varname_X}_VS_HodoX_WithEnergy_{suffix}",
+            # average energy vs EWC X and Hodo X
+            hists_EWC_vs_Hodo.append(rdf.Profile2D((
+                f"hprof_{varname_X}_VS_HodoX_WithEnergy_{suffix}",
+                f"hprof_{varname_X}_VS_HodoX_WithEnergy_{suffix}",
                 hodo_nbins, hodo_min, hodo_max, 300, -15, 15),
                 "TTU_Hodo_X", varname_X, energy_var))
 
-            hists_EWC_vs_Hodo.append(rdf.Histo2D((
-                f"hist_{varname_Y}_VS_HodoY_WithEnergy_{suffix}",
-                f"hist_{varname_Y}_VS_HodoY_WithEnergy_{suffix}",
+            # average energy vs EWC Y and Hodo Y
+            hists_EWC_vs_Hodo.append(rdf.Profile2D((
+                f"hprof_{varname_Y}_VS_HodoY_WithEnergy_{suffix}",
+                f"hprof_{varname_Y}_VS_HodoY_WithEnergy_{suffix}",
                 hodo_nbins, hodo_min, hodo_max, 300, -15, 15),
                 "TTU_Hodo_Y", varname_Y, energy_var))
 
-            # Hodo Y vs Hodo X
-            hists_EWC_vs_Hodo.append(rdf.Histo2D((
-                f"hist_HodoY_VS_HodoX_{suffix}",
-                f"hist_HodoY_VS_HodoX_{suffix}",
-                hodo_nbins, hodo_min, hodo_max, hodo_nbins, hodo_min, hodo_max),
-                "TTU_Hodo_X", "TTU_Hodo_Y"))
-
-            hists_EWC_vs_Hodo.append(rdf.Histo2D((
-                f"hist_HodoY_VS_HodoX_WithEnergy_{suffix}",
-                f"hist_HodoY_VS_HodoX_WithEnergy_{suffix}",
+            # average energy vs Hodo Y and Hodo X
+            hists_EWC_vs_Hodo.append(rdf.Profile2D((
+                f"hprof_HodoY_VS_HodoX_WithEnergy_{suffix}",
+                f"hprof_HodoY_VS_HodoX_WithEnergy_{suffix}",
                 hodo_nbins, hodo_min, hodo_max, hodo_nbins, hodo_min, hodo_max),
                 "TTU_Hodo_X", "TTU_Hodo_Y", energy_var))
 
@@ -430,7 +426,7 @@ def makeFERSShowerShapeHists(rdf, suffix=""):
 
 
 # ============================================================================
-# Plotting Functions (refactored with PlotManager)
+# Plotting Functions
 # ============================================================================
 
 def makeFERSEnergySumPlots(suffix=""):
@@ -878,15 +874,14 @@ def makeFERSEnergyWeightedCenterPlots(suffix=""):
                     )
 
                 # 2D with energy
-                hist2D_energy = pm.get_histogram(
-                    filename, f"hist_{varname_Y}_VS_{varname_X}_WithEnergy_{suffix}", required=False)
-                if hist2D_energy and hist2D:
-                    hist2D_energy.Divide(hist2D)
+                hprof2D_energy = pm.get_histogram(
+                    filename, f"hprof_{varname_Y}_VS_{varname_X}_WithEnergy_{suffix}", required=False)
+                if hprof2D_energy and hist2D:
                     zmin = 0.7 * benergy if cat == "sci" else 0.5 * benergy
                     zmax = 1.2 * benergy if cat == "sci" else 1.1 * benergy
 
                     pm.plot_2d(
-                        hist2D_energy,
+                        hprof2D_energy,
                         f"FERS_Total_{gain}_{cat}_EWC_Y_vs_X_WithEnergy{suffix}",
                         f"{cat.capitalize()} {gain} EWC X [cm]",
                         (-15, 15),
@@ -940,13 +935,12 @@ def makeFERSEWCvsHodoPlots(suffix=""):
                                 drawoptions=["colz"], addOverflow=False, addUnderflow=False, zmin=1)
                         )
 
-                    # With energy
-                    hist_energy = pm.get_histogram(
-                        filename, f"hist_{varname}_VS_{hodo_var}_WithEnergy_{suffix}", required=False)
-                    if hist_energy and hist:
-                        hist_energy.Divide(hist)
+                    # profiled energy
+                    hprof_energy = pm.get_histogram(
+                        filename, f"hprof_{varname}_VS_{hodo_var}_WithEnergy_{suffix}", required=False)
+                    if hprof_energy:
                         pm.plot_2d(
-                            hist_energy,
+                            hprof_energy,
                             f"FERS_Total_{gain}_{cat}_EWC_{axis}_vs_{hodo_var}_WithEnergy{suffix}",
                             f"Hodo {axis} [cm]",
                             (hodo_min, hodo_max),
@@ -957,26 +951,25 @@ def makeFERSEWCvsHodoPlots(suffix=""):
                         )
 
                 # Hodo Y vs X
-                hist_hodo = pm.get_histogram(
-                    filename, f"hist_HodoY_VS_HodoX_{suffix}", required=False)
-                if hist_hodo:
-                    pm.plot_2d(
-                        hist_hodo,
-                        f"FERS_Total_{gain}_{cat}_HodoY_vs_HodoX{suffix}",
-                        "Hodo X [cm]",
-                        (hodo_min, hodo_max),
-                        "Hodo Y [cm]",
-                        (hodo_min, hodo_max),
-                        style=PlotStyle(
-                            drawoptions=["colz"], addOverflow=False, addUnderflow=False, zmin=1)
-                    )
+                # hist_hodo = pm.get_histogram(
+                #    filename, f"hist_HodoY_VS_HodoX_{suffix}", required=False)
+                # if hist_hodo:
+                #    pm.plot_2d(
+                #        hist_hodo,
+                #        f"FERS_Total_{gain}_{cat}_HodoY_vs_HodoX{suffix}",
+                #        "Hodo X [cm]",
+                #        (hodo_min, hodo_max),
+                #        "Hodo Y [cm]",
+                #        (hodo_min, hodo_max),
+                #        style=PlotStyle(
+                #            drawoptions=["colz"], addOverflow=False, addUnderflow=False, zmin=1)
+                #    )
 
-                hist_hodo_energy = pm.get_histogram(
-                    filename, f"hist_HodoY_VS_HodoX_WithEnergy_{suffix}", required=False)
-                if hist_hodo_energy and hist_hodo:
-                    hist_hodo_energy.Divide(hist_hodo)
+                hprof_hodo_energy = pm.get_histogram(
+                    filename, f"hprof_HodoY_VS_HodoX_WithEnergy_{suffix}", required=False)
+                if hprof_hodo_energy:
                     pm.plot_2d(
-                        hist_hodo_energy,
+                        hprof_hodo_energy,
                         f"FERS_Total_{gain}_{cat}_HodoY_vs_HodoX_WithEnergy{suffix}",
                         "Hodo X [cm]",
                         (hodo_min, hodo_max),
@@ -987,11 +980,11 @@ def makeFERSEWCvsHodoPlots(suffix=""):
                     )
 
         intro_text = """Hodo positions are from TTU hodoscope reconstructed positions, vs FERS energy weighted center positions.
-The right two plots are the beam position using hodoscope, and the average energy as a function of position."""
+* The right plot is the beam position using hodoscope, and the average energy as a function of position."""
 
         return pm.generate_html(
             f"FERS/{suffix}/EWC_vs_Hodo.html",
-            plots_per_row=6,
+            plots_per_row=5,
             title="TTU Hodoscope and vs FERS EWC",
             intro_text=intro_text
         )
