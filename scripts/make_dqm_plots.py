@@ -401,9 +401,9 @@ def makeFERSMaxValuePlots():
 
             if hist_cer and hist_sci:
                 frac_sci = hist_sci.Integral(hist_sci.FindBin(
-                    VSat), 100000) / hist_sci.Integral(0, 100000)
+                    VSat), 100000) / (hist_sci.Integral(0, 100000) + 1e-6)
                 frac_cer = hist_cer.Integral(hist_cer.FindBin(
-                    VSat), 100000) / hist_cer.Integral(0, 100000)
+                    VSat), 100000) / (hist_cer.Integral(0, 100000) + 1e-6)
 
                 pave = create_pave_text(0.20, 0.63, 0.90, 0.72)
                 pave.AddText(f"Sat Frac Sci : {frac_sci:.3f}")

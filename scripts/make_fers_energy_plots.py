@@ -1176,6 +1176,7 @@ if analysis.beam_type in ["e+", "positron", "e-", "electron", "positrons", "elec
 else:
     rdfs["proton"] = analysis.get_particle_analysis("proton")
     rdfs["pion"] = analysis.get_particle_analysis("pion")
+    rdfs["muon"] = analysis.get_particle_analysis("muon")
 
 
 def main():
