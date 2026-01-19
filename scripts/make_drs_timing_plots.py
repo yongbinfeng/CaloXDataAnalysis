@@ -241,10 +241,11 @@ def checkDRSvsCalibrationTS(rdf):
                     continue
                 channelNames[var] = channelName
 
-                rdf = rdf.Define(f"{channelName}_hasSignal",
-                                 f"{channelName}_Sum > 1000.0")
+                # rdf = rdf.Define(f"{channelName}_hasSignal",
+                #                 f"{channelName}_Sum > 1000.0")
 
-                rdf_filtered = rdf.Filter(f"{channelName}_hasSignal")
+                # rdf_filtered = rdf.Filter(f"{channelName}_hasSignal")
+                rdf_filtered = rdf
 
                 hprof_DRS_VS_TS = rdf_filtered.Profile1D((
                     f"prof_DRS_vs_TS_{var}_{sTowerX}_{sTowerY}", "", 400, -300, 100),
@@ -253,6 +254,9 @@ def checkDRSvsCalibrationTS(rdf):
                 hist2d_DRS_VS_TS = rdf_filtered.Histo2D((
                     f"hist2d_DRS_vs_TS_{var}_{sTowerX}_{sTowerY}", "", 400, -300, 100, 100, -200, 1000),
                     f"{channelName}_AlignedTS", f"{channelName}_blsub")
+                # hist_DRS_TS = rdf_filtered.Histo1D((
+                #    f"hist_DRS_vs_TS_{var}_{sTowerX}_{sTowerY}", "", 400, -300, 100),
+                #    f"{channelName}_AlignedTS", f"{channelName}_blsub")
 
                 if var != "Sci":
                     hprof_DRS_VS_Z = rdf_filtered.Profile1D((
@@ -263,6 +267,7 @@ def checkDRSvsCalibrationTS(rdf):
                 rdfs_filtered.append(rdf_filtered)
                 hprofs_DRS_VS_TS.append(hprof_DRS_VS_TS)
                 hists2d_DRS_VS_TS.append(hist2d_DRS_VS_TS)
+                # hists2d_DRS_VS_TS.append(hist_DRS_TS)
 
     return hprofs_DRS_VS_TS, hists2d_DRS_VS_TS, hprofs_DRS_VS_Z, rdfs_filtered
 
