@@ -112,6 +112,7 @@ def check_composition_with_table():
         output_html=output_html,
         intro_text=f"Beam Composition Summary before and after hole veto"
     )
+    print(f"Generated HTML: {output_html}")
 
 
 def main():

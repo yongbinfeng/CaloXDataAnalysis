@@ -52,6 +52,8 @@ TSmax = -10
 TSCermin = -70
 TSCermax = -50
 varsuffix = "DiffRelPeakTS_US"
+doDetailedPeakTSPlots = False
+doDetailedPeakTS2DPlots = False
 
 # Common plot styles
 STYLE_CER_SCI = PlotStyle(
@@ -240,7 +242,7 @@ def checkDRSvsCalibrationTS(rdf):
                 channelNames[var] = channelName
 
                 rdf = rdf.Define(f"{channelName}_hasSignal",
-                                 f"{channelName}_Sum > 100.0")
+                                 f"{channelName}_Sum > 1000.0")
 
                 rdf_filtered = rdf.Filter(f"{channelName}_hasSignal")
 
@@ -352,17 +354,18 @@ def makeDRSPeakTSPlots(pm: PlotManager):
                 extra_text="Quartz + Sci" if isQuartz else "Plastic + Sci"
             )
 
-            pm.plot_1d(
-                hists_to_draw,
-                output_name,
-                "Peak TS",
-                (TSmin, TSmax),
-                ylabel="Counts",
-                yrange=(1, None),
-                legends=labels,
-                style=style,
-                extraToDraw=pave
-            )
+            if doDetailedPeakTSPlots:
+                pm.plot_1d(
+                    hists_to_draw,
+                    output_name,
+                    "Peak TS",
+                    (TSmin, TSmax),
+                    ylabel="Counts",
+                    yrange=(1, None),
+                    legends=labels,
+                    style=style,
+                    extraToDraw=pave
+                )
 
     # Summary plots
     hist_Cer_Combined = LHistos2Hist(hists_Cer, "hist_DRSPeakTS_Cer_Combined")
@@ -479,16 +482,17 @@ def makeDRSPeakTSCerVSSciPlots(pm: PlotManager):
 
             ytitle = f"Cer ({'Quartz' if isQuartz else 'Plastic'}) Peak TS"
 
-            pm.plot_2d(
-                hist,
-                output_name,
-                "Sci Peak TS",
-                (TSmin, TSmax),
-                ytitle,
-                (TSmin, TSmax),
-                style=STYLE_2D_LOG,
-                extraToDraw=diagonal_line
-            )
+            if doDetailedPeakTS2DPlots:
+                pm.plot_2d(
+                    hist,
+                    output_name,
+                    "Sci Peak TS",
+                    (TSmin, TSmax),
+                    ytitle,
+                    (TSmin, TSmax),
+                    style=STYLE_2D_LOG,
+                    extraToDraw=diagonal_line
+                )
 
     # Summary plots
     hcombined = LHistos2Hist(hists, "hist_DRSPeakTS_Cer_VS_Sci_Combined")
@@ -572,6 +576,7 @@ def makeDRSvsTSProfPlots(pm: PlotManager):
 
     for _, DRSBoard in DRSBoards.items():
         board_no = DRSBoard.board_no
+        pm.add_newline()
         for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
             sTowerX = number_to_string(i_tower_x)
             sTowerY = number_to_string(i_tower_y)
@@ -902,20 +907,13 @@ def main():
 
     if makePlots:
         with PlotManager(rootdir, plotdir, htmldir, run_number) as pm:
-            output_html_DRSPeakTS = makeDRSPeakTSPlots(pm)
-            output_html_DRSPeakTSCerVSSci = makeDRSPeakTSCerVSSciPlots(pm)
-            output_html_DRS_VS_TS_Prof = makeDRSvsTSProfPlots(pm)
-            # output_html_DRS_VS_TS_2D = makeDRSvsTS2DPlots(pm)
-            output_html_DRS_VS_Z_Prof = makeDRSvsZProfPlots(pm)
+            makeDRSPeakTSPlots(pm)
+            makeDRSPeakTSCerVSSciPlots(pm)
+            makeDRSvsTSProfPlots(pm)
+            # makeDRSvsTS2DPlots(pm)
+            # makeDRSvsZProfPlots(pm)
 
-            print(f"DRS Peak TS plots saved to {output_html_DRSPeakTS}")
-            print(
-                f"DRS Peak TS Cer VS Sci plots saved to {output_html_DRSPeakTSCerVSSci}")
-            print(
-                f"DRS VS TS profiled plots saved to {output_html_DRS_VS_TS_Prof}")
-            # print(f"DRS VS TS 2D plots saved to {output_html_DRS_VS_TS_2D}")
-            print(
-                f"DRS VS Z profiled plots saved to {output_html_DRS_VS_Z_Prof}")
+            PlotManager.print_html_summary()
 
 
 if __name__ == "__main__":

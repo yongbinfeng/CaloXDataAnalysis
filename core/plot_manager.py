@@ -1,8 +1,6 @@
 import os
 from typing import Optional, Union, List, Dict, Tuple, Any
-from dataclasses import dataclass, field
 import ROOT
-
 from configs.plot_style import PlotStyle, STYLE_2D_COLZ, STYLE_CER_SCI
 from plotting.my_function import DrawHistos
 from utils.html_generator import generate_html
@@ -17,6 +15,8 @@ class PlotManager:
     """
     Manages histogram plotting workflows with reduced code duplication.
     """
+
+    _generated_html_registry: List[str] = []
 
     def __init__(
         self,
@@ -358,6 +358,9 @@ class PlotManager:
         """
         full_path = os.path.join(self.htmldir, output_path)
 
+        if full_path not in PlotManager._generated_html_registry:
+            PlotManager._generated_html_registry.append(full_path)
+
         generate_html(
             self._plots,
             self.get_output_dir(),
@@ -384,3 +387,16 @@ class PlotManager:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
         return False
+
+    @staticmethod
+    def print_html_summary():
+        """Print all generated HTML files."""
+        """Prints all HTML files generated during this session."""
+        print("\n" + "="*50)
+        print("📊 GENERATED HTML REPORTS SUMMARY")
+        print("="*50)
+        if not PlotManager._generated_html_registry:
+            print("No HTML files were generated.")
+        for path in PlotManager._generated_html_registry:
+            print(f"✅ {path}")
+        print("="*50 + "\n")
