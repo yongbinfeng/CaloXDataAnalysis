@@ -153,6 +153,7 @@ class PlotManager:
         legends: Union[str, List[str]] = "",
         style: Optional[PlotStyle] = None,
         prepend: bool = False,
+        includeRunNumber: bool = True,
         **kwargs
     ) -> 'PlotManager':
         """
@@ -168,6 +169,7 @@ class PlotManager:
             legends: Legend labels
             style: PlotStyle to use (or use default)
             prepend: If True, add to beginning of plot list
+            includeRunNumber: If True, include run number in the plot
             **kwargs: Additional arguments passed to DrawHistos
 
         Returns:
@@ -189,7 +191,7 @@ class PlotManager:
             ylabel,
             output_name,
             outdir=self.get_output_dir(),
-            run_number=self.run_number,
+            run_number=self.run_number if includeRunNumber else None,
             **plot_kwargs
         )
 
