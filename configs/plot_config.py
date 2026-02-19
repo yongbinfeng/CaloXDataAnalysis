@@ -368,6 +368,14 @@ def getServiceDRSProcessedInfoRanges(channel, cat):
             "peak_value": (-1500, 50),
             "sum": (-2.5e4, 2e3)
         },
+        "KT1": {
+            "peak_value": (-1200, 50),
+            "sum": (-1.2e4, 2e3)
+        },
+        "KT2": {
+            "peak_value": (-1200, 50),
+            "sum": (-1.2e4, 2e3)
+        }
     }
     if channel in service_drs_ranges:
         if cat in service_drs_ranges[channel]:

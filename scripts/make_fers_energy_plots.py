@@ -11,6 +11,9 @@ import ROOT
 from plotting.my_function import DrawHistos, LHistos2Hist
 from configs.plot_config import getRangesForFERSEnergySums, getBoardEnergyFitParameters, get_ttu_hodo_ranges
 from core.analysis_manager import CaloXAnalysisManager
+from channels.channel_map import get_service_drs_channels
+from configs.selection_config import get_service_drs_cut, get_particle_selection
+from configs.plot_config import getServiceDRSProcessedInfoRanges
 from utils.colors import colors
 from utils.fitter import eventFit
 from utils.html_generator import generate_html
@@ -141,6 +144,29 @@ def makeFERSCervsSciHists(rdf, suffix=""):
         )
         hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci_Event)
 
+        # Per-event Cer vs PSD sum
+        var_psd = "PSD_integral"
+        # xmin, xmax = getServiceDRSProcessedInfoRanges("PSD", "sum")
+        xmin, xmax = -7e4, 5e3
+        hist_Cer_vs_PSD = rdf.Histo2D((
+            f"hist_{var_cer}_VS_{var_psd}_{suffix}",
+            f"hist_{var_cer}_VS_{var_psd}_{suffix}",
+            500, xmin, xmax,
+            500, config["xmin_total"][f"{gain}_cer"], config["xmax_total"][f"{gain}_cer"]),
+            var_psd,
+            var_cer
+        )
+        hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_PSD)
+        # Per-event Sci vs PSD sum
+        hist_Sci_vs_PSD = rdf.Histo2D((
+            f"hist_{var_sci}_VS_{var_psd}_{suffix}",
+            f"hist_{var_sci}_VS_{var_psd}_{suffix}",
+            500, xmin, xmax,
+            500, config["xmin_total"][f"{gain}_sci"], config["xmax_total"][f"{gain}_sci"]),
+            var_psd,
+            var_sci
+        )
+        hists_FERS_Cer_vs_Sci.append(hist_Sci_vs_PSD)
     return hists_FERS_Cer_vs_Sci
 
 
@@ -570,6 +596,64 @@ def makeFERSCerVsSciPlots(suffix=""):
                 extraToDraw=extraObjs if extraObjs else None,
                 prepend=True
             )
+
+            if gain != "Mix":
+                continue
+            pm.add_newline()
+            # Cer vs PSD
+            var_psd = "PSD_integral"
+            xmin, xmax = -7e4, 5e3
+            hist_cer_psd = pm.get_histogram(
+                filename, f"hist_{var_cer}_VS_{var_psd}_{suffix}", required=False)
+            # profile
+            hprof_cer_psd = hist_cer_psd.ProfileX(
+                f"prof_{var_cer}_VS_{var_psd}_{suffix}")
+            hprof_cer_psd.SetLineColor(ROOT.kRed)
+
+            if hist_cer_psd:
+                pm.plot_2d(
+                    hist_cer_psd,
+                    f"FERS_Total_Cer_VS_PSD_{gain}{suffix}",
+                    f"PSD Integral [ADC]",
+                    (xmin, xmax),
+                    f"Cer {gain} {config[f'title_{gain}']}",
+                    (config["xmin_total"][f"{gain}_cer"],
+                     config["xmax_total"][f"{gain}_cer"]),
+                    style=STYLE_2D_LOG,
+                    prepend=False,
+                )
+            hist_sci_psd = pm.get_histogram(
+                filename, f"hist_{var_sci}_VS_{var_psd}_{suffix}", required=False)
+            hprof_sci_psd = hist_sci_psd.ProfileX(
+                f"prof_{var_sci}_VS_{var_psd}_{suffix}")
+            hprof_sci_psd.SetLineColor(ROOT.kRed)
+            if hist_sci_psd:
+                pm.plot_2d(
+                    hist_sci_psd,
+                    f"FERS_Total_Sci_VS_PSD_{gain}{suffix}",
+                    f"PSD Integral [ADC]",
+                    (xmin, xmax),
+                    f"Sci {gain} {config[f'title_{gain}']}",
+                    (config["xmin_total"][f"{gain}_sci"],
+                     config["xmax_total"][f"{gain}_sci"]),
+                    style=STYLE_2D_LOG,
+                    prepend=False,
+                )
+
+            # draw the profiles
+            if hprof_cer_psd and hprof_sci_psd:
+                pm.plot_1d(
+                    [hprof_cer_psd, hprof_sci_psd],
+                    f"FERS_Total_Cer_Sci_VS_PSD_Profile_{gain}{suffix}",
+                    "PSD Integral [ADC]",
+                    (xmin, xmax),
+                    ylabel="Average Energy [GeV]",
+                    yrange=(0.7 * benergy, 1.2 * benergy),
+                    legends=["Cer", "Sci"],
+                    style=STYLE_CER_SCI,
+                    prepend=False,
+                    legendPos=[0.55, 0.3, 0.9, 0.4]
+                )
 
         return pm.generate_html(f"FERS/{suffix}/EnergySum_Cer_VS_Sci.html", plots_per_row=3)
 
@@ -1165,8 +1249,14 @@ def makeBoardFits():
 # ============================================================================
 # Main Execution
 # ============================================================================
+channel = get_service_drs_channels(run_number).get("PSD")
+ts_min, ts_max, val_cut, method = get_service_drs_cut("PSD")
+analysis.rdf = analysis.rdf.Define(
+    "PSD_integral", f"{method}Range({channel}_blsub, {ts_min}, {ts_max})")
 
 rdf = analysis.get_rdf()
+# get the PSD integral
+
 
 rdfs = OrderedDict()
 rdfs["inclusive"] = rdf

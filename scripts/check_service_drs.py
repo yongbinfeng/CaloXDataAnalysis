@@ -54,8 +54,10 @@ def analyzePulse(channels):
                          f"ArgMinRange({channel}_blsub, {ts_min}, {ts_max})")
         rdf = rdf.Define(f"{channel}_peak_value",
                          f"MinRange({channel}_blsub, {ts_min}, {ts_max})")
+        # rdf = rdf.Define(f"{channel}_sum",
+        #                 f"SumRange({channel}_blsub, {channel}_peak_position - 50, {channel}_peak_position + 100)")
         rdf = rdf.Define(f"{channel}_sum",
-                         f"SumRange({channel}_blsub, {channel}_peak_position - 50, {channel}_peak_position + 100)")
+                         f"SumRange({channel}_blsub, {ts_min}, {ts_max})")
 
     # Create histograms
     for det, channel in channels.items():
@@ -84,6 +86,8 @@ def analyzePulse(channels):
         for idx2, det2 in enumerate(det_list):
             if idx2 <= idx1:
                 continue
+            if len({det1, det2} & {"KT1", "KT2"}) == 1:
+                continue  # Skip KT1 and KT2 correlations for now
             channel1, channel2 = channels[det1], channels[det2]
             hists[f"{det1}_vs_{det2}"] = {}
             xmin, xmax = getServiceDRSProcessedInfoRanges(det1, "sum")
@@ -258,7 +262,7 @@ def plotPulse(channels):
 No selection is applied unless specified."""
 
         output_htmls.append(pm.generate_html(
-            "ServiceDRS/PID.html", plots_per_row=5, intro_text=intro_text))
+            "ServiceDRS/PID.html", plots_per_row=5, intro_text=intro_text, title="Particle Identification"))
 
         # 2D correlation plots
         pm.reset_plots()
@@ -268,6 +272,8 @@ No selection is applied unless specified."""
             for idx2, det2 in enumerate(det_list):
                 if idx2 <= idx1:
                     continue
+                if len({det1, det2} & {"KT1", "KT2"}) == 1:
+                    continue  # Skip KT1 and KT2 correlations for now
 
                 hist2d = infile.Get(f"{det1}_sum_vs_{det2}_sum")
                 if not hist2d:
@@ -412,7 +418,8 @@ def plotHodoPeak():
 
         pm.add_newline()
 
-        output_html = pm.generate_html("ServiceDRS/DWC.html", plots_per_row=7)
+        output_html = pm.generate_html(
+            "ServiceDRS/DWC.html", plots_per_row=7, title="DWC Positions")
 
     infile.Close()
     return output_html
@@ -420,7 +427,7 @@ def plotHodoPeak():
 
 def main():
     channels = OrderedDict()
-    for det in ["HoleVeto", "PSD", "TTUMuonVeto", "Cer474", "Cer519", "Cer537"]:
+    for det in ["HoleVeto", "PSD", "TTUMuonVeto", "Cer474", "Cer519", "Cer537", "KT1", "KT2"]:
         channel = get_service_drs_channels(run_number).get(det)
         channels[det] = channel
 
