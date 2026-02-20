@@ -87,7 +87,9 @@ def analyzePulse(channels):
             if idx2 <= idx1:
                 continue
             if len({det1, det2} & {"KT1", "KT2"}) == 1:
-                continue  # Skip KT1 and KT2 correlations for now
+                continue  # Skip KT1/KT2 correlation with others
+            if len({det1, det2} & {"T3", "T4"}) == 1:
+                continue  # Skip T3/T4 correlation with others
             channel1, channel2 = channels[det1], channels[det2]
             hists[f"{det1}_vs_{det2}"] = {}
             xmin, xmax = getServiceDRSProcessedInfoRanges(det1, "sum")
@@ -274,6 +276,8 @@ No selection is applied unless specified."""
                     continue
                 if len({det1, det2} & {"KT1", "KT2"}) == 1:
                     continue  # Skip KT1 and KT2 correlations for now
+                if len({det1, det2} & {"T3", "T4"}) == 1:
+                    continue  # Skip T3 and T4 correlations for now
 
                 hist2d = infile.Get(f"{det1}_sum_vs_{det2}_sum")
                 if not hist2d:
@@ -427,7 +431,7 @@ def plotHodoPeak():
 
 def main():
     channels = OrderedDict()
-    for det in ["HoleVeto", "PSD", "TTUMuonVeto", "Cer474", "Cer519", "Cer537", "KT1", "KT2"]:
+    for det in ["HoleVeto", "PSD", "TTUMuonVeto", "Cer474", "Cer519", "Cer537", "KT1", "KT2", "T3", "T4"]:
         channel = get_service_drs_channels(run_number).get(det)
         channels[det] = channel
 

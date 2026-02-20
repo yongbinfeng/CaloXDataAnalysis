@@ -9,6 +9,8 @@ def get_service_drs_cut(service_drs: str) -> tuple:
         "Cer537": (400, 500, -500.0, "Sum"),
         "KT1": (0, 1000, -1e3, "Sum"),
         "KT2": (0, 1000, -1e3, "Sum"),
+        "T3": (0, 1000, -1e3, "Sum"),
+        "T4": (0, 1000, -1e3, "Sum"),
     }
     return cuts.get(service_drs, cut_default)
 
