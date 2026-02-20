@@ -86,10 +86,9 @@ def analyzePulse(channels):
         for idx2, det2 in enumerate(det_list):
             if idx2 <= idx1:
                 continue
-            if len({det1, det2} & {"KT1", "KT2"}) == 1:
-                continue  # Skip KT1/KT2 correlation with others
-            if len({det1, det2} & {"T3", "T4"}) == 1:
-                continue  # Skip T3/T4 correlation with others
+            special_dets = {"KT1", "KT2", "T3", "T4"}
+            if (det1 in special_dets) ^ (det2 in special_dets):
+                continue  # Skip correlations between trigger and non-trigger detectors
             channel1, channel2 = channels[det1], channels[det2]
             hists[f"{det1}_vs_{det2}"] = {}
             xmin, xmax = getServiceDRSProcessedInfoRanges(det1, "sum")
@@ -267,67 +266,70 @@ No selection is applied unless specified."""
             "ServiceDRS/PID.html", plots_per_row=5, intro_text=intro_text, title="Particle Identification"))
 
         # 2D correlation plots
-        pm.reset_plots()
+        # pm.reset_plots()
         det_list = list(channels.keys())
 
-        for idx1, det1 in enumerate(det_list):
-            for idx2, det2 in enumerate(det_list):
-                if idx2 <= idx1:
-                    continue
-                if len({det1, det2} & {"KT1", "KT2"}) == 1:
-                    continue  # Skip KT1 and KT2 correlations for now
-                if len({det1, det2} & {"T3", "T4"}) == 1:
-                    continue  # Skip T3 and T4 correlations for now
+        trigger_dets = ["KT1", "KT2", "T3", "T4"]
 
-                hist2d = infile.Get(f"{det1}_sum_vs_{det2}_sum")
-                if not hist2d:
-                    continue
+        # remove trigger_dets from det_list for correlation plotting
+        det_list = [det for det in det_list if det not in trigger_dets]
 
-                xmin, xmax = getServiceDRSProcessedInfoRanges(det1, "sum")
-                ymin, ymax = getServiceDRSProcessedInfoRanges(det2, "sum")
-                _, _, value_cut1, _ = get_service_drs_cut(det1)
-                _, _, value_cut2, _ = get_service_drs_cut(det2)
+        for cat, tmp_list in [("PID", det_list), ("Trigger", trigger_dets)]:
+            pm.reset_plots()
+            for idx1, det1 in enumerate(tmp_list):
+                for idx2, det2 in enumerate(tmp_list):
+                    if idx2 <= idx1:
+                        continue
 
-                xPass = hist2d.GetXaxis().FindBin(value_cut1)
-                yPass = hist2d.GetYaxis().FindBin(value_cut2)
-                nPP = hist2d.Integral(xPass, 1000, yPass, 1000)
-                nPF = hist2d.Integral(xPass, 1000, 0, yPass - 1)
-                nFP = hist2d.Integral(0, xPass - 1, yPass, 1000)
-                nFF = hist2d.Integral(0, xPass - 1, 0, yPass - 1)
+                    hist2d = infile.Get(f"{det1}_sum_vs_{det2}_sum")
+                    if not hist2d:
+                        continue
 
-                pave = create_pave_text(0.23, 0.20, 0.5, 0.40)
-                pave.SetTextSize(0.03)
-                name1 = det1.replace("Cerenkov", "Cer")
-                name2 = det2.replace("Cerenkov", "Cer")
-                pave.AddText(
-                    f"N ({name1} > {value_cut1:.2g}, {name2} > {value_cut2:.2g}): {nPP:.0f}")
-                pave.AddText(
-                    f"N ({name1} > {value_cut1:.2g}, {name2} < {value_cut2:.2g}): {nPF:.0f}")
-                pave.AddText(
-                    f"N ({name1} < {value_cut1:.2g}, {name2} > {value_cut2:.2g}): {nFP:.0f}")
-                pave.AddText(
-                    f"N ({name1} < {value_cut1:.2g}, {name2} < {value_cut2:.2g}): {nFF:.0f}")
+                    xmin, xmax = getServiceDRSProcessedInfoRanges(det1, "sum")
+                    ymin, ymax = getServiceDRSProcessedInfoRanges(det2, "sum")
+                    _, _, value_cut1, _ = get_service_drs_cut(det1)
+                    _, _, value_cut2, _ = get_service_drs_cut(det2)
 
-                line1 = ROOT.TLine(value_cut1, ymin, value_cut1, ymax)
-                line2 = ROOT.TLine(xmin, value_cut2, xmax, value_cut2)
-                for line in [line1, line2]:
-                    line.SetLineWidth(2)
-                    line.SetLineStyle(ROOT.kDashed)
-                    line.SetLineColor(ROOT.kRed)
+                    xPass = hist2d.GetXaxis().FindBin(value_cut1)
+                    yPass = hist2d.GetYaxis().FindBin(value_cut2)
+                    nPP = hist2d.Integral(xPass, 1000, yPass, 1000)
+                    nPF = hist2d.Integral(xPass, 1000, 0, yPass - 1)
+                    nFP = hist2d.Integral(0, xPass - 1, yPass, 1000)
+                    nFF = hist2d.Integral(0, xPass - 1, 0, yPass - 1)
 
-                pm.plot_2d(hist2d, f"{det1}_vs_{det2}_sum2D",
-                           f"{det1} Sum", (xmin, xmax),
-                           f"{det2} Sum", (ymin, ymax),
-                           style=STYLE_2D_LOG,
-                           extraToDraw=[pave, line1, line2])
+                    pave = create_pave_text(0.23, 0.20, 0.5, 0.40)
+                    pave.SetTextSize(0.03)
+                    name1 = det1.replace("Cerenkov", "Cer")
+                    name2 = det2.replace("Cerenkov", "Cer")
+                    pave.AddText(
+                        f"N ({name1} > {value_cut1:.2g}, {name2} > {value_cut2:.2g}): {nPP:.0f}")
+                    pave.AddText(
+                        f"N ({name1} > {value_cut1:.2g}, {name2} < {value_cut2:.2g}): {nPF:.0f}")
+                    pave.AddText(
+                        f"N ({name1} < {value_cut1:.2g}, {name2} > {value_cut2:.2g}): {nFP:.0f}")
+                    pave.AddText(
+                        f"N ({name1} < {value_cut1:.2g}, {name2} < {value_cut2:.2g}): {nFF:.0f}")
 
-            pm.add_newline()
+                    line1 = ROOT.TLine(value_cut1, ymin, value_cut1, ymax)
+                    line2 = ROOT.TLine(xmin, value_cut2, xmax, value_cut2)
+                    for line in [line1, line2]:
+                        line.SetLineWidth(2)
+                        line.SetLineStyle(ROOT.kDashed)
+                        line.SetLineColor(ROOT.kRed)
 
-        intro_text = """This page shows the correlation plots of the service DRS channels for particle identification.
+                    pm.plot_2d(hist2d, f"{det1}_vs_{det2}_sum2D",
+                               f"{det1} Sum", (xmin, xmax),
+                               f"{det2} Sum", (ymin, ymax),
+                               style=STYLE_2D_LOG,
+                               extraToDraw=[pave, line1, line2])
+
+                pm.add_newline()
+
+            intro_text = f"""This page shows the correlation plots of the service DRS channels for {cat}.
 No selection is applied unless specified."""
 
-        output_htmls.append(pm.generate_html(
-            "ServiceDRS/PID_correlation.html", plots_per_row=5, intro_text=intro_text))
+            output_htmls.append(pm.generate_html(
+                f"ServiceDRS/{cat}_correlation.html", plots_per_row=5, intro_text=intro_text))
 
     infile.Close()
     return output_htmls
