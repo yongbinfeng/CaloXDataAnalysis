@@ -33,7 +33,7 @@ setup_root(n_threads=10, batch_mode=True, load_functions=True)
 analysis = (CaloXAnalysisManager(args)
             .prepare()
             .calibrate_fers()
-            .apply_hole_veto(flag_only=True)
+            .apply_hole_veto(flag_only=False)
             )
 
 GainCalibs = [("HG", False), ("LG", False), ("Mix", True)]
@@ -99,7 +99,7 @@ def makeFERSEnergySumHists(rdf, suffix=""):
             hist = rdf.Histo1D((
                 f"hist_{varname}_{suffix}",
                 f"hist_{varname}_{suffix}",
-                200, config["xmin_total"][f"{gain}_{cat}"], config["xmax_total"][f"{gain}_{cat}"]),
+                100, config["xmin_total"][f"{gain}_{cat}"], config["xmax_total"][f"{gain}_{cat}"]),
                 varname
             )
             hists_FERS_EnergySum.append(hist)
@@ -108,7 +108,7 @@ def makeFERSEnergySumHists(rdf, suffix=""):
             hist = rdf.Histo1D((
                 f"hist_{varname_corr}_{suffix}",
                 f"hist_{varname_corr}_{suffix}",
-                200, config["xmin_total"][f"{gain}_{cat}"], config["xmax_total"][f"{gain}_{cat}"]),
+                100, config["xmin_total"][f"{gain}_{cat}"], config["xmax_total"][f"{gain}_{cat}"]),
                 varname_corr
             )
             hists_FERS_EnergySum.append(hist)
