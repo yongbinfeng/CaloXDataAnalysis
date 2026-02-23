@@ -8,7 +8,7 @@ from variables.fers import (
     getFERSEnergyWeightedCenter, getFERSEnergyDR, addFERSPosXY,
     buildTTUHodo
 )
-from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS, get_drs_stats
+from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS, get_drs_stats, get_psd_energy_deposit
 from core.selection_manager import SelectionManager
 from utils.data_loader import getRunInfo
 from utils.plot_helper import get_run_paths
@@ -100,6 +100,7 @@ class CaloXAnalysisManager:
         if do_drs and "drs_init" not in self._steps_applied:
             self.rdf = preProcessDRSBoards(
                 self.rdf, run_number=self.run_number, drsboards=self.drsboards)
+            self.rdf = get_psd_energy_deposit(self.rdf, self.run_number)
             self._steps_applied.add("drs_init")
 
         if do_fers and "fers_init" not in self._steps_applied:

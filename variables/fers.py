@@ -208,6 +208,11 @@ def get_fers_energy_sum(rdf, fersboards, gain="HG", pdsub=False, calib=False):
         rdf = rdf.Define(f"{name_corr}",
                          f"{name_total} + {name_outer} * 1.0")
 
+        # include PSD correction
+        name_psd_corr = name_total + "_PSDCorr"
+        rdf = rdf.Define(f"{name_psd_corr}",
+                         f"{name_total} + PSD_Energy_{cat}")
+
     return rdf
 
 

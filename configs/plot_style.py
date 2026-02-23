@@ -60,6 +60,8 @@ STYLE_1D_LINEAR = PlotStyle(dology=False, drawoptions="HIST")
 STYLE_1D_LOG = PlotStyle(dology=True, drawoptions="HIST")
 STYLE_2D_COLZ = PlotStyle(dology=False, drawoptions=[
                           "colz"], addOverflow=False, addUnderflow=False)
-STYLE_CER = PlotStyle(dology=False, drawoptions="HIST", mycolors=[2])  # Red
-STYLE_SCI = PlotStyle(dology=False, drawoptions="HIST", mycolors=[4])  # Blue
+STYLE_CER = PlotStyle(dology=False, drawoptions="HIST",
+                      mycolors=[2, 2], linestyles=[1, 2])  # Red
+STYLE_SCI = PlotStyle(dology=False, drawoptions="HIST",
+                      mycolors=[4, 4], linestyles=[1, 2])  # Blue
 STYLE_CER_SCI = PlotStyle(dology=False, drawoptions="HIST", mycolors=[2, 4])

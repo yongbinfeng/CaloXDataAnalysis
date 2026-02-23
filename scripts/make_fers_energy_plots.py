@@ -99,8 +99,17 @@ def makeFERSEnergySumHists(rdf, suffix=""):
             hist = rdf.Histo1D((
                 f"hist_{varname}_{suffix}",
                 f"hist_{varname}_{suffix}",
-                500, config["xmin_total"][f"{gain}_{cat}"], config["xmax_total"][f"{gain}_{cat}"]),
+                200, config["xmin_total"][f"{gain}_{cat}"], config["xmax_total"][f"{gain}_{cat}"]),
                 varname
+            )
+            hists_FERS_EnergySum.append(hist)
+            # per-event sum with PSD correction
+            varname_corr = varname + "_PSDCorr"
+            hist = rdf.Histo1D((
+                f"hist_{varname_corr}_{suffix}",
+                f"hist_{varname_corr}_{suffix}",
+                200, config["xmin_total"][f"{gain}_{cat}"], config["xmax_total"][f"{gain}_{cat}"]),
+                varname_corr
             )
             hists_FERS_EnergySum.append(hist)
 
@@ -145,7 +154,7 @@ def makeFERSCervsSciHists(rdf, suffix=""):
         hists_FERS_Cer_vs_Sci.append(hist_Cer_vs_Sci_Event)
 
         # Per-event Cer vs PSD sum
-        var_psd = "PSD_integral"
+        var_psd = "PSD_Sum"
         # xmin, xmax = getServiceDRSProcessedInfoRanges("PSD", "sum")
         xmin, xmax = -7e4, 5e3
         hist_Cer_vs_PSD = rdf.Histo2D((
@@ -504,10 +513,19 @@ def makeFERSEnergySumPlots(suffix=""):
                 hist = pm.get_histogram_by_pattern(
                     filename, varname, suffix, required=False)
 
+                hists_to_draw = [hist]
+
+                if gain == "Mix":
+                    varname_corr = varname + "_PSDCorr"
+                    hist_corr = pm.get_histogram_by_pattern(
+                        filename, varname_corr, suffix, required=False)
+                    if hist_corr:
+                        hists_to_draw.append(hist_corr)
+
                 if hist:
                     style = STYLE_CER if cat == "cer" else STYLE_SCI
                     pm.plot_1d(
-                        hist,
+                        hists_to_draw,
                         f"FERS_Total_{gain}_{cat}{suffix}",
                         f"{cat.capitalize()} {gain} {config[f'title_{gain}']}",
                         (config["xmin_total"][f"{gain}_{cat}"],
@@ -601,7 +619,7 @@ def makeFERSCerVsSciPlots(suffix=""):
                 continue
             pm.add_newline()
             # Cer vs PSD
-            var_psd = "PSD_integral"
+            var_psd = "PSD_Sum"
             xmin, xmax = -7e4, 5e3
             hist_cer_psd = pm.get_histogram(
                 filename, f"hist_{var_cer}_VS_{var_psd}_{suffix}", required=False)
@@ -614,7 +632,7 @@ def makeFERSCerVsSciPlots(suffix=""):
                 pm.plot_2d(
                     hist_cer_psd,
                     f"FERS_Total_Cer_VS_PSD_{gain}{suffix}",
-                    f"PSD Integral [ADC]",
+                    f"PSD Sum [ADC]",
                     (xmin, xmax),
                     f"Cer {gain} {config[f'title_{gain}']}",
                     (config["xmin_total"][f"{gain}_cer"],
@@ -631,7 +649,7 @@ def makeFERSCerVsSciPlots(suffix=""):
                 pm.plot_2d(
                     hist_sci_psd,
                     f"FERS_Total_Sci_VS_PSD_{gain}{suffix}",
-                    f"PSD Integral [ADC]",
+                    f"PSD Sum [ADC]",
                     (xmin, xmax),
                     f"Sci {gain} {config[f'title_{gain}']}",
                     (config["xmin_total"][f"{gain}_sci"],
@@ -645,7 +663,7 @@ def makeFERSCerVsSciPlots(suffix=""):
                 pm.plot_1d(
                     [hprof_cer_psd, hprof_sci_psd],
                     f"FERS_Total_Cer_Sci_VS_PSD_Profile_{gain}{suffix}",
-                    "PSD Integral [ADC]",
+                    "PSD Sum [ADC]",
                     (xmin, xmax),
                     ylabel="Average Energy [GeV]",
                     yrange=(0.7 * benergy, 1.2 * benergy),
@@ -1249,14 +1267,8 @@ def makeBoardFits():
 # ============================================================================
 # Main Execution
 # ============================================================================
-channel = get_service_drs_channels(run_number).get("PSD")
-ts_min, ts_max, val_cut, method = get_service_drs_cut("PSD")
-analysis.rdf = analysis.rdf.Define(
-    "PSD_integral", f"{method}Range({channel}_blsub, {ts_min}, {ts_max})")
 
 rdf = analysis.get_rdf()
-# get the PSD integral
-
 
 rdfs = OrderedDict()
 rdfs["inclusive"] = rdf

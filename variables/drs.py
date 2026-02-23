@@ -3,7 +3,7 @@ import os
 import re
 import json
 from utils.utils import getBranchStats
-from channels.channel_map import findFanoutTimeReferenceDelay, findDRSTriggerMap, get_mcp_channels
+from channels.channel_map import findFanoutTimeReferenceDelay, findDRSTriggerMap, get_mcp_channels, get_service_drs_channels
 
 
 def preProcessDRSBoards(rdf, debug=False, drsboards=None, run_number=None):
@@ -141,6 +141,16 @@ def getDRSPeakTS(rdf, run, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
                 f"{channelPeakTSName}_good",
                 f"({channelPeakTSName} - {triggerPeakTSName}) + {triggerDelayTS}"
             )
+    return rdf
+
+
+def get_psd_energy_deposit(rdf, run_number, TS_start=100, TS_end=400):
+    channel_name = get_service_drs_channels(run_number).get("PSD")
+    rdf = rdf.Define(
+        "PSD_Sum", f"SumRange({channel_name}_blsub, {TS_start}, {TS_end})")
+    rdf = rdf.Define(
+        "PSD_Energy_Cer", "PSD_Sum * 5.15852e-05 * (-1)").Define(
+        "PSD_Energy_Sci", "PSD_Sum * 6.53095e-05 * (-1)")
     return rdf
 
 
