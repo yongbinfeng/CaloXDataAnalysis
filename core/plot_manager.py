@@ -154,6 +154,7 @@ class PlotManager:
         style: Optional[PlotStyle] = None,
         prepend: bool = False,
         includeRunNumber: bool = True,
+        run_number: Optional[int] = None,
         **kwargs
     ) -> 'PlotManager':
         """
@@ -170,6 +171,7 @@ class PlotManager:
             style: PlotStyle to use (or use default)
             prepend: If True, add to beginning of plot list
             includeRunNumber: If True, include run number in the plot
+            run_number: Optional run number to include in the plot
             **kwargs: Additional arguments passed to DrawHistos
 
         Returns:
@@ -182,6 +184,8 @@ class PlotManager:
         plot_kwargs = style.to_kwargs()
         plot_kwargs.update(kwargs)
 
+        run_number = run_number if run_number is not None else self.run_number
+
         DrawHistos(
             hists,
             legends,
@@ -191,7 +195,7 @@ class PlotManager:
             ylabel,
             output_name,
             outdir=self.get_output_dir(),
-            run_number=self.run_number if includeRunNumber else None,
+            run_number=run_number if includeRunNumber else None,
             **plot_kwargs
         )
 
