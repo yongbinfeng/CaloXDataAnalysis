@@ -262,7 +262,7 @@ def checkDRSvsCalibrationTS(rdf, suffix=""):
 
                 if var != "Sci":
                     hprof_DRS_VS_Z = rdf_filtered.Profile1D((
-                        f"prof_DRS_vs_Z_{var}_{sTowerX}_{sTowerY}_{suffix}", "", 200, -100, 600),
+                        f"prof_DRS_vs_Z_{var}_{sTowerX}_{sTowerY}_{suffix}", "", 200, -200, 300),
                         f"{channelName}_MeasuredZ", f"{channelName}_blsub")
                     hprofs_DRS_VS_Z.append(hprof_DRS_VS_Z)
 
@@ -728,7 +728,7 @@ def makeDRSvsZProfPlots(suffix: str = ""):
     """Generate profiled DRS ADC vs measured Z plots using PlotManager."""
     pm = PlotManager(rootdir, plotdir, htmldir, run_number)
     pm.set_output_dir(f"DRS_vs_z_calibrated_{suffix}")
-    infile_name = f"{rootdir}/drs_vs_z_calibrated_{suffix}.root"
+    infile_name = f"{rootdir}/drs_vs_ts_calibrated_{suffix}.root"
     infile = ROOT.TFile(infile_name, "READ")
 
     hprofs_Cer_Quartz = []
@@ -772,7 +772,7 @@ def makeDRSvsZProfPlots(suffix: str = ""):
                     [hprof_proj],
                     output_name,
                     "Measured Z [cm]",
-                    (-100, 300),
+                    (-200, 300),
                     ylabel="DRS ADC",
                     yrange=(-10, hprof_proj.GetMaximum() * 1.5),
                     legends=["Cer"],
@@ -795,7 +795,7 @@ def makeDRSvsZProfPlots(suffix: str = ""):
         [hprof_Cer_Quartz_Combined, hprof_Cer_Plastic_Combined],
         f"DRS_vs_Z_Cer_Combined_{suffix}",
         "Measured Z",
-        (-10, 200),
+        (-200, 300),
         ylabel="DRS ADC",
         yrange=(0, None),
         legends=["Cer Quartz", "Cer Plastic"],
@@ -960,7 +960,7 @@ def main():
             output_htmls[f"DRSvsTSProf_{cat}"] = makeDRSvsTSProfPlots(
                 suffix=cat)
             # output_htmls[f"DRSvsTS2D_{cat}"] = makeDRSvsTS2DPlots(suffix=cat)
-            # output_htmls[f"DRSvsZProf_{cat}"] = makeDRSvsZProfPlots(suffix=cat)
+            output_htmls[f"DRSvsZProf_{cat}"] = makeDRSvsZProfPlots(suffix=cat)
 
         for key, html in output_htmls.items():
             print(f"{key}: {html}")
