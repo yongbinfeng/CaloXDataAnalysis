@@ -243,8 +243,14 @@ def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS
             #    t0TS = 154
             # rdf = rdf.Define(
             #    f"{channelName}_MeasuredZ", f"{refrac} / ({refrac} - 1) * 250 - 6.0 / ({refrac} - 1) * ({channelName}_AlignedTS + {t0TS})")
+            if channel.isQuartz:
+                intercetp = 11.2
+                slope = 0.016
+            else:
+                intercetp = 10.3
+                slope = 0.018
             rdf = rdf.Define(f"{channelName}_MeasuredZ",
-                             f"-1.0/0.017 * ({channelName}_AlignedTS * 0.2 + 11.2)")
+                             f"-1.0/{slope} * ({channelName}_AlignedTS * 0.2 + {intercetp})")
 
             # channel sum
             rdf = rdf.Define(
