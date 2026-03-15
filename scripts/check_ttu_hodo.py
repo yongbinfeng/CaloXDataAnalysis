@@ -5,6 +5,7 @@ Plots TTU Hodoscope hit distributions and positions.
 """
 
 import ROOT
+from collections import OrderedDict
 from core.analysis_manager import CaloXAnalysisManager
 from configs.plot_config import get_ttu_hodo_ranges
 from utils.parser import get_args
@@ -29,6 +30,17 @@ analysis = (CaloXAnalysisManager(args)
 paths = analysis.paths
 rdf_org = analysis.get_rdf()
 
+# Particle-selected RDFs — inclusive first, then beam-type-dependent selections
+rdfs = OrderedDict()
+rdfs["inc"] = rdf_org
+if analysis.beam_type in ["e+", "positron", "e-", "electron", "positrons", "electrons"]:
+    rdfs["electron"] = analysis.get_particle_analysis("electron")
+    rdfs["pion"] = analysis.get_particle_analysis("pion")
+else:
+    rdfs["proton"] = analysis.get_particle_analysis("proton")
+    rdfs["pion"] = analysis.get_particle_analysis("pion")
+    rdfs["muon"] = analysis.get_particle_analysis("muon")
+
 hodo_min, hodo_max, hodo_nbins = get_ttu_hodo_ranges()
 
 # Styles
@@ -36,6 +48,9 @@ STYLE_XY = PlotStyle(dology=False, drawoptions="HIST",
                      mycolors=[1, 2])
 STYLE_2D_LOG = PlotStyle(dology=False, dologz=True,
                          drawoptions="COLZ", zmin=1, zmax=None)
+STYLE_PROFILE = PlotStyle(dology=False, drawoptions="COLz",
+                          zmin=0, zmax=4e4,
+                          zlabel="Average PSD Sum")
 
 
 def makeTTUHodoHits(rdf, suffix=""):
@@ -64,6 +79,68 @@ def makeTTUHodoHits(rdf, suffix=""):
         "TTU_Hodo_Y")
 
     return [h_nhit_x, h_nhit_y, h_x_pos, h_y_pos, h_xy_pos]
+
+
+def makePSDvsHodo(rdf, suffix=""):
+    """Book 2D profile of PSD energy sum vs TTU hodoscope X and Y positions."""
+    rdf = rdf.Define("PSD_Sum_neg", "-PSD_Sum")
+    prof = rdf.Profile2D(
+        (f"PSD_sum_profile_{suffix}",
+         "Average PSD Sum vs Hodoscope X and Y"
+         ";TTU Hodo X (cm);TTU Hodo Y (cm);Average PSD Sum",
+         hodo_nbins, hodo_min, hodo_max,
+         hodo_nbins, hodo_min, hodo_max),
+        "TTU_Hodo_X", "TTU_Hodo_Y", "PSD_Sum_neg"
+    )
+    count = rdf.Histo2D(
+        (f"PSD_hodo_count_{suffix}",
+         "Event count vs Hodoscope X and Y"
+         ";TTU Hodo X (cm);TTU Hodo Y (cm);Counts",
+         hodo_nbins, hodo_min, hodo_max,
+         hodo_nbins, hodo_min, hodo_max),
+        "TTU_Hodo_X", "TTU_Hodo_Y"
+    )
+    return [prof, count]
+
+
+def plotPSDvsHodo():
+    """Plot 2D profile of PSD energy sum vs TTU hodoscope positions."""
+    infilename = f"{paths['root']}/ttuhodo_nhits.root"
+
+    with PlotManager(paths['root'], paths['plots'], paths['html'], run_number) as pm:
+        pm.set_output_dir("ttuhodo")
+        infile = ROOT.TFile.Open(infilename, "READ")
+
+        for suffix in rdfs.keys():
+            hist_prof = infile.Get(f"PSD_sum_profile_{suffix}")
+            if hist_prof:
+                pm.plot_2d(hist_prof,
+                           f"PSD_sum_profile_{suffix}",
+                           "TTU Hodo X [cm]", (hodo_min, hodo_max),
+                           "TTU Hodo Y [cm]", (hodo_min, hodo_max),
+                           style=STYLE_PROFILE)
+
+            hist_count = infile.Get(f"PSD_hodo_count_{suffix}")
+            if hist_count:
+                pm.plot_2d(hist_count,
+                           f"PSD_hodo_count_{suffix}",
+                           "TTU Hodo X [cm]", (hodo_min, hodo_max),
+                           "TTU Hodo Y [cm]", (hodo_min, hodo_max),
+                           style=STYLE_2D_LOG)
+
+        infile.Close()
+
+        intro_text = """2D profile of the average PSD energy sum as a function of TTU hodoscope X and Y
+hit positions [cm], shown for inclusive and each particle selection."""
+
+        output_html = pm.generate_html(
+            "TTUHodo/psd_vs_hodo.html",
+            plots_per_row=2,
+            title="PSD Energy vs Hodoscope Position",
+            intro_text=intro_text
+        )
+        print(f"Generated HTML: {output_html}")
+        return output_html
 
 
 def plotTTUHodoHits():
@@ -147,21 +224,25 @@ If no hits are recorded, the corresponding entries will be underflow bins (-1)."
 
 def main():
     output_path = paths['root']
-    rdf = rdf_org
 
-    hists = makeTTUHodoHits(rdf, "inc")
+    # Hodoscope occupancy: inclusive + hole-veto only
+    hists_hodo = makeTTUHodoHits(rdf_org, "inc")
+    rdf_hole_veto = rdf_org.Filter("is_HoleVeto_vetoed", "Apply Hole Veto")
+    hists_hodo += makeTTUHodoHits(rdf_hole_veto, "holeveto")
 
-    # With hole veto
-    rdf_hole_veto = rdf.Filter("is_HoleVeto_vetoed", "Apply Hole Veto")
-    hists_veto = makeTTUHodoHits(rdf_hole_veto, "holeveto")
+    # PSD vs hodo profile: inclusive + all particle selections
+    hists_psd = []
+    for suffix, rdf in rdfs.items():
+        hists_psd += makePSDvsHodo(rdf, suffix)
+    # hists_psd += makePSDvsHodo(rdf_org, "inc")
 
-    # Run the RDF
-    ROOT.RDF.RunGraphs(hists + hists_veto)
-    save_hists_to_file(
-        hists + hists_veto,
-        f"{output_path}/ttuhodo_nhits.root"
-    )
+    # Run the RDF graph and save
+    all_hists = hists_hodo + hists_psd
+    ROOT.RDF.RunGraphs(all_hists)
+    save_hists_to_file(all_hists, f"{output_path}/ttuhodo_nhits.root")
+
     plotTTUHodoHits()
+    plotPSDvsHodo()
 
     PlotManager.print_html_summary()
 
