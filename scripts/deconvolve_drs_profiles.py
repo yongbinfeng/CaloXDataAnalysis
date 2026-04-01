@@ -199,7 +199,9 @@ def deconvolveDRSvsTS(
 # ---------------------------------------------------------------------------
 # Plotting
 # ---------------------------------------------------------------------------
-def makeDRSDeconvPlots(suffix: str = ""):
+def makeDRSDeconvPlots(suffix: str = "",
+                       pulse_file: str = DEFAULT_PULSE_FILE,
+                       ts_per_pulse_ts: int = 4):
     """Plot deconvolved DRS vs TS overlaid with the measured profile.
 
     Only 3mm boards are included.  For each channel the deconvolved histogram
@@ -354,6 +356,31 @@ def makeDRSDeconvPlots(suffix: str = ""):
                 ),
                 extraToDraw=pave
             )
+
+    # Pulse shape plot (added with prepend so it sits on the same first row
+    # as the combined plots, which are also prepended after this)
+    pulse_raw = np.load(pulse_file).astype(float)
+    n_full = (len(pulse_raw) // ts_per_pulse_ts) * ts_per_pulse_ts
+    pulse_ds = pulse_raw[:n_full].reshape(-1, ts_per_pulse_ts).mean(axis=1)
+    peak_idx = int(np.argmax(pulse_ds))
+    n_pulse = len(pulse_ds)
+    # x-axis in TS relative to the peak
+    h_pulse = ROOT.TH1D(
+        f"pulse_shape_{suffix}", "Pulse shape;TS relative to peak;Amplitude",
+        n_pulse, -peak_idx, n_pulse - peak_idx)
+    peak_val = pulse_ds[peak_idx]
+    for i, val in enumerate(pulse_ds):
+        h_pulse.SetBinContent(i + 1, val / peak_val)
+    pm.plot_1d(
+        [h_pulse],
+        f"pulse_shape_{suffix}",
+        "TS relative to peak", (-50, 200),
+        ylabel="Normalised amplitude", yrange=(-0.2, 1.2),
+        legends=["Pulse shape"],
+        style=PlotStyle(dology=False, drawoptions="HIST",
+                        mycolors=[1], addOverflow=False, addUnderflow=False),
+        prepend=True
+    )
 
     # Summary / combined plots: deconvolved (solid) + measured (dashed)
     if hists_Cer:
