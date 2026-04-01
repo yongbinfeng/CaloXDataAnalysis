@@ -15,7 +15,13 @@ echo $SLURM_NODELIST
 JOBTMP="/tmp/root_cache_RUNNUMBER"
 
 singularity_cmd = "singularity run --cleanenv --bind /lustre:/lustre /lustre/work/yofeng/SimulationEnv/alma9forgeant4_v3.sif"
-run_cmd = "mkdir -p JOBTMP; export PCM_CACHE_DIR=JOBTMP; export TMPDIR=JOBTMP; cd SCRIPTDIR && python scripts/make_dqm_hists.py --run RUNNUMBER && python scripts/make_dqm_plots.py --run RUNNUMBER && python scripts/check_service_drs.py --run RUNNUMBER && python scripts/make_fers_energy_plots.py --run RUNNUMBER && python scripts/check_beam_composition.py --run RUNNUMBER"
+run_cmd_prep = "mkdir -p JOBTMP; export PCM_CACHE_DIR=JOBTMP; export TMPDIR=JOBTMP; cd SCRIPTDIR" 
+#run_cmd_exec = " && python scripts/make_dqm_hists.py --run RUNNUMBER && python scripts/make_dqm_plots.py --run RUNNUMBER && python scripts/make_fers_energy_plots.py --run RUNNUMBER && python scripts/check_beam_composition.py --run RUNNUMBER && python scripts/check_ttu_hodo.py --run RUNNUMBER && python scripts/check_service_drs.py --run RUNNUMBER"
+#run_cmd_exec = " && python scripts/make_drs_timing_plots.py --run RUNNUMBER && python scripts/check_service_drs.py --run RUNNUMBER"
+run_cmd_exec = " && python scripts/make_fers_energy_plots.py --run RUNNUMBER"
+run_cmd = run_cmd_prep + run_cmd_exec
+
+bad_runs = [1356, 1374, 1375, 1376, 1377, 1378, 1379, 1380, 1381, 1382, 1383, 1384, 1385, 1386, 1387, 1391, 1392, 1393, 1394, 1396, 1401, 1403, 1421, 1425, 1426, 1427, 1428, 1444, 1448, 1449, 1450, 1451, 1453, 1454, 1455, 1456, 1457, 1458, 1460, 1461, 1462, 1463, 1464, 1466, 1467, 1481, 1482, 1503]
 
 import os
 
@@ -35,6 +41,8 @@ if not os.path.exists(log_dir):
 def generate_submission_script(runlist):
     fnames = []
     for i, run_number in enumerate(runlist):
+        if run_number in bad_runs:
+            continue
         jobname = f"{jobname_prefix}_{run_number}"
         run_cmd_tmp = run_cmd.replace("SCRIPTDIR", script_dir).replace("JOBTMP",JOBTMP).replace("RUNNUMBER", str(run_number))
         run_cmd_tmp = singularity_cmd + " bash -c \"" + run_cmd_tmp + "\""
