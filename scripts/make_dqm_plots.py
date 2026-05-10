@@ -25,7 +25,7 @@ auto_timer("Total Execution Time")
 
 setup_root(n_threads=1, batch_mode=True, load_functions=False)
 
-doDetailedPlots = False
+do_detailed_plots = True
 
 args = get_args()
 run_number = args.run
@@ -56,7 +56,7 @@ STYLE_2D_LOG = PlotStyle(
 )
 
 
-def makeConditionsPlots():
+def make_conditions_plots():
     """Plot FERS board conditions (voltage, current, temperature) vs event."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("Conditions_VS_Event")
@@ -72,23 +72,23 @@ def makeConditionsPlots():
         for fersboard in fersboards.values():
             board_no = fersboard.board_no
 
-            hprof_SipmHV = infile.Get(
+            hprof_sipm_hv = infile.Get(
                 f"hprof_{fersboard.get_sipm_hv_name()}_VS_Event")
-            hprof_SipmI = infile.Get(
+            hprof_sipm_i = infile.Get(
                 f"hprof_{fersboard.get_sipm_i_name()}_VS_Event")
-            hprof_TempDET = infile.Get(
+            hprof_temp_det = infile.Get(
                 f"hprof_{fersboard.get_temp_det_name()}_VS_Event")
-            hprof_TempFPGA = infile.Get(
+            hprof_temp_fpga = infile.Get(
                 f"hprof_{fersboard.get_temp_fpga_name()}_VS_Event")
 
-            if not all([hprof_SipmHV, hprof_SipmI, hprof_TempDET, hprof_TempFPGA]):
+            if not all([hprof_sipm_hv, hprof_sipm_i, hprof_temp_det, hprof_temp_fpga]):
                 print(f"Warning: Some profiles not found for board {board_no}")
                 continue
 
-            profiles["SipmHV"].append(hprof_SipmHV)
-            profiles["SipmI"].append(hprof_SipmI)
-            profiles["TempDET"].append(hprof_TempDET)
-            profiles["TempFPGA"].append(hprof_TempFPGA)
+            profiles["SipmHV"].append(hprof_sipm_hv)
+            profiles["SipmI"].append(hprof_sipm_i)
+            profiles["TempDET"].append(hprof_temp_det)
+            profiles["TempFPGA"].append(hprof_temp_fpga)
             legends.append(str(board_no))
 
         if not profiles["SipmHV"]:
@@ -121,7 +121,7 @@ def makeConditionsPlots():
         return pm.generate_html("Conditions/conditions_vs_event.html", plots_per_row=4)
 
 
-def makeFERSSumPlots():
+def make_fers_sum_plots():
     """Plot FERS energy sums vs event."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("FERS_EnergySum_VS_Event")
@@ -200,7 +200,7 @@ def makeFERSSumPlots():
         return pm.generate_html("Conditions/FERS_energysum_vs_event.html", plots_per_row=6)
 
 
-def makeFERS1DPlots():
+def make_fers_1d_plots():
     """Plot 1D FERS channel energy distributions."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("FERS_1D")
@@ -210,15 +210,15 @@ def makeFERS1DPlots():
         for fersboard in fersboards.values():
             board_no = fersboard.board_no
             for i_tower_x, i_tower_y in fersboard.get_list_of_towers():
-                sTowerX = number_to_string(i_tower_x)
-                sTowerY = number_to_string(i_tower_y)
+                s_tower_x = number_to_string(i_tower_x)
+                s_tower_y = number_to_string(i_tower_y)
 
-                hist_C = infile.Get(
-                    f"hist_FERS_Board{board_no}_Cer_{sTowerX}_{sTowerY}")
-                hist_S = infile.Get(
-                    f"hist_FERS_Board{board_no}_Sci_{sTowerX}_{sTowerY}")
+                hist_c = infile.Get(
+                    f"hist_FERS_Board{board_no}_Cer_{s_tower_x}_{s_tower_y}")
+                hist_s = infile.Get(
+                    f"hist_FERS_Board{board_no}_Sci_{s_tower_x}_{s_tower_y}")
 
-                if not hist_C or not hist_S:
+                if not hist_c or not hist_s:
                     print(
                         f"Warning: Histograms not found for Board {board_no}, Tower ({i_tower_x}, {i_tower_y})")
                     continue
@@ -232,8 +232,8 @@ def makeFERS1DPlots():
                 )
 
                 pm.plot_1d(
-                    [hist_C, hist_S],
-                    f"Energy_Board{board_no}_iTowerX{sTowerX}_iTowerY{sTowerY}",
+                    [hist_c, hist_s],
+                    f"Energy_Board{board_no}_iTowerX{s_tower_x}_iTowerY{s_tower_y}",
                     "Energy HG",
                     (0, 1000),
                     ylabel="Counts",
@@ -247,7 +247,7 @@ def makeFERS1DPlots():
         return pm.generate_html("FERS/ChannelADC.html")
 
 
-def makeFERSStatsPlots(includePedestals=False):
+def make_fers_stats_plots(include_pedestals=False):
     """Plot FERS channel statistics as 2D board maps."""
     import json
 
@@ -260,13 +260,13 @@ def makeFERSStatsPlots(includePedestals=False):
         with open(f"{paths['root']}/fers_stats.json", "r") as f:
             stats = json.load(f)
 
-        pedestals_HG = {}
-        pedestals_LG = {}
-        if includePedestals:
+        pedestals_hg = {}
+        pedestals_lg = {}
+        if include_pedestals:
             with open(f"{paths['root']}/fers_pedestals_hg.json", "r") as f:
-                pedestals_HG = json.load(f)
+                pedestals_hg = json.load(f)
             with open(f"{paths['root']}/fers_pedestals_lg.json", "r") as f:
-                pedestals_LG = json.load(f)
+                pedestals_lg = json.load(f)
 
         # Organize stats by type
         valuemaps = {}
@@ -274,17 +274,17 @@ def makeFERSStatsPlots(includePedestals=False):
             for stat in ["mean", "max", "satfreq", "pedestal"]:
                 valuemaps[f"{gain}_{stat}"] = {}
 
-        for channelName, (vmean, vmax, vSatfreq) in stats.items():
-            gain = "HG" if "energyHG" in channelName else "LG"
-            valuemaps[f"{gain}_mean"][channelName] = vmean
-            valuemaps[f"{gain}_max"][channelName] = vmax
-            valuemaps[f"{gain}_satfreq"][channelName] = vSatfreq
+        for channel_name, (vmean, vmax, v_satfreq) in stats.items():
+            gain = "HG" if "energyHG" in channel_name else "LG"
+            valuemaps[f"{gain}_mean"][channel_name] = vmean
+            valuemaps[f"{gain}_max"][channel_name] = vmax
+            valuemaps[f"{gain}_satfreq"][channel_name] = v_satfreq
             if gain == "HG":
-                valuemaps[f"{gain}_pedestal"][channelName] = pedestals_HG.get(
-                    channelName, 0.)
+                valuemaps[f"{gain}_pedestal"][channel_name] = pedestals_hg.get(
+                    channel_name, 0.)
             else:
-                valuemaps[f"{gain}_pedestal"][channelName] = pedestals_LG.get(
-                    channelName, 0.)
+                valuemaps[f"{gain}_pedestal"][channel_name] = pedestals_lg.get(
+                    channel_name, 0.)
 
         # Create visualizations
         board_hists = {}
@@ -350,7 +350,7 @@ def makeFERSStatsPlots(includePedestals=False):
     return output_htmls
 
 
-def makeFERSMaxValuePlots():
+def make_fers_max_value_plots():
     """Plot FERS max value distributions."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("FERS_MaxValues")
@@ -392,7 +392,7 @@ def makeFERSMaxValuePlots():
                 )
 
         # Total plots with saturation fractions
-        VSat = 8000
+        v_sat = 8000
         for gain in ["HG", "LG"]:
             hist_cer = infile.Get(
                 f'hist_{fersboards.get_energy_max_name(gain=gain, isCer=True)}')
@@ -401,9 +401,9 @@ def makeFERSMaxValuePlots():
 
             if hist_cer and hist_sci:
                 frac_sci = hist_sci.Integral(hist_sci.FindBin(
-                    VSat), 100000) / (hist_sci.Integral(0, 100000) + 1e-6)
+                    v_sat), 100000) / (hist_sci.Integral(0, 100000) + 1e-6)
                 frac_cer = hist_cer.Integral(hist_cer.FindBin(
-                    VSat), 100000) / (hist_cer.Integral(0, 100000) + 1e-6)
+                    v_sat), 100000) / (hist_cer.Integral(0, 100000) + 1e-6)
 
                 pave = create_pave_text(0.20, 0.63, 0.90, 0.72)
                 pave.AddText(f"Sat Frac Sci : {frac_sci:.3f}")
@@ -425,7 +425,7 @@ def makeFERSMaxValuePlots():
         return pm.generate_html("FERS/Stat/Channel_Max_1D.html", plots_per_row=2)
 
 
-def makeFERS2DPlots():
+def make_fers_2d_plots():
     """Plot 2D FERS HG vs LG correlations."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("FERS_2D")
@@ -435,13 +435,13 @@ def makeFERS2DPlots():
         for fersboard in fersboards.values():
             board_no = fersboard.board_no
             for i_tower_x, i_tower_y in fersboard.get_list_of_towers():
-                sTowerX = number_to_string(i_tower_x)
-                sTowerY = number_to_string(i_tower_y)
+                s_tower_x = number_to_string(i_tower_x)
+                s_tower_y = number_to_string(i_tower_y)
 
                 for var in ["Cer", "Sci"]:
                     chan = fersboard.get_channel_by_tower(
                         i_tower_x, i_tower_y, isCer=(var == "Cer"))
-                    hist_name = f"hist_FERS_Board{board_no}_{var}_{sTowerX}_{sTowerY}_hg_VS_lg"
+                    hist_name = f"hist_FERS_Board{board_no}_{var}_{s_tower_x}_{s_tower_y}_hg_VS_lg"
                     hist = infile.Get(hist_name)
 
                     if not hist:
@@ -455,7 +455,7 @@ def makeFERS2DPlots():
 
                     pm.plot_2d(
                         hist,
-                        f"FERS_Board{board_no}_{var}_{sTowerX}_{sTowerY}_hg_VS_lg",
+                        f"FERS_Board{board_no}_{var}_{s_tower_x}_{s_tower_y}_hg_VS_lg",
                         "HG", (0, 9000),
                         "LG", (0, 1500),
                         style=STYLE_2D_LOG,
@@ -465,7 +465,7 @@ def makeFERS2DPlots():
         return pm.generate_html("FERS/LG_vs_HG.html", plots_per_row=4)
 
 
-def trackFERSPlots():
+def track_fers_plots():
     """Plot FERS output vs event number."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("FERS_VS_Event")
@@ -475,13 +475,13 @@ def trackFERSPlots():
         for fersboard in fersboards.values():
             board_no = fersboard.board_no
             for i_tower_x, i_tower_y in fersboard.get_list_of_towers():
-                sTowerX = number_to_string(i_tower_x)
-                sTowerY = number_to_string(i_tower_y)
+                s_tower_x = number_to_string(i_tower_x)
+                s_tower_y = number_to_string(i_tower_y)
 
                 for var in ["Cer", "Sci"]:
                     chan = fersboard.get_channel_by_tower(
                         i_tower_x, i_tower_y, isCer=(var == "Cer"))
-                    hist_name = f"hist_FERS_Board{board_no}_{var}_VS_Event_{sTowerX}_{sTowerY}"
+                    hist_name = f"hist_FERS_Board{board_no}_{var}_VS_Event_{s_tower_x}_{s_tower_y}"
                     hist = infile.Get(hist_name)
 
                     if not hist:
@@ -498,7 +498,7 @@ def trackFERSPlots():
 
                     pm.plot_2d(
                         hist,
-                        f"FERS_Board{board_no}_{var}_{sTowerX}_{sTowerY}_VS_Event",
+                        f"FERS_Board{board_no}_{var}_{s_tower_x}_{s_tower_y}_VS_Event",
                         "Event", (0, n_events),
                         f"{var} Energy HG", (1, 1e5),
                         style=PlotStyle(dology=True, dologz=True,
@@ -509,7 +509,7 @@ def trackFERSPlots():
         return pm.generate_html("FERS_VS_Event/index.html", plots_per_row=4)
 
 
-def makeDRSVSTSPlots():
+def make_drs_vs_ts_plots():
     """Plot DRS output vs time slice."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("DRS_VS_TS")
@@ -517,88 +517,79 @@ def makeDRSVSTSPlots():
         infile = pm._get_file("drs_vs_ts.root")
 
         for _, DRSBoard in DRSBoards.items():
-            for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
-                sTowerX = number_to_string(i_tower_x)
-                sTowerY = number_to_string(i_tower_y)
+            for channel in DRSBoard.channels:
+                channel_name = channel.get_channel_name(blsub=True)
+                var = "Cer" if channel.isCer else "Sci"
+                hist_name = f"hist_{channel_name}_VS_TS"
+                hist = infile.Get(hist_name)
 
-                for var in ["Cer", "Sci"]:
-                    chan = DRSBoard.get_channel_by_tower(
-                        i_tower_x, i_tower_y, isCer=(var == "Cer"))
-                    if chan is None:
-                        print(
-                            f"Warning: No channel found for Board {DRSBoard.board_no}, Tower ({i_tower_x}, {i_tower_y}), Var {var}")
-                        continue
+                if not hist:
+                    print(f"Warning: Histogram {hist_name} not found")
+                    continue
 
-                    channelName = chan.get_channel_name(blsub=True)
-                    hist_name = f"hist_{channelName}_VS_TS"
-                    hist = infile.Get(hist_name)
+                ymin_tmp, ymax_tmp = get_drs_plot_ranges(
+                    subtractMedian=True, is_amplified=channel.is_amplified, is6mm=channel.is6mm
+                )
 
-                    if not hist:
-                        print(f"Warning: Histogram {hist_name} not found")
-                        continue
+                pave = create_pave_text(0.20, 0.75, 0.60, 0.90)
+                pave.AddText(
+                    f"B: {DRSBoard.board_no}, G: {channel.group_no}, C: {channel.channel_no}")
+                if not channel.is_reference:
+                    pave.AddText(f"i_tower_x: {channel.i_tower_x}")
+                    pave.AddText(f"i_tower_y: {channel.i_tower_y}")
 
-                    ymin_tmp, ymax_tmp = get_drs_plot_ranges(
-                        subtractMedian=True, is_amplified=chan.is_amplified, is6mm=chan.is6mm
-                    )
+                pm.plot_2d(
+                    hist,
+                    f"DRS_{channel_name}_VS_TS",
+                    "Time Slice", (0, 1024),
+                    "DRS Output", (ymin_tmp, ymax_tmp),
+                    style=STYLE_2D_LOG,
+                    extraToDraw=pave,
+                    extra_text=var
+                )
 
-                    pave = create_pave_text(0.20, 0.75, 0.60, 0.90)
-                    pave.AddText(
-                        f"B: {DRSBoard.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    pave.AddText(f"i_tower_x: {i_tower_x}")
-                    pave.AddText(f"i_tower_y: {i_tower_y}")
-
-                    pm.plot_2d(
-                        hist,
-                        f"DRS_{var}_VS_TS_{sTowerX}_{sTowerY}",
-                        "Time Slice", (0, 1024),
-                        "DRS Output", (ymin_tmp, ymax_tmp),
-                        style=STYLE_2D_LOG,
-                        extraToDraw=pave,
-                        extra_text=var
-                    )
-
-        return pm.generate_html("DRS/DRS_vs_TS.html", plots_per_row=2)
+        return pm.generate_html("DRS/DRS_vs_TS.html", plots_per_row=8, title="DRS Output vs Time Slice", intro_text="2D histograms of DRS output vs time slice for all channels.")
 
 
-def makeDRSPeakTSPlots():
+def make_drs_peak_ts_plots():
     """Plot DRS peak time slice distributions."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("DRSPeakTS")
 
         infile = pm._get_file("drspeakts.root")
 
-        hists_Cer = []
-        hists_Sci = []
+        hists_cer = []
+        hists_sci = []
 
         for _, DRSBoard in DRSBoards.items():
             board_no = DRSBoard.board_no
             for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
-                sTowerX = number_to_string(i_tower_x)
-                sTowerY = number_to_string(i_tower_y)
+                s_tower_x = number_to_string(i_tower_x)
+                s_tower_y = number_to_string(i_tower_y)
 
                 hists = {}
-                channelNos = {}
+                channel_nos = {}
                 for var in ["Cer", "Sci"]:
                     chan = DRSBoard.get_channel_by_tower(
                         i_tower_x, i_tower_y, isCer=(var == "Cer"))
-                    hist_name = f"hist_DRSPeakTS_{var}_{sTowerX}_{sTowerY}"
+                    hist_name = f"hist_DRSPeakTS_{var}_{s_tower_x}_{s_tower_y}"
                     hist = infile.Get(hist_name)
                     hists[var] = hist
-                    channelNos[var] = chan.channel_no if chan else -1
+                    channel_nos[var] = chan.channel_no if chan else -1
 
                 if not hists["Cer"] or not hists["Sci"]:
                     print(
                         f"Warning: Histograms not found for Board {board_no}, Tower ({i_tower_x}, {i_tower_y})")
                     continue
 
-                hists_Cer.append(hists["Cer"])
-                hists_Sci.append(hists["Sci"])
+                hists_cer.append(hists["Cer"])
+                hists_sci.append(hists["Sci"])
 
-                if doDetailedPlots:
+                if do_detailed_plots:
                     pave = create_board_info_pave(
                         board_no, i_tower_x, i_tower_y,
                         channel_info={
-                            "Cer": channelNos["Cer"], "Sci": channelNos["Sci"]}
+                            "Cer": channel_nos["Cer"], "Sci": channel_nos["Sci"]}
                     )
                     # Add group info
                     pave_lines = list(pave.GetListOfLines())
@@ -607,7 +598,7 @@ def makeDRSPeakTSPlots():
 
                     pm.plot_1d(
                         [hists["Cer"], hists["Sci"]],
-                        f"hist_DRSPeakTS_{sTowerX}_{sTowerY}",
+                        f"hist_DRSPeakTS_{s_tower_x}_{s_tower_y}",
                         "Peak TS", (400, 600),
                         yrange=(1, None),
                         legends=["Cer", "Sci"],
@@ -616,14 +607,14 @@ def makeDRSPeakTSPlots():
                     )
 
         # Summary plot
-        if hists_Cer and hists_Sci:
-            hist_Cer_Combined = LHistos2Hist(
-                hists_Cer, "hist_DRSPeakTS_Cer_Combined")
-            hist_Sci_Combined = LHistos2Hist(
-                hists_Sci, "hist_DRSPeakTS_Sci_Combined")
+        if hists_cer and hists_sci:
+            hist_cer_combined = LHistos2Hist(
+                hists_cer, "hist_DRSPeakTS_Cer_Combined")
+            hist_sci_combined = LHistos2Hist(
+                hists_sci, "hist_DRSPeakTS_Sci_Combined")
 
             pm.plot_1d(
-                [hist_Cer_Combined, hist_Sci_Combined],
+                [hist_cer_combined, hist_sci_combined],
                 "DRS_PeakTS_Combined",
                 "Peak TS", (400, 600),
                 yrange=(1, None),
@@ -635,7 +626,7 @@ def makeDRSPeakTSPlots():
         return pm.generate_html("DRS/DRS_PeakTS.html", plots_per_row=4)
 
 
-def makeDRSPeakTSCerVSSciPlots():
+def make_drs_peak_ts_cer_vs_sci_plots():
     """Plot DRS peak time slice Cer vs Sci correlations."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("DRSPeakTSCerVSSci")
@@ -652,10 +643,10 @@ def makeDRSPeakTSCerVSSciPlots():
 
         for _, DRSBoard in DRSBoards.items():
             for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
-                sTowerX = number_to_string(i_tower_x)
-                sTowerY = number_to_string(i_tower_y)
+                s_tower_x = number_to_string(i_tower_x)
+                s_tower_y = number_to_string(i_tower_y)
 
-                hist_name = f"hist_DRSPeakTS_Cer_VS_Sci_{sTowerX}_{sTowerY}"
+                hist_name = f"hist_DRSPeakTS_Cer_VS_Sci_{s_tower_x}_{s_tower_y}"
                 hist = infile.Get(hist_name)
 
                 if not hist:
@@ -664,10 +655,10 @@ def makeDRSPeakTSCerVSSciPlots():
 
                 hists.append(hist)
 
-                if doDetailedPlots:
+                if do_detailed_plots:
                     pm.plot_2d(
                         hist,
-                        f"DRSPeakTS_Cer_VS_Sci_{sTowerX}_{sTowerY}",
+                        f"DRSPeakTS_Cer_VS_Sci_{s_tower_x}_{s_tower_y}",
                         "Sci Peak TS", (400, 600),
                         "Cer Peak TS", (400, 600),
                         style=PlotStyle(
@@ -693,10 +684,10 @@ def makeDRSPeakTSCerVSSciPlots():
         return pm.generate_html("DRS/DRS_PeakTS_Cer_VS_Sci.html", plots_per_row=4)
 
 
-def compareTimeReferencePlots(doSubtractMedian=False):
+def compare_time_reference_plots(do_subtract_median=False):
     """Plot time reference channel distributions."""
-    suffix = "_subtractMedian" if doSubtractMedian else ""
-    ymin, ymax = (-2500, 500) if doSubtractMedian else (500, 2500)
+    suffix = "_subtractMedian" if do_subtract_median else ""
+    ymin, ymax = (-2500, 500) if do_subtract_median else (500, 2500)
 
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("TimeReference")
@@ -726,7 +717,7 @@ def compareTimeReferencePlots(doSubtractMedian=False):
         return pm.generate_html(f"TimeReference{suffix}/index.html", plots_per_row=2)
 
 
-def compareServiceDRSPlots():
+def compare_service_drs_plots():
     """Plot service DRS channel distributions."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("ServiceDRS")
@@ -759,7 +750,7 @@ def compareServiceDRSPlots():
         return pm.generate_html("ServiceDRS/detectors.html", plots_per_row=2)
 
 
-def compareMCPPlots():
+def compare_mcp_plots():
     """Plot MCP channel distributions."""
     ymin, ymax = -1500, 500
 
@@ -792,7 +783,7 @@ def compareMCPPlots():
         return pm.generate_html("ServiceDRS/MCP.html", plots_per_row=4)
 
 
-def makeDRSSumVSFERSPlots():
+def make_drs_sum_vs_fers_plots():
     """Plot DRS sum vs FERS correlations."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("DRSSum_VS_FERS")
@@ -806,12 +797,12 @@ def makeDRSSumVSFERSPlots():
 
         for _, DRSBoard in DRSBoards.items():
             for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
-                sTowerX = number_to_string(i_tower_x)
-                sTowerY = number_to_string(i_tower_y)
+                s_tower_x = number_to_string(i_tower_x)
+                s_tower_y = number_to_string(i_tower_y)
 
                 for var in ["Cer", "Sci"]:
                     for gain in ["FERS", "FERSLG"]:
-                        histname = f"hist_DRSSum_VS_{gain}_{var}_{sTowerX}_{sTowerY}"
+                        histname = f"hist_DRSSum_VS_{gain}_{var}_{s_tower_x}_{s_tower_y}"
                         hist = infile.Get(histname)
 
                         if not hist:
@@ -820,7 +811,7 @@ def makeDRSSumVSFERSPlots():
 
                         hists.append(hist)
 
-                        if doDetailedPlots:
+                        if do_detailed_plots:
                             zmax = round_up_to_1eN(
                                 hist.Integral(0, 10000, 0, 10000))
                             tmp = xymax[var] if gain == "FERS" else xymax_LG[var]
@@ -865,7 +856,7 @@ def makeDRSSumVSFERSPlots():
         return pm.generate_html("DRS_VS_FERS/DRSSum_vs_FERS.html", plots_per_row=4)
 
 
-def makeDRSPeakVSFERSPlots():
+def make_drs_peak_vs_fers_plots():
     """Plot DRS peak vs FERS correlations."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("DRSPeak_VS_FERS")
@@ -875,8 +866,8 @@ def makeDRSPeakVSFERSPlots():
         for _, DRSBoard in DRSBoards.items():
             board_no = DRSBoard.board_no
             for i_tower_x, i_tower_y in DRSBoard.get_list_of_towers():
-                sTowerX = number_to_string(i_tower_x)
-                sTowerY = number_to_string(i_tower_y)
+                s_tower_x = number_to_string(i_tower_x)
+                s_tower_y = number_to_string(i_tower_y)
 
                 for var in ["Cer", "Sci"]:
                     chan = DRSBoard.get_channel_by_tower(
@@ -890,7 +881,7 @@ def makeDRSPeakVSFERSPlots():
                         subtractMedian=True, is_amplified=chan.is_amplified, is6mm=chan.is6mm
                     )
 
-                    histname = f"hist_DRSPeak_VS_FERS_{var}_{sTowerX}_{sTowerY}"
+                    histname = f"hist_DRSPeak_VS_FERS_{var}_{s_tower_x}_{s_tower_y}"
                     hist = infile.Get(histname)
 
                     if not hist:
@@ -915,24 +906,24 @@ def main():
 
     # Task Registry: (Label, Function)
     plot_tasks = [
-        ("Conditions", makeConditionsPlots),
-        ("FERS Sum", makeFERSSumPlots),
+        ("Conditions", make_conditions_plots),
+        ("FERS Sum", make_fers_sum_plots),
         ("FERS Mapping", lambda: DrawFERSBoards(run=run_number)),
         ("DRS Mapping", lambda: DrawDRSBoards(run=run_number)),
-        ("FERS Stats", lambda: makeFERSStatsPlots(includePedestals=True)),
-        ("DRS Peak TS", makeDRSPeakTSPlots),
-        ("DRS Peak TS Cer vs Sci", makeDRSPeakTSCerVSSciPlots),
-        ("Service DRS", compareServiceDRSPlots),
-        ("MCP", compareMCPPlots),
-        ("FERS Max Values", makeFERSMaxValuePlots),
-        ("DRS Sum vs FERS", makeDRSSumVSFERSPlots),
+        ("FERS Stats", lambda: make_fers_stats_plots(include_pedestals=True)),
+        # ("DRS Peak TS", make_drs_peak_ts_plots),
+        # ("DRS Peak TS Cer vs Sci", make_drs_peak_ts_cer_vs_sci_plots),
+        # ("Service DRS", compare_service_drs_plots),
+        # ("MCP", compare_mcp_plots),
+        ("FERS Max Values", make_fers_max_value_plots),
+        # ("DRS Sum vs FERS", make_drs_sum_vs_fers_plots),
     ]
 
-    if doDetailedPlots:
+    if do_detailed_plots:
         plot_tasks.extend([
-            ("FERS 1D", makeFERS1DPlots),
-            ("DRS vs TS", makeDRSVSTSPlots),
-            ("DRS Peak vs FERS", makeDRSPeakVSFERSPlots),
+            ("FERS 1D", make_fers_1d_plots),
+            ("DRS vs TS", make_drs_vs_ts_plots),
+            # ("DRS Peak vs FERS", make_drs_peak_vs_fers_plots),
         ])
 
     output_htmls = {}

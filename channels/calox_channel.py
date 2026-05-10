@@ -73,12 +73,13 @@ class FERSChannel(CaloXChannel):
 class DRSChannel(CaloXChannel):
     def __init__(self, i_tower_x: float, i_tower_y: float, isCer: bool,
                  channel_no: int, group_no: int, board_no: int,
-                 is_amplified: bool = False, is6mm: bool = True, isQuartz: bool = False):
+                 is_amplified: bool = False, is6mm: bool = True, isQuartz: bool = False, is_reference: bool = False):
         super().__init__(i_tower_x, i_tower_y, isCer, isQuartz, is6mm)
         self.channel_no = channel_no
         self.group_no = group_no
         self.board_no = board_no
         self.is_amplified = is_amplified
+        self.is_reference = is_reference
 
     def get_channel_name(self, blsub=False):
         channelName = f"DRS_Board{self.board_no}_Group{self.group_no}_Channel{self.channel_no}"
@@ -303,7 +304,8 @@ class DRSBoard(Board):
         """
         Remove a channel from the board by group number and channel number.
         """
-        channel_to_remove = self.get_channel_by_group_channel(group_no, chan_no)
+        channel_to_remove = self.get_channel_by_group_channel(
+            group_no, chan_no)
         if channel_to_remove:
             self.channels.remove(channel_to_remove)
         else:
@@ -449,6 +451,10 @@ def build_drs_base(is6mm=True, board_no=0):
                 channel = DRSChannel(
                     int(ix/2), -float(iy)/4, isCer, chan_no, group_no, board_no, is6mm=False, is_amplified=True)
             channels_DRS.append(channel)
+        # add reference channel for each group
+        ref_channel = DRSChannel(-999, -999, False, 8,
+                                 ix, board_no, is_reference=True)
+        channels_DRS.append(ref_channel)
     return channels_DRS
 
 

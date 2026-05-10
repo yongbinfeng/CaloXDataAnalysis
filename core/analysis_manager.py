@@ -29,7 +29,12 @@ class CaloXAnalysisManager:
         self.beam_type, self.beam_energy = getRunInfo(self.run_number)
         self.fersboards = build_fers_boards(run=self.run_number)
         self.drsboards = build_drs_boards(run=self.run_number)
+
         self.paths = get_run_paths(self.run_number)
+        for path in self.paths.values():
+            if not os.path.exists(path):
+                os.makedirs(path)
+                print(f"Created directory: {path}")
 
         self.tchain = None
         self.rdf_org = None

@@ -9,16 +9,42 @@ ROOT::RVec<int> FillIndices(size_t n)
     return out;
 }
 
-float compute_median(ROOT::RVec<float> vec)
+float compute_baseline_median(const ROOT::RVec<float> &vec,
+                              size_t ibegin = 0,
+                              size_t iend = -1)
 {
     if (vec.empty())
-        return -9999;
-    std::sort(vec.begin(), vec.end());
-    size_t n = vec.size();
-    if (n % 2 == 0)
-        return 0.5 * (vec[n / 2 - 1] + vec[n / 2]);
-    else
-        return vec[n / 2];
+        return -9999.0f;
+
+    if (iend > vec.size())
+        iend = vec.size();
+
+    if (ibegin >= iend)
+        return -9999.0f;
+
+    size_t n = iend - ibegin;
+
+    std::vector<float> slice(vec.begin() + ibegin, vec.begin() + iend);
+
+    size_t mid = n / 2;
+
+    //    O(N) partial sort: guarantees slice[mid] is the correct upper-median,
+    //    and all elements in [0, mid) are <= slice[mid]
+    std::nth_element(slice.begin(), slice.begin() + mid, slice.end());
+
+    return slice[mid];
+}
+
+float compute_baseline_average(const ROOT::RVec<float> &waveform, size_t baseline_start = 0, size_t baseline_end = 300)
+{
+    if (waveform.size() < baseline_end)
+        return -9999.0f;
+
+    float baseline_sum = std::accumulate(
+        waveform.begin() + baseline_start,
+        waveform.begin() + baseline_end,
+        0.0f);
+    return baseline_sum / (baseline_end - baseline_start);
 }
 
 size_t findTrigFireTime(const ROOT::VecOps::RVec<float> &vec, float val_min)
@@ -138,4 +164,131 @@ int get_y_index(int val)
     if (val < 0 || val > 63)
         return -1;
     return inverse_y[val];
+}
+
+struct RefHit
+{
+    float time_slice;
+    bool is_valid;
+};
+
+// =================================================================
+// Dynamic Leading Edge Discriminator (For Square Reference Pulses)
+// =================================================================
+RefHit process_dynamic_led(const ROOT::RVec<float> &waveform)
+{
+    constexpr float kInvalidTime = -9999.0f;
+    constexpr float kMinAmplitude = 500.0f;
+    constexpr float kLedFraction = 0.50f; // Anchor at 50% of pulse height
+
+    RefHit hit = {kInvalidTime, false};
+
+    if (waveform.empty())
+        return hit;
+
+    // --- Find Dynamic Peak ---
+    auto peak_iter = std::max_element(waveform.begin(), waveform.end());
+    int peak_idx = std::distance(waveform.begin(), peak_iter);
+    float current_amplitude = *peak_iter;
+
+    // Reject empty triggers or pure noise
+    if (current_amplitude < kMinAmplitude)
+        return hit;
+
+    // --- Calculate Dynamic Threshold ---
+    float dynamic_threshold = kLedFraction * current_amplitude;
+
+    // --- Find the Crossing Point ---
+    // Walk backwards from the peak down the vertical wall
+    int scan_idx = peak_idx;
+    while (scan_idx > 0 && waveform[scan_idx] > dynamic_threshold)
+    {
+        scan_idx--;
+    }
+
+    // --- Anchor to the nearest Integer Slice ---
+    // (No linear interpolation for square pulses)
+    int crossing_slice = scan_idx + 1;
+
+    hit.time_slice = static_cast<float>(crossing_slice);
+    hit.is_valid = true;
+
+    return hit;
+}
+
+struct CaloHit
+{
+    float energy;
+    float time_slice;
+    bool is_valid;
+};
+
+// =================================================================
+// Constant Fraction Discriminator (CFD) for Physics Pulses
+// =================================================================
+CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform)
+{
+    // --- Configuration Parameters ---
+    constexpr float kInvalidTime = -9999.0f;
+    constexpr float kMinAmplitude = 5.0f; // Reject noise fluctuations
+    constexpr float kCfdFraction = 0.20f; // 20% CFD threshold
+    constexpr int kIntWindowPre = 5;      // Slices to integrate BEFORE the CFD anchor
+    constexpr int kIntWindowPost = 45;    // Slices to integrate AFTER the CFD anchor
+
+    CaloHit hit = {0.0f, kInvalidTime, false};
+
+    // Safety check: ensure waveform has enough data to integrate
+    if (waveform.size() < static_cast<size_t>(kIntWindowPre + kIntWindowPost))
+        return hit;
+
+    // --- Find Peak and Amplitude ---
+    // (Assuming baseline is 0.0f / already subtracted upstream)
+    auto peak_iter = std::max_element(waveform.begin(), waveform.end());
+    int peak_idx = std::distance(waveform.begin(), peak_iter);
+    float peak_amplitude = *peak_iter;
+
+    if (peak_amplitude < kMinAmplitude)
+        return hit;
+
+    // --- Calculate CFD Threshold ---
+    float cfd_thresh = kCfdFraction * peak_amplitude;
+
+    // --- Walk Backward to Find Crossing ---
+    int scan_idx = peak_idx;
+    while (scan_idx > 0 && waveform[scan_idx] > cfd_thresh)
+    {
+        scan_idx--;
+    }
+
+    // Identify the bounding slices around the 20% threshold
+    int idx_below = scan_idx;
+    int idx_above = scan_idx + 1;
+
+    float v_below = waveform[idx_below];
+    float v_above = waveform[idx_above];
+
+    // --- Sub-Slice Linear Interpolation ---
+    // Added safety check to prevent division by zero on flat edges
+    if (v_above != v_below)
+    {
+        float frac_idx = idx_below + (cfd_thresh - v_below) / (v_above - v_below);
+        hit.time_slice = frac_idx; // Float for sub-slice precision
+    }
+    else
+    {
+        hit.time_slice = static_cast<float>(idx_above);
+    }
+
+    // --- Fixed-Window Energy Integration ---
+    // Anchor the integration window to the nearest integer slice
+    int anchor = idx_above;
+    int start_idx = std::max(0, anchor - kIntWindowPre);
+    int end_idx = std::min(static_cast<int>(waveform.size()), anchor + kIntWindowPost);
+
+    float raw_sum = std::accumulate(waveform.begin() + start_idx, waveform.begin() + end_idx, 0.0f);
+
+    hit.energy = raw_sum;
+    hit.is_valid = true;
+
+    return hit;
 }
