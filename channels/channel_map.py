@@ -1,4 +1,4 @@
-from channels.calox_channel import FERSBoard, DRSBoard, DRSChannel, drs_map, FERSBoards
+from channels.calox_channel import FERSBoard, DRSBoard, DRSChannel, drs_map, FERSBoards, add_drs_reference_channel
 from utils.data_loader import is_scan_run
 import json
 from collections import OrderedDict
@@ -521,6 +521,11 @@ def buildDRSBoardTestBeamSep(board_no=4):
                              is6mm=True, is_amplified=True)
         channels_DRS.append(channel)
 
+        # add the reference channels (Channel 8)
+        for igroup in range(4):
+            channel = add_drs_reference_channel(igroup, board_no, is6mm=True)
+            channels_DRS.append(channel)
+
         drsboard = DRSBoard(board_no=board_no, channels=channels_DRS)
 
     elif board_no == 6:
@@ -584,6 +589,11 @@ def buildDRSBoardTestBeamSep(board_no=4):
                              is6mm=True, is_amplified=True)
         channels_DRS.append(channel)
 
+        # add the reference channels (Channel 8)
+        for igroup in range(4):
+            channel = add_drs_reference_channel(igroup, board_no, is6mm=True)
+            channels_DRS.append(channel)
+
         drsboard = DRSBoard(board_no=board_no, channels=channels_DRS)
 
     elif board_no == 5:
@@ -644,6 +654,11 @@ def buildDRSBoardTestBeamSep(board_no=4):
                                  group_no, board_no, is6mm=False, is_amplified=True, isQuartz=isCer)
             channels_DRS.append(channel)
 
+        # add the reference channels (Channel 8)
+        for igroup in range(4):
+            channel = add_drs_reference_channel(igroup, board_no, is6mm=True)
+            channels_DRS.append(channel)
+
         drsboard = DRSBoard(board_no=board_no, channels=channels_DRS)
 
     else:
@@ -654,7 +669,7 @@ def buildDRSBoardTestBeamSep(board_no=4):
 
 def build_time_reference_channels(run=316):
     """
-    Returns a list of time reference channels.
+    Deprecated: use the reference channels in the DRS boards instead.
     """
     time_reference_channels = []
     if is_scan_run(run):

@@ -175,44 +175,42 @@ struct RefHit
 // =================================================================
 // Dynamic Leading Edge Discriminator (For Square Reference Pulses)
 // =================================================================
-RefHit process_dynamic_led(const ROOT::RVec<float> &waveform)
+RefHit process_dynamic_led(const ROOT::RVec<float> &waveform, bool is_positive = true)
 {
     constexpr float kInvalidTime = -9999.0f;
     constexpr float kMinAmplitude = 500.0f;
-    constexpr float kLedFraction = 0.50f; // Anchor at 50% of pulse height
+    constexpr float kLedFraction = 0.50f;
 
     RefHit hit = {kInvalidTime, false};
-
     if (waveform.empty())
         return hit;
 
-    // --- Find Dynamic Peak ---
-    auto peak_iter = std::max_element(waveform.begin(), waveform.end());
-    int peak_idx = std::distance(waveform.begin(), peak_iter);
-    float current_amplitude = *peak_iter;
+    const float sign = is_positive ? 1.0f : -1.0f;
 
-    // Reject empty triggers or pure noise
+    // --- 1. Find Peak (unified via sign) ---
+    // Multiply by sign so max_element always finds the extremum we care about
+    auto peak_iter = std::max_element(waveform.begin(), waveform.end(),
+                                      [sign](float a, float b)
+                                      { return sign * a < sign * b; });
+
+    const int peak_idx = std::distance(waveform.begin(), peak_iter);
+    const float current_amplitude = std::abs(*peak_iter);
+
     if (current_amplitude < kMinAmplitude)
         return hit;
 
-    // --- Calculate Dynamic Threshold ---
-    float dynamic_threshold = kLedFraction * current_amplitude;
+    // --- 2. Dynamic Threshold (sign carries polarity) ---
+    const float dynamic_threshold = sign * kLedFraction * current_amplitude;
 
-    // --- Find the Crossing Point ---
-    // Walk backwards from the peak down the vertical wall
+    // --- 3. Walk back from peak while signal is beyond threshold ---
+    // Condition: sign * waveform[i] > sign * threshold  (works for both polarities)
     int scan_idx = peak_idx;
-    while (scan_idx > 0 && waveform[scan_idx] > dynamic_threshold)
-    {
+    while (scan_idx > 0 && sign * waveform[scan_idx] > sign * dynamic_threshold)
         scan_idx--;
-    }
 
-    // --- Anchor to the nearest Integer Slice ---
-    // (No linear interpolation for square pulses)
-    int crossing_slice = scan_idx + 1;
-
-    hit.time_slice = static_cast<float>(crossing_slice);
+    // --- 4. Anchor to nearest integer slice ---
+    hit.time_slice = static_cast<float>(scan_idx + 1);
     hit.is_valid = true;
-
     return hit;
 }
 

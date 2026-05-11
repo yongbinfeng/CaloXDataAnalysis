@@ -325,21 +325,110 @@ def make_fers_2d_hists():
 
 
 def make_drs_2d_hists():
-    hists2d_drs_vs_ts = []
-    for drsboard in DRSBoards.values():
-        for channel in drsboard.channels:
-            channel_name = channel.get_channel_name(blsub=True)
+    hists2d_DRS_VS_TS = []
+    for _, DRSBoard in DRSBoards.items():
+        for chan in DRSBoard:
+            if chan is None:
+                continue
+            channelName = chan.get_channel_name(blsub=True)
             ymin, ymax = get_drs_plot_ranges(
-                subtractMedian=True, is_amplified=channel.is_amplified, is6mm=channel.is6mm)
-            hist_subtract_median = rdf.Histo2D((
-                f"hist_{channel_name}_VS_TS",
+                subtractMedian=True, is_amplified=chan.is_amplified, is6mm=chan.is6mm, is_reference=chan.is_reference)
+            hist_subtractMedian = rdf.Histo2D((
+                f"hist_{channelName}_VS_TS",
                 "DRS values (subtract baseline);TS;DRS values",
                 1024, 0, 1024, 50, ymin, ymax),
-                "TS", channel_name
+                "TS", channelName
             )
-            hists2d_drs_vs_ts.append(hist_subtract_median)
+            hists2d_DRS_VS_TS.append(hist_subtractMedian)
+            hprof_subtractMedian = rdf.Profile1D((
+                f"prof_{channelName}_VS_TS",
+                "DRS values (subtract baseline) VS TS;TS;Mean DRS values",
+                1024, 0, 1024),
+                "TS", channelName
+            )
+            hists2d_DRS_VS_TS.append(hprof_subtractMedian)
+            hist_subtractMedian_TSCalib = rdf.Histo2D((
+                f"hist_{channelName}_VS_AlignedTS",
+                "DRS values (subtract baseline) VS AlignedTS;AlignedTS;DRS values",
+                1024, 0, 1024, 50, ymin, ymax),
+                f"{channelName}_AlignedTS", channelName
+            )
+            hists2d_DRS_VS_TS.append(hist_subtractMedian_TSCalib)
+            hprof_subtractMedian_TSCalib = rdf.Profile1D((
+                f"prof_{channelName}_VS_AlignedTS",
+                "DRS values (subtract baseline) VS AlignedTS;AlignedTS;Mean DRS values",
+                1024, 0, 1024),
+                f"{channelName}_AlignedTS", channelName
+            )
+            hists2d_DRS_VS_TS.append(hprof_subtractMedian_TSCalib)
+            hist_subtractMedian_CFDTSCalib = rdf.Histo2D((
+                f"hist_{channelName}_VS_CFDAlignedTS",
+                "DRS values (subtract baseline) VS CFD AlignedTS;CFD AlignedTS;DRS values",
+                1024, 0, 1024, 50, ymin, ymax),
+                f"{channelName}_cfdalignedts", channelName
+            )
+            hists2d_DRS_VS_TS.append(hist_subtractMedian_CFDTSCalib)
+            hprof_subtractMedian_CFDTSCalib = rdf.Profile1D((
+                f"prof_{channelName}_VS_CFDAlignedTS",
+                "DRS values (subtract baseline) VS CFD AlignedTS;CFD AlignedTS;Mean DRS values",
+                1024, 0, 1024),
+                f"{channelName}_cfdalignedts", channelName
+            )
+            hists2d_DRS_VS_TS.append(hprof_subtractMedian_CFDTSCalib)
 
-    return hists2d_drs_vs_ts
+    return hists2d_DRS_VS_TS
+
+
+def make_drs_stats_hists():
+    # plot DRS sum and peak values
+    hists_DRSStats = []
+    for _, DRSBoard in DRSBoards.items():
+        for chan in DRSBoard:
+            channelSumName = chan.get_channel_sum_name()
+            channelPeakName = chan.get_channel_peak_name()
+            channelName_blsub = chan.get_channel_name(blsub=True)
+
+            hist_DRS_Peak = rdf.Histo1D((
+                f"hist_{channelPeakName}",
+                "DRS Peak;Peak;Counts",
+                200, 0, 800),
+                channelPeakName
+            )
+            hists_DRSStats.append(hist_DRS_Peak)
+
+            # two ways of getting the DRS sum: bare integral and cfd integral
+            hist_DRS_Sum = rdf.Histo1D((
+                f"hist_{channelSumName}",
+                "DRS Sum; DRS Sum;Counts",
+                650, -500, 6000),
+                channelSumName
+            )
+            hists_DRSStats.append(hist_DRS_Sum)
+            hist_DRS_Sum_cfd = rdf.Histo1D((
+                f"hist_{channelName_blsub}_cfd",
+                "DRS CFD Integral;DRS CFD Integral;Counts",
+                650, -500, 6000),
+                f"{channelName_blsub}_cfd"
+            )
+            hists_DRSStats.append(hist_DRS_Sum_cfd)
+
+            # two ways of getting the DRS peak time: peak and cfd
+            hists_DRS_RelPeakTS = rdf.Histo1D((
+                f"hist_{channelName_blsub}_RelPeakTS",
+                "DRS Relative Peak TS;Relative Peak TS (TS);Counts",
+                1024, 0, 1024),
+                f"{channelName_blsub}_RelPeakTS"
+            )
+            hists_DRSStats.append(hists_DRS_RelPeakTS)
+            hists_DRS_RelCFDTS = rdf.Histo1D((
+                f"hist_{channelName_blsub}_RelCFDTS",
+                "DRS Relative CFD TS;Relative CFD TS (TS);Counts",
+                1024, 0, 1024),
+                f"{channelName_blsub}_cfdrelts"
+            )
+            hists_DRSStats.append(hists_DRS_RelCFDTS)
+
+    return hists_DRSStats
 
 
 def check_drs_sum_vs_fers():
@@ -516,6 +605,7 @@ def main():
     # hists2d_fers_vs_event = track_fers_hists()
 
     hists2d_drs_vs_ts = make_drs_2d_hists()
+    hists_drs_stats = make_drs_stats_hists()
 
     # hists2d_DRSPeak_VS_FERS = check_drs_peak_vs_fers()
 
@@ -560,6 +650,8 @@ def main():
                        f"{paths['root']}/fers_all_channels_1d.root")
 
     save_hists_to_file(hists2d_drs_vs_ts, f"{paths['root']}/drs_vs_ts.root")
+
+    save_hists_to_file(hists_drs_stats, f"{paths['root']}/drs_stats.root")
 
     # save_hists_to_file(hists2d_DRSPeak_VS_FERS,
     #                   f"{paths['root']}/drspeak_vs_fers.root")

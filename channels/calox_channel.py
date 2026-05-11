@@ -429,7 +429,6 @@ def build_fers_base(is6mm=False, board_no=0):
 
 
 def build_drs_base(is6mm=True, board_no=0):
-    # right now only have DRS on 6mm
     channels_DRS = []
     for ix in range(0, 4):
         for iy in range(0, 8):
@@ -452,10 +451,18 @@ def build_drs_base(is6mm=True, board_no=0):
                     int(ix/2), -float(iy)/4, isCer, chan_no, group_no, board_no, is6mm=False, is_amplified=True)
             channels_DRS.append(channel)
         # add reference channel for each group
-        ref_channel = DRSChannel(-999, -999, False, 8,
-                                 ix, board_no, is_reference=True)
+        ref_channel = add_drs_reference_channel(ix, board_no, is6mm=is6mm)
         channels_DRS.append(ref_channel)
     return channels_DRS
+
+
+def add_drs_reference_channel(group_no, board_no, is6mm=True):
+    """
+    Add a reference channel (Channel 8) to a DRS board for a specific group.
+    """
+    ref_channel = DRSChannel(-999, -999, False, 8,
+                             group_no, board_no, is6mm=is6mm, is_reference=True)
+    return ref_channel
 
 
 if __name__ == "__main__":

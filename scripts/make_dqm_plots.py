@@ -9,16 +9,16 @@ from channels.channel_map import (build_drs_boards, build_fers_boards,
                                   get_mcp_channels, get_service_drs_channels)
 from channels.validate_map import DrawDRSBoards, DrawFERSBoards
 from plotting.my_function import LHistos2Hist
-from configs.plot_config import get_drs_plot_ranges, get_service_drs_plot_ranges
+from configs.plot_config import get_drs_plot_ranges, get_drs_prof_plot_ranges, get_service_drs_plot_ranges
 from utils.colors import colors
 from utils.parser import get_args
 from utils.plot_helper import get_run_paths
 from core.plot_manager import PlotManager
-from configs.plot_style import PlotStyle, STYLE_1D_LOG, STYLE_CER_SCI
+from configs.plot_style import PlotStyle, STYLE_CER_SCI
 from plotting.calox_plot_helper import BoardPlotHelper, create_pave_text, create_board_info_pave
 from utils.root_setup import setup_root
 from utils.timing import auto_timer
-from utils.utils import number_to_string, round_up_to_1eN
+from utils.utils import number_to_string, round_up_to_1eN, get_channel_var
 from utils.visualization import visualizeFERSBoards
 
 auto_timer("Total Execution Time")
@@ -53,6 +53,24 @@ STYLE_2D_LOG = PlotStyle(
     drawoptions="COLZ",
     zmin=1,
     zmax=1e4
+)
+
+STYLE_1D = PlotStyle(
+    dology=False,
+    drawoptions="HIST",
+    mycolors=[2, 6, 4],
+    addOverflow=False,
+    addUnderflow=False,
+    legendPos=[0.25, 0.75, 0.40, 0.90]
+)
+
+STYLE_1D_LOG = PlotStyle(
+    dology=True,
+    drawoptions="HIST",
+    mycolors=[2, 6, 4],
+    addOverflow=False,
+    addUnderflow=False,
+    legendPos=[0.25, 0.75, 0.40, 0.90]
 )
 
 
@@ -509,18 +527,23 @@ def track_fers_plots():
         return pm.generate_html("FERS_VS_Event/index.html", plots_per_row=4)
 
 
-def make_drs_vs_ts_plots():
+def make_drs_vs_ts_plots(use_calibrated_ts=False, use_cfd_aligned_ts=False):
     """Plot DRS output vs time slice."""
+    suffix = "Calib" if use_calibrated_ts else "CFD" if use_cfd_aligned_ts else "Raw"
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("DRS_VS_TS")
 
         infile = pm._get_file("drs_vs_ts.root")
 
         for _, DRSBoard in DRSBoards.items():
-            for channel in DRSBoard.channels:
-                channel_name = channel.get_channel_name(blsub=True)
-                var = "Cer" if channel.isCer else "Sci"
-                hist_name = f"hist_{channel_name}_VS_TS"
+            for chan in DRSBoard:
+                channelName = chan.get_channel_name(blsub=True)
+                if use_calibrated_ts:
+                    hist_name = f"hist_{channelName}_VS_AlignedTS"
+                elif use_cfd_aligned_ts:
+                    hist_name = f"hist_{channelName}_VS_CFDAlignedTS"
+                else:
+                    hist_name = f"hist_{channelName}_VS_TS"
                 hist = infile.Get(hist_name)
 
                 if not hist:
@@ -528,27 +551,217 @@ def make_drs_vs_ts_plots():
                     continue
 
                 ymin_tmp, ymax_tmp = get_drs_plot_ranges(
-                    subtractMedian=True, is_amplified=channel.is_amplified, is6mm=channel.is6mm
+                    subtractMedian=True, is_amplified=chan.is_amplified, is6mm=chan.is6mm, is_reference=chan.is_reference
                 )
 
-                pave = create_pave_text(0.20, 0.75, 0.60, 0.90)
+                pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
                 pave.AddText(
-                    f"B: {DRSBoard.board_no}, G: {channel.group_no}, C: {channel.channel_no}")
-                if not channel.is_reference:
-                    pave.AddText(f"i_tower_x: {channel.i_tower_x}")
-                    pave.AddText(f"i_tower_y: {channel.i_tower_y}")
+                    f"B: {DRSBoard.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+                if not chan.is_reference:
+                    pave.AddText(
+                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+
+                var = get_channel_var(chan)
+
+                xaxis = "Aligned TS" if use_calibrated_ts else "CFD Aligned TS" if use_cfd_aligned_ts else "TS"
 
                 pm.plot_2d(
                     hist,
-                    f"DRS_{channel_name}_VS_TS",
-                    "Time Slice", (0, 1024),
+                    f"DRS_ADC_VS_TS_{channelName}_{suffix}_{var}",
+                    xaxis, (0, 1024),
                     "DRS Output", (ymin_tmp, ymax_tmp),
                     style=STYLE_2D_LOG,
                     extraToDraw=pave,
                     extra_text=var
                 )
 
-        return pm.generate_html("DRS/DRS_vs_TS.html", plots_per_row=8, title="DRS Output vs Time Slice", intro_text="2D histograms of DRS output vs time slice for all channels.")
+        return pm.generate_html(f"DRS/DRS_vs_TS_{suffix}.html", plots_per_row=9)
+
+
+def make_drs_prof_vs_ts_plots():
+    """Plot DRS output profile vs time slice."""
+    with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
+        pm.set_output_dir("DRS_Prof_VS_TS")
+
+        infile = pm._get_file("drs_vs_ts.root")
+
+        for _, DRSBoard in DRSBoards.items():
+            for chan in DRSBoard:
+                channelName = chan.get_channel_name(blsub=True)
+                hist_name = f"prof_{channelName}_VS_AlignedTS"
+                hist_alignedTS = infile.Get(hist_name).ProjectionX()
+                hist_name = f"prof_{channelName}_VS_TS"
+                hist = infile.Get(hist_name).ProjectionX()
+                hist_name = f"prof_{channelName}_VS_CFDAlignedTS"
+                hist_cfdAlignedTS = infile.Get(hist_name).ProjectionX()
+
+                if not hist:
+                    print(f"Warning: Histogram {hist_name} not found")
+                    continue
+
+                pave = create_pave_text(0.20, 0.85, 0.60, 0.90)
+                pave.AddText(
+                    f"B: {DRSBoard.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+
+                xaxis = "TS"
+
+                ymin_tmp, ymax_tmp = get_drs_prof_plot_ranges(
+                    subtractMedian=True, is_amplified=chan.is_amplified, is6mm=chan.is6mm, is_reference=chan.is_reference
+                )
+
+                pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
+                pave.AddText(
+                    f"B: {DRSBoard.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+                if not chan.is_reference:
+                    pave.AddText(
+                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+
+                var = get_channel_var(chan)
+
+                pm.plot_1d(
+                    [hist, hist_alignedTS, hist_cfdAlignedTS],
+                    f"DRS_ADC_Prof_VS_TS_{channelName}_{var}",
+                    xaxis, (0, 1024),
+                    "Mean DRS Output", (ymin_tmp, ymax_tmp),
+                    legends=["Raw TS", "Aligned TS", "CFD Aligned TS"],
+                    legendPos=[0.55, 0.75, 0.90, 0.90],
+                    style=STYLE_1D,
+                    extraToDraw=pave,
+                    extra_text=var
+                )
+
+        return pm.generate_html(f"DRS/DRS_Prof_vs_TS.html", plots_per_row=9)
+
+
+def make_drs_sum_plots():
+    # plot DRS sum distributions
+    with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
+        pm.set_output_dir("DRS_Stats")
+
+        infile = pm._get_file("drs_stats.root")
+
+        for _, DRSBoard in DRSBoards.items():
+            for chan in DRSBoard:
+                channelSumName = chan.get_channel_sum_name()
+                hist_name = f"hist_{channelSumName}"
+                hist = infile.Get(hist_name)
+
+                channelName_blsub = chan.get_channel_name(blsub=True)
+                hist_name_cfd = f"hist_{channelName_blsub}_cfd"
+                hist_cfd = infile.Get(hist_name_cfd)
+
+                if not hist or not hist_cfd:
+                    print(
+                        f"Warning: Histogram {hist_name} or {hist_name_cfd} not found")
+                    continue
+
+                pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
+                pave.AddText(
+                    f"B: {DRSBoard.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+                if not chan.is_reference:
+                    pave.AddText(
+                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+
+                var = get_channel_var(chan)
+
+                pm.plot_1d(
+                    [hist, hist_cfd],
+                    f"DRS_Sum_{channelSumName}_{var}",
+                    "DRS Sum", (0, 6000),
+                    "Counts", (1, None),
+                    legends=["Sum", "CFD Integral"],
+                    legendPos=[0.55, 0.80, 0.90, 0.90],
+                    style=STYLE_1D_LOG,
+                    extraToDraw=pave,
+                    extra_text=var
+                )
+                # pm.plot_1d(
+                #    hist_cfd,
+                #    f"DRS_Sum_CFD_{channelSumName}",
+                #    "DRS CFD Integral", (0, 5000),
+                #    "Counts", (1, None),
+                #    style=STYLE_1D_LOG,
+                #    extraToDraw=pave
+                # )
+
+        return pm.generate_html("DRS/DRS_Sum.html", plots_per_row=9)
+
+
+def make_drs_peak_plots():
+    # plot DRS peak distributions
+    with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
+        pm.set_output_dir("DRS_Stats")
+
+        infile = pm._get_file("drs_stats.root")
+
+        for _, DRSBoard in DRSBoards.items():
+            for chan in DRSBoard:
+                channelPeakName = chan.get_channel_peak_name()
+                hist_name = f"hist_{channelPeakName}"
+                hist = infile.Get(hist_name)
+
+                if not hist:
+                    print(f"Warning: Histogram {hist_name} not found")
+                    continue
+
+                pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
+                pave.AddText(
+                    f"B: {DRSBoard.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+                if not chan.is_reference:
+                    pave.AddText(
+                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                var = get_channel_var(chan)
+
+                pm.plot_1d(
+                    hist,
+                    f"DRS_Peak_{channelPeakName}_{var}",
+                    "DRS Peak", (0, 800),
+                    "Counts", (1, None),
+                    style=STYLE_1D_LOG,
+                    extraToDraw=pave,
+                    extra_text=var
+                )
+
+        return pm.generate_html("DRS/DRS_Peak.html", plots_per_row=9)
+
+
+def make_drs_time_plots():
+    # plot DRS peak time distributions
+    with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
+        pm.set_output_dir("DRS_Stats")
+
+        infile = pm._get_file("drs_stats.root")
+
+        for _, DRSBoard in DRSBoards.items():
+            for chan in DRSBoard:
+                channelName_blsub = chan.get_channel_name(blsub=True)
+                hist_name = f"hist_{channelName_blsub}_RelPeakTS"
+                hist = infile.Get(hist_name)
+
+                hist_name_cfd = f"hist_{channelName_blsub}_RelCFDTS"
+                hist_cfd = infile.Get(hist_name_cfd)
+
+                if not hist or not hist_cfd:
+                    print(
+                        f"Warning: Histogram {hist_name} or {hist_name_cfd} not found")
+                    continue
+
+                pave = create_pave_text(0.20, 0.85, 0.60, 0.90)
+                pave.AddText(
+                    f"B: {DRSBoard.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+
+                pm.plot_1d(
+                    [hist, hist_cfd],
+                    f"DRS_Time_{channelName_blsub}",
+                    "Pulse TS", (0, 1024),
+                    "Counts", (1, None),
+                    legends=["Peak", "0.2 CFD"],
+                    legendPos=[0.55, 0.80, 0.90, 0.90],
+                    style=STYLE_1D_LOG,
+                    extraToDraw=pave
+                )
+
+        return pm.generate_html("DRS/DRS_Time.html", plots_per_row=9)
 
 
 def make_drs_peak_ts_plots():
@@ -921,8 +1134,14 @@ def main():
 
     if do_detailed_plots:
         plot_tasks.extend([
-            ("FERS 1D", make_fers_1d_plots),
+            # ("FERS 1D", make_fers_1d_plots),
             ("DRS vs TS", make_drs_vs_ts_plots),
+            ("DRS vs TS Calib", lambda: make_drs_vs_ts_plots(use_calibrated_ts=True)),
+            ("DRS vs TS CFD", lambda: make_drs_vs_ts_plots(use_cfd_aligned_ts=True)),
+            ("DRS Prof vs TS", make_drs_prof_vs_ts_plots),
+            ("DRS Sum", make_drs_sum_plots),
+            ("DRS Peak", make_drs_peak_plots),
+            ("DRS Time", make_drs_time_plots)
             # ("DRS Peak vs FERS", make_drs_peak_vs_fers_plots),
         ])
 

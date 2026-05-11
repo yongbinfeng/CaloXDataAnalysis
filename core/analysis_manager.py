@@ -104,7 +104,7 @@ class CaloXAnalysisManager:
         """Initializes standard baseline subtractions and vectorization."""
         if do_drs and "drs_init" not in self._steps_applied:
             self.rdf = preProcessDRSBoards(
-                self.rdf, run_number=self.run_number, drsboards=self.drsboards)
+                self.rdf, drsboards=self.drsboards)
             self.rdf = get_psd_energy_deposit(self.rdf, self.run_number)
             self._steps_applied.add("drs_init")
 

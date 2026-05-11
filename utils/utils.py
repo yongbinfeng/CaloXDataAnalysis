@@ -26,3 +26,14 @@ def getBranchStats(rdf, branches):
         } for br in branches
     }
     return stats
+
+
+def get_channel_var(channel):
+    if channel.is_reference:
+        return "Ref"
+    elif channel.isCer:
+        return "Cer"
+    elif channel.isSci:
+        return "Sci"
+    else:
+        return "Unknown"
