@@ -5,7 +5,6 @@ Analyzes MCP peak timing for time calibration
 """
 
 import re
-import ROOT
 from channels.channel_map import get_mcp_channels
 from core.analysis_manager import CaloXAnalysisManager
 from utils.parser import get_args

@@ -1,6 +1,6 @@
 # collect all functions related to DRS here
 import re
-from channels.channel_map import findFanoutTimeReferenceDelay, findDRSTriggerMap, get_mcp_channels, get_service_drs_channels
+from channels.channel_map import get_mcp_channels, get_service_drs_channels
 
 TS_END = 1024
 
@@ -88,7 +88,7 @@ def processMCPChannels(rdf, run, TSminMCP=450, TSmaxMCP=700):
             # calibrate MCP with CFD
             # MCP is negative signal
             rdf = rdf.Define(
-                f"{channel}_CFD", f"compute_cfd_integral({channel}, 0)"
+                f"{channel}_CFD", f"compute_cfd_integral({channel}, 0, 200.0)"
             )
             rdf = rdf.Define(f"{channel}_cfdts", f"{channel}_CFD.time_slice")
             rdf = rdf.Define(
@@ -124,7 +124,9 @@ def processDRSChannelsCFD(rdf, DRSBoards, TS_start=0, TS_end=TS_END, map_mcp_cha
             )
             if map_mcp_channels is not None:
                 rdf = rdf.Define(
-                    f"{channelName_blsub}_cfdalignedts_mcp", f"{channelName_blsub}_cfdalignedts - (int){map_mcp_channels['US'][0]}_blsub_cfdrelts")
+                    f"{channelName_blsub}_cfdalignedts_mcp", f"{channelName_blsub}_cfdalignedts - (int){map_mcp_channels['US'][0]}_blsub_cfdrelts + 600")
+                rdf = rdf.Define(
+                    f"{channelName_blsub}_cfdrelts_mcp", f"{channelName_blsub}_cfdrelts - (int){map_mcp_channels['US'][0]}_blsub_cfdrelts + 600")
     return rdf
 
 
@@ -171,7 +173,9 @@ def processDRSChannelsPeak(rdf, DRSBoards, TSminDRS=0, TSmaxDRS=TS_END, threshol
             # align to MCP
             if map_mcp_channels is not None:
                 rdf = rdf.Define(
-                    f"{channelName_blsub}_AlignedTS_MCP", f"{channelName_blsub}_AlignedTS - (int){map_mcp_channels['US'][0]}_blsub_RelPeakTS")
+                    f"{channelName_blsub}_AlignedTS_MCP", f"{channelName_blsub}_AlignedTS - (int){map_mcp_channels['US'][0]}_blsub_RelPeakTS - 200")
+                rdf = rdf.Define(
+                    f"{channelName_blsub}_RelPeakTS_MCP", f"{channelName_blsub}_RelPeakTS - (int){map_mcp_channels['US'][0]}_blsub_RelPeakTS - 200")
 
     return rdf
 

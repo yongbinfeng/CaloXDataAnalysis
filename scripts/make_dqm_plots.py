@@ -1153,6 +1153,8 @@ def main():
             # ("DRS vs TS", make_drs_vs_ts_plots),
             # ("DRS vs TS Calib", lambda: make_drs_vs_ts_plots(use_calibrated_ts=True)),
             # ("DRS vs TS CFD", lambda: make_drs_vs_ts_plots(use_cfd_aligned_ts=True)),
+            ("DRS vs TS MCP", lambda: make_drs_vs_ts_plots(
+                use_calibrated_ts=True, use_mcp=True)),
             ("DRS vs TS CFD MCP", lambda: make_drs_vs_ts_plots(
                 use_cfd_aligned_ts=True, use_mcp=True)),
             ("Service DRS vs TS", lambda: make_service_drs_vs_ts_plots(
@@ -1160,7 +1162,7 @@ def main():
             ("DRS Prof vs TS", make_drs_prof_vs_ts_plots),
             # ("DRS Sum", make_drs_sum_plots),
             ("DRS Peak", make_drs_peak_plots),
-            # ("DRS Time", make_drs_time_plots)
+            ("DRS Time", make_drs_time_plots)
             # ("DRS Peak vs FERS", make_drs_peak_vs_fers_plots),
         ])
 

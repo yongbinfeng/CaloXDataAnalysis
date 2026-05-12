@@ -390,6 +390,20 @@ def make_drs_2d_hists():
                 f"{channelName}_cfdalignedts_mcp", channelName
             )
             hists2d_DRS_VS_TS.append(hprof_subtractMedian_CFDTSCalib_MCP)
+            hist_subtractMedian_AlignedTSCalib_MCP = rdf.Histo2D((
+                f"hist_{channelName}_VS_AlignedTS_MCP",
+                "DRS values (subtract baseline) VS AlignedTS (calibrated to MCP);AlignedTS calibrated to MCP;DRS values",
+                1024, 0, 1024, 50, ymin, ymax),
+                f"{channelName}_AlignedTS_MCP", channelName
+            )
+            hists2d_DRS_VS_TS.append(hist_subtractMedian_AlignedTSCalib_MCP)
+            hprof_subtractMedian_AlignedTSCalib_MCP = rdf.Profile1D((
+                f"prof_{channelName}_VS_AlignedTS_MCP",
+                "DRS values (subtract baseline) VS AlignedTS (calibrated to MCP);AlignedTS calibrated to MCP;Mean DRS values",
+                1024, 0, 1024),
+                f"{channelName}_AlignedTS_MCP", channelName
+            )
+            hists2d_DRS_VS_TS.append(hprof_subtractMedian_AlignedTSCalib_MCP)
 
     return hists2d_DRS_VS_TS
 

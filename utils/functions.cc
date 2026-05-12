@@ -224,10 +224,9 @@ struct CaloHit
 // =================================================================
 // Constant Fraction Discriminator (CFD) for Physics Pulses
 // =================================================================
-CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive = true)
+CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive = true, const float min_amplitude = 5.0f)
 {
     constexpr float kInvalidTime = -9999.0f;
-    constexpr float kMinAmplitude = 5.0f;
     constexpr float kCfdFraction = 0.20f;
     constexpr int kIntWindowPre = 5;
     constexpr int kIntWindowPost = 45;
@@ -246,7 +245,7 @@ CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive
     const int peak_idx = std::distance(waveform.begin(), peak_iter);
     const float peak_amplitude = std::abs(*peak_iter);
 
-    if (peak_amplitude < kMinAmplitude)
+    if (peak_amplitude < min_amplitude)
         return hit;
 
     // --- 2. CFD Threshold (signed) ---
