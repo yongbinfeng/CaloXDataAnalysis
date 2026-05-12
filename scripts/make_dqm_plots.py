@@ -34,7 +34,6 @@ DRSBoards = build_drs_boards(run=run_number)
 fersboards = build_fers_boards(run=run_number)
 time_reference_channels = build_time_reference_channels(run=run_number)
 service_drs_channels = get_service_drs_channels(run=run_number)
-mcp_channels = get_mcp_channels(run=run_number)
 
 paths = get_run_paths(run_number)
 
@@ -58,7 +57,7 @@ STYLE_2D_LOG = PlotStyle(
 STYLE_1D = PlotStyle(
     dology=False,
     drawoptions="HIST",
-    mycolors=[2, 6, 4],
+    mycolors=[2, 6, 4, 8],
     addOverflow=False,
     addUnderflow=False,
     legendPos=[0.25, 0.75, 0.40, 0.90]
@@ -67,7 +66,7 @@ STYLE_1D = PlotStyle(
 STYLE_1D_LOG = PlotStyle(
     dology=True,
     drawoptions="HIST",
-    mycolors=[2, 6, 4],
+    mycolors=[2, 6, 4, 8],
     addOverflow=False,
     addUnderflow=False,
     legendPos=[0.25, 0.75, 0.40, 0.90]
@@ -527,9 +526,11 @@ def track_fers_plots():
         return pm.generate_html("FERS_VS_Event/index.html", plots_per_row=4)
 
 
-def make_drs_vs_ts_plots(use_calibrated_ts=False, use_cfd_aligned_ts=False):
+def make_drs_vs_ts_plots(use_calibrated_ts=False, use_cfd_aligned_ts=False, use_mcp=False):
     """Plot DRS output vs time slice."""
     suffix = "Calib" if use_calibrated_ts else "CFD" if use_cfd_aligned_ts else "Raw"
+    if use_mcp:
+        suffix += "_MCP"
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("DRS_VS_TS")
 
@@ -544,6 +545,8 @@ def make_drs_vs_ts_plots(use_calibrated_ts=False, use_cfd_aligned_ts=False):
                     hist_name = f"hist_{channelName}_VS_CFDAlignedTS"
                 else:
                     hist_name = f"hist_{channelName}_VS_TS"
+                if use_mcp:
+                    hist_name += "_MCP"
                 hist = infile.Get(hist_name)
 
                 if not hist:
@@ -578,6 +581,38 @@ def make_drs_vs_ts_plots(use_calibrated_ts=False, use_cfd_aligned_ts=False):
         return pm.generate_html(f"DRS/DRS_vs_TS_{suffix}.html", plots_per_row=9)
 
 
+def make_service_drs_vs_ts_plots(channel_list):
+    with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
+        pm.set_output_dir("Service_DRS_VS_TS")
+
+        infile = pm._get_file("drs_service_channels.root")
+
+        for channelName in channel_list:
+            hist_name = f"hist_{channelName}_VS_TS"
+            hist = infile.Get(hist_name)
+
+            if not hist:
+                print(f"Warning: Histogram {hist_name} not found")
+                continue
+
+            ymin_tmp, ymax_tmp = -1500, 500
+
+            pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
+            pave.AddText(f"{channelName}")
+
+            pm.plot_2d(
+                hist,
+                f"Service_DRS_ADC_VS_TS_{channelName}",
+                "TS", (0, 1024),
+                "DRS Output", (ymin_tmp, ymax_tmp),
+                style=STYLE_2D_LOG,
+                extraToDraw=pave,
+                extra_text="Service"
+            )
+
+        return pm.generate_html(f"DRS/Service_DRS_vs_TS.html", plots_per_row=4)
+
+
 def make_drs_prof_vs_ts_plots():
     """Plot DRS output profile vs time slice."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
@@ -594,6 +629,8 @@ def make_drs_prof_vs_ts_plots():
                 hist = infile.Get(hist_name).ProjectionX()
                 hist_name = f"prof_{channelName}_VS_CFDAlignedTS"
                 hist_cfdAlignedTS = infile.Get(hist_name).ProjectionX()
+                hist_name = f"prof_{channelName}_VS_CFDAlignedTS_MCP"
+                hist_cfdAlignedTS_MCP = infile.Get(hist_name).ProjectionX()
 
                 if not hist:
                     print(f"Warning: Histogram {hist_name} not found")
@@ -619,12 +656,13 @@ def make_drs_prof_vs_ts_plots():
                 var = get_channel_var(chan)
 
                 pm.plot_1d(
-                    [hist, hist_alignedTS, hist_cfdAlignedTS],
+                    [hist, hist_alignedTS, hist_cfdAlignedTS, hist_cfdAlignedTS_MCP],
                     f"DRS_ADC_Prof_VS_TS_{channelName}_{var}",
                     xaxis, (0, 1024),
                     "Mean DRS Output", (ymin_tmp, ymax_tmp),
-                    legends=["Raw TS", "Aligned TS", "CFD Aligned TS"],
-                    legendPos=[0.55, 0.75, 0.90, 0.90],
+                    legends=["Raw TS", "Aligned TS",
+                             "CFD Aligned TS", "CFD Aligned TS MCP"],
+                    legendPos=[0.55, 0.70, 0.90, 0.90],
                     style=STYLE_1D,
                     extraToDraw=pave,
                     extra_text=var
@@ -741,6 +779,12 @@ def make_drs_time_plots():
                 hist_name_cfd = f"hist_{channelName_blsub}_RelCFDTS"
                 hist_cfd = infile.Get(hist_name_cfd)
 
+                hist_name_mcp = f"hist_{channelName_blsub}_RelPeakTS_MCP"
+                hist_mcp = infile.Get(hist_name_mcp)
+
+                hist_name_cfd_mcp = f"hist_{channelName_blsub}_RelCFDTS_MCP"
+                hist_cfd_mcp = infile.Get(hist_name_cfd_mcp)
+
                 if not hist or not hist_cfd:
                     print(
                         f"Warning: Histogram {hist_name} or {hist_name_cfd} not found")
@@ -751,12 +795,12 @@ def make_drs_time_plots():
                     f"B: {DRSBoard.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
 
                 pm.plot_1d(
-                    [hist, hist_cfd],
+                    [hist, hist_cfd, hist_mcp, hist_cfd_mcp],
                     f"DRS_Time_{channelName_blsub}",
                     "Pulse TS", (0, 1024),
                     "Counts", (1, None),
-                    legends=["Peak", "0.2 CFD"],
-                    legendPos=[0.55, 0.80, 0.90, 0.90],
+                    legends=["Peak", "0.2 CFD", "Peak MCP", "0.2 CFD MCP"],
+                    legendPos=[0.55, 0.70, 0.90, 0.90],
                     style=STYLE_1D_LOG,
                     extraToDraw=pave
                 )
@@ -963,39 +1007,6 @@ def compare_service_drs_plots():
         return pm.generate_html("ServiceDRS/detectors.html", plots_per_row=2)
 
 
-def compare_mcp_plots():
-    """Plot MCP channel distributions."""
-    ymin, ymax = -1500, 500
-
-    with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
-        pm.set_output_dir("MCP")
-
-        infile = pm._get_file("mcp_channels.root")
-
-        for det_name, channels in mcp_channels.items():
-            for chan_name in channels:
-                hist_name = f"hist_{chan_name}_blsub"
-                hist = infile.Get(hist_name)
-
-                if not hist:
-                    print(f"Warning: Histogram {hist_name} not found")
-                    continue
-
-                pave = create_pave_text(0.60, 0.20, 0.90, 0.30)
-                pave.AddText(f"{det_name}")
-
-                pm.plot_2d(
-                    hist,
-                    f"MCP_{chan_name}",
-                    "Time Slice", (0, 1024),
-                    "Counts", (ymin, ymax),
-                    style=STYLE_2D_LOG,
-                    extraToDraw=pave
-                )
-
-        return pm.generate_html("ServiceDRS/MCP.html", plots_per_row=4)
-
-
 def make_drs_sum_vs_fers_plots():
     """Plot DRS sum vs FERS correlations."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
@@ -1132,16 +1143,24 @@ def main():
         # ("DRS Sum vs FERS", make_drs_sum_vs_fers_plots),
     ]
 
+    map_mcp_channels = get_mcp_channels(run_number)
+    list_mcp_channels = [
+        channel + "_blsub" for channels in map_mcp_channels.values() for channel in channels]
+
     if do_detailed_plots:
         plot_tasks.extend([
             # ("FERS 1D", make_fers_1d_plots),
-            ("DRS vs TS", make_drs_vs_ts_plots),
-            ("DRS vs TS Calib", lambda: make_drs_vs_ts_plots(use_calibrated_ts=True)),
-            ("DRS vs TS CFD", lambda: make_drs_vs_ts_plots(use_cfd_aligned_ts=True)),
+            # ("DRS vs TS", make_drs_vs_ts_plots),
+            # ("DRS vs TS Calib", lambda: make_drs_vs_ts_plots(use_calibrated_ts=True)),
+            # ("DRS vs TS CFD", lambda: make_drs_vs_ts_plots(use_cfd_aligned_ts=True)),
+            ("DRS vs TS CFD MCP", lambda: make_drs_vs_ts_plots(
+                use_cfd_aligned_ts=True, use_mcp=True)),
+            ("Service DRS vs TS", lambda: make_service_drs_vs_ts_plots(
+                channel_list=list_mcp_channels)),
             ("DRS Prof vs TS", make_drs_prof_vs_ts_plots),
-            ("DRS Sum", make_drs_sum_plots),
+            # ("DRS Sum", make_drs_sum_plots),
             ("DRS Peak", make_drs_peak_plots),
-            ("DRS Time", make_drs_time_plots)
+            # ("DRS Time", make_drs_time_plots)
             # ("DRS Peak vs FERS", make_drs_peak_vs_fers_plots),
         ])
 

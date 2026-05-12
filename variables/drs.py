@@ -70,7 +70,35 @@ def processDRSRefChannels(rdf, DRSBoards):
     return rdf
 
 
-def processDRSChannelsCFD(rdf, DRSBoards, TS_start=0, TS_end=TS_END):
+def processMCPChannels(rdf, run, TSminMCP=450, TSmaxMCP=700):
+    map_mcp_channels = get_mcp_channels(run)
+    for det, channels in map_mcp_channels.items():
+        for idx, channel in enumerate(channels):
+            channel = channel + "_blsub"
+            rdf = rdf.Define(
+                f"{channel}_Peak", f"MinRange({channel}, {TSminMCP}, {TSmaxMCP})")
+
+            # calibrate MCP using peak
+            rdf = rdf.Define(f"{channel}_PeakTS",
+                             f"ArgMinRange({channel}, {TSminMCP}, {TSmaxMCP}, -200.0)")
+            channel_TS = re.sub(r"_Channel[0-7]", "_Channel8", channel)
+            rdf = rdf.Define(
+                f"{channel}_RelPeakTS", f"(int){channel}_PeakTS - (int){channel_TS}_PeakTS")
+
+            # calibrate MCP with CFD
+            # MCP is negative signal
+            rdf = rdf.Define(
+                f"{channel}_CFD", f"compute_cfd_integral({channel}, 0)"
+            )
+            rdf = rdf.Define(f"{channel}_cfdts", f"{channel}_CFD.time_slice")
+            rdf = rdf.Define(
+                f"{channel}_cfdrelts", f"790 + (int){channel}_cfdts - (int){channel_TS}_refts"
+            )
+
+    return rdf
+
+
+def processDRSChannelsCFD(rdf, DRSBoards, TS_start=0, TS_end=TS_END, map_mcp_channels=None):
     # get the mean of DRS outputs per channel
     TS_start = int(TS_start)
     TS_end = int(TS_end)
@@ -94,10 +122,13 @@ def processDRSChannelsCFD(rdf, DRSBoards, TS_start=0, TS_end=TS_END):
             rdf = rdf.Define(
                 f"{channelName_blsub}_cfdalignedts", f"790 + TS - (int){channel_TS}_refts - 0"
             )
+            if map_mcp_channels is not None:
+                rdf = rdf.Define(
+                    f"{channelName_blsub}_cfdalignedts_mcp", f"{channelName_blsub}_cfdalignedts - (int){map_mcp_channels['US'][0]}_blsub_cfdrelts")
     return rdf
 
 
-def processDRSChannelsPeak(rdf, DRSBoards, TSminDRS=0, TSmaxDRS=TS_END, threshold=1.0):
+def processDRSChannelsPeak(rdf, DRSBoards, TSminDRS=0, TSmaxDRS=TS_END, threshold=1.0, map_mcp_channels=None):
     # jitter offset
     value_diffcorrs = [0, 0, 0, 0, 0, 0, 0]
 
@@ -136,6 +167,11 @@ def processDRSChannelsPeak(rdf, DRSBoards, TSminDRS=0, TSmaxDRS=TS_END, threshol
             rdf = rdf.Define(
                 f"{channelName_blsub}_AlignedTS", f"790 + TS - (int){channel_TS}_PeakTS - 0 - {value_diffcorrs[DRSBoard.board_no]}"
             )
+
+            # align to MCP
+            if map_mcp_channels is not None:
+                rdf = rdf.Define(
+                    f"{channelName_blsub}_AlignedTS_MCP", f"{channelName_blsub}_AlignedTS - (int){map_mcp_channels['US'][0]}_blsub_RelPeakTS")
 
     return rdf
 
@@ -260,8 +296,12 @@ def get_drs_stats(rdf, run, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
     Get the statistics of DRS outputs per channel.
     """
     rdf = processDRSRefChannels(rdf, DRSBoards)
-    rdf = processDRSChannelsCFD(rdf, DRSBoards, TS_start, TS_end)
-    rdf = processDRSChannelsPeak(rdf, DRSBoards, TS_start, TS_end)
+    rdf = processMCPChannels(rdf, run, TSminMCP=TS_start, TSmaxMCP=TS_end)
+    map_mcp_channels = get_mcp_channels(run)
+    rdf = processDRSChannelsCFD(
+        rdf, DRSBoards, TS_start, TS_end, map_mcp_channels=map_mcp_channels)
+    rdf = processDRSChannelsPeak(
+        rdf, DRSBoards, TS_start, TS_end, map_mcp_channels=map_mcp_channels)
     # rdf = getDRSSum(rdf, DRSBoards, TS_start, TS_end)
     # rdf = getDRSPeakTS(rdf, run, DRSBoards, TS_start, TS_end, threshold)
     # rdf = getDRSPeak(rdf, DRSBoards, TS_start, TS_end)

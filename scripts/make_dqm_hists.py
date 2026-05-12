@@ -1,4 +1,5 @@
 import json
+from channels.channel_map import get_mcp_channels
 from configs.plot_config import get_drs_plot_ranges, get_fers_saturation_value
 from core.analysis_manager import CaloXAnalysisManager
 from utils.root_setup import setup_root
@@ -375,8 +376,35 @@ def make_drs_2d_hists():
                 f"{channelName}_cfdalignedts", channelName
             )
             hists2d_DRS_VS_TS.append(hprof_subtractMedian_CFDTSCalib)
+            hist_subtractMedian_CFDTSCalib_MCP = rdf.Histo2D((
+                f"hist_{channelName}_VS_CFDAlignedTS_MCP",
+                "DRS values (subtract baseline) VS CFD AlignedTS (calibrated to MCP);CFD AlignedTS calibrated to MCP;DRS values",
+                1024, 0, 1024, 50, ymin, ymax),
+                f"{channelName}_cfdalignedts_mcp", channelName
+            )
+            hists2d_DRS_VS_TS.append(hist_subtractMedian_CFDTSCalib_MCP)
+            hprof_subtractMedian_CFDTSCalib_MCP = rdf.Profile1D((
+                f"prof_{channelName}_VS_CFDAlignedTS_MCP",
+                "DRS values (subtract baseline) VS CFD AlignedTS (calibrated to MCP);CFD AlignedTS calibrated to MCP;Mean DRS values",
+                1024, 0, 1024),
+                f"{channelName}_cfdalignedts_mcp", channelName
+            )
+            hists2d_DRS_VS_TS.append(hprof_subtractMedian_CFDTSCalib_MCP)
 
     return hists2d_DRS_VS_TS
+
+
+def make_drs_service_2d_hists(channel_list):
+    hists2d_DRS_service = []
+    for channelName in channel_list:
+        hist_subtractMedian_TSCalib = rdf.Histo2D((
+            f"hist_{channelName}_VS_TS",
+            "DRS values (subtract baseline) VS AlignedTS;AlignedTS;DRS values",
+            1024, 0, 1024, 50, -1500, 500),
+            f"TS", channelName
+        )
+        hists2d_DRS_service.append(hist_subtractMedian_TSCalib)
+    return hists2d_DRS_service
 
 
 def make_drs_stats_hists():
@@ -427,6 +455,22 @@ def make_drs_stats_hists():
                 f"{channelName_blsub}_cfdrelts"
             )
             hists_DRSStats.append(hists_DRS_RelCFDTS)
+
+            # peak ts with respect to the MCP signal
+            hists_DRS_RelPeakTS_MCP = rdf.Histo1D((
+                f"hist_{channelName_blsub}_RelPeakTS_MCP",
+                "DRS Relative Peak TS (calibrated to MCP);Relative Peak TS (TS);Counts",
+                1024, 0, 1024),
+                f"{channelName_blsub}_RelPeakTS_MCP"
+            )
+            hists_DRSStats.append(hists_DRS_RelPeakTS_MCP)
+            hists_DRS_RelCFDTS_MCP = rdf.Histo1D((
+                f"hist_{channelName_blsub}_RelCFDTS_MCP",
+                "DRS Relative CFD TS (calibrated to MCP);Relative CFD TS (TS);Counts",
+                1024, 0, 1024),
+                f"{channelName_blsub}_cfdrelts_mcp"
+            )
+            hists_DRSStats.append(hists_DRS_RelCFDTS_MCP)
 
     return hists_DRSStats
 
@@ -607,6 +651,11 @@ def main():
     hists2d_drs_vs_ts = make_drs_2d_hists()
     hists_drs_stats = make_drs_stats_hists()
 
+    map_mcp_channels = get_mcp_channels(run_number)
+    list_mcp_channels = [
+        channel + "_blsub" for channels in map_mcp_channels.values() for channel in channels]
+    hists2d_drs_service = make_drs_service_2d_hists(list_mcp_channels)
+
     # hists2d_DRSPeak_VS_FERS = check_drs_peak_vs_fers()
 
     # hists1d_DRSPeakTS_Cer, hists1d_DRSPeakTS_Sci, hists2d_DRSPeakTS_Cer_VS_Sci = check_drs_peak_ts()
@@ -652,6 +701,9 @@ def main():
     save_hists_to_file(hists2d_drs_vs_ts, f"{paths['root']}/drs_vs_ts.root")
 
     save_hists_to_file(hists_drs_stats, f"{paths['root']}/drs_stats.root")
+
+    save_hists_to_file(hists2d_drs_service,
+                       f"{paths['root']}/drs_service_channels.root")
 
     # save_hists_to_file(hists2d_DRSPeak_VS_FERS,
     #                   f"{paths['root']}/drspeak_vs_fers.root")
