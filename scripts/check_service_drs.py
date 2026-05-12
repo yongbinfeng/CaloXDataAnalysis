@@ -395,6 +395,71 @@ No selection is applied unless specified."""
     return output_htmls
 
 
+def analyze_mcp_timing_diff(channels_mcp):
+    """Book event-by-event MCP CFD time difference histograms w.r.t. the first MCP."""
+    rdf = rdf_org
+    hists = []
+
+    dets = list(channels_mcp.keys())
+    ref_det = dets[0]
+    ref_col = channels_mcp[ref_det]
+
+    for det, channel in channels_mcp.items():
+        if det == ref_det:
+            continue
+        diff_col = f"{channel}_minus_{ref_col}_cfd_diff"
+        rdf = rdf.Define(
+            diff_col, f"{channel}_TS_cfd_ref - {ref_col}_TS_cfd_ref")
+        hists.append(rdf.Histo1D(
+            (f"{det}_cfd_diff_vs_{ref_det}",
+             f"{det} - {ref_det};#Delta t_{{CFD,ref}} [TS];Counts",
+             400, -10, 10),
+            diff_col))
+
+    return hists, ref_det
+
+
+def plot_mcp_timing_diff(channels_mcp, ref_det):
+    """Plot MCP CFD timing difference histograms in a dedicated HTML page."""
+    infile_name = f"{paths['root']}/drs_mcp_timing_diff.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    if not infile or infile.IsZombie():
+        raise RuntimeError(f"Failed to open input file: {infile_name}")
+
+    dets = [det for det in channels_mcp if det != ref_det]
+
+    with PlotManager(paths['root'], paths['plots'], paths['html'], run_number) as pm:
+        pm.set_output_dir("drs_mcp_timing_diff")
+
+        for det in dets:
+            hist = infile.Get(f"{det}_cfd_diff_vs_{ref_det}")
+            if not hist:
+                continue
+            hist.Fit("gaus", "Q")
+            fit = hist.GetFunction("gaus")
+            fit.SetLineColor(ROOT.kRed)
+            fit.SetLineWidth(2)
+            pave = create_pave_text(0.60, 0.75, 0.90, 0.88)
+            pave.AddText(f"Mean: {fit.GetParameter(1):.2f} TS")
+            pave.AddText(f"Sigma: {fit.GetParameter(2):.2f} TS")
+            pm.plot_1d(hist, f"{det}_cfd_diff_vs_{ref_det}",
+                       f"#Delta t_{{CFD,ref}} ({det} - {ref_det}) [TS]", (-10, 10),
+                       yrange=(0.1, 200),
+                       ylabel="Counts", style=STYLE_1D,
+                       extraToDraw=[fit, pave])
+
+        intro_text = (f"Event-by-event MCP CFD time differences with respect to "
+                      f"{ref_det}. No selection applied.\n This should be the timing resolution of the system, (DRS+Method) for the same MCP; DRS+Method+MCP for different MCPs.")
+        output_html = pm.generate_html(
+            "ServiceDRS/mcp_timing_diff.html",
+            plots_per_row=3,
+            title="MCP CFD Timing Differences",
+            intro_text=intro_text)
+
+    infile.Close()
+    return output_html
+
+
 def plot_hodo_peak():
     """Plot hodoscope peak analysis results."""
     infile = ROOT.TFile(f"{paths['root']}/hodoscope_peaks.root", "READ")
@@ -502,20 +567,25 @@ def main():
     hists_pid = analyze_pulse(channels)
     # hists_hodo = analyze_hodo_peak()
     hists_mcp = analyze_pulse(channels_mcp)
+    hists_mcp_diff, ref_det = analyze_mcp_timing_diff(channels_mcp)
 
     print("Triggering all computations...")
-    ROOT.RDF.RunGraphs(hists_pid + hists_mcp)  # type: ignore[attr-defined]
+    # type: ignore[attr-defined]
+    ROOT.RDF.RunGraphs(hists_pid + hists_mcp + hists_mcp_diff)
 
     # Save histograms
     save_hists_to_file(hists_pid, f"{paths['root']}/drs_services.root")
     # save_hists_to_file(hists_hodo, f"{paths['root']}/hodoscope_peaks.root")
     save_hists_to_file(hists_mcp, f"{paths['root']}/drs_mcp.root")
+    save_hists_to_file(
+        hists_mcp_diff, f"{paths['root']}/drs_mcp_timing_diff.root")
 
     # Make plots
     outputs = {}
     outputs["PID"] = plot_pulse(channels, suffix="services")
     # outputs["DWC"] = plot_hodo_peak()
     outputs["MCP"] = plot_pulse(channels_mcp, suffix="mcp")
+    outputs["MCP_timing_diff"] = plot_mcp_timing_diff(channels_mcp, ref_det)
 
     for key, value in outputs.items():
         if isinstance(value, list):
