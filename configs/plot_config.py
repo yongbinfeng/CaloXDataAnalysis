@@ -396,11 +396,15 @@ def getServiceDRSProcessedInfoRanges(channel, cat):
             "peak_value": (-1200, 50),
             "sum": (-1.2e4, 2e3)
         },
+        "MCP": {
+            "peak_value": (-1000, 50),
+            "sum": (-1e4, 1000)
+        },
     }
+    if channel.startswith("MCP"):
+        return service_drs_ranges["MCP"].get(cat, (-1000, 50))
     if channel in service_drs_ranges:
         if cat in service_drs_ranges[channel]:
             return service_drs_ranges[channel][cat]
-        else:
-            print(f"Category {cat} not found for channel {channel}.")
-            return -100, 100
+        print(f"Category {cat} not found for channel {channel}.")
     return -100, 100

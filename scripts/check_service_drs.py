@@ -6,7 +6,7 @@ Analyzes service DRS channels for particle identification and hodoscope peak tim
 
 import ROOT
 from collections import OrderedDict
-from channels.channel_map import build_hodo_pos_channels, get_service_drs_channels
+from channels.channel_map import build_hodo_pos_channels, get_service_drs_channels, get_mcp_channels
 from configs.plot_config import getServiceDRSProcessedInfoRanges
 from configs.selection_config import get_service_drs_cut
 from core.analysis_manager import CaloXAnalysisManager
@@ -191,16 +191,17 @@ def analyzeHodoPeak():
     return hists_output
 
 
-def plotPulse(channels):
+def plotPulse(channels, suffix="services"):
     """Plot PID pulse analysis results."""
-    infile = ROOT.TFile(f"{paths['root']}/drs_services_pid.root", "READ")
+    infile_name = f"{paths['root']}/drs_{suffix}.root"
+    infile = ROOT.TFile(infile_name, "READ")
     if not infile or infile.IsZombie():
-        raise RuntimeError(f"Failed to open input file")
+        raise RuntimeError(f"Failed to open input file: {infile_name}")
 
     output_htmls = []
 
     with PlotManager(paths['root'], paths['plots'], paths['html'], run_number) as pm:
-        pm.set_output_dir("drs_service")
+        pm.set_output_dir(f"drs_{suffix}")
 
         for det in channels.keys():
             # ADC vs TS
@@ -263,7 +264,7 @@ def plotPulse(channels):
 No selection is applied unless specified."""
 
         output_htmls.append(pm.generate_html(
-            "ServiceDRS/PID.html", plots_per_row=5, intro_text=intro_text, title="Particle Identification"))
+            f"ServiceDRS/{suffix}.html", plots_per_row=5, intro_text=intro_text, title=f"{suffix.upper()} Analysis"))
 
         # 2D correlation plots
         # pm.reset_plots()
@@ -329,7 +330,7 @@ No selection is applied unless specified."""
 No selection is applied unless specified."""
 
             output_htmls.append(pm.generate_html(
-                f"ServiceDRS/{cat}_correlation.html", plots_per_row=5, intro_text=intro_text))
+                f"ServiceDRS/{cat}_correlation_{suffix}.html", plots_per_row=5, intro_text=intro_text))
 
     infile.Close()
     return output_htmls
@@ -437,20 +438,38 @@ def main():
         channel = get_service_drs_channels(run_number).get(det)
         channels[det] = channel
 
+    channels_mcp = OrderedDict()
+    mcp_channels = get_mcp_channels(run_number)
+    for det, channel_list in mcp_channels.items():
+        for idx, channel in enumerate(channel_list):
+            channels_mcp[f"MCP_{det}_{idx}"] = channel
+
     hists_pid = analyzePulse(channels)
     hists_hodo = analyzeHodoPeak()
+    hists_mcp = analyzePulse(channels_mcp)
+
+    # Trigger all lazy actions together across all graphs
+    print("Triggering all computations...")
+    # type: ignore[attr-defined]
+    ROOT.RDF.RunGraphs(hists_pid + hists_hodo + hists_mcp)
 
     # Save histograms
-    save_hists_to_file(hists_pid, f"{paths['root']}/drs_services_pid.root")
+    save_hists_to_file(hists_pid, f"{paths['root']}/drs_services.root")
     save_hists_to_file(hists_hodo, f"{paths['root']}/hodoscope_peaks.root")
+    save_hists_to_file(hists_mcp, f"{paths['root']}/drs_mcp.root")
 
     # Make plots
     outputs = {}
-    outputs["PID"] = plotPulse(channels)
+    outputs["PID"] = plotPulse(channels, suffix="services")
     outputs["DWC"] = plotHodoPeak()
+    outputs["MCP"] = plotPulse(channels_mcp, suffix="mcp")
 
     for key, value in outputs.items():
-        print(f"Output for {key}: {value}")
+        if isinstance(value, list):
+            for item in value:
+                print(f"Output for {key}: {item}")
+        else:
+            print(f"Output for {key}: {value}")
 
 
 if __name__ == "__main__":
