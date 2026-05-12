@@ -7,7 +7,7 @@ Analyzes service DRS channels for particle identification and hodoscope peak tim
 import ROOT
 from collections import OrderedDict
 from channels.channel_map import build_hodo_pos_channels, get_service_drs_channels, get_mcp_channels
-from configs.plot_config import getServiceDRSProcessedInfoRanges
+from configs.plot_config import get_service_drs_processed_info_ranges
 from configs.selection_config import get_service_drs_cut
 from core.analysis_manager import CaloXAnalysisManager
 from utils.parser import get_args
@@ -43,42 +43,48 @@ STYLE_COMPARE = PlotStyle(dology=False, drawoptions="HIST", mycolors=[
                           1, 1])
 
 
-def analyzePulse(channels):
-    """Analyze pulse shapes for PID channels."""
+def analyze_pulse(channels):
+    """Analyze pulse shapes for PID channels using precomputed DRS variables."""
     rdf = rdf_org
     hists = {}
 
+    # Use precomputed columns from process_drs_channels / process_mcp_channels:
+    #   {channel}_TS_cfd    — CFD crossing time slice (float)
+    #   {channel}_peak_value — waveform peak amplitude
+    #   {channel}_energy     — CFD energy integral
     for det, channel in channels.items():
-        ts_min, ts_max, value_cut, method = get_service_drs_cut(det)
-        rdf = rdf.Define(f"{channel}_peak_position",
-                         f"ArgMinRange({channel}_blsub, {ts_min}, {ts_max})")
-        rdf = rdf.Define(f"{channel}_peak_value",
-                         f"MinRange({channel}_blsub, {ts_min}, {ts_max})")
-        # rdf = rdf.Define(f"{channel}_sum",
-        #                 f"SumRange({channel}_blsub, {channel}_peak_position - 50, {channel}_peak_position + 100)")
-        rdf = rdf.Define(f"{channel}_sum",
-                         f"SumRange({channel}_blsub, {ts_min}, {ts_max})")
-
-    # Create histograms
-    for det, channel in channels.items():
+        # MCP columns are keyed by det name; regular service DRS by channel name
+        # col = det if det.startswith("MCP") else channel
+        col = channel
         hists[channel] = {}
+        wf_ymin, wf_ymax = get_service_drs_processed_info_ranges(
+            det, "waveform")
         hists[channel]["ADC_VS_TS"] = rdf.Histo2D(
             (f"{det}_ADC_vs_TS", f"ADC vs Time Slice {channel};Time Slice;ADC Counts;Counts",
-             1024, 0, 1024, 500, -3000, 1000),
-            "TS", f"{channel}_blsub")
-        hists[channel]["peak_position"] = rdf.Histo1D(
-            (f"{det}_peak_position",
-             f"Peak Position {channel};Time Slice;Counts", 128, 0, 1024),
-            f"{channel}_peak_position")
-        xmin, xmax = getServiceDRSProcessedInfoRanges(det, "peak_value")
+             1024, 0, 1024, 500, wf_ymin, wf_ymax),
+            "ts", f"{channel}_blsub")
+        hists[channel]["ADC_VS_TS_prof"] = rdf.Profile1D(
+            (f"{det}_ADC_vs_TS_prof", f"Mean ADC vs Time Slice {channel};Time Slice;Mean ADC Counts",
+             1024, 0, 1024, wf_ymin, wf_ymax),
+            "ts", f"{channel}_blsub")
+        hists[channel]["cfd_ts"] = rdf.Histo1D(
+            (f"{det}_cfd_ts",
+             f"CFD TS {channel};CFD TS;Counts", 128, 0, 1024),
+            f"{col}_TS_cfd")
+        xmin, xmax = get_service_drs_processed_info_ranges(det, "peak_value")
+        hists[channel]["peak_value_vs_cfd_ts"] = rdf.Histo2D(
+            (f"{det}_peak_value_vs_cfd_ts",
+             f"Peak Value vs CFD TS {channel};CFD TS;Peak Value;Counts",
+             128, 0, 1024, 100, xmin, xmax),
+            f"{col}_TS_cfd", f"{col}_peak_value")
         hists[channel]["peak_value"] = rdf.Histo1D(
             (f"{det}_peak_value",
              f"Peak Value {channel};ADC Counts;Counts", 50, xmin, xmax),
-            f"{channel}_peak_value")
-        xmin, xmax = getServiceDRSProcessedInfoRanges(det, "sum")
-        hists[channel]["sum"] = rdf.Histo1D(
-            (f"{det}_sum", f"Sum {channel};ADC Counts;Counts", 500, xmin, xmax),
-            f"{channel}_sum")
+            f"{col}_peak_value")
+        xmin, xmax = get_service_drs_processed_info_ranges(det, "sum")
+        hists[channel]["energy"] = rdf.Histo1D(
+            (f"{det}_energy", f"Energy {channel};Energy (ADC);Counts", 500, xmin, xmax),
+            f"{col}_energy")
 
     # 2D correlation histograms
     det_list = list(channels.keys())
@@ -90,14 +96,22 @@ def analyzePulse(channels):
             if (det1 in special_dets) ^ (det2 in special_dets):
                 continue  # Skip correlations between trigger and non-trigger detectors
             channel1, channel2 = channels[det1], channels[det2]
+            col1 = det1 if det1.startswith("MCP") else channel1
+            col2 = det2 if det2.startswith("MCP") else channel2
+            _, _, _, method1 = get_service_drs_cut(det1)
+            _, _, _, method2 = get_service_drs_cut(det2)
+            var1 = "peak_value" if method1 == "PeakValue" else "energy"
+            var2 = "peak_value" if method2 == "PeakValue" else "energy"
+            xmin, xmax = get_service_drs_processed_info_ranges(
+                det1, "peak_value" if method1 == "PeakValue" else "sum")
+            ymin, ymax = get_service_drs_processed_info_ranges(
+                det2, "peak_value" if method2 == "PeakValue" else "sum")
             hists[f"{det1}_vs_{det2}"] = {}
-            xmin, xmax = getServiceDRSProcessedInfoRanges(det1, "sum")
-            ymin, ymax = getServiceDRSProcessedInfoRanges(det2, "sum")
-            hists[f"{det1}_vs_{det2}"]["sum2D"] = rdf.Histo2D(
-                (f"{det1}_sum_vs_{det2}_sum",
-                 f"{det1} vs {det2} Sum;{det1} Sum;{det2} Sum;Counts",
+            hists[f"{det1}_vs_{det2}"]["corr2D"] = rdf.Histo2D(
+                (f"{det1}_{var1}_vs_{det2}_{var2}",
+                 f"{det1} vs {det2};{det1} {var1};{det2} {var2};Counts",
                  500, xmin, xmax, 500, ymin, ymax),
-                f"{channel1}_sum", f"{channel2}_sum")
+                f"{col1}_{var1}", f"{col2}_{var2}")
 
     output_hists = []
     for _, hists_map in hists.items():
@@ -107,7 +121,7 @@ def analyzePulse(channels):
     return output_hists
 
 
-def analyzeHodoPeak():
+def analyze_hodo_peak():
     """Analyze hodoscope peak timing."""
     rdf = rdf_org
     hodo_pos_channels = build_hodo_pos_channels(run=run_number)
@@ -117,12 +131,12 @@ def analyzeHodoPeak():
         "left_vs_right", "left_peak", "right_peak", "LR_vs_UD"
     ]}
 
-    for group, channels in hodo_pos_channels.items():
-        for channel in channels:
-            rdf = rdf.Define(f"{channel}_peak_position",
-                             f"ROOT::VecOps::ArgMin({channel}_blsub)")
-            rdf = rdf.Define(f"{channel}_peak_value",
-                             f"ROOT::VecOps::Min({channel}_blsub)")
+    # for group, channels in hodo_pos_channels.items():
+    #    for channel in channels:
+    #        rdf = rdf.Define(f"{channel}_peak_position",
+    #                         f"ArgMaxRange({channel}_blsub, 0, -1)")
+    #        rdf = rdf.Define(f"{channel}_peak_value",
+    #                         f"MaxRange({channel}_blsub, 0, -1)")
 
     conditions = ["is_HoleVeto_vetoed", "passNone"]
     rdf_filtered = rdf
@@ -191,7 +205,7 @@ def analyzeHodoPeak():
     return hists_output
 
 
-def plotPulse(channels, suffix="services"):
+def plot_pulse(channels, suffix="services"):
     """Plot PID pulse analysis results."""
     infile_name = f"{paths['root']}/drs_{suffix}.root"
     infile = ROOT.TFile(infile_name, "READ")
@@ -204,47 +218,87 @@ def plotPulse(channels, suffix="services"):
         pm.set_output_dir(f"drs_{suffix}")
 
         for det in channels.keys():
-            # ADC vs TS
+            wf_ymin, wf_ymax = get_service_drs_processed_info_ranges(
+                det, "waveform")
+            pv_xmin, pv_xmax = get_service_drs_processed_info_ranges(
+                det, "peak_value")
+            en_xmin, en_xmax = get_service_drs_processed_info_ranges(
+                det, "sum")
+            _, _, value_cut, cut_method = get_service_drs_cut(det)
+
+            # ADC vs TS (2D + profile)
             hist = infile.Get(f"{det}_ADC_vs_TS")
             if hist:
                 pm.plot_2d(hist, f"{det}_ADC_vs_TS", "Time Slice", (0, 1024),
-                           "ADC Counts", (-3000, 1000), style=STYLE_2D_LOG)
+                           "ADC Counts", (wf_ymin, wf_ymax), style=STYLE_2D_LOG)
+            prof = infile.Get(f"{det}_ADC_vs_TS_prof")
+            if prof:
+                prof_px = prof.ProjectionX()
+                pm.plot_1d(prof_px, f"{det}_ADC_vs_TS_prof", "Time Slice", (0, 1024),
+                           "Mean ADC Counts", (wf_ymin/10.0, wf_ymax/5.0), style=STYLE_1D)
 
-            # Peak position
-            hist = infile.Get(f"{det}_peak_position")
+            # CFD TS
+            hist = infile.Get(f"{det}_cfd_ts")
             if hist:
-                pm.plot_1d(hist, f"{det}_peak_position", "Peak Position", (0, 1024),
+                pm.plot_1d(hist, f"{det}_cfd_ts", "CFD TS", (0, 1024),
                            style=STYLE_1D)
 
-            # Peak value
+            # Peak value vs CFD TS
+            hist = infile.Get(f"{det}_peak_value_vs_cfd_ts")
+            if hist:
+                pm.plot_2d(hist, f"{det}_peak_value_vs_cfd_ts",
+                           "CFD TS", (0, 1024), "Peak Value", (pv_xmin, pv_xmax),
+                           style=STYLE_2D_LOG)
+
+            # Peak value (cut annotation shown here when method is PeakValue)
             hist = infile.Get(f"{det}_peak_value")
             if hist:
-                xmin, xmax = getServiceDRSProcessedInfoRanges(
-                    det, "peak_value")
-                pm.plot_1d(hist, f"{det}_peak_value", "Peak Value", (xmin, xmax),
-                           style=STYLE_1D, leftlegend=True)
+                if cut_method == "PeakValue":
+                    nhad = hist.Integral(hist.FindBin(value_cut), 10000)
+                    nele = hist.Integral(0, hist.FindBin(value_cut))
+                    ntot = nhad + nele + 1e-6
+                    pave = create_pave_text(0.23, 0.75, 0.55, 0.85)
+                    pave.SetFillColor(0)
+                    pave.AddText(
+                        f"N (peak > {value_cut:.2g}): {nhad:.0f} ({nhad/ntot:.1%})")
+                    pave.AddText(
+                        f"N (peak < {value_cut:.2g}): {nele:.0f} ({nele/ntot:.1%})")
+                    line = ROOT.TLine(
+                        value_cut, 0, value_cut, hist.GetMaximum())
+                    line.SetLineColor(ROOT.kRed)
+                    line.SetLineWidth(2)
+                    line.SetLineStyle(ROOT.kDashed)
+                    pm.plot_1d(hist, f"{det}_peak_value", "Peak Value", (pv_xmin, pv_xmax),
+                               yrange=(1, None), style=STYLE_1D_LOG,
+                               extraToDraw=[pave, line])
+                else:
+                    pm.plot_1d(hist, f"{det}_peak_value", "Peak Value", (pv_xmin, pv_xmax),
+                               style=STYLE_1D, leftlegend=True)
 
-            # Sum with cut info
-            hist = infile.Get(f"{det}_sum")
+            # Energy (cut annotation shown here when method is Sum/Energy)
+            hist = infile.Get(f"{det}_energy")
             if hist:
-                xmin, xmax = getServiceDRSProcessedInfoRanges(det, "sum")
-                _, _, value_cut, _ = get_service_drs_cut(det)
-                nhad = hist.Integral(hist.FindBin(value_cut), 10000)
-                nele = hist.Integral(0, hist.FindBin(value_cut))
-
-                pave = create_pave_text(0.23, 0.75, 0.55, 0.85)
-                pave.SetFillColor(0)
-                pave.AddText(f"N (sum > {value_cut:.2g}): {nhad:.0f}")
-                pave.AddText(f"N (sum < {value_cut:.2g}): {nele:.0f}")
-
-                line = ROOT.TLine(value_cut, 0, value_cut, hist.GetMaximum())
-                line.SetLineColor(ROOT.kRed)
-                line.SetLineWidth(2)
-                line.SetLineStyle(ROOT.kDashed)
-
-                pm.plot_1d(hist, f"{det}_sum", "Sum", (xmin, xmax),
-                           yrange=(1, None), style=STYLE_1D_LOG,
-                           extraToDraw=[pave, line])
+                if cut_method != "PeakValue":
+                    nhad = hist.Integral(hist.FindBin(value_cut), 10000)
+                    nele = hist.Integral(0, hist.FindBin(value_cut))
+                    ntot = nhad + nele + 1e-6
+                    pave = create_pave_text(0.23, 0.75, 0.55, 0.85)
+                    pave.SetFillColor(0)
+                    pave.AddText(
+                        f"N (energy > {value_cut:.2g}): {nhad:.0f} ({nhad/ntot:.1%})")
+                    pave.AddText(
+                        f"N (energy < {value_cut:.2g}): {nele:.0f} ({nele/ntot:.1%})")
+                    line = ROOT.TLine(
+                        value_cut, 0, value_cut, hist.GetMaximum())
+                    line.SetLineColor(ROOT.kRed)
+                    line.SetLineWidth(2)
+                    line.SetLineStyle(ROOT.kDashed)
+                    pm.plot_1d(hist, f"{det}_energy", "Energy (ADC)", (en_xmin, en_xmax),
+                               yrange=(1, None), style=STYLE_1D_LOG,
+                               extraToDraw=[pave, line])
+                else:
+                    pm.plot_1d(hist, f"{det}_energy", "Energy (ADC)", (en_xmin, en_xmax),
+                               yrange=(1, None), style=STYLE_1D_LOG)
 
                 # CDF plot
                 hist.GetXaxis().SetRange(0, hist.GetNbinsX() + 1)
@@ -254,8 +308,7 @@ def plotPulse(channels, suffix="services"):
                 line_cdf.SetLineColor(ROOT.kRed)
                 line_cdf.SetLineWidth(2)
                 line_cdf.SetLineStyle(ROOT.kDashed)
-
-                pm.plot_1d(hist_cdf, f"{det}_sum_cdf", "Sum", (xmin, xmax),
+                pm.plot_1d(hist_cdf, f"{det}_energy_cdf", "Energy (ADC)", (en_xmin, en_xmax),
                            ylabel="Cumulative Fraction", yrange=(0, 1.3),
                            style=STYLE_1D, addOverflow=False, addUnderflow=False,
                            legendPos=[0.3, 0.80, 0.5, 0.85], extraToDraw=line_cdf)
@@ -264,7 +317,7 @@ def plotPulse(channels, suffix="services"):
 No selection is applied unless specified."""
 
         output_htmls.append(pm.generate_html(
-            f"ServiceDRS/{suffix}.html", plots_per_row=5, intro_text=intro_text, title=f"{suffix.upper()} Analysis"))
+            f"ServiceDRS/{suffix}.html", plots_per_row=7, intro_text=intro_text, title=f"{suffix.upper()} Analysis"))
 
         # 2D correlation plots
         # pm.reset_plots()
@@ -275,21 +328,27 @@ No selection is applied unless specified."""
         # remove trigger_dets from det_list for correlation plotting
         det_list = [det for det in det_list if det not in trigger_dets]
 
-        for cat, tmp_list in [("PID", det_list), ("Trigger", trigger_dets)]:
+        corr_categories = [("PID", det_list)] if suffix == "mcp" else [
+            ("PID", det_list), ("Trigger", trigger_dets)]
+        for cat, tmp_list in corr_categories:
             pm.reset_plots()
             for idx1, det1 in enumerate(tmp_list):
                 for idx2, det2 in enumerate(tmp_list):
                     if idx2 <= idx1:
                         continue
 
-                    hist2d = infile.Get(f"{det1}_sum_vs_{det2}_sum")
+                    _, _, value_cut1, method1 = get_service_drs_cut(det1)
+                    _, _, value_cut2, method2 = get_service_drs_cut(det2)
+                    var1 = "peak_value" if method1 == "PeakValue" else "energy"
+                    var2 = "peak_value" if method2 == "PeakValue" else "energy"
+                    xmin, xmax = get_service_drs_processed_info_ranges(
+                        det1, "peak_value" if method1 == "PeakValue" else "sum")
+                    ymin, ymax = get_service_drs_processed_info_ranges(
+                        det2, "peak_value" if method2 == "PeakValue" else "sum")
+
+                    hist2d = infile.Get(f"{det1}_{var1}_vs_{det2}_{var2}")
                     if not hist2d:
                         continue
-
-                    xmin, xmax = getServiceDRSProcessedInfoRanges(det1, "sum")
-                    ymin, ymax = getServiceDRSProcessedInfoRanges(det2, "sum")
-                    _, _, value_cut1, _ = get_service_drs_cut(det1)
-                    _, _, value_cut2, _ = get_service_drs_cut(det2)
 
                     xPass = hist2d.GetXaxis().FindBin(value_cut1)
                     yPass = hist2d.GetYaxis().FindBin(value_cut2)
@@ -318,9 +377,9 @@ No selection is applied unless specified."""
                         line.SetLineStyle(ROOT.kDashed)
                         line.SetLineColor(ROOT.kRed)
 
-                    pm.plot_2d(hist2d, f"{det1}_vs_{det2}_sum2D",
-                               f"{det1} Sum", (xmin, xmax),
-                               f"{det2} Sum", (ymin, ymax),
+                    pm.plot_2d(hist2d, f"{det1}_vs_{det2}_corr2D",
+                               f"{det1} {var1}", (xmin, xmax),
+                               f"{det2} {var2}", (ymin, ymax),
                                style=STYLE_2D_LOG,
                                extraToDraw=[pave, line1, line2])
 
@@ -336,7 +395,7 @@ No selection is applied unless specified."""
     return output_htmls
 
 
-def plotHodoPeak():
+def plot_hodo_peak():
     """Plot hodoscope peak analysis results."""
     infile = ROOT.TFile(f"{paths['root']}/hodoscope_peaks.root", "READ")
     if not infile or infile.IsZombie():
@@ -438,31 +497,25 @@ def main():
         channel = get_service_drs_channels(run_number).get(det)
         channels[det] = channel
 
-    channels_mcp = OrderedDict()
-    mcp_channels = get_mcp_channels(run_number)
-    for det, channel_list in mcp_channels.items():
-        for idx, channel in enumerate(channel_list):
-            channels_mcp[f"MCP_{det}_{idx}"] = channel
+    channels_mcp = get_mcp_channels(run_number)
 
-    hists_pid = analyzePulse(channels)
-    hists_hodo = analyzeHodoPeak()
-    hists_mcp = analyzePulse(channels_mcp)
+    hists_pid = analyze_pulse(channels)
+    # hists_hodo = analyze_hodo_peak()
+    hists_mcp = analyze_pulse(channels_mcp)
 
-    # Trigger all lazy actions together across all graphs
     print("Triggering all computations...")
-    # type: ignore[attr-defined]
-    ROOT.RDF.RunGraphs(hists_pid + hists_hodo + hists_mcp)
+    ROOT.RDF.RunGraphs(hists_pid + hists_mcp)  # type: ignore[attr-defined]
 
     # Save histograms
     save_hists_to_file(hists_pid, f"{paths['root']}/drs_services.root")
-    save_hists_to_file(hists_hodo, f"{paths['root']}/hodoscope_peaks.root")
+    # save_hists_to_file(hists_hodo, f"{paths['root']}/hodoscope_peaks.root")
     save_hists_to_file(hists_mcp, f"{paths['root']}/drs_mcp.root")
 
     # Make plots
     outputs = {}
-    outputs["PID"] = plotPulse(channels, suffix="services")
-    outputs["DWC"] = plotHodoPeak()
-    outputs["MCP"] = plotPulse(channels_mcp, suffix="mcp")
+    outputs["PID"] = plot_pulse(channels, suffix="services")
+    # outputs["DWC"] = plot_hodo_peak()
+    outputs["MCP"] = plot_pulse(channels_mcp, suffix="mcp")
 
     for key, value in outputs.items():
         if isinstance(value, list):

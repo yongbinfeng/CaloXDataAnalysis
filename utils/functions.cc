@@ -231,7 +231,8 @@ struct CaloHit
 // =================================================================
 // Constant Fraction Discriminator (CFD) for Physics Pulses
 // =================================================================
-CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive = true, const float min_amplitude = 5.0f)
+CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive = true, const float min_amplitude = 5.0f,
+                             size_t i_start = 0, size_t i_end = static_cast<size_t>(-1))
 {
     constexpr float kInvalidTime = -9999.0f;
     constexpr float kCfdFraction = 0.20f;
@@ -242,10 +243,15 @@ CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive
     if (waveform.size() < static_cast<size_t>(kIntWindowPre + kIntWindowPost))
         return hit;
 
+    if (i_end > waveform.size())
+        i_end = waveform.size();
+    if (i_start >= i_end)
+        return hit;
+
     const float sign = is_positive ? 1.0f : -1.0f;
 
-    // --- 1. Find Peak ---
-    auto peak_iter = std::max_element(waveform.begin(), waveform.end(),
+    // --- 1. Find Peak within [i_start, i_end) ---
+    auto peak_iter = std::max_element(waveform.begin() + i_start, waveform.begin() + i_end,
                                       [sign](float a, float b)
                                       { return sign * a < sign * b; });
 
@@ -263,7 +269,7 @@ CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive
 
     // --- 3. Walk Backward to Crossing ---
     int scan_idx = peak_idx;
-    while (scan_idx > 0 && sign * waveform[scan_idx] > sign * cfd_thresh)
+    while (scan_idx > static_cast<int>(i_start) && sign * waveform[scan_idx] > sign * cfd_thresh)
         scan_idx--;
 
     // --- 4. Sub-Slice Linear Interpolation ---

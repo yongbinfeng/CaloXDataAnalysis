@@ -17,7 +17,7 @@ from utils.plot_helper import get_run_paths
 from utils.root_setup import setup_root
 from core.plot_manager import PlotManager
 from configs.plot_style import PlotStyle
-from configs.plot_config import getServiceDRSProcessedInfoRanges
+from configs.plot_config import get_service_drs_processed_info_ranges
 from configs.selection_config import get_service_drs_cut
 from plotting.calox_plot_helper import create_pave_text
 
@@ -154,7 +154,7 @@ def main():
         lbls, hs, colors = gather(det, "peak_value")
         if hs:
             try:
-                xmin, xmax = getServiceDRSProcessedInfoRanges(det, "peak_value")
+                xmin, xmax = get_service_drs_processed_info_ranges(det, "peak_value")
             except Exception:
                 xmin, xmax = hs[0].GetXaxis().GetXmin(), hs[0].GetXaxis().GetXmax()
             pm.plot_1d(
@@ -170,7 +170,7 @@ def main():
         lbls, hs, colors = gather(det, "sum")
         if hs:
             try:
-                xmin, xmax = getServiceDRSProcessedInfoRanges(det, "sum")
+                xmin, xmax = get_service_drs_processed_info_ranges(det, "sum")
             except Exception:
                 xmin, xmax = hs[0].GetXaxis().GetXmin(), hs[0].GetXaxis().GetXmax()
 

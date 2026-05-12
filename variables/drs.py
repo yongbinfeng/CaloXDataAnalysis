@@ -96,7 +96,9 @@ def process_mcp_channels(rdf, run_number):
         channel_name_blsub = channel_name + "_blsub"
 
         rdf = rdf.Define(f"{det}_CFD",
-                         f"compute_cfd_integral({channel_name_blsub}, 1, 200.0)")
+                         f"compute_cfd_integral({channel_name_blsub}, 1, 20.0, 500, 650)")
+        rdf = rdf.Define(f"{det}_energy", f"{det}_CFD.energy")
+        rdf = rdf.Define(f"{det}_peak_value", f"{det}_CFD.peak_value")
         rdf = rdf.Define(f"{det}_TS_cfd", f"{det}_CFD.time_slice")
         rdf = rdf.Define(f"{det}_TS_peak", f"{det}_CFD.peak_position")
 

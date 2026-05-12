@@ -358,59 +358,65 @@ def get_service_drs_plot_ranges(channel, subtractMedian=True):
     return xmin, xmax
 
 
-def getServiceDRSProcessedInfoRanges(channel, cat):
+def get_service_drs_processed_info_ranges(channel, cat):
     service_drs_ranges = {
         "HoleVeto": {
-            "peak_value": (-1500, 50),
-            "sum": (-1e4, 2e3)
+            "peak_value": (-50, 1500),
+            "sum": (-2e3, 1e4)
         },
         "TTUMuonVeto": {
-            "peak_value": (-1000, 50),
-            "sum": (-1e4, 2e3)
+            "peak_value": (-50, 1000),
+            "sum": (-2e3, 1e4)
         },
         "PSD": {
-            # "peak_value": (-3000, 50),
-            # "sum": (-7e4, 1e4)
-            "peak_value": (-1000, 50),
-            "sum": (-2e4, 500)
+            # "peak_value": (-50, 3000),
+            # "sum": (-1e4, 7e4)
+            "peak_value": (-50, 1000),
+            "sum": (-500, 2e4)
         },
         "Cer474": {
-            "peak_value": (-1500, 50),
-            "sum": (-3.5e4, 2e3)
+            "peak_value": (-50, 1500),
+            "sum": (-2e3, 3.5e4)
         },
         "Cer519": {
-            "peak_value": (-1500, 50),
-            "sum": (-3e4, 2e3)
+            "peak_value": (-50, 1500),
+            "sum": (-2e3, 3e4)
         },
         "Cer537": {
-            "peak_value": (-1500, 50),
-            "sum": (-2.5e4, 2e3)
+            "peak_value": (-50, 1500),
+            "sum": (-2e3, 2.5e4)
         },
         "KT1": {
-            "peak_value": (-1200, 50),
-            "sum": (-1.2e4, 2e3)
+            "peak_value": (-50, 1200),
+            "sum": (-2e3, 1.2e4)
         },
         "KT2": {
-            "peak_value": (-1200, 50),
-            "sum": (-1.2e4, 2e3)
+            "peak_value": (-50, 1200),
+            "sum": (-2e3, 1.2e4)
         },
         "T3": {
-            "peak_value": (-1200, 50),
-            "sum": (-1.2e4, 2e3)
+            "peak_value": (-50, 1200),
+            "sum": (-2e3, 1.2e4)
         },
         "T4": {
-            "peak_value": (-1200, 50),
-            "sum": (-1.2e4, 2e3)
+            "peak_value": (-50, 1200),
+            "sum": (-2e3, 1.2e4)
         },
         "MCP": {
-            "peak_value": (-1000, 50),
-            "sum": (-1e4, 1000)
+            "peak_value": (0, 400),
+            "sum": (-500, 1000),
+            "waveform": (-500, 1000)
         },
     }
+    waveform_default = (-150, 3000)
     if channel.startswith("MCP"):
-        return service_drs_ranges["MCP"].get(cat, (-1000, 50))
+        return service_drs_ranges["MCP"].get(cat, (0, 400))
     if channel in service_drs_ranges:
         if cat in service_drs_ranges[channel]:
             return service_drs_ranges[channel][cat]
+        if cat == "waveform":
+            return waveform_default
         print(f"Category {cat} not found for channel {channel}.")
+    if cat == "waveform":
+        return waveform_default
     return -100, 100
