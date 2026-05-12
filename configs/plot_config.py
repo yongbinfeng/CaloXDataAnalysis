@@ -113,30 +113,36 @@ def get_fers_saturation_value():
     return 7500
 
 
-def get_drs_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, is_reference=False):
+def get_drs_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, is_reference=False, is_mcp=False):
     xmin = -50
     xmax = 50
     if subtractMedian:
         xmin = -20
         xmax = 40
     if is_amplified:
-        xmin = -1000
+        xmin = -1500
         xmax = 2500
     if is6mm and is_amplified:
-        xmin = -200
-        xmax = 500
+        xmin = -100
+        xmax = 300
     if is_reference:
-        xmin = -2000
-        xmax = 1000
+        xmin = -500
+        xmax = 2500
+    if is_mcp:
+        xmin = -500
+        xmax = 2000
     return xmin, xmax
 
 
-def get_drs_prof_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, is_reference=False):
+def get_drs_prof_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, is_reference=False, is_cer=False):
     xmin, xmax = get_drs_plot_ranges(
         subtractMedian, is_amplified, is6mm, is_reference)
     if not is_reference:
-        xmax = xmax / 10.0
-        xmin = xmin / 20.0
+        xmax = xmax / 15.0
+        xmin = xmin / 25.0
+    if is_cer:
+        xmax = xmax / 2.0
+        xmin = xmin / 2.0
     return xmin, xmax
 
 

@@ -8,7 +8,7 @@ from variables.fers import (
     getFERSEnergyWeightedCenter, getFERSEnergyDR, addFERSPosXY,
     buildTTUHodo
 )
-from variables.drs import preProcessDRSBoards, calibrateDRSPeakTS, get_drs_stats, get_psd_energy_deposit
+from variables.drs import get_psd_energy_deposit, process_drs_data
 from core.selection_manager import SelectionManager
 from utils.data_loader import getRunInfo
 from utils.plot_helper import get_run_paths
@@ -103,8 +103,8 @@ class CaloXAnalysisManager:
     def prepare(self, do_drs=True, do_fers=True, do_hodo=True):
         """Initializes standard baseline subtractions and vectorization."""
         if do_drs and "drs_init" not in self._steps_applied:
-            self.rdf = preProcessDRSBoards(
-                self.rdf, drsboards=self.drsboards)
+            self.rdf = process_drs_data(
+                self.rdf, self.run_number, drsboards=self.drsboards)
             self.rdf = get_psd_energy_deposit(self.rdf, self.run_number)
             self._steps_applied.add("drs_init")
 

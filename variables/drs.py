@@ -4,179 +4,162 @@ from channels.channel_map import get_mcp_channels, get_service_drs_channels
 
 TS_END = 1024
 
+# Column naming convention (all time quantities are time-slice indices, not physical time):
+#   _ref_TS          scalar: LED discriminator crossing time slice of the reference channel (Channel8)
+#   _ref_TS_peak     scalar: peak position time slice of the reference channel
+#   _TS_cfd          scalar float: CFD crossing time slice from compute_cfd_integral
+#   _TS_peak         scalar int:   peak position time slice from compute_cfd_integral
+#   _TS_cfd_ref      scalar: _TS_cfd corrected for the reference channel timing
+#   _TS_peak_ref     scalar: _TS_peak corrected for the reference channel timing
+#   _TS_cfd_mcp      scalar: _TS_cfd_ref further corrected for MCP timing
+#   _TS_peak_mcp     scalar: _TS_peak_ref further corrected for MCP timing
+#   _ts_ref          RVec:   per-event TS array shifted by the reference channel time slice
+#   _ts_mcp          RVec:   per-event TS array shifted by reference + MCP time slice
 
-def preProcessDRSBoards(rdf, drsboards=None):
-    import re
-    # Get the list of all branch names
+
+def get_drs_branches(rdf):
     branches = [str(b) for b in rdf.GetColumnNames()]
     pattern = re.compile(r"^DRS_Board\d+_Group\d+_Channel\d+$")
     drs_branches = [b for b in branches if pattern.search(b)]
+    return drs_branches
 
-    # Create an array of indices for DRS outputs
-    rdf = rdf.Define("TS", "FillIndices(1024)")
 
-    drs_amplified_channels = []
+def get_drs_branches_to_flip(run_number, drs_channels_ref=None, drsboards=None):
+    channels_services = get_service_drs_channels(run_number).values()
+    channels_mcp = get_mcp_channels(run_number).values()
+
+    drs_channels_to_flip = list(channels_services) + list(channels_mcp)
+    if drs_channels_ref is not None:
+        drs_channels_to_flip += drs_channels_ref
+
     if drsboards is not None:
         for _, DRSBoard in drsboards.items():
             for channel in DRSBoard:
-                if channel.is6mm and channel.is_amplified:
-                    drs_amplified_channels.append(
+                if (channel.is6mm and channel.is_amplified):
+                    drs_channels_to_flip.append(
                         channel.get_channel_name(blsub=False))
-        # print("6mm amplified channels:", drs_amplified_channels)
 
-    # find the baseline of each DRS channel (median here)
-    # and subtract it from the DRS outputs
-    for varname in drs_branches:
+    return drs_channels_to_flip
+
+
+def get_ref_ts_name(drs_channel_name, use_peak=False):
+    """Return the reference-channel column name (_ref_TS or _ref_TS_peak) for a given DRS channel."""
+    board_group_name = drs_channel_name.rsplit("_Channel", 1)[0]
+    return f"{board_group_name}_ref_TS_peak" if use_peak else f"{board_group_name}_ref_TS"
+
+
+def subtract_baseline(rdf, drs_branches, drs_channels_to_flip=None):
+    existing = [str(c) for c in rdf.GetColumnNames()]
+    if "ts" not in existing:
+        rdf = rdf.Define("ts", "FillIndices(1024)")
+
+    for channel_name in drs_branches:
         rdf = rdf.Define(
-            f"{varname}_bl",
-            f"compute_baseline_median({varname}, 0, 200)"
+            f"{channel_name}_bl",
+            f"compute_baseline_median({channel_name}, 0, 200)"
         )
-        if varname in drs_amplified_channels:
-            # for 6mm amplified channels, flip the signal
+        if channel_name in drs_channels_to_flip:
             rdf = rdf.Define(
-                f"{varname}_blsub",
-                f"-({varname} - {varname}_bl)"
+                f"{channel_name}_blsub",
+                f"-({channel_name} - {channel_name}_bl)"
             )
         else:
             rdf = rdf.Define(
-                f"{varname}_blsub",
-                f"{varname} - {varname}_bl"
+                f"{channel_name}_blsub",
+                f"{channel_name} - {channel_name}_bl"
             )
 
     return rdf
 
 
-def processDRSRefChannels(rdf, DRSBoards):
-    # find the reference time of each DRS board group:
-    for _, DRSBoard in DRSBoards.items():
-        for channel in DRSBoard:
-            if not channel.is_reference:
-                continue
-            channelName_blsub = channel.get_channel_name(blsub=True)
-            rdf = rdf.Define(
-                f"{channelName_blsub}_REFHit",
-                f"process_dynamic_led({channelName_blsub}, 0)"
-            )
-            rdf = rdf.Define(
-                f"{channelName_blsub}_refts",
-                f"{channelName_blsub}_REFHit.time_slice")
-
-            # use the peak
-            rdf = rdf.Define(
-                f"{channelName_blsub}_PeakTS",
-                f"ArgMinRange({channelName_blsub}, 0, 1024, -500.0)"
-            )
+def process_reference_channels(rdf, drs_channels_ref):
+    """Define _ref_TS and _ref_TS_peak for each reference channel (Channel8)."""
+    for channel_name in drs_channels_ref:
+        if not channel_name.endswith("Channel8"):
+            raise ValueError(
+                f"Reference channel {channel_name} does not end with 'Channel8'. Check the channel naming convention.")
+        board_group_name = channel_name.replace("_Channel8", "")
+        rdf = rdf.Define(
+            f"{channel_name}_REFHit", f"process_dynamic_led({channel_name}_blsub)")
+        rdf = rdf.Define(f"{board_group_name}_ref_TS",
+                         f"{channel_name}_REFHit.time_slice")
+        rdf = rdf.Define(f"{board_group_name}_ref_TS_peak",
+                         f"(int){channel_name}_REFHit.peak_position")
 
     return rdf
 
 
-def processMCPChannels(rdf, run, TSminMCP=450, TSmaxMCP=700):
-    map_mcp_channels = get_mcp_channels(run)
-    for det, channels in map_mcp_channels.items():
-        for idx, channel in enumerate(channels):
-            channel = channel + "_blsub"
-            rdf = rdf.Define(
-                f"{channel}_Peak", f"MinRange({channel}, {TSminMCP}, {TSmaxMCP})")
+def process_mcp_channels(rdf, run_number):
+    """Define _TS_cfd, _TS_peak, and their ref-corrected variants for each MCP detector."""
+    map_mcp_channels = get_mcp_channels(run_number)
+    for det, channel_name in map_mcp_channels.items():
+        channel_name_blsub = channel_name + "_blsub"
 
-            # calibrate MCP using peak
-            rdf = rdf.Define(f"{channel}_PeakTS",
-                             f"ArgMinRange({channel}, {TSminMCP}, {TSmaxMCP}, -200.0)")
-            channel_TS = re.sub(r"_Channel[0-7]", "_Channel8", channel)
-            rdf = rdf.Define(
-                f"{channel}_RelPeakTS", f"(int){channel}_PeakTS - (int){channel_TS}_PeakTS")
+        rdf = rdf.Define(f"{det}_CFD",
+                         f"compute_cfd_integral({channel_name_blsub}, 1, 200.0)")
+        rdf = rdf.Define(f"{det}_TS_cfd", f"{det}_CFD.time_slice")
+        rdf = rdf.Define(f"{det}_TS_peak", f"(int){det}_CFD.peak_position")
 
-            # calibrate MCP with CFD
-            # MCP is negative signal
-            rdf = rdf.Define(
-                f"{channel}_CFD", f"compute_cfd_integral({channel}, 0, 200.0)"
-            )
-            rdf = rdf.Define(f"{channel}_cfdts", f"{channel}_CFD.time_slice")
-            rdf = rdf.Define(
-                f"{channel}_cfdrelts", f"790 + (int){channel}_cfdts - (int){channel_TS}_refts"
-            )
+        ref_TS = get_ref_ts_name(channel_name, use_peak=False)
+        rdf = rdf.Define(f"{det}_TS_cfd_ref",
+                         f"790 + (int){det}_TS_cfd - (int){ref_TS}")
+
+        ref_TS_peak = get_ref_ts_name(channel_name, use_peak=True)
+        rdf = rdf.Define(f"{det}_TS_peak_ref",
+                         f"(int){det}_TS_peak - (int){ref_TS_peak}")
 
     return rdf
 
 
-def processDRSChannelsCFD(rdf, DRSBoards, TS_start=0, TS_end=TS_END, map_mcp_channels=None):
-    # get the mean of DRS outputs per channel
-    TS_start = int(TS_start)
-    TS_end = int(TS_end)
-    for _, DRSBoard in DRSBoards.items():
-        for channel in DRSBoard:
-            channelName_blsub = channel.get_channel_name(blsub=True)
-            rdf = rdf.Define(
-                f"{channelName_blsub}_CFD",
-                f"compute_cfd_integral({channelName_blsub})"
-            )
-            rdf = rdf.Define(f"{channelName_blsub}_cfd",
-                             f"{channelName_blsub}_CFD.energy")
-            rdf = rdf.Define(f"{channelName_blsub}_cfdts",
-                             f"{channelName_blsub}_CFD.time_slice")
+def get_ts_arr_name(drs_channel_name, use_mcp=False):
+    """Return the calibrated ts array column name (_ts_ref or _ts_mcp) for a given DRS channel."""
+    board_group_name = drs_channel_name.rsplit("_Channel", 1)[0]
+    return f"{board_group_name}_ts_mcp" if use_mcp else f"{board_group_name}_ts_ref"
 
-            channel_TS = re.sub(
-                r"_Channel[0-7]", "_Channel8", channelName_blsub)
+
+def update_ts(rdf, drs_channels_ref, mcp_det="MCP_US_0"):
+    """Define per-event calibrated ts arrays (_ts_ref and _ts_mcp) for each board."""
+    for channel_name in drs_channels_ref:
+        board_group_name = channel_name.replace("_Channel8", "")
+        ref_TS = f"{board_group_name}_ref_TS"
+
+        rdf = rdf.Define(get_ts_arr_name(channel_name, use_mcp=False),
+                         f"ts - {ref_TS} + 790")
+        if mcp_det is not None:
             rdf = rdf.Define(
-                f"{channelName_blsub}_cfdrelts", f"790 + (int){channelName_blsub}_cfdts - (int){channel_TS}_refts"
-            )
-            rdf = rdf.Define(
-                f"{channelName_blsub}_cfdalignedts", f"790 + TS - (int){channel_TS}_refts - 0"
-            )
-            if map_mcp_channels is not None:
-                rdf = rdf.Define(
-                    f"{channelName_blsub}_cfdalignedts_mcp", f"{channelName_blsub}_cfdalignedts - (int){map_mcp_channels['US'][0]}_blsub_cfdrelts + 600")
-                rdf = rdf.Define(
-                    f"{channelName_blsub}_cfdrelts_mcp", f"{channelName_blsub}_cfdrelts - (int){map_mcp_channels['US'][0]}_blsub_cfdrelts + 600")
+                get_ts_arr_name(channel_name, use_mcp=True),
+                f"ts - {ref_TS} - (int){mcp_det}_TS_cfd_ref + 1300")
     return rdf
 
 
-def processDRSChannelsPeak(rdf, DRSBoards, TSminDRS=0, TSmaxDRS=TS_END, threshold=1.0, map_mcp_channels=None):
-    # jitter offset
-    value_diffcorrs = [0, 0, 0, 0, 0, 0, 0]
+def process_drs_channels(rdf, drs_channel_names, mcp_det="MCP_US_0"):
+    """Define _TS_cfd, _TS_peak, and their ref/mcp-corrected variants for each DRS channel."""
+    for channel_name in drs_channel_names:
+        channelName_blsub = channel_name + "_blsub"
 
-    # calibration all DRS channels to MCP US channel 0
-    for _, DRSBoard in DRSBoards.items():
-        for channel in DRSBoard:
-            channelName_blsub = channel.get_channel_name(blsub=True)
+        rdf = rdf.Define(f"{channel_name}_CFD",
+                         f"compute_cfd_integral({channelName_blsub})")
+        rdf = rdf.Define(f"{channel_name}_energy",
+                         f"{channel_name}_CFD.energy")
+        rdf = rdf.Define(f"{channel_name}_TS_cfd",
+                         f"{channel_name}_CFD.time_slice")
+        rdf = rdf.Define(f"{channel_name}_TS_peak",
+                         f"(int){channel_name}_CFD.peak_position")
+        rdf = rdf.Define(f"{channel_name}_peak_value",
+                         f"{channel_name}_CFD.peak_value")
 
-            # get peak value
-            channelPeakName = channel.get_channel_peak_name()
+        ref_TS = get_ref_ts_name(channel_name, use_peak=False)
+        rdf = rdf.Define(f"{channel_name}_TS_cfd_ref",
+                         f"790 + (int){channel_name}_TS_cfd - (int){ref_TS}")
+        ref_TS_peak = get_ref_ts_name(channel_name, use_peak=True)
+        rdf = rdf.Define(f"{channel_name}_TS_peak_ref",
+                         f"790 + (int){channel_name}_TS_peak - (int){ref_TS_peak}")
 
-            rdf = rdf.Define(
-                channelPeakName,
-                f"MaxRange({channelName_blsub}, {TSminDRS}, {TSmaxDRS})"
-            )
-
-            # bare integral
-            channelSumName = channel.get_channel_sum_name()
-            rdf = rdf.Define(
-                channelSumName,
-                f"SumRange({channelName_blsub}, 0, -1)"
-            )
-
-            # define the relative peak TS with respect to the reference channel
-            channel_TS = re.sub(
-                r"_Channel[0-7]", "_Channel8", channelName_blsub)
-            if not channel.is_reference:
-                rdf = rdf.Define(
-                    f"{channelName_blsub}_PeakTS",
-                    f"ArgMaxRange({channelName_blsub}, {TSminDRS}, {TSmaxDRS}, {threshold})"
-                )
-            rdf = rdf.Define(
-                f"{channelName_blsub}_RelPeakTS", f"790 + (int){channelName_blsub}_PeakTS - (int){channel_TS}_PeakTS")
-
-            # align TS with respect to the trigger
-            rdf = rdf.Define(
-                f"{channelName_blsub}_AlignedTS", f"790 + TS - (int){channel_TS}_PeakTS - 0 - {value_diffcorrs[DRSBoard.board_no]}"
-            )
-
-            # align to MCP
-            if map_mcp_channels is not None:
-                rdf = rdf.Define(
-                    f"{channelName_blsub}_AlignedTS_MCP", f"{channelName_blsub}_AlignedTS - (int){map_mcp_channels['US'][0]}_blsub_RelPeakTS - 200")
-                rdf = rdf.Define(
-                    f"{channelName_blsub}_RelPeakTS_MCP", f"{channelName_blsub}_RelPeakTS - (int){map_mcp_channels['US'][0]}_blsub_RelPeakTS - 200")
-
+        if mcp_det is not None:
+            rdf = rdf.Define(f"{channel_name}_TS_cfd_mcp",
+                             f"{channel_name}_TS_cfd_ref - (int){mcp_det}_TS_cfd_ref + 500")
+            rdf = rdf.Define(f"{channel_name}_TS_peak_mcp",
+                             f"{channel_name}_TS_peak_ref - (int){mcp_det}_TS_cfd_ref + 500")
     return rdf
 
 
@@ -190,123 +173,18 @@ def get_psd_energy_deposit(rdf, run_number, TS_start=100, TS_end=400):
     return rdf
 
 
-def calibrateDRSPeakTS(rdf, run, DRSBoards, TSminMCP=500, TSmaxMCP=600, TSminDRS=0, TSmaxDRS=400, threshold=1.0):
-    map_mcp_channels = get_mcp_channels(run)
+def process_drs_data(rdf, run_number, drsboards):
+    drs_branches = get_drs_branches(rdf)
+    drs_channels_ref = [ch for ch in drs_branches if ch.endswith("Channel8")]
+    drs_branches_to_flip = get_drs_branches_to_flip(
+        run_number, drs_channels_ref=drs_channels_ref, drsboards=drsboards)
 
-    # get time reference channel TS
-    channels_TF = [
-        "DRS_Board0_Group0_Channel8",
-        "DRS_Board1_Group0_Channel8",
-        "DRS_Board2_Group0_Channel8",
-        "DRS_Board3_Group0_Channel8",
-        "DRS_Board4_Group0_Channel8",
-        "DRS_Board5_Group0_Channel8",
-        "DRS_Board6_Group0_Channel8",
-        "DRS_Board0_Group1_Channel8",
-        "DRS_Board1_Group1_Channel8",
-        "DRS_Board2_Group1_Channel8",
-        "DRS_Board3_Group1_Channel8",
-        "DRS_Board4_Group1_Channel8",
-        "DRS_Board5_Group1_Channel8",
-        "DRS_Board6_Group1_Channel8",
-        "DRS_Board0_Group2_Channel8",
-        "DRS_Board1_Group2_Channel8",
-        "DRS_Board2_Group2_Channel8",
-        "DRS_Board3_Group2_Channel8",
-        "DRS_Board4_Group2_Channel8",
-        "DRS_Board5_Group2_Channel8",
-        "DRS_Board6_Group2_Channel8",
-        "DRS_Board0_Group3_Channel8",
-        "DRS_Board1_Group3_Channel8",
-        "DRS_Board2_Group3_Channel8",
-        "DRS_Board3_Group3_Channel8",
-        "DRS_Board4_Group3_Channel8",
-        "DRS_Board5_Group3_Channel8",
-        "DRS_Board6_Group3_Channel8",
-    ]
-
-    # jitter offset
-    value_diffcorrs = [0, 0, 0, 0, 0, 0, 0]
-
-    for channel in channels_TF:
-        rdf = rdf.Define(f"{channel}_PeakTS",
-                         f"ArgMinRange({channel}_blsub, 0, 1024, -70.0)")
-
-    for det, channels in map_mcp_channels.items():
-        for idx, channel in enumerate(channels):
-            rdf = rdf.Define(f"{channel}_PeakTS",
-                             f"ArgMinRange({channel}_blsub, {TSminMCP}, {TSmaxMCP}, -300.0)")
-            rdf = rdf.Define(
-                f"{channel}_Peak", f"MinRange({channel}_blsub, {TSminMCP}, {TSmaxMCP})")
-            # define the relative peak TS with respect to the reference channel
-            channel_TS = re.sub(r"_Channel[0-7]", "_Channel8", channel)
-            rdf = rdf.Define(
-                f"{channel}_RelPeakTS", f"(int){channel}_PeakTS - (int){channel_TS}_PeakTS")
-
-    # calibration all DRS channels to MCP US channel 0
-    for _, DRSBoard in DRSBoards.items():
-        # if DRSBoard.board_no > 3:
-        #    continue
-        for channel in DRSBoard:
-            channelName = channel.get_channel_name(blsub=False)
-
-            # define the relative peak TS with respect to the reference channel
-            channel_TS = re.sub(r"_Channel[0-7]", "_Channel8", channelName)
-            rdf = rdf.Define(
-                f"{channelName}_PeakTS",
-                f"ArgMaxRange({channelName}_blsub, {TSminDRS}, {TSmaxDRS}, {threshold})"
-            )
-            rdf = rdf.Define(
-                f"{channelName}_RelPeakTS", f"(int){channelName}_PeakTS - (int){channel_TS}_PeakTS")
-
-            # define the difference of relative peak TS with respect to the first channel of US
-            rdf = rdf.Define(
-                f"{channelName}_DiffRelPeakTS_US", f"(int){channelName}_RelPeakTS - (int){map_mcp_channels['US'][0]}_RelPeakTS - {value_diffcorrs[DRSBoard.board_no]}")
-
-            # align TS
-            rdf = rdf.Define(
-                f"{channelName}_AlignedTS", f"TS - (int){channel_TS}_PeakTS - (int){map_mcp_channels['US'][0]}_RelPeakTS - {value_diffcorrs[DRSBoard.board_no]}"
-            )
-
-            # map aligned TS to real distance in z (cm)
-            # t0TS = 116.5 + 2 + 31
-            # if channel.isQuartz:
-            #    refrac = 1.468 * 1.468
-            #    t0TS = 145
-            # else:
-            #    refrac = 1.621
-            #    refrac = 1.58 * 1.58
-            #    t0TS = 154
-            # rdf = rdf.Define(
-            #    f"{channelName}_MeasuredZ", f"{refrac} / ({refrac} - 1) * 250 - 6.0 / ({refrac} - 1) * ({channelName}_AlignedTS + {t0TS})")
-            if channel.isQuartz:
-                intercetp = 11.2
-                slope = 0.016
-            else:
-                intercetp = 10.3
-                slope = 0.018
-            rdf = rdf.Define(f"{channelName}_MeasuredZ",
-                             f"-1.0/{slope} * ({channelName}_AlignedTS * 0.2 + {intercetp})")
-
-            # channel sum
-            rdf = rdf.Define(
-                f"{channelName}_Sum", f"SumRange({channelName}_blsub, {TSminDRS}, {TSmaxDRS})")
-
-    return rdf
-
-
-def get_drs_stats(rdf, run, DRSBoards, TS_start=0, TS_end=400, threshold=1.0):
-    """
-    Get the statistics of DRS outputs per channel.
-    """
-    rdf = processDRSRefChannels(rdf, DRSBoards)
-    rdf = processMCPChannels(rdf, run, TSminMCP=TS_start, TSmaxMCP=TS_end)
-    map_mcp_channels = get_mcp_channels(run)
-    rdf = processDRSChannelsCFD(
-        rdf, DRSBoards, TS_start, TS_end, map_mcp_channels=map_mcp_channels)
-    rdf = processDRSChannelsPeak(
-        rdf, DRSBoards, TS_start, TS_end, map_mcp_channels=map_mcp_channels)
-    # rdf = getDRSSum(rdf, DRSBoards, TS_start, TS_end)
-    # rdf = getDRSPeakTS(rdf, run, DRSBoards, TS_start, TS_end, threshold)
-    # rdf = getDRSPeak(rdf, DRSBoards, TS_start, TS_end)
+    rdf = subtract_baseline(
+        rdf, drs_branches, drs_channels_to_flip=drs_branches_to_flip)
+    rdf = process_reference_channels(rdf, drs_channels_ref)
+    rdf = process_mcp_channels(rdf, run_number)
+    rdf = update_ts(rdf, drs_channels_ref, mcp_det="MCP_US_0")
+    drs_channels_physics = [
+        ch for ch in drs_branches if not ch.endswith("Channel8")]
+    rdf = process_drs_channels(rdf, drs_channels_physics, mcp_det="MCP_US_0")
     return rdf

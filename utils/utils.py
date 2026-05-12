@@ -32,7 +32,7 @@ def get_channel_var(channel):
     if channel.is_reference:
         return "Ref"
     elif channel.isCer:
-        return "Cer"
+        return "CerQuartz" if channel.isQuartz else "CerPlastic"
     elif channel.isSci:
         return "Sci"
     else:

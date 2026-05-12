@@ -19,6 +19,7 @@ from plotting.calox_plot_helper import BoardPlotHelper, create_pave_text, create
 from utils.root_setup import setup_root
 from utils.timing import auto_timer
 from utils.utils import number_to_string, round_up_to_1eN, get_channel_var
+from variables.drs import get_ts_arr_name
 from utils.visualization import visualizeFERSBoards
 
 auto_timer("Total Execution Time")
@@ -526,91 +527,67 @@ def track_fers_plots():
         return pm.generate_html("FERS_VS_Event/index.html", plots_per_row=4)
 
 
-def make_drs_vs_ts_plots(use_calibrated_ts=False, use_cfd_aligned_ts=False, use_mcp=False):
-    """Plot DRS output vs time slice."""
-    suffix = "Calib" if use_calibrated_ts else "CFD" if use_cfd_aligned_ts else "Raw"
-    if use_mcp:
-        suffix += "_MCP"
+def _plot_drs_channel_vs_ts(pm, infile, channel_name, mode, ymin, ymax, pave, plot_name, extra_text=None):
+    """Fetch and plot one DRS channel's waveform-vs-TS histogram."""
+    hist_suffix = f"_{mode}" if mode != "raw" else ""
+    channel_name_blsub = f"{channel_name}_blsub"
+    hist_name = f"hist_{channel_name_blsub}_VS_ts{hist_suffix}"
+    hist = infile.Get(hist_name)
+    if not hist:
+        print(f"Warning: Histogram {hist_name} not found")
+        return
+    ts_col = "ts" if mode == "raw" else get_ts_arr_name(
+        channel_name, use_mcp=(mode == "mcp"))
+    pm.plot_2d(
+        hist, plot_name, ts_col, (0, 1024), "DRS Output", (ymin, ymax),
+        style=STYLE_2D_LOG, extraToDraw=pave, extra_text=extra_text
+    )
+
+
+def make_drs_vs_ts_plots(mode="ref"):
+    """Plot DRS output vs time slice for all DRS board channels. mode: 'raw', 'ref', or 'mcp'."""
+    assert mode in ("raw", "ref", "mcp"), f"Unknown mode: {mode}"
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("DRS_VS_TS")
-
         infile = pm._get_file("drs_vs_ts.root")
 
         for _, DRSBoard in DRSBoards.items():
             for chan in DRSBoard:
-                channelName = chan.get_channel_name(blsub=True)
-                if use_calibrated_ts:
-                    hist_name = f"hist_{channelName}_VS_AlignedTS"
-                elif use_cfd_aligned_ts:
-                    hist_name = f"hist_{channelName}_VS_CFDAlignedTS"
-                else:
-                    hist_name = f"hist_{channelName}_VS_TS"
-                if use_mcp:
-                    hist_name += "_MCP"
-                hist = infile.Get(hist_name)
-
-                if not hist:
-                    print(f"Warning: Histogram {hist_name} not found")
-                    continue
-
-                ymin_tmp, ymax_tmp = get_drs_plot_ranges(
-                    subtractMedian=True, is_amplified=chan.is_amplified, is6mm=chan.is6mm, is_reference=chan.is_reference
-                )
-
+                channel_name = chan.get_channel_name(blsub=False)
+                channel_name_blsub = chan.get_channel_name(blsub=True)
+                ymin, ymax = get_drs_plot_ranges(
+                    subtractMedian=True, is_amplified=chan.is_amplified,
+                    is6mm=chan.is6mm, is_reference=chan.is_reference)
                 pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
                 pave.AddText(
                     f"B: {DRSBoard.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
                 if not chan.is_reference:
                     pave.AddText(
                         f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
-
                 var = get_channel_var(chan)
+                _plot_drs_channel_vs_ts(
+                    pm, infile, channel_name, mode, ymin, ymax, pave,
+                    f"DRS_ADC_VS_ts_{mode}_{channel_name_blsub}_{var}", extra_text=var)
 
-                xaxis = "Aligned TS" if use_calibrated_ts else "CFD Aligned TS" if use_cfd_aligned_ts else "TS"
-
-                pm.plot_2d(
-                    hist,
-                    f"DRS_ADC_VS_TS_{channelName}_{suffix}_{var}",
-                    xaxis, (0, 1024),
-                    "DRS Output", (ymin_tmp, ymax_tmp),
-                    style=STYLE_2D_LOG,
-                    extraToDraw=pave,
-                    extra_text=var
-                )
-
-        return pm.generate_html(f"DRS/DRS_vs_TS_{suffix}.html", plots_per_row=9)
+        return pm.generate_html(f"DRS/DRS_vs_ts_{mode}.html", plots_per_row=9)
 
 
-def make_service_drs_vs_ts_plots(channel_list):
+def make_service_drs_vs_ts_plots(channel_list, mode="raw"):
+    """Plot service DRS (MCP) channels vs time slice. mode: 'raw', 'ref', or 'mcp'."""
+    assert mode in ("raw", "ref", "mcp"), f"Unknown mode: {mode}"
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("Service_DRS_VS_TS")
+        infile = pm._get_file("drs_vs_ts.root")
 
-        infile = pm._get_file("drs_service_channels.root")
-
-        for channelName in channel_list:
-            hist_name = f"hist_{channelName}_VS_TS"
-            hist = infile.Get(hist_name)
-
-            if not hist:
-                print(f"Warning: Histogram {hist_name} not found")
-                continue
-
-            ymin_tmp, ymax_tmp = -1500, 500
-
+        for channel_name in channel_list:
+            ymin, ymax = get_drs_plot_ranges(subtractMedian=True, is_mcp=True)
             pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-            pave.AddText(f"{channelName}")
+            pave.AddText(f"{channel_name}")
+            _plot_drs_channel_vs_ts(
+                pm, infile, channel_name, mode, ymin, ymax, pave,
+                f"Service_DRS_ADC_VS_ts_{mode}_{channel_name}_blsub", extra_text="Service")
 
-            pm.plot_2d(
-                hist,
-                f"Service_DRS_ADC_VS_TS_{channelName}",
-                "TS", (0, 1024),
-                "DRS Output", (ymin_tmp, ymax_tmp),
-                style=STYLE_2D_LOG,
-                extraToDraw=pave,
-                extra_text="Service"
-            )
-
-        return pm.generate_html(f"DRS/Service_DRS_vs_TS.html", plots_per_row=4)
+        return pm.generate_html(f"DRS/Service_DRS_vs_ts_{mode}.html", plots_per_row=4)
 
 
 def make_drs_prof_vs_ts_plots():
@@ -622,28 +599,24 @@ def make_drs_prof_vs_ts_plots():
 
         for _, DRSBoard in DRSBoards.items():
             for chan in DRSBoard:
-                channelName = chan.get_channel_name(blsub=True)
-                hist_name = f"prof_{channelName}_VS_AlignedTS"
-                hist_alignedTS = infile.Get(hist_name).ProjectionX()
-                hist_name = f"prof_{channelName}_VS_TS"
-                hist = infile.Get(hist_name).ProjectionX()
-                hist_name = f"prof_{channelName}_VS_CFDAlignedTS"
-                hist_cfdAlignedTS = infile.Get(hist_name).ProjectionX()
-                hist_name = f"prof_{channelName}_VS_CFDAlignedTS_MCP"
-                hist_cfdAlignedTS_MCP = infile.Get(hist_name).ProjectionX()
+                channel_name_blsub = chan.get_channel_name(blsub=True)
+
+                hist = infile.Get(f"prof_{channel_name_blsub}_VS_ts")
+                hist_ref = infile.Get(f"prof_{channel_name_blsub}_VS_ts_ref")
+                hist_mcp = infile.Get(f"prof_{channel_name_blsub}_VS_ts_mcp")
 
                 if not hist:
-                    print(f"Warning: Histogram {hist_name} not found")
+                    print(
+                        f"Warning: Profile prof_{channel_name_blsub}_VS_ts not found")
                     continue
 
-                pave = create_pave_text(0.20, 0.85, 0.60, 0.90)
-                pave.AddText(
-                    f"B: {DRSBoard.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-
-                xaxis = "TS"
+                for h in [hist, hist_ref, hist_mcp]:
+                    if h:
+                        h = h.ProjectionX()
 
                 ymin_tmp, ymax_tmp = get_drs_prof_plot_ranges(
-                    subtractMedian=True, is_amplified=chan.is_amplified, is6mm=chan.is6mm, is_reference=chan.is_reference
+                    subtractMedian=True, is_amplified=chan.is_amplified, is6mm=chan.is6mm, is_reference=chan.is_reference,
+                    is_cer=chan.isCer
                 )
 
                 pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
@@ -656,12 +629,11 @@ def make_drs_prof_vs_ts_plots():
                 var = get_channel_var(chan)
 
                 pm.plot_1d(
-                    [hist, hist_alignedTS, hist_cfdAlignedTS, hist_cfdAlignedTS_MCP],
-                    f"DRS_ADC_Prof_VS_TS_{channelName}_{var}",
-                    xaxis, (0, 1024),
+                    [h for h in [hist, hist_ref, hist_mcp] if h],
+                    f"DRS_ADC_Prof_VS_ts_{channel_name_blsub}_{var}",
+                    "TS", (0, 1024),
                     "Mean DRS Output", (ymin_tmp, ymax_tmp),
-                    legends=["Raw TS", "Aligned TS",
-                             "CFD Aligned TS", "CFD Aligned TS MCP"],
+                    legends=["raw ts", "ts_ref", "ts_mcp"],
                     legendPos=[0.55, 0.70, 0.90, 0.90],
                     style=STYLE_1D,
                     extraToDraw=pave,
@@ -680,17 +652,12 @@ def make_drs_sum_plots():
 
         for _, DRSBoard in DRSBoards.items():
             for chan in DRSBoard:
-                channelSumName = chan.get_channel_sum_name()
-                hist_name = f"hist_{channelSumName}"
-                hist = infile.Get(hist_name)
+                channel_name = chan.get_channel_name(blsub=False)
+                hist = infile.Get(f"hist_{channel_name}_energy")
 
-                channelName_blsub = chan.get_channel_name(blsub=True)
-                hist_name_cfd = f"hist_{channelName_blsub}_cfd"
-                hist_cfd = infile.Get(hist_name_cfd)
-
-                if not hist or not hist_cfd:
+                if not hist:
                     print(
-                        f"Warning: Histogram {hist_name} or {hist_name_cfd} not found")
+                        f"Warning: Histogram hist_{channel_name}_energy not found")
                     continue
 
                 pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
@@ -703,24 +670,14 @@ def make_drs_sum_plots():
                 var = get_channel_var(chan)
 
                 pm.plot_1d(
-                    [hist, hist_cfd],
-                    f"DRS_Sum_{channelSumName}_{var}",
-                    "DRS Sum", (0, 6000),
+                    hist,
+                    f"DRS_Energy_{channel_name}_{var}",
+                    "CFD Energy", (0, 6000),
                     "Counts", (1, None),
-                    legends=["Sum", "CFD Integral"],
-                    legendPos=[0.55, 0.80, 0.90, 0.90],
                     style=STYLE_1D_LOG,
                     extraToDraw=pave,
                     extra_text=var
                 )
-                # pm.plot_1d(
-                #    hist_cfd,
-                #    f"DRS_Sum_CFD_{channelSumName}",
-                #    "DRS CFD Integral", (0, 5000),
-                #    "Counts", (1, None),
-                #    style=STYLE_1D_LOG,
-                #    extraToDraw=pave
-                # )
 
         return pm.generate_html("DRS/DRS_Sum.html", plots_per_row=9)
 
@@ -734,12 +691,12 @@ def make_drs_peak_plots():
 
         for _, DRSBoard in DRSBoards.items():
             for chan in DRSBoard:
-                channelPeakName = chan.get_channel_peak_name()
-                hist_name = f"hist_{channelPeakName}"
-                hist = infile.Get(hist_name)
+                channel_name = chan.get_channel_name(blsub=False)
+                hist = infile.Get(f"hist_{channel_name}_peak_value")
 
                 if not hist:
-                    print(f"Warning: Histogram {hist_name} not found")
+                    print(
+                        f"Warning: Histogram hist_{channel_name}_peak_value not found")
                     continue
 
                 pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
@@ -752,8 +709,8 @@ def make_drs_peak_plots():
 
                 pm.plot_1d(
                     hist,
-                    f"DRS_Peak_{channelPeakName}_{var}",
-                    "DRS Peak", (0, 800),
+                    f"DRS_PeakValue_{channel_name}_{var}",
+                    "DRS peak value", (0, 800),
                     "Counts", (1, None),
                     style=STYLE_1D_LOG,
                     extraToDraw=pave,
@@ -772,37 +729,37 @@ def make_drs_time_plots():
 
         for _, DRSBoard in DRSBoards.items():
             for chan in DRSBoard:
-                channelName_blsub = chan.get_channel_name(blsub=True)
-                hist_name = f"hist_{channelName_blsub}_RelPeakTS"
-                hist = infile.Get(hist_name)
+                if chan.is_reference:
+                    continue
+                channel_name = chan.get_channel_name(blsub=False)
+                hist_peak_ref = infile.Get(f"hist_{channel_name}_TS_peak_ref")
+                hist_cfd_ref = infile.Get(f"hist_{channel_name}_TS_cfd_ref")
+                hist_peak_mcp = infile.Get(f"hist_{channel_name}_TS_peak_mcp")
+                hist_cfd_mcp = infile.Get(f"hist_{channel_name}_TS_cfd_mcp")
 
-                hist_name_cfd = f"hist_{channelName_blsub}_RelCFDTS"
-                hist_cfd = infile.Get(hist_name_cfd)
-
-                hist_name_mcp = f"hist_{channelName_blsub}_RelPeakTS_MCP"
-                hist_mcp = infile.Get(hist_name_mcp)
-
-                hist_name_cfd_mcp = f"hist_{channelName_blsub}_RelCFDTS_MCP"
-                hist_cfd_mcp = infile.Get(hist_name_cfd_mcp)
-
-                if not hist or not hist_cfd:
+                if not hist_peak_ref or not hist_cfd_ref:
                     print(
-                        f"Warning: Histogram {hist_name} or {hist_name_cfd} not found")
+                        f"Warning: TS histograms for {channel_name} not found")
                     continue
 
-                pave = create_pave_text(0.20, 0.85, 0.60, 0.90)
+                var = get_channel_var(chan)
+
+                pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
                 pave.AddText(
                     f"B: {DRSBoard.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+                pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
 
                 pm.plot_1d(
-                    [hist, hist_cfd, hist_mcp, hist_cfd_mcp],
-                    f"DRS_Time_{channelName_blsub}",
+                    [hist_peak_ref, hist_cfd_ref, hist_peak_mcp, hist_cfd_mcp],
+                    f"DRS_Time_{channel_name}_{var}",
                     "Pulse TS", (0, 1024),
                     "Counts", (1, None),
-                    legends=["Peak", "0.2 CFD", "Peak MCP", "0.2 CFD MCP"],
+                    legends=["TS_peak_ref", "TS_cfd_ref",
+                             "TS_peak_mcp", "TS_cfd_mcp"],
                     legendPos=[0.55, 0.70, 0.90, 0.90],
                     style=STYLE_1D_LOG,
-                    extraToDraw=pave
+                    extraToDraw=pave,
+                    extra_text=var
                 )
 
         return pm.generate_html("DRS/DRS_Time.html", plots_per_row=9)
@@ -941,72 +898,6 @@ def make_drs_peak_ts_cer_vs_sci_plots():
         return pm.generate_html("DRS/DRS_PeakTS_Cer_VS_Sci.html", plots_per_row=4)
 
 
-def compare_time_reference_plots(do_subtract_median=False):
-    """Plot time reference channel distributions."""
-    suffix = "_subtractMedian" if do_subtract_median else ""
-    ymin, ymax = (-2500, 500) if do_subtract_median else (500, 2500)
-
-    with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
-        pm.set_output_dir("TimeReference")
-
-        infile = pm._get_file("time_reference_channels.root")
-
-        for chan_name in time_reference_channels:
-            hist_name = f"hist_{chan_name}{suffix}"
-            hist = infile.Get(hist_name)
-
-            if not hist:
-                print(f"Warning: Histogram {hist_name} not found")
-                continue
-
-            pave = create_pave_text(0.20, 0.70, 0.60, 0.90)
-            pave.AddText(f"{chan_name}")
-
-            pm.plot_2d(
-                hist,
-                f"TimeReference_{chan_name}{suffix}",
-                "Time Slice", (0, 1024),
-                "Counts", (ymin, ymax),
-                style=STYLE_2D_LOG,
-                extraToDraw=pave
-            )
-
-        return pm.generate_html(f"TimeReference{suffix}/index.html", plots_per_row=2)
-
-
-def compare_service_drs_plots():
-    """Plot service DRS channel distributions."""
-    with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
-        pm.set_output_dir("ServiceDRS")
-
-        infile = pm._get_file("service_drs_channels.root")
-
-        for det_name, chan_name in service_drs_channels.items():
-            hist_name = f"hist_{chan_name}_blsub"
-            hist = infile.Get(hist_name)
-
-            if not hist:
-                print(f"Warning: Histogram {hist_name} not found")
-                continue
-
-            pave = create_pave_text(0.60, 0.20, 0.90, 0.30)
-            pave.AddText(f"{det_name}")
-
-            ymin, ymax = get_service_drs_plot_ranges(
-                chan_name, subtractMedian=True)
-
-            pm.plot_2d(
-                hist,
-                f"ServiceDRS_{chan_name}",
-                "Time Slice", (0, 1024),
-                "ADC", (ymin, ymax),
-                style=STYLE_2D_LOG,
-                extraToDraw=pave
-            )
-
-        return pm.generate_html("ServiceDRS/detectors.html", plots_per_row=2)
-
-
 def make_drs_sum_vs_fers_plots():
     """Plot DRS sum vs FERS correlations."""
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
@@ -1139,26 +1030,25 @@ def main():
         # ("DRS Peak TS Cer vs Sci", make_drs_peak_ts_cer_vs_sci_plots),
         # ("Service DRS", compare_service_drs_plots),
         # ("MCP", compare_mcp_plots),
-        ("FERS Max Values", make_fers_max_value_plots),
+        # ("FERS Max Values", make_fers_max_value_plots),
         # ("DRS Sum vs FERS", make_drs_sum_vs_fers_plots),
     ]
 
     map_mcp_channels = get_mcp_channels(run_number)
-    list_mcp_channels = [
-        channel + "_blsub" for channels in map_mcp_channels.values() for channel in channels]
+    list_mcp_channels = list(map_mcp_channels.values())
 
     if do_detailed_plots:
         plot_tasks.extend([
             # ("FERS 1D", make_fers_1d_plots),
-            # ("DRS vs TS", make_drs_vs_ts_plots),
-            # ("DRS vs TS Calib", lambda: make_drs_vs_ts_plots(use_calibrated_ts=True)),
-            # ("DRS vs TS CFD", lambda: make_drs_vs_ts_plots(use_cfd_aligned_ts=True)),
-            ("DRS vs TS MCP", lambda: make_drs_vs_ts_plots(
-                use_calibrated_ts=True, use_mcp=True)),
-            ("DRS vs TS CFD MCP", lambda: make_drs_vs_ts_plots(
-                use_cfd_aligned_ts=True, use_mcp=True)),
-            ("Service DRS vs TS", lambda: make_service_drs_vs_ts_plots(
-                channel_list=list_mcp_channels)),
+            ("DRS vs TS raw", lambda: make_drs_vs_ts_plots(mode="raw")),
+            ("DRS vs TS ref", lambda: make_drs_vs_ts_plots(mode="ref")),
+            ("DRS vs TS mcp", lambda: make_drs_vs_ts_plots(mode="mcp")),
+            ("Service DRS vs TS raw", lambda: make_service_drs_vs_ts_plots(
+                list_mcp_channels, mode="raw")),
+            # ("Service DRS vs TS ref", lambda: make_service_drs_vs_ts_plots(
+            #    list_mcp_channels, mode="ref")),
+            # ("Service DRS vs TS mcp", lambda: make_service_drs_vs_ts_plots(
+            #    list_mcp_channels, mode="mcp")),
             ("DRS Prof vs TS", make_drs_prof_vs_ts_plots),
             # ("DRS Sum", make_drs_sum_plots),
             ("DRS Peak", make_drs_peak_plots),

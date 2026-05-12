@@ -169,6 +169,8 @@ int get_y_index(int val)
 struct RefHit
 {
     float time_slice;
+    float peak_value;
+    int peak_position;
     bool is_valid;
 };
 
@@ -181,7 +183,7 @@ RefHit process_dynamic_led(const ROOT::RVec<float> &waveform, bool is_positive =
     constexpr float kMinAmplitude = 500.0f;
     constexpr float kLedFraction = 0.50f;
 
-    RefHit hit = {kInvalidTime, false};
+    RefHit hit = {kInvalidTime, 0.0f, -1, false};
     if (waveform.empty())
         return hit;
 
@@ -198,6 +200,9 @@ RefHit process_dynamic_led(const ROOT::RVec<float> &waveform, bool is_positive =
 
     if (current_amplitude < kMinAmplitude)
         return hit;
+
+    hit.peak_value = current_amplitude;
+    hit.peak_position = peak_idx;
 
     // --- 2. Dynamic Threshold (sign carries polarity) ---
     const float dynamic_threshold = sign * kLedFraction * current_amplitude;
@@ -218,6 +223,8 @@ struct CaloHit
 {
     float energy;
     float time_slice;
+    float peak_value;
+    int peak_position;
     bool is_valid;
 };
 
@@ -231,7 +238,7 @@ CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive
     constexpr int kIntWindowPre = 5;
     constexpr int kIntWindowPost = 45;
 
-    CaloHit hit = {0.0f, kInvalidTime, false};
+    CaloHit hit = {0.0f, kInvalidTime, 0.0f, -1, false};
     if (waveform.size() < static_cast<size_t>(kIntWindowPre + kIntWindowPost))
         return hit;
 
@@ -247,6 +254,9 @@ CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive
 
     if (peak_amplitude < min_amplitude)
         return hit;
+
+    hit.peak_value = peak_amplitude;
+    hit.peak_position = peak_idx;
 
     // --- 2. CFD Threshold (signed) ---
     const float cfd_thresh = sign * kCfdFraction * peak_amplitude;

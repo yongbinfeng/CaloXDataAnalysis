@@ -896,18 +896,14 @@ def get_mcp_channels(run=1184):
         return []
     else:
         return {
-            "DS": [
-                "DRS_Board0_Group3_Channel6",
-                "DRS_Board1_Group3_Channel6",
-                "DRS_Board2_Group3_Channel6",
-                "DRS_Board3_Group3_Channel6",
-            ],
-            "US": [
-                "DRS_Board0_Group3_Channel7",
-                "DRS_Board1_Group3_Channel7",
-                "DRS_Board2_Group3_Channel7",
-                "DRS_Board3_Group3_Channel7",
-            ]
+            "MCP_DS_0": "DRS_Board0_Group3_Channel6",
+            "MCP_DS_1": "DRS_Board1_Group3_Channel6",
+            "MCP_DS_2": "DRS_Board2_Group3_Channel6",
+            "MCP_DS_3": "DRS_Board3_Group3_Channel6",
+            "MCP_US_0": "DRS_Board0_Group3_Channel7",
+            "MCP_US_1": "DRS_Board1_Group3_Channel7",
+            "MCP_US_2": "DRS_Board2_Group3_Channel7",
+            "MCP_US_3": "DRS_Board3_Group3_Channel7",
         }
 
 
