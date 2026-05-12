@@ -8,7 +8,7 @@ TS_END = 1024
 #   _ref_TS          scalar: LED discriminator crossing time slice of the reference channel (Channel8)
 #   _ref_TS_peak     scalar: peak position time slice of the reference channel
 #   _TS_cfd          scalar float: CFD crossing time slice from compute_cfd_integral
-#   _TS_peak         scalar int:   peak position time slice from compute_cfd_integral
+#   _TS_peak         scalar float: peak position time slice from compute_cfd_integral
 #   _TS_cfd_ref      scalar: _TS_cfd corrected for the reference channel timing
 #   _TS_peak_ref     scalar: _TS_peak corrected for the reference channel timing
 #   _TS_cfd_mcp      scalar: _TS_cfd_ref further corrected for MCP timing
@@ -84,7 +84,7 @@ def process_reference_channels(rdf, drs_channels_ref):
         rdf = rdf.Define(f"{board_group_name}_ref_TS",
                          f"{channel_name}_REFHit.time_slice")
         rdf = rdf.Define(f"{board_group_name}_ref_TS_peak",
-                         f"(int){channel_name}_REFHit.peak_position")
+                         f"{channel_name}_REFHit.peak_position")
 
     return rdf
 
@@ -98,15 +98,15 @@ def process_mcp_channels(rdf, run_number):
         rdf = rdf.Define(f"{det}_CFD",
                          f"compute_cfd_integral({channel_name_blsub}, 1, 200.0)")
         rdf = rdf.Define(f"{det}_TS_cfd", f"{det}_CFD.time_slice")
-        rdf = rdf.Define(f"{det}_TS_peak", f"(int){det}_CFD.peak_position")
+        rdf = rdf.Define(f"{det}_TS_peak", f"{det}_CFD.peak_position")
 
         ref_TS = get_ref_ts_name(channel_name, use_peak=False)
         rdf = rdf.Define(f"{det}_TS_cfd_ref",
-                         f"790 + (int){det}_TS_cfd - (int){ref_TS}")
+                         f"790 + {det}_TS_cfd - {ref_TS}")
 
         ref_TS_peak = get_ref_ts_name(channel_name, use_peak=True)
         rdf = rdf.Define(f"{det}_TS_peak_ref",
-                         f"(int){det}_TS_peak - (int){ref_TS_peak}")
+                         f"{det}_TS_peak - {ref_TS_peak}")
 
     return rdf
 
@@ -128,7 +128,7 @@ def update_ts(rdf, drs_channels_ref, mcp_det="MCP_US_0"):
         if mcp_det is not None:
             rdf = rdf.Define(
                 get_ts_arr_name(channel_name, use_mcp=True),
-                f"ts - {ref_TS} - (int){mcp_det}_TS_cfd_ref + 1300")
+                f"ts - {ref_TS} - {mcp_det}_TS_cfd_ref + 1300")
     return rdf
 
 
@@ -144,22 +144,22 @@ def process_drs_channels(rdf, drs_channel_names, mcp_det="MCP_US_0"):
         rdf = rdf.Define(f"{channel_name}_TS_cfd",
                          f"{channel_name}_CFD.time_slice")
         rdf = rdf.Define(f"{channel_name}_TS_peak",
-                         f"(int){channel_name}_CFD.peak_position")
+                         f"{channel_name}_CFD.peak_position")
         rdf = rdf.Define(f"{channel_name}_peak_value",
                          f"{channel_name}_CFD.peak_value")
 
         ref_TS = get_ref_ts_name(channel_name, use_peak=False)
         rdf = rdf.Define(f"{channel_name}_TS_cfd_ref",
-                         f"790 + (int){channel_name}_TS_cfd - (int){ref_TS}")
+                         f"790 + {channel_name}_TS_cfd - {ref_TS}")
         ref_TS_peak = get_ref_ts_name(channel_name, use_peak=True)
         rdf = rdf.Define(f"{channel_name}_TS_peak_ref",
-                         f"790 + (int){channel_name}_TS_peak - (int){ref_TS_peak}")
+                         f"790 + {channel_name}_TS_peak - {ref_TS_peak}")
 
         if mcp_det is not None:
             rdf = rdf.Define(f"{channel_name}_TS_cfd_mcp",
-                             f"{channel_name}_TS_cfd_ref - (int){mcp_det}_TS_cfd_ref + 500")
+                             f"{channel_name}_TS_cfd_ref - {mcp_det}_TS_cfd_ref + 500")
             rdf = rdf.Define(f"{channel_name}_TS_peak_mcp",
-                             f"{channel_name}_TS_peak_ref - (int){mcp_det}_TS_cfd_ref + 500")
+                             f"{channel_name}_TS_peak_ref - {mcp_det}_TS_cfd_ref + 500")
     return rdf
 
 

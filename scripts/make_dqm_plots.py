@@ -722,6 +722,7 @@ def make_drs_peak_plots():
 
 def make_drs_time_plots():
     # plot DRS peak time distributions
+    output_htmls = []
     with PlotManager(paths["root"], paths["plots"], paths["html"], run_number) as pm:
         pm.set_output_dir("DRS_Stats")
 
@@ -762,7 +763,41 @@ def make_drs_time_plots():
                     extra_text=var
                 )
 
-        return pm.generate_html("DRS/DRS_Time.html", plots_per_row=9)
+        output_htmls.append(pm.generate_html("DRS/DRS_Time.html", plots_per_row=9))
+
+        # Fine-binned CFD MCP time plots (500 bins, 420–520)
+        pm.reset_plots()
+        for _, DRSBoard in DRSBoards.items():
+            for chan in DRSBoard:
+                if chan.is_reference:
+                    continue
+                channel_name = chan.get_channel_name(blsub=False)
+                hist_finebins = infile.Get(f"hist_{channel_name}_TS_cfd_mcp_finebins")
+
+                if not hist_finebins:
+                    print(f"Warning: Fine-binned TS histogram for {channel_name} not found")
+                    continue
+
+                var = get_channel_var(chan)
+
+                pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
+                pave.AddText(
+                    f"B: {DRSBoard.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+                pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+
+                pm.plot_1d(
+                    hist_finebins,
+                    f"DRS_Time_FineBins_{channel_name}_{var}",
+                    "CFD TS (MCP-corrected)", (420, 520),
+                    "Counts", (1, None),
+                    style=STYLE_1D_LOG,
+                    extraToDraw=pave,
+                    extra_text=var
+                )
+
+        output_htmls.append(pm.generate_html("DRS/DRS_Time_FineBins.html", plots_per_row=9))
+
+    return output_htmls
 
 
 def make_drs_peak_ts_plots():

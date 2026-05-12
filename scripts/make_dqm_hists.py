@@ -381,7 +381,8 @@ def make_drs_2d_hists():
     map_mcp_channels = get_mcp_channels(run_number)
     for det, mcp_channel in map_mcp_channels.items():
         ymin, ymax = get_drs_plot_ranges(subtractMedian=True, is_mcp=True)
-        hists_tmp = make_drs_channel_2d_hists(mcp_channel, ymin=ymin, ymax=ymax)
+        hists_tmp = make_drs_channel_2d_hists(
+            mcp_channel, ymin=ymin, ymax=ymax)
         hists2d_DRS_VS_TS.extend(hists_tmp)
     return hists2d_DRS_VS_TS
 
@@ -428,6 +429,12 @@ def make_drs_stats_hists():
                 f"hist_{channel_name}_TS_cfd_mcp",
                 "DRS CFD TS (ref+MCP-corrected);TS_cfd_mcp;Counts",
                 1024, 0, 1024),
+                f"{channel_name}_TS_cfd_mcp"))
+
+            hists_DRSStats.append(rdf.Histo1D((
+                f"hist_{channel_name}_TS_cfd_mcp_finebins",
+                "DRS CFD TS (ref+MCP-corrected);TS_cfd_mcp;Counts",
+                500, 420, 520),
                 f"{channel_name}_TS_cfd_mcp"))
 
     return hists_DRSStats
