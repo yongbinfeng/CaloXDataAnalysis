@@ -3,6 +3,7 @@ import re
 from channels.channel_map import get_mcp_channels, get_service_drs_channels
 
 TS_END = 1024
+MCP_REF = "MCP_DS_0"
 
 # Column naming convention (all time quantities are time-slice indices, not physical time):
 #   _ref_TS          scalar: LED discriminator crossing time slice of the reference channel (Channel8)
@@ -101,7 +102,8 @@ def process_mcp_channels(rdf, run_number):
         rdf = rdf.Define(f"{det}_peak_value", f"{det}_CFD.peak_value")
         rdf = rdf.Define(f"{det}_TS_cfd", f"{det}_CFD.time_slice")
         rdf = rdf.Define(f"{det}_TS_peak", f"{det}_CFD.peak_position")
-        rdf = rdf.Define(f"{det}_integral_to_peak", f"{det}_CFD.integral_to_peak")
+        rdf = rdf.Define(f"{det}_integral_to_peak",
+                         f"{det}_CFD.integral_to_peak")
 
         ref_TS = get_ref_ts_name(channel_name, use_peak=False)
         rdf = rdf.Define(f"{det}_TS_cfd_ref",
@@ -188,8 +190,8 @@ def process_drs_data(rdf, run_number, drsboards):
         rdf, drs_branches, drs_channels_to_flip=drs_branches_to_flip)
     rdf = process_reference_channels(rdf, drs_channels_ref)
     rdf = process_mcp_channels(rdf, run_number)
-    rdf = update_ts(rdf, drs_channels_ref, mcp_det="MCP_US_0")
+    rdf = update_ts(rdf, drs_channels_ref, mcp_det=MCP_REF)
     drs_channels_physics = [
         ch for ch in drs_branches if not ch.endswith("Channel8")]
-    rdf = process_drs_channels(rdf, drs_channels_physics, mcp_det="MCP_US_0")
+    rdf = process_drs_channels(rdf, drs_channels_physics, mcp_det=MCP_REF)
     return rdf

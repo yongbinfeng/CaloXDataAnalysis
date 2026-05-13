@@ -29,6 +29,18 @@ rdf = get_fers_energy_max(rdf, fersboards, gain="LG")
 rdf = get_fers_energy_sum(rdf, fersboards, gain="HG")
 rdf = get_fers_energy_sum(rdf, fersboards, gain="LG")
 
+rdf_old = rdf
+channels_mcp = get_mcp_channels(run_number)
+# require integral/peak > 4 and peak value > 20
+# for both UP and DOWN MCP
+ref_det = list(channels_mcp.keys())[0]
+rdf_filtered = rdf.Filter(
+    f"{ref_det}_integral_to_peak > 4 && {ref_det}_peak_value > 20")
+ref_det2 = list(channels_mcp.keys())[4]
+rdf = rdf_filtered.Filter(
+    f"{ref_det2}_integral_to_peak > 4 && {ref_det2}_peak_value > 20")
+
+
 debug_drs = False
 n_events = 60000
 n_bins_event = 500
@@ -182,7 +194,7 @@ def collect_fers_stats():
 
 def make_fers_max_value_hists():
     """
-    get the max FERS readout per board and per event 
+    get the max FERS readout per board and per event
     """
     hists_board_cer_hg_max = []
     hists_board_cer_lg_max = []

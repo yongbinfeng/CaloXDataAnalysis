@@ -43,9 +43,8 @@ STYLE_COMPARE = PlotStyle(dology=False, drawoptions="HIST", mycolors=[
                           1, 1])
 
 
-def analyze_pulse(channels):
+def analyze_pulse(rdf, channels):
     """Analyze pulse shapes for PID channels using precomputed DRS variables."""
-    rdf = rdf_org
     hists = {}
 
     # Use precomputed columns from process_drs_channels / process_mcp_channels:
@@ -125,9 +124,8 @@ def analyze_pulse(channels):
     return output_hists
 
 
-def analyze_hodo_peak():
+def analyze_hodo_peak(rdf):
     """Analyze hodoscope peak timing."""
-    rdf = rdf_org
     hodo_pos_channels = build_hodo_pos_channels(run=run_number)
 
     histos = {key: {} for key in [
@@ -252,9 +250,12 @@ def plot_pulse_distributions(channels, infile, pm, suffix):
                 ntot = nhad + nele + 1e-6
                 pave = create_pave_text(0.23, 0.75, 0.55, 0.85)
                 pave.SetFillColor(0)
-                pave.AddText(f"N (peak > {value_cut:.2g}): {nhad:.0f} ({nhad/ntot:.1%})")
-                pave.AddText(f"N (peak < {value_cut:.2g}): {nele:.0f} ({nele/ntot:.1%})")
-                line = ROOT.TLine(value_cut, 0, value_cut, hist_pv.GetMaximum())
+                pave.AddText(
+                    f"N (peak > {value_cut:.2g}): {nhad:.0f} ({nhad/ntot:.1%})")
+                pave.AddText(
+                    f"N (peak < {value_cut:.2g}): {nele:.0f} ({nele/ntot:.1%})")
+                line = ROOT.TLine(value_cut, 0, value_cut,
+                                  hist_pv.GetMaximum())
                 line.SetLineColor(ROOT.kRed)
                 line.SetLineWidth(2)
                 line.SetLineStyle(ROOT.kDashed)
@@ -286,9 +287,12 @@ def plot_pulse_distributions(channels, infile, pm, suffix):
                 ntot = nhad + nele + 1e-6
                 pave = create_pave_text(0.23, 0.75, 0.55, 0.85)
                 pave.SetFillColor(0)
-                pave.AddText(f"N (energy > {value_cut:.2g}): {nhad:.0f} ({nhad/ntot:.1%})")
-                pave.AddText(f"N (energy < {value_cut:.2g}): {nele:.0f} ({nele/ntot:.1%})")
-                line = ROOT.TLine(value_cut, 0, value_cut, hist_en.GetMaximum())
+                pave.AddText(
+                    f"N (energy > {value_cut:.2g}): {nhad:.0f} ({nhad/ntot:.1%})")
+                pave.AddText(
+                    f"N (energy < {value_cut:.2g}): {nele:.0f} ({nele/ntot:.1%})")
+                line = ROOT.TLine(value_cut, 0, value_cut,
+                                  hist_en.GetMaximum())
                 line.SetLineColor(ROOT.kRed)
                 line.SetLineWidth(2)
                 line.SetLineStyle(ROOT.kDashed)
@@ -414,9 +418,8 @@ def plot_pulse(channels, suffix="services"):
     return output_htmls
 
 
-def analyze_mcp_timing_diff(channels_mcp):
+def analyze_mcp_timing_diff(rdf, channels_mcp):
     """Book event-by-event MCP CFD time difference histograms w.r.t. the first MCP."""
-    rdf = rdf_org
     hists = []
 
     dets = list(channels_mcp.keys())
@@ -458,12 +461,20 @@ def plot_mcp_timing_diff(channels_mcp, ref_det):
             fit = hist.GetFunction("gaus")
             fit.SetLineColor(ROOT.kRed)
             fit.SetLineWidth(2)
-            pave = create_pave_text(0.60, 0.75, 0.90, 0.88)
+            sigma = abs(fit.GetParameter(2))
+            n_gauss = fit.Integral(hist.GetXaxis().GetXmin(
+            ), hist.GetXaxis().GetXmax()) / hist.GetBinWidth(1)
+            n_total = hist.Integral(0, hist.GetNbinsX() + 1)
+            pave = create_pave_text(0.55, 0.68, 0.90, 0.88)
             pave.AddText(f"Mean: {fit.GetParameter(1):.2f} TS")
-            pave.AddText(f"Sigma: {fit.GetParameter(2):.2f} TS")
+            pave.AddText(f"Sigma: {sigma:.2f} TS")
+            pave.AddText(f"N (Gaussian): {n_gauss:.0f}")
+            pave.AddText(f"N (total): {n_total:.0f}")
+
+            ymax = hist.GetMaximum() * 1.4
             pm.plot_1d(hist, f"{det}_cfd_diff_vs_{ref_det}",
                        f"#Delta t_{{CFD,ref}} ({det} - {ref_det}) [TS]", (-10, 10),
-                       yrange=(0.1, 200),
+                       yrange=(0.1, ymax),
                        ylabel="Counts", style=STYLE_1D,
                        extraToDraw=[fit, pave])
 
@@ -581,12 +592,24 @@ def main():
         channel = get_service_drs_channels(run_number).get(det)
         channels[det] = channel
 
+    rdf = rdf_org
+
     channels_mcp = get_mcp_channels(run_number)
 
-    hists_pid = analyze_pulse(channels)
-    # hists_hodo = analyze_hodo_peak()
-    hists_mcp = analyze_pulse(channels_mcp)
-    hists_mcp_diff, ref_det = analyze_mcp_timing_diff(channels_mcp)
+    hists_pid = analyze_pulse(rdf, channels)
+    # hists_hodo = analyze_hodo_peak(rdf)
+    hists_mcp = analyze_pulse(rdf, channels_mcp)
+
+    # require integral/peak > 4 and peak value > 20
+    # for both UP and DOWN MCP
+    ref_det = list(channels_mcp.keys())[0]
+    rdf_filtered = rdf.Filter(
+        f"{ref_det}_integral_to_peak > 4 && {ref_det}_peak_value > 20")
+    ref_det2 = list(channels_mcp.keys())[4]
+    rdf_filtered2 = rdf_filtered.Filter(
+        f"{ref_det2}_integral_to_peak > 4 && {ref_det2}_peak_value > 20")
+    hists_mcp_diff, ref_det = analyze_mcp_timing_diff(
+        rdf_filtered2, channels_mcp)
 
     print("Triggering all computations...")
     # type: ignore[attr-defined]
