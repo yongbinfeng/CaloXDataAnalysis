@@ -21,7 +21,7 @@ class CaloXAnalysisManager:
     Handles data loading, hardware mapping, calibration, and selections.
     """
 
-    def __init__(self, args):
+    def __init__(self, args, load_data=True):
         self.args = args
         self.run_number = args.run
         register_manager(self)
@@ -39,7 +39,9 @@ class CaloXAnalysisManager:
         self.tchain = None
         self.rdf_org = None
         self._data_map = None
-        self.rdf = self._load_rdf()
+        self.do_detailed_plots = True
+        self.include_pedestals = True
+        self.rdf = self._load_rdf() if load_data else None
 
         self.branches = {}  # Registry for branched particle managers
         # Track state to prevent re-definitions
@@ -212,3 +214,10 @@ class CaloXAnalysisManager:
     def get_rdf(self):
         """Returns the final processed RDataFrame node for booking."""
         return self.rdf
+
+    def run_sequences(self, sequences):
+        """Run hist phase then plot phase for all sequences, using self as context."""
+        from core.sequence import run_hist_phase, run_plot_phase
+        run_hist_phase(sequences, self)
+        run_plot_phase(sequences, self)
+        return self

@@ -72,8 +72,9 @@ def _print_report(rep: _Report):
     global _global_mgr
     if _global_mgr:
         print(f"{'-'*50}", file=sys.stderr)
-        print(f" {'RDF Loops:':<15} {_global_mgr.rdf.GetNRuns():>10}",
-              file=sys.stderr)
+        if _global_mgr.rdf is not None:
+            print(f" {'RDF Loops:':<15} {_global_mgr.rdf.GetNRuns():>10}",
+                  file=sys.stderr)
 
         _global_mgr.report_all()
 

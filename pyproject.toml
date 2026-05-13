@@ -25,4 +25,4 @@ calox-beam-composition = "scripts.check_beam_composition:main"
 [tool.setuptools]
 # This treats the root-level folders as part of the 'calox' package
 # and also includes the new 'scripts' folder
-packages = ["utils", "channels", "variables", "configs", "core", "plotting", "scripts"]
+packages = ["utils", "channels", "variables", "configs", "core", "plotting", "scripts", "analysis"]

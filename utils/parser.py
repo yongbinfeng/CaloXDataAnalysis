@@ -13,6 +13,10 @@ def get_args():
         "--last-event", default=lastEvent, type=int, help="Last event")
     parser.add_argument(
         "--json-file", default=jsonFile, type=str, help="JSON file with data files")
+    parser.add_argument(
+        "--sequences", default=None, nargs="+", metavar="SEQ",
+        help="DQM sequences to run (default: all enabled-by-default sequences). "
+             "Example: --sequences monitor_conditions drs_waveforms drs_stats")
     args = parser.parse_args()
 
     print(f"Run number: {args.run}")

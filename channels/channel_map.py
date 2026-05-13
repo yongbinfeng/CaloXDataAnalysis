@@ -957,6 +957,18 @@ def get_service_drs_channels(run=1184):
         }
 
 
+def get_pid_channels(run=1184):
+    """Return an OrderedDict of PID detector name -> channel name for service DRS analysis."""
+    from collections import OrderedDict
+    service = get_service_drs_channels(run=run)
+    pid_dets = [
+        "HoleVeto", "PSD", "TTUMuonVeto",
+        "Cer474", "Cer519", "Cer537",
+        "KT1", "KT2", "T3", "T4",
+    ]
+    return OrderedDict((det, service.get(det)) for det in pid_dets)
+
+
 def get_quartz_channel_list():
     channels_quartz = []
     # fmt off
