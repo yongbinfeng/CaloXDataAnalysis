@@ -101,6 +101,7 @@ def process_mcp_channels(rdf, run_number):
         rdf = rdf.Define(f"{det}_peak_value", f"{det}_CFD.peak_value")
         rdf = rdf.Define(f"{det}_TS_cfd", f"{det}_CFD.time_slice")
         rdf = rdf.Define(f"{det}_TS_peak", f"{det}_CFD.peak_position")
+        rdf = rdf.Define(f"{det}_integral_to_peak", f"{det}_CFD.integral_to_peak")
 
         ref_TS = get_ref_ts_name(channel_name, use_peak=False)
         rdf = rdf.Define(f"{det}_TS_cfd_ref",
@@ -149,6 +150,8 @@ def process_drs_channels(rdf, drs_channel_names, mcp_det="MCP_US_0"):
                          f"{channel_name}_CFD.peak_position")
         rdf = rdf.Define(f"{channel_name}_peak_value",
                          f"{channel_name}_CFD.peak_value")
+        rdf = rdf.Define(f"{channel_name}_integral_to_peak",
+                         f"{channel_name}_CFD.integral_to_peak")
 
         ref_TS = get_ref_ts_name(channel_name, use_peak=False)
         rdf = rdf.Define(f"{channel_name}_TS_cfd_ref",

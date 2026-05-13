@@ -225,6 +225,7 @@ struct CaloHit
     float time_slice;
     float peak_value;
     int peak_position;
+    float integral_to_peak;
     bool is_valid;
 };
 
@@ -239,7 +240,7 @@ CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive
     constexpr int kIntWindowPre = 5;
     constexpr int kIntWindowPost = 45;
 
-    CaloHit hit = {0.0f, kInvalidTime, 0.0f, -1, false};
+    CaloHit hit = {0.0f, kInvalidTime, 0.0f, -1, 0.0f, false};
     if (waveform.size() < static_cast<size_t>(kIntWindowPre + kIntWindowPost))
         return hit;
 
@@ -291,6 +292,7 @@ CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive
                                           waveform.begin() + end_idx, 0.0f);
     // Multiply by sign so energy is always a positive magnitude
     hit.energy = sign * raw_sum;
+    hit.integral_to_peak = (hit.peak_value > 0.0f) ? hit.energy / hit.peak_value : 0.0f;
     hit.is_valid = true;
     return hit;
 }

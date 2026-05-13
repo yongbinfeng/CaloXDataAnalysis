@@ -85,6 +85,10 @@ def analyze_pulse(channels):
         hists[channel]["energy"] = rdf.Histo1D(
             (f"{det}_energy", f"Energy {channel};Energy (ADC);Counts", 500, xmin, xmax),
             f"{col}_energy")
+        hists[channel]["integral_to_peak"] = rdf.Histo1D(
+            (f"{det}_integral_to_peak",
+             f"Integral/Peak {channel};Integral/Peak [TS];Counts", 120, -5, 20),
+            f"{col}_integral_to_peak")
 
     # 2D correlation histograms
     det_list = list(channels.keys())
@@ -205,105 +209,96 @@ def analyze_hodo_peak():
     return hists_output
 
 
-def plot_pulse(channels, suffix="services"):
-    """Plot PID pulse analysis results."""
-    infile_name = f"{paths['root']}/drs_{suffix}.root"
-    infile = ROOT.TFile(infile_name, "READ")
-    if not infile or infile.IsZombie():
-        raise RuntimeError(f"Failed to open input file: {infile_name}")
+def plot_pulse_distributions(channels, infile, pm, suffix):
+    """Plot per-detector pulse shape distributions."""
+    for det in channels.keys():
+        wf_ymin, wf_ymax = get_service_drs_processed_info_ranges(
+            det, "waveform")
+        pv_xmin, pv_xmax = get_service_drs_processed_info_ranges(
+            det, "peak_value")
+        en_xmin, en_xmax = get_service_drs_processed_info_ranges(det, "sum")
+        _, _, value_cut, cut_method = get_service_drs_cut(det)
 
-    output_htmls = []
+        # ADC vs TS (2D + profile)
+        hist = infile.Get(f"{det}_ADC_vs_TS")
+        if hist:
+            pm.plot_2d(hist, f"{det}_ADC_vs_TS", "Time Slice", (0, 1024),
+                       "ADC Counts", (wf_ymin, wf_ymax), style=STYLE_2D_LOG)
+        prof = infile.Get(f"{det}_ADC_vs_TS_prof")
+        if prof:
+            prof_px = prof.ProjectionX()
+            pm.plot_1d(prof_px, f"{det}_ADC_vs_TS_prof", "Time Slice", (0, 1024),
+                       "Mean ADC Counts", (wf_ymin/10.0, wf_ymax/5.0), style=STYLE_1D)
 
-    with PlotManager(paths['root'], paths['plots'], paths['html'], run_number) as pm:
-        pm.set_output_dir(f"drs_{suffix}")
+        # CFD TS
+        hist = infile.Get(f"{det}_cfd_ts")
+        if hist:
+            pm.plot_1d(hist, f"{det}_cfd_ts", "CFD TS",
+                       (0, 1024), style=STYLE_1D)
 
-        for det in channels.keys():
-            wf_ymin, wf_ymax = get_service_drs_processed_info_ranges(
-                det, "waveform")
-            pv_xmin, pv_xmax = get_service_drs_processed_info_ranges(
-                det, "peak_value")
-            en_xmin, en_xmax = get_service_drs_processed_info_ranges(
-                det, "sum")
-            _, _, value_cut, cut_method = get_service_drs_cut(det)
+        # Peak value vs CFD TS
+        hist = infile.Get(f"{det}_peak_value_vs_cfd_ts")
+        if hist:
+            pm.plot_2d(hist, f"{det}_peak_value_vs_cfd_ts",
+                       "CFD TS", (0, 1024), "Peak Value", (pv_xmin, pv_xmax),
+                       style=STYLE_2D_LOG)
 
-            # ADC vs TS (2D + profile)
-            hist = infile.Get(f"{det}_ADC_vs_TS")
-            if hist:
-                pm.plot_2d(hist, f"{det}_ADC_vs_TS", "Time Slice", (0, 1024),
-                           "ADC Counts", (wf_ymin, wf_ymax), style=STYLE_2D_LOG)
-            prof = infile.Get(f"{det}_ADC_vs_TS_prof")
-            if prof:
-                prof_px = prof.ProjectionX()
-                pm.plot_1d(prof_px, f"{det}_ADC_vs_TS_prof", "Time Slice", (0, 1024),
-                           "Mean ADC Counts", (wf_ymin/10.0, wf_ymax/5.0), style=STYLE_1D)
+        # Peak value (cut annotation when method is PeakValue)
+        hist_pv = infile.Get(f"{det}_peak_value")
+        if hist_pv:
+            if cut_method == "PeakValue":
+                nhad = hist_pv.Integral(hist_pv.FindBin(value_cut), 10000)
+                nele = hist_pv.Integral(0, hist_pv.FindBin(value_cut))
+                ntot = nhad + nele + 1e-6
+                pave = create_pave_text(0.23, 0.75, 0.55, 0.85)
+                pave.SetFillColor(0)
+                pave.AddText(f"N (peak > {value_cut:.2g}): {nhad:.0f} ({nhad/ntot:.1%})")
+                pave.AddText(f"N (peak < {value_cut:.2g}): {nele:.0f} ({nele/ntot:.1%})")
+                line = ROOT.TLine(value_cut, 0, value_cut, hist_pv.GetMaximum())
+                line.SetLineColor(ROOT.kRed)
+                line.SetLineWidth(2)
+                line.SetLineStyle(ROOT.kDashed)
+                pm.plot_1d(hist_pv, f"{det}_peak_value", "Peak Value", (pv_xmin, pv_xmax),
+                           yrange=(1, None), style=STYLE_1D_LOG,
+                           extraToDraw=[pave, line])
 
-            # CFD TS
-            hist = infile.Get(f"{det}_cfd_ts")
-            if hist:
-                pm.plot_1d(hist, f"{det}_cfd_ts", "CFD TS", (0, 1024),
-                           style=STYLE_1D)
+                hist_pv.GetXaxis().SetRange(0, hist_pv.GetNbinsX() + 1)
+                hist_cdf = hist_pv.GetCumulative()
+                hist_cdf.Scale(1.0 / hist_pv.Integral())
+                line_cdf = ROOT.TLine(value_cut, 0, value_cut, 1)
+                line_cdf.SetLineColor(ROOT.kRed)
+                line_cdf.SetLineWidth(2)
+                line_cdf.SetLineStyle(ROOT.kDashed)
+                pm.plot_1d(hist_cdf, f"{det}_peak_value_cdf", "Peak Value", (pv_xmin, pv_xmax),
+                           ylabel="Cumulative Fraction", yrange=(0, 1.3),
+                           style=STYLE_1D, addOverflow=False, addUnderflow=False,
+                           legendPos=[0.3, 0.80, 0.5, 0.85], extraToDraw=line_cdf)
+            else:
+                pm.plot_1d(hist_pv, f"{det}_peak_value", "Peak Value", (pv_xmin, pv_xmax),
+                           style=STYLE_1D, leftlegend=True)
 
-            # Peak value vs CFD TS
-            hist = infile.Get(f"{det}_peak_value_vs_cfd_ts")
-            if hist:
-                pm.plot_2d(hist, f"{det}_peak_value_vs_cfd_ts",
-                           "CFD TS", (0, 1024), "Peak Value", (pv_xmin, pv_xmax),
-                           style=STYLE_2D_LOG)
+        # Energy (cut annotation when method is Sum/Energy)
+        hist_en = infile.Get(f"{det}_energy")
+        if hist_en:
+            if cut_method != "PeakValue":
+                nhad = hist_en.Integral(hist_en.FindBin(value_cut), 10000)
+                nele = hist_en.Integral(0, hist_en.FindBin(value_cut))
+                ntot = nhad + nele + 1e-6
+                pave = create_pave_text(0.23, 0.75, 0.55, 0.85)
+                pave.SetFillColor(0)
+                pave.AddText(f"N (energy > {value_cut:.2g}): {nhad:.0f} ({nhad/ntot:.1%})")
+                pave.AddText(f"N (energy < {value_cut:.2g}): {nele:.0f} ({nele/ntot:.1%})")
+                line = ROOT.TLine(value_cut, 0, value_cut, hist_en.GetMaximum())
+                line.SetLineColor(ROOT.kRed)
+                line.SetLineWidth(2)
+                line.SetLineStyle(ROOT.kDashed)
+                pm.plot_1d(hist_en, f"{det}_energy", "Energy (ADC)", (en_xmin, en_xmax),
+                           yrange=(1, None), style=STYLE_1D_LOG,
+                           extraToDraw=[pave, line])
 
-            # Peak value (cut annotation shown here when method is PeakValue)
-            hist = infile.Get(f"{det}_peak_value")
-            if hist:
-                if cut_method == "PeakValue":
-                    nhad = hist.Integral(hist.FindBin(value_cut), 10000)
-                    nele = hist.Integral(0, hist.FindBin(value_cut))
-                    ntot = nhad + nele + 1e-6
-                    pave = create_pave_text(0.23, 0.75, 0.55, 0.85)
-                    pave.SetFillColor(0)
-                    pave.AddText(
-                        f"N (peak > {value_cut:.2g}): {nhad:.0f} ({nhad/ntot:.1%})")
-                    pave.AddText(
-                        f"N (peak < {value_cut:.2g}): {nele:.0f} ({nele/ntot:.1%})")
-                    line = ROOT.TLine(
-                        value_cut, 0, value_cut, hist.GetMaximum())
-                    line.SetLineColor(ROOT.kRed)
-                    line.SetLineWidth(2)
-                    line.SetLineStyle(ROOT.kDashed)
-                    pm.plot_1d(hist, f"{det}_peak_value", "Peak Value", (pv_xmin, pv_xmax),
-                               yrange=(1, None), style=STYLE_1D_LOG,
-                               extraToDraw=[pave, line])
-                else:
-                    pm.plot_1d(hist, f"{det}_peak_value", "Peak Value", (pv_xmin, pv_xmax),
-                               style=STYLE_1D, leftlegend=True)
-
-            # Energy (cut annotation shown here when method is Sum/Energy)
-            hist = infile.Get(f"{det}_energy")
-            if hist:
-                if cut_method != "PeakValue":
-                    nhad = hist.Integral(hist.FindBin(value_cut), 10000)
-                    nele = hist.Integral(0, hist.FindBin(value_cut))
-                    ntot = nhad + nele + 1e-6
-                    pave = create_pave_text(0.23, 0.75, 0.55, 0.85)
-                    pave.SetFillColor(0)
-                    pave.AddText(
-                        f"N (energy > {value_cut:.2g}): {nhad:.0f} ({nhad/ntot:.1%})")
-                    pave.AddText(
-                        f"N (energy < {value_cut:.2g}): {nele:.0f} ({nele/ntot:.1%})")
-                    line = ROOT.TLine(
-                        value_cut, 0, value_cut, hist.GetMaximum())
-                    line.SetLineColor(ROOT.kRed)
-                    line.SetLineWidth(2)
-                    line.SetLineStyle(ROOT.kDashed)
-                    pm.plot_1d(hist, f"{det}_energy", "Energy (ADC)", (en_xmin, en_xmax),
-                               yrange=(1, None), style=STYLE_1D_LOG,
-                               extraToDraw=[pave, line])
-                else:
-                    pm.plot_1d(hist, f"{det}_energy", "Energy (ADC)", (en_xmin, en_xmax),
-                               yrange=(1, None), style=STYLE_1D_LOG)
-
-                # CDF plot
-                hist.GetXaxis().SetRange(0, hist.GetNbinsX() + 1)
-                hist_cdf = hist.GetCumulative()
-                hist_cdf.Scale(1.0 / hist.Integral())
+                hist_en.GetXaxis().SetRange(0, hist_en.GetNbinsX() + 1)
+                hist_cdf = hist_en.GetCumulative()
+                hist_cdf.Scale(1.0 / hist_en.Integral())
                 line_cdf = ROOT.TLine(value_cut, 0, value_cut, 1)
                 line_cdf.SetLineColor(ROOT.kRed)
                 line_cdf.SetLineWidth(2)
@@ -312,84 +307,108 @@ def plot_pulse(channels, suffix="services"):
                            ylabel="Cumulative Fraction", yrange=(0, 1.3),
                            style=STYLE_1D, addOverflow=False, addUnderflow=False,
                            legendPos=[0.3, 0.80, 0.5, 0.85], extraToDraw=line_cdf)
+            else:
+                pm.plot_1d(hist_en, f"{det}_energy", "Energy (ADC)", (en_xmin, en_xmax),
+                           yrange=(1, None), style=STYLE_1D_LOG)
 
-        intro_text = """This page shows the pulse shape analysis for the service DRS channels for particle identification.
+        # Integral-to-peak ratio
+        hist = infile.Get(f"{det}_integral_to_peak")
+        if hist:
+            pm.plot_1d(hist, f"{det}_integral_to_peak",
+                       "Integral/Peak", (-5, 20), style=STYLE_1D)
+
+    intro_text = """This page shows the pulse shape analysis for the service DRS channels for particle identification.
 No selection is applied unless specified."""
+    return pm.generate_html(
+        f"ServiceDRS/{suffix}.html", plots_per_row=8,
+        intro_text=intro_text, title=f"{suffix.upper()} Analysis")
 
+
+def plot_pulse_correlations(channels, infile, pm, suffix):
+    """Plot 2D correlation plots between detector pairs."""
+    det_list = list(channels.keys())
+    trigger_dets = ["KT1", "KT2", "T3", "T4"]
+    det_list = [det for det in det_list if det not in trigger_dets]
+
+    output_htmls = []
+    corr_categories = [("PID", det_list)] if suffix == "mcp" else [
+        ("PID", det_list), ("Trigger", trigger_dets)]
+
+    for cat, tmp_list in corr_categories:
+        pm.reset_plots()
+        for idx1, det1 in enumerate(tmp_list):
+            for idx2, det2 in enumerate(tmp_list):
+                if idx2 <= idx1:
+                    continue
+
+                _, _, value_cut1, method1 = get_service_drs_cut(det1)
+                _, _, value_cut2, method2 = get_service_drs_cut(det2)
+                var1 = "peak_value" if method1 == "PeakValue" else "energy"
+                var2 = "peak_value" if method2 == "PeakValue" else "energy"
+                xmin, xmax = get_service_drs_processed_info_ranges(
+                    det1, "peak_value" if method1 == "PeakValue" else "sum")
+                ymin, ymax = get_service_drs_processed_info_ranges(
+                    det2, "peak_value" if method2 == "PeakValue" else "sum")
+
+                hist2d = infile.Get(f"{det1}_{var1}_vs_{det2}_{var2}")
+                if not hist2d:
+                    continue
+
+                xPass = hist2d.GetXaxis().FindBin(value_cut1)
+                yPass = hist2d.GetYaxis().FindBin(value_cut2)
+                nPP = hist2d.Integral(xPass, 1000, yPass, 1000)
+                nPF = hist2d.Integral(xPass, 1000, 0, yPass - 1)
+                nFP = hist2d.Integral(0, xPass - 1, yPass, 1000)
+                nFF = hist2d.Integral(0, xPass - 1, 0, yPass - 1)
+
+                pave = create_pave_text(0.23, 0.20, 0.5, 0.40)
+                pave.SetTextSize(0.03)
+                name1 = det1.replace("Cerenkov", "Cer")
+                name2 = det2.replace("Cerenkov", "Cer")
+                pave.AddText(
+                    f"N ({name1} > {value_cut1:.2g}, {name2} > {value_cut2:.2g}): {nPP:.0f}")
+                pave.AddText(
+                    f"N ({name1} > {value_cut1:.2g}, {name2} < {value_cut2:.2g}): {nPF:.0f}")
+                pave.AddText(
+                    f"N ({name1} < {value_cut1:.2g}, {name2} > {value_cut2:.2g}): {nFP:.0f}")
+                pave.AddText(
+                    f"N ({name1} < {value_cut1:.2g}, {name2} < {value_cut2:.2g}): {nFF:.0f}")
+
+                line1 = ROOT.TLine(value_cut1, ymin, value_cut1, ymax)
+                line2 = ROOT.TLine(xmin, value_cut2, xmax, value_cut2)
+                for line in [line1, line2]:
+                    line.SetLineWidth(2)
+                    line.SetLineStyle(ROOT.kDashed)
+                    line.SetLineColor(ROOT.kRed)
+
+                pm.plot_2d(hist2d, f"{det1}_vs_{det2}_corr2D",
+                           f"{det1} {var1}", (xmin, xmax),
+                           f"{det2} {var2}", (ymin, ymax),
+                           style=STYLE_2D_LOG,
+                           extraToDraw=[pave, line1, line2])
+
+            pm.add_newline()
+
+        intro_text = f"""This page shows the correlation plots of the service DRS channels for {cat}.
+No selection is applied unless specified."""
         output_htmls.append(pm.generate_html(
-            f"ServiceDRS/{suffix}.html", plots_per_row=7, intro_text=intro_text, title=f"{suffix.upper()} Analysis"))
+            f"ServiceDRS/{cat}_correlation_{suffix}.html",
+            plots_per_row=5, intro_text=intro_text))
 
-        # 2D correlation plots
-        # pm.reset_plots()
-        det_list = list(channels.keys())
+    return output_htmls
 
-        trigger_dets = ["KT1", "KT2", "T3", "T4"]
 
-        # remove trigger_dets from det_list for correlation plotting
-        det_list = [det for det in det_list if det not in trigger_dets]
+def plot_pulse(channels, suffix="services"):
+    """Plot PID pulse analysis results (1D distributions + 2D correlations)."""
+    infile_name = f"{paths['root']}/drs_{suffix}.root"
+    infile = ROOT.TFile(infile_name, "READ")
+    if not infile or infile.IsZombie():
+        raise RuntimeError(f"Failed to open input file: {infile_name}")
 
-        corr_categories = [("PID", det_list)] if suffix == "mcp" else [
-            ("PID", det_list), ("Trigger", trigger_dets)]
-        for cat, tmp_list in corr_categories:
-            pm.reset_plots()
-            for idx1, det1 in enumerate(tmp_list):
-                for idx2, det2 in enumerate(tmp_list):
-                    if idx2 <= idx1:
-                        continue
-
-                    _, _, value_cut1, method1 = get_service_drs_cut(det1)
-                    _, _, value_cut2, method2 = get_service_drs_cut(det2)
-                    var1 = "peak_value" if method1 == "PeakValue" else "energy"
-                    var2 = "peak_value" if method2 == "PeakValue" else "energy"
-                    xmin, xmax = get_service_drs_processed_info_ranges(
-                        det1, "peak_value" if method1 == "PeakValue" else "sum")
-                    ymin, ymax = get_service_drs_processed_info_ranges(
-                        det2, "peak_value" if method2 == "PeakValue" else "sum")
-
-                    hist2d = infile.Get(f"{det1}_{var1}_vs_{det2}_{var2}")
-                    if not hist2d:
-                        continue
-
-                    xPass = hist2d.GetXaxis().FindBin(value_cut1)
-                    yPass = hist2d.GetYaxis().FindBin(value_cut2)
-                    nPP = hist2d.Integral(xPass, 1000, yPass, 1000)
-                    nPF = hist2d.Integral(xPass, 1000, 0, yPass - 1)
-                    nFP = hist2d.Integral(0, xPass - 1, yPass, 1000)
-                    nFF = hist2d.Integral(0, xPass - 1, 0, yPass - 1)
-
-                    pave = create_pave_text(0.23, 0.20, 0.5, 0.40)
-                    pave.SetTextSize(0.03)
-                    name1 = det1.replace("Cerenkov", "Cer")
-                    name2 = det2.replace("Cerenkov", "Cer")
-                    pave.AddText(
-                        f"N ({name1} > {value_cut1:.2g}, {name2} > {value_cut2:.2g}): {nPP:.0f}")
-                    pave.AddText(
-                        f"N ({name1} > {value_cut1:.2g}, {name2} < {value_cut2:.2g}): {nPF:.0f}")
-                    pave.AddText(
-                        f"N ({name1} < {value_cut1:.2g}, {name2} > {value_cut2:.2g}): {nFP:.0f}")
-                    pave.AddText(
-                        f"N ({name1} < {value_cut1:.2g}, {name2} < {value_cut2:.2g}): {nFF:.0f}")
-
-                    line1 = ROOT.TLine(value_cut1, ymin, value_cut1, ymax)
-                    line2 = ROOT.TLine(xmin, value_cut2, xmax, value_cut2)
-                    for line in [line1, line2]:
-                        line.SetLineWidth(2)
-                        line.SetLineStyle(ROOT.kDashed)
-                        line.SetLineColor(ROOT.kRed)
-
-                    pm.plot_2d(hist2d, f"{det1}_vs_{det2}_corr2D",
-                               f"{det1} {var1}", (xmin, xmax),
-                               f"{det2} {var2}", (ymin, ymax),
-                               style=STYLE_2D_LOG,
-                               extraToDraw=[pave, line1, line2])
-
-                pm.add_newline()
-
-            intro_text = f"""This page shows the correlation plots of the service DRS channels for {cat}.
-No selection is applied unless specified."""
-
-            output_htmls.append(pm.generate_html(
-                f"ServiceDRS/{cat}_correlation_{suffix}.html", plots_per_row=5, intro_text=intro_text))
+    with PlotManager(paths['root'], paths['plots'], paths['html'], run_number) as pm:
+        pm.set_output_dir(f"drs_{suffix}")
+        output_htmls = [plot_pulse_distributions(channels, infile, pm, suffix)]
+        output_htmls += plot_pulse_correlations(channels, infile, pm, suffix)
 
     infile.Close()
     return output_htmls

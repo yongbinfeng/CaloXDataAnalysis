@@ -29,7 +29,6 @@ rdf = get_fers_energy_max(rdf, fersboards, gain="LG")
 rdf = get_fers_energy_sum(rdf, fersboards, gain="HG")
 rdf = get_fers_energy_sum(rdf, fersboards, gain="LG")
 
-
 debug_drs = False
 n_events = 60000
 n_bins_event = 500
