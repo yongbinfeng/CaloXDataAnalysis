@@ -1,16 +1,18 @@
 """
 Sequence registry.
 
-There are two sequence lists:
+There are three sequence lists:
 
 ALL_SEQUENCES         — main DQM (FERS + DRS readout), used by
                         make_dqm_hists.py and make_dqm_plots.py
 SERVICE_DRS_SEQUENCES — service DRS (PID detectors, MCP, hodoscope), used by
                         check_service_drs.py
+DRS_MCP_SEQUENCES     — DRS-only sequences run under MCP timing selection,
+                        used by check_drs_mcp.py
 
-To add a new monitoring variable to either list:
-  1. Write book_<name>(ctx) -> (lazy_list, save_fn)  in dqm/hist_functions.py
-  2. Write plot_<name>(ctx) -> html                  in dqm/plot_functions.py
+To add a new monitoring variable to any list:
+  1. Write book_<name>(ctx) in analysis/hist_functions.py
+  2. Write plot_<name>(ctx) in analysis/plot_functions.py
   3. Add a CaloXSequence entry in the appropriate list below.
 
 Set enabled_by_default=False to keep a sequence opt-in (--sequences on CLI).
@@ -153,7 +155,7 @@ ALL_SEQUENCES: list[CaloXSequence] = [
 # ---------------------------------------------------------------------------
 
 
-def _select_mcp_timing(ctx):
+def _select_mcp(ctx):
     """Filter to events where all MCPs have clean pulses."""
     from channels.channel_map import get_mcp_channels
     rdf = ctx.rdf
@@ -161,6 +163,24 @@ def _select_mcp_timing(ctx):
         rdf = rdf.Filter(
             f"{det}_integral_to_peak > 4 && {det}_peak_value > 10"
         )
+    return rdf
+
+
+def _select_mcp_diff(ctx):
+    """Filter to events where all MCPs have clean pulses and small CFD timing differences."""
+    from channels.channel_map import get_mcp_channels
+    rdf = ctx.rdf
+    rdf = _select_mcp(ctx)  # apply clean pulse filter first
+
+    # require MCP timing difference between two MCPs
+    dets = list(get_mcp_channels(ctx.run_number).keys())
+    det1 = dets[0]
+    det2 = dets[4]
+    # for i in range(len(dets)):
+    #    for j in range(i + 1, len(dets)):
+    #        det1, det2 = dets[i], dets[j]
+    rdf = rdf.Filter(
+        f"abs({det1}_TS_cfd_ref - {det2}_TS_cfd_ref) > 2 && abs({det1}_TS_cfd_ref - {det2}_TS_cfd_ref) < 5")
     return rdf
 
 
@@ -179,7 +199,7 @@ SERVICE_DRS_SEQUENCES: list[CaloXSequence] = [
     ),
     CaloXSequence(
         name="service_drs_mcp_timing",
-        define_selection=_select_mcp_timing,
+        define_selection=_select_mcp,
         book_hists=book_service_drs_mcp_timing,
         make_plots=plot_service_drs_mcp_timing,
         enabled_by_default=True,
@@ -193,7 +213,26 @@ SERVICE_DRS_SEQUENCES: list[CaloXSequence] = [
 ]
 
 # ---------------------------------------------------------------------------
-# Lookup helpers — work for both lists
+# DRS-only sequences under MCP timing selection
+# ---------------------------------------------------------------------------
+
+DRS_MCP_SEQUENCES: list[CaloXSequence] = [
+    CaloXSequence(
+        name="drs_waveforms",
+        define_selection=_select_mcp_diff,
+        book_hists=book_drs_waveforms,
+        make_plots=plot_drs_waveforms,
+    ),
+    CaloXSequence(
+        name="drs_stats",
+        define_selection=_select_mcp_diff,
+        book_hists=book_drs_stats,
+        make_plots=plot_drs_stats,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# Lookup helpers — work for all lists
 # ---------------------------------------------------------------------------
 
 _ALL_BY_NAME: dict[str, CaloXSequence] = {
@@ -216,6 +255,11 @@ def default_sequences() -> list[CaloXSequence]:
 def default_service_drs_sequences() -> list[CaloXSequence]:
     """Service DRS sequences enabled by default."""
     return [s for s in SERVICE_DRS_SEQUENCES if s.enabled_by_default]
+
+
+def default_drs_mcp_sequences() -> list[CaloXSequence]:
+    """DRS-only sequences run under MCP timing selection."""
+    return list(DRS_MCP_SEQUENCES)
 
 
 def select_sequences(names: list[str],

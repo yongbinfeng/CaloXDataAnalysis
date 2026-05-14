@@ -13,7 +13,7 @@ from channels.channel_map import (
 )
 from channels.validate_map import DrawDRSBoards, DrawFERSBoards
 from plotting.my_function import LHistos2Hist
-from configs.plot_config import get_drs_plot_ranges, get_drs_prof_plot_ranges
+from configs.plot_config import get_drs_plot_ranges, get_drs_cfd_finebins_range, get_drs_prof_plot_ranges
 from utils.colors import colors
 from core.plot_manager import PlotManager
 from configs.plot_style import PlotStyle, STYLE_CER_SCI
@@ -641,7 +641,8 @@ def plot_drs_stats(ctx):
                 pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
                 pm.plot_1d(
                     hist, f"DRS_Time_FineBins_{ch}_{var}",
-                    "CFD TS (MCP-corrected)", (420, 520), "Counts", (1, None),
+                    "CFD TS (MCP-corrected)", get_drs_cfd_finebins_range(chan.isCer),
+                    "Counts", (1, None),
                     style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
         output_htmls.append(pm.generate_html(
             "DRS/DRS_Time_FineBins.html", plots_per_row=9))

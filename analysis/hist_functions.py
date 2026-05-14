@@ -11,7 +11,7 @@ save_fn()  — writes ROOT files / JSONs after the graph has been triggered
 from configs.selection_config import get_service_drs_cut
 from configs.plot_config import get_service_drs_processed_info_ranges
 import json
-from configs.plot_config import get_drs_plot_ranges, get_fers_saturation_value
+from configs.plot_config import get_drs_plot_ranges, get_drs_cfd_finebins_range, get_fers_saturation_value
 from utils.utils import number_to_string
 from variables.drs import get_ts_arr_name
 from channels.channel_map import get_mcp_channels, get_pid_channels
@@ -389,10 +389,11 @@ def book_drs_stats(ctx):
                 "DRS CFD TS (ref+MCP-corrected);TS_cfd_mcp;Counts",
                 1024, 0, 1024),
                 f"{channel_name}_TS_cfd_mcp"))
+            fb_min, fb_max = get_drs_cfd_finebins_range(chan.isCer)
             hists.append(ctx.rdf.Histo1D((
                 f"hist_{channel_name}_TS_cfd_mcp_finebins",
                 "DRS CFD TS (ref+MCP-corrected);TS_cfd_mcp;Counts",
-                500, 420, 520),
+                500, fb_min, fb_max),
                 f"{channel_name}_TS_cfd_mcp"))
 
     ctx.hbook.add("drs_stats.root", hists)

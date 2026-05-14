@@ -134,6 +134,10 @@ def get_drs_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, i
     return xmin, xmax
 
 
+def get_drs_cfd_finebins_range(is_cer):
+    return (410, 450) if is_cer else (420, 490)
+
+
 def get_drs_prof_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, is_reference=False, is_cer=False):
     xmin, xmax = get_drs_plot_ranges(
         subtractMedian, is_amplified, is6mm, is_reference)
