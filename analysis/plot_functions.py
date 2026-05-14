@@ -20,7 +20,7 @@ from configs.plot_style import PlotStyle, STYLE_CER_SCI
 from plotting.calox_plot_helper import BoardPlotHelper, create_pave_text, create_board_info_pave
 from utils.utils import number_to_string, round_up_to_1eN, get_channel_var
 from variables.drs import get_ts_arr_name
-from utils.visualization import visualizeFERSBoards
+from utils.visualization import visualizeFERSBoards, visualizeDRSBoards
 
 
 # ---------------------------------------------------------------------------
@@ -648,6 +648,52 @@ def plot_drs_stats(ctx):
             "DRS/DRS_Time_FineBins.html", plots_per_row=9))
 
     return output_htmls
+
+
+# ---------------------------------------------------------------------------
+# DRS: CFD MPV board map (one value per channel)
+# ---------------------------------------------------------------------------
+
+def plot_drs_cfd_mpv(ctx):
+    """Read the MPV of the fine-binned TS_cfd_mcp histogram for every channel
+    and display the result as a 2D DRS board map."""
+    infile = ctx.hbook.open_file("drs_stats.root")
+
+    mpv_map = {}
+    for _, board in ctx.drsboards.items():
+        for chan in board:
+            if chan.is_reference:
+                continue
+            ch = chan.get_channel_name(blsub=False)
+            hist = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
+            if not hist:
+                continue
+            if hist.GetEntries() < 5:
+                mpv_map[ch] = 0.0
+            else:
+                max_bin = hist.GetMaximumBin()
+                mpv_map[ch] = hist.GetXaxis().GetBinCenter(max_bin) - 400
+
+    cer_hists, sci_hists = visualizeDRSBoards(
+        ctx.drsboards, valuemaps=mpv_map,
+        suffix=f"MPV_cfd_Run{ctx.run_number}")
+
+    with _pm(ctx) as pm:
+        pm.set_output_dir("DRS_CFD_MPV")
+        helper = BoardPlotHelper(pm)
+        helper.plot_cer_sci_pair(
+            cer_hists, sci_hists,
+            f"DRS_CFD_MPV_Run{ctx.run_number}",
+            zmin=0, zmax=100, nTextDigits=1)
+        return pm.generate_html(
+            "DRS/DRS_CFD_MPV.html", plots_per_row=2,
+            title="DRS CFD MPV Board Map",
+            intro_text=(
+                "Per-channel most probable value (MPV) of the fine-binned "
+                "MCP-corrected CFD time slice, displayed on the DRS board map. "
+                "Values are shifted by -400 TS for readability. "
+                "Channels with fewer than 5 entries are shown as 0."
+            ))
 
 
 # ---------------------------------------------------------------------------

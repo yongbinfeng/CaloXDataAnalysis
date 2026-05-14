@@ -48,6 +48,7 @@ from analysis.plot_functions import (
     plot_fers_track,
     plot_drs_waveforms,
     plot_drs_stats,
+    plot_drs_cfd_mpv,
     plot_drs_peak_ts,
     plot_drs_sum_vs_fers,
     plot_drs_peak_vs_fers,
@@ -228,6 +229,11 @@ DRS_MCP_SEQUENCES: list[CaloXSequence] = [
         define_selection=_select_mcp_diff,
         book_hists=book_drs_stats,
         make_plots=plot_drs_stats,
+    ),
+    CaloXSequence(
+        name="drs_cfd_mpv",
+        book_hists=None,
+        make_plots=plot_drs_cfd_mpv,
     ),
 ]
 
