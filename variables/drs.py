@@ -96,11 +96,11 @@ def process_mcp_channels(rdf, run_number):
     map_mcp_channels = get_mcp_channels(run_number)
     for det, channel_name in map_mcp_channels.items():
         channel_name_blsub = channel_name + "_blsub"
-        ts_begin, ts_end, window_pre, window_post, val_cut, _ = get_service_drs_cut(
+        ts_begin, ts_end, window_pre, window_post, _, _ = get_service_drs_cut(
             det)
 
         rdf = rdf.Define(f"{det}_CFD",
-                         f"compute_cfd_integral({channel_name_blsub}, 1, {val_cut}, {ts_begin}, {ts_end}, {window_pre}, {window_post})")
+                         f"compute_cfd_integral({channel_name_blsub}, 1, 10, {ts_begin}, {ts_end}, {window_pre}, {window_post})")
         rdf = rdf.Define(f"{det}_energy", f"{det}_CFD.energy")
         rdf = rdf.Define(f"{det}_peak_value", f"{det}_CFD.peak_value")
         rdf = rdf.Define(f"{det}_TS_cfd", f"{det}_CFD.time_slice")
@@ -127,7 +127,7 @@ def process_pid_channels(rdf, run_number):
         channel_blsub = channel + "_blsub"
 
         rdf = rdf.Define(f"{det}_CFD",
-                         f"compute_cfd_integral({channel_blsub}, 1, 5.0, {ts_begin}, {ts_end}, {window_pre}, {window_post})")
+                         f"compute_cfd_integral({channel_blsub}, 1, 10.0, {ts_begin}, {ts_end}, {window_pre}, {window_post})")
         rdf = rdf.Define(f"{det}_energy",          f"{det}_CFD.energy")
         rdf = rdf.Define(f"{det}_peak_value",
                          f"{det}_CFD.peak_value")
