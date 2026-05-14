@@ -8,6 +8,8 @@ lazy_list  — flat list of lazy ROOT objects for ROOT.RDF.RunGraphs
 save_fn()  — writes ROOT files / JSONs after the graph has been triggered
 """
 
+from configs.selection_config import get_service_drs_cut
+from configs.plot_config import get_service_drs_processed_info_ranges
 import json
 from configs.plot_config import get_drs_plot_ranges, get_fers_saturation_value
 from utils.plot_helper import save_hists_to_file
@@ -48,7 +50,8 @@ def book_monitor_conditions(ctx):
             "event_n", fersboard.get_temp_fpga_name()))
 
     def save():
-        save_hists_to_file(hprofs, f"{ctx.paths['root']}/conditions_vs_event.root")
+        save_hists_to_file(
+            hprofs, f"{ctx.paths['root']}/conditions_vs_event.root")
 
     return hprofs, save
 
@@ -79,7 +82,8 @@ def book_fers_energy_sum(ctx):
                 ctx.fersboards.get_energy_sum_name(gain=gain, isCer=(var == "Cer"))))
 
     def save():
-        save_hists_to_file(hprofs, f"{ctx.paths['root']}/fers_energysum_vs_event.root")
+        save_hists_to_file(
+            hprofs, f"{ctx.paths['root']}/fers_energysum_vs_event.root")
 
     return hprofs, save
 
@@ -127,7 +131,8 @@ def _collect_pedestals(ctx, hists, gain):
                 hname = f"hist_FERS_Board{board_no}_{var}_{s_x}_{s_y}"
                 hist = hist_by_name.get(hname)
                 if hist is None:
-                    print(f"Warning: {hname} not found for pedestal extraction")
+                    print(
+                        f"Warning: {hname} not found for pedestal extraction")
                     pedestals[channel_name] = None
                     continue
                 ibinmin = hist.GetXaxis().FindBin(100.0)
@@ -137,7 +142,8 @@ def _collect_pedestals(ctx, hists, gain):
                     if hist.GetBinContent(ibin) > max_val:
                         max_val = hist.GetBinContent(ibin)
                         ibin_ped = ibin
-                pedestals[channel_name] = hist.GetXaxis().GetBinCenter(ibin_ped)
+                pedestals[channel_name] = hist.GetXaxis(
+                ).GetBinCenter(ibin_ped)
     return pedestals
 
 
@@ -148,7 +154,8 @@ def book_fers_channels(ctx):
     def save():
         pedestals_hg = _collect_pedestals(ctx, hists_hg, gain="HG")
         pedestals_lg = _collect_pedestals(ctx, hists_lg, gain="LG")
-        save_hists_to_file(hists_hg, f"{ctx.paths['root']}/fers_all_channels_1d.root")
+        save_hists_to_file(
+            hists_hg, f"{ctx.paths['root']}/fers_all_channels_1d.root")
         with open(f"{ctx.paths['root']}/fers_pedestals_hg.json", "w") as f:
             json.dump(pedestals_hg, f, indent=4)
         with open(f"{ctx.paths['root']}/fers_pedestals_lg.json", "w") as f:
@@ -233,8 +240,10 @@ def book_fers_2d(ctx):
         for i_tower_x, i_tower_y in fersboard.get_list_of_towers():
             s_x = number_to_string(i_tower_x)
             s_y = number_to_string(i_tower_y)
-            chan_cer = fersboard.get_channel_by_tower(i_tower_x, i_tower_y, isCer=True)
-            chan_sci = fersboard.get_channel_by_tower(i_tower_x, i_tower_y, isCer=False)
+            chan_cer = fersboard.get_channel_by_tower(
+                i_tower_x, i_tower_y, isCer=True)
+            chan_sci = fersboard.get_channel_by_tower(
+                i_tower_x, i_tower_y, isCer=False)
             i_cer = chan_cer.channel_no
             i_sci = chan_sci.channel_no
 
@@ -266,7 +275,8 @@ def book_fers_2d(ctx):
                 chan_cer.get_channel_name(gain="LG")))
 
     def save():
-        save_hists_to_file(hists, f"{ctx.paths['root']}/fers_all_channels_2d.root")
+        save_hists_to_file(
+            hists, f"{ctx.paths['root']}/fers_all_channels_2d.root")
 
     return hists, save
 
@@ -293,7 +303,8 @@ def book_fers_track(ctx):
                     "event_n", chan.get_channel_name(gain="HG")))
 
     def save():
-        save_hists_to_file(hists, f"{ctx.paths['root']}/fers_all_channels_2D_VS_event.root")
+        save_hists_to_file(
+            hists, f"{ctx.paths['root']}/fers_all_channels_2D_VS_event.root")
 
     return hists, save
 
@@ -569,9 +580,6 @@ def book_drs_peak_vs_fers(ctx):
 # Service DRS sequences  (ctx: CaloXAnalysisManager)
 # ===========================================================================
 
-from configs.plot_config import get_service_drs_processed_info_ranges
-from configs.selection_config import get_service_drs_cut
-
 
 def _analyze_pulse(rdf, channels, run_number):
     """Book all histogram lazy objects for one set of service-DRS channels.
@@ -583,7 +591,8 @@ def _analyze_pulse(rdf, channels, run_number):
     for det, channel in channels.items():
         col = channel
         hists[channel] = {}
-        wf_ymin, wf_ymax = get_service_drs_processed_info_ranges(det, "waveform")
+        wf_ymin, wf_ymax = get_service_drs_processed_info_ranges(
+            det, "waveform")
         hists[channel]["ADC_VS_TS"] = rdf.Histo2D(
             (f"{det}_ADC_vs_TS",
              f"ADC vs Time Slice {channel};Time Slice;ADC Counts;Counts",
@@ -649,24 +658,24 @@ def _analyze_pulse(rdf, channels, run_number):
 
 
 def _analyze_mcp_timing_diff(rdf, channels_mcp):
-    """Book MCP CFD timing-difference histograms w.r.t. the first MCP."""
+    """Book MCP CFD timing-difference histograms for all unique pairs."""
     hists = []
     dets = list(channels_mcp.keys())
-    ref_det = dets[0]
-    ref_col = channels_mcp[ref_det]
 
-    for det, channel in channels_mcp.items():
-        if det == ref_det:
-            continue
-        diff_col = f"{channel}_minus_{ref_col}_cfd_diff"
-        rdf = rdf.Define(diff_col, f"{channel}_TS_cfd_ref - {ref_col}_TS_cfd_ref")
-        hists.append(rdf.Histo1D(
-            (f"{det}_cfd_diff_vs_{ref_det}",
-             f"{det} - {ref_det};#Delta t_{{CFD,ref}} [TS];Counts",
-             400, -10, 10),
-            diff_col))
+    for i, det1 in enumerate(dets):
+        col1 = channels_mcp[det1]
+        for det2 in dets[i + 1:]:
+            col2 = channels_mcp[det2]
+            diff_col = f"{col1}_minus_{col2}_cfd_diff"
+            rdf = rdf.Define(
+                diff_col, f"{col1}_TS_cfd_ref - {col2}_TS_cfd_ref")
+            hists.append(rdf.Histo1D(
+                (f"{det1}_cfd_diff_vs_{det2}",
+                 f"{det1} - {det2};#Delta t_{{CFD,ref}} [TS];Counts",
+                 800, -10, 10),
+                diff_col))
 
-    return hists, ref_det
+    return hists
 
 
 def _analyze_hodo_peak(rdf, run_number):
@@ -750,7 +759,8 @@ def _analyze_hodo_peak(rdf, run_number):
 # ---------------------------------------------------------------------------
 
 def book_service_drs_pid(ctx):
-    hists = _analyze_pulse(ctx.rdf, get_pid_channels(ctx.run_number), ctx.run_number)
+    hists = _analyze_pulse(ctx.rdf, get_pid_channels(
+        ctx.run_number), ctx.run_number)
 
     def save():
         save_hists_to_file(hists, f"{ctx.paths['root']}/drs_services.root")
@@ -759,7 +769,8 @@ def book_service_drs_pid(ctx):
 
 
 def book_service_drs_mcp(ctx):
-    hists = _analyze_pulse(ctx.rdf, get_mcp_channels(ctx.run_number), ctx.run_number)
+    hists = _analyze_pulse(ctx.rdf, get_mcp_channels(
+        ctx.run_number), ctx.run_number)
 
     def save():
         save_hists_to_file(hists, f"{ctx.paths['root']}/drs_mcp.root")
@@ -770,10 +781,11 @@ def book_service_drs_mcp(ctx):
 def book_service_drs_mcp_timing(ctx):
     # ctx.rdf is already the MCP-filtered view (set by define_selection in registry)
     channels_mcp = get_mcp_channels(ctx.run_number)
-    hists, _ref_det = _analyze_mcp_timing_diff(ctx.rdf, channels_mcp)
+    hists = _analyze_mcp_timing_diff(ctx.rdf, channels_mcp)
 
     def save():
-        save_hists_to_file(hists, f"{ctx.paths['root']}/drs_mcp_timing_diff.root")
+        save_hists_to_file(
+            hists, f"{ctx.paths['root']}/drs_mcp_timing_diff.root")
 
     return hists, save
 
