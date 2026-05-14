@@ -1,19 +1,31 @@
 def get_service_drs_cut(service_drs: str) -> tuple:
-    cut_default = (0, 1000, 5e4, "Sum")
+    # format:
+    # (ts_begin, ts_end, window_pre, window_post, cut_value, method)
+    # where:
+    # (ts_begin, ts_end): window to look for pulse/peak
+    # (window_pre, window_post): integration window with respect to the pulse/peak time
+    # method: "Sum" or "PeakValue"
+    cut_default = (0, 1000, 5, 45, 5e4, "Sum")
     cuts = {
-        "HoleVeto": (100, 350, 2e3, "Sum"),
-        "PSD": (100, 400, 3500.0, "Sum"),
-        "TTUMuonVeto": (200, 400, 2e3, "Sum"),
-        "Cer474": (800, 900, 2000.0, "Sum"),
-        "Cer519": (450, 550, 1000.0, "Sum"),
-        "Cer537": (400, 500, 500.0, "Sum"),
-        "KT1": (0, 1000, 1e3, "Sum"),
-        "KT2": (0, 1000, 1e3, "Sum"),
-        "T3": (0, 1000, 1e3, "Sum"),
-        "T4": (0, 1000, 1e3, "Sum"),
+        "HoleVeto":    (100, 350,  20, 150, 2e3,    "Sum"),
+        "PSD":         (100, 400,  20, 150, 3500.0,  "Sum"),
+        "TTUMuonVeto": (200, 400,  20, 150, 2e3,    "Sum"),
+        "Cer474":      (800, 1000,  20, 150, 2000.0,  "Sum"),
+        "Cer519":      (400, 800,  5, 100, 1000.0,  "Sum"),
+        "Cer537":      (400, 800,  5, 80, 500.0,   "Sum"),
+        "KT1":         (0,   1000, 5, 45, 1e3,    "Sum"),
+        "KT2":         (0,   1000, 5, 45, 1e3,    "Sum"),
+        "T3":          (0,   1000, 5, 45, 1e3,    "Sum"),
+        "T4":          (0,   1000, 5, 45, 1e3,    "Sum"),
+        "MCP_US_0":    (500, 650,  5, 45, 20,     "PeakValue"),
+        "MCP_US_1":    (500, 650,  5, 45, 20,     "PeakValue"),
+        "MCP_US_2":    (500, 650,  5, 45, 20,     "PeakValue"),
+        "MCP_US_3":    (500, 650,  5, 45, 20,     "PeakValue"),
+        "MCP_DS_0":    (500, 650,  5, 45, 20,     "PeakValue"),
+        "MCP_DS_1":    (500, 650,  5, 45, 20,     "PeakValue"),
+        "MCP_DS_2":    (500, 650,  5, 45, 20,     "PeakValue"),
+        "MCP_DS_3":    (500, 650,  5, 45, 20,     "PeakValue"),
     }
-    if service_drs.startswith("MCP"):
-        return (0, 1024, 20, "PeakValue")
     return cuts.get(service_drs, cut_default)
 
 

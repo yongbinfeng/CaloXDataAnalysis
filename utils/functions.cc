@@ -233,15 +233,14 @@ struct CaloHit
 // Constant Fraction Discriminator (CFD) for Physics Pulses
 // =================================================================
 CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive = true, const float min_amplitude = 5.0f,
-                             size_t i_start = 0, size_t i_end = static_cast<size_t>(-1))
+                             size_t i_start = 0, size_t i_end = static_cast<size_t>(-1),
+                             int window_pre = 5, int window_post = 45)
 {
     constexpr float kInvalidTime = -9999.0f;
     constexpr float kCfdFraction = 0.20f;
-    constexpr int kIntWindowPre = 5;
-    constexpr int kIntWindowPost = 45;
 
     CaloHit hit = {0.0f, kInvalidTime, 0.0f, -1, 0.0f, false};
-    if (waveform.size() < static_cast<size_t>(kIntWindowPre + kIntWindowPost))
+    if (waveform.size() < static_cast<size_t>(window_pre + window_post))
         return hit;
 
     if (i_end > waveform.size())
@@ -285,8 +284,8 @@ CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive
 
     // --- 5. Fixed-Window Energy Integration ---
     const int anchor = idx_above;
-    const int start_idx = std::max(0, anchor - kIntWindowPre);
-    const int end_idx = std::min(static_cast<int>(waveform.size()), anchor + kIntWindowPost);
+    const int start_idx = std::max(0, anchor - window_pre);
+    const int end_idx = std::min(static_cast<int>(waveform.size()), anchor + window_post);
 
     const float raw_sum = std::accumulate(waveform.begin() + start_idx,
                                           waveform.begin() + end_idx, 0.0f);

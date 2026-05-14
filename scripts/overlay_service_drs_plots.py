@@ -174,7 +174,7 @@ def main():
             except Exception:
                 xmin, xmax = hs[0].GetXaxis().GetXmin(), hs[0].GetXaxis().GetXmax()
 
-            _, _, value_cut, _ = get_service_drs_cut(det)
+            _, _, _, _, value_cut, _ = get_service_drs_cut(det)
             cut_line = ROOT.TLine(value_cut, 1e-4, value_cut, 10)
             cut_line.SetLineColor(ROOT.kRed)
             cut_line.SetLineWidth(2)

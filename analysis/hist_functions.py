@@ -568,26 +568,26 @@ def _analyze_pulse(rdf, channels):
         hists[channel]["cfd_ts"] = rdf.Histo1D(
             (f"{det}_cfd_ts",
              f"CFD TS {channel};CFD TS;Counts", 128, 0, 1024),
-            f"{channel}_TS_cfd")
+            f"{det}_TS_cfd")
         xmin, xmax = get_service_drs_processed_info_ranges(det, "peak_value")
         hists[channel]["peak_value_vs_cfd_ts"] = rdf.Histo2D(
             (f"{det}_peak_value_vs_cfd_ts",
              f"Peak Value vs CFD TS {channel};CFD TS;Peak Value;Counts",
              128, 0, 1024, 100, xmin, xmax),
-            f"{channel}_TS_cfd", f"{channel}_peak_value")
+            f"{det}_TS_cfd", f"{det}_peak_value")
         hists[channel]["peak_value"] = rdf.Histo1D(
             (f"{det}_peak_value",
              f"Peak Value {channel};ADC Counts;Counts", 50, xmin, xmax),
-            f"{channel}_peak_value")
+            f"{det}_peak_value")
         xmin, xmax = get_service_drs_processed_info_ranges(det, "sum")
         hists[channel]["energy"] = rdf.Histo1D(
             (f"{det}_energy",
              f"Energy {channel};Energy (ADC);Counts", 500, xmin, xmax),
-            f"{channel}_energy")
+            f"{det}_energy")
         hists[channel]["integral_to_peak"] = rdf.Histo1D(
             (f"{det}_integral_to_peak",
              f"Integral/Peak {channel};Integral/Peak [TS];Counts", 120, -5, 20),
-            f"{channel}_integral_to_peak")
+            f"{det}_integral_to_peak")
 
     return [h for hmap in hists.values() for h in hmap.values()]
 
@@ -604,8 +604,8 @@ def _analyze_detector_pair_correlations(rdf, channels):
             if (det1 in special_dets) ^ (det2 in special_dets):
                 continue
             channel1, channel2 = channels[det1], channels[det2]
-            _, _, _, method1 = get_service_drs_cut(det1)
-            _, _, _, method2 = get_service_drs_cut(det2)
+            _, _, _, _, _, method1 = get_service_drs_cut(det1)
+            _, _, _, _, _, method2 = get_service_drs_cut(det2)
             var1 = "peak_value" if method1 == "PeakValue" else "energy"
             var2 = "peak_value" if method2 == "PeakValue" else "energy"
             xmin, xmax = get_service_drs_processed_info_ranges(

@@ -844,7 +844,7 @@ def _plot_pulse_distributions(channels, infile, pm, suffix):
         pv_xmin, pv_xmax = get_service_drs_processed_info_ranges(
             det, "peak_value")
         en_xmin, en_xmax = get_service_drs_processed_info_ranges(det, "sum")
-        _, _, value_cut, cut_method = get_service_drs_cut(det)
+        _, _, _, _, value_cut, cut_method = get_service_drs_cut(det)
 
         hist = infile.Get(f"{det}_ADC_vs_TS")
         if hist:
@@ -972,8 +972,8 @@ def _plot_pulse_correlations(channels, infile, pm, suffix):
             for idx2, det2 in enumerate(tmp_list):
                 if idx2 <= idx1:
                     continue
-                _, _, value_cut1, method1 = get_service_drs_cut(det1)
-                _, _, value_cut2, method2 = get_service_drs_cut(det2)
+                _, _, _, _, value_cut1, method1 = get_service_drs_cut(det1)
+                _, _, _, _, value_cut2, method2 = get_service_drs_cut(det2)
                 var1 = "peak_value" if method1 == "PeakValue" else "energy"
                 var2 = "peak_value" if method2 == "PeakValue" else "energy"
                 xmin, xmax = get_service_drs_processed_info_ranges(

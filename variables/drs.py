@@ -1,6 +1,7 @@
 # collect all functions related to DRS here
 import re
-from channels.channel_map import get_mcp_channels, get_service_drs_channels
+from channels.channel_map import get_mcp_channels, get_pid_channels, get_service_drs_channels
+from configs.selection_config import get_service_drs_cut
 
 TS_END = 1024
 MCP_REF = "MCP_DS_0"
@@ -95,9 +96,11 @@ def process_mcp_channels(rdf, run_number):
     map_mcp_channels = get_mcp_channels(run_number)
     for det, channel_name in map_mcp_channels.items():
         channel_name_blsub = channel_name + "_blsub"
+        ts_begin, ts_end, window_pre, window_post, val_cut, _ = get_service_drs_cut(
+            det)
 
         rdf = rdf.Define(f"{det}_CFD",
-                         f"compute_cfd_integral({channel_name_blsub}, 1, 20.0, 500, 650)")
+                         f"compute_cfd_integral({channel_name_blsub}, 1, {val_cut}, {ts_begin}, {ts_end}, {window_pre}, {window_post})")
         rdf = rdf.Define(f"{det}_energy", f"{det}_CFD.energy")
         rdf = rdf.Define(f"{det}_peak_value", f"{det}_CFD.peak_value")
         rdf = rdf.Define(f"{det}_TS_cfd", f"{det}_CFD.time_slice")
@@ -112,6 +115,28 @@ def process_mcp_channels(rdf, run_number):
         ref_TS_peak = get_ref_ts_name(channel_name, use_peak=True)
         rdf = rdf.Define(f"{det}_TS_peak_ref",
                          f"{det}_TS_peak - {ref_TS_peak}")
+
+    return rdf
+
+
+def process_pid_channels(rdf, run_number):
+    """Define _CFD-derived columns for each PID service-DRS detector."""
+    for det, channel in get_pid_channels(run_number).items():
+        ts_begin, ts_end, window_pre, window_post, _, _ = get_service_drs_cut(
+            det)
+        channel_blsub = channel + "_blsub"
+
+        rdf = rdf.Define(f"{det}_CFD",
+                         f"compute_cfd_integral({channel_blsub}, 1, 5.0, {ts_begin}, {ts_end}, {window_pre}, {window_post})")
+        rdf = rdf.Define(f"{det}_energy",          f"{det}_CFD.energy")
+        rdf = rdf.Define(f"{det}_peak_value",
+                         f"{det}_CFD.peak_value")
+        rdf = rdf.Define(f"{det}_TS_cfd",
+                         f"{det}_CFD.time_slice")
+        rdf = rdf.Define(f"{det}_TS_peak",
+                         f"{det}_CFD.peak_position")
+        rdf = rdf.Define(f"{det}_integral_to_peak",
+                         f"{det}_CFD.integral_to_peak")
 
     return rdf
 
@@ -190,6 +215,7 @@ def process_drs_data(rdf, run_number, drsboards):
         rdf, drs_branches, drs_channels_to_flip=drs_branches_to_flip)
     rdf = process_reference_channels(rdf, drs_channels_ref)
     rdf = process_mcp_channels(rdf, run_number)
+    rdf = process_pid_channels(rdf, run_number)
     rdf = update_ts(rdf, drs_channels_ref, mcp_det=MCP_REF)
     drs_channels_physics = [
         ch for ch in drs_branches if not ch.endswith("Channel8")]
