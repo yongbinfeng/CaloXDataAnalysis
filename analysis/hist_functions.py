@@ -12,7 +12,6 @@ from configs.selection_config import get_service_drs_cut
 from configs.plot_config import get_service_drs_processed_info_ranges
 import json
 from configs.plot_config import get_drs_plot_ranges, get_fers_saturation_value
-from utils.plot_helper import save_hists_to_file
 from utils.utils import number_to_string
 from variables.drs import get_ts_arr_name
 from channels.channel_map import get_mcp_channels, get_pid_channels
@@ -49,11 +48,7 @@ def book_monitor_conditions(ctx):
             _N_BINS_EVENT, 0, _N_EVENTS),
             "event_n", fersboard.get_temp_fpga_name()))
 
-    def save():
-        save_hists_to_file(
-            hprofs, f"{ctx.paths['root']}/conditions_vs_event.root")
-
-    return hprofs, save
+    ctx.hbook.add("conditions_vs_event.root", hprofs)
 
 
 # ---------------------------------------------------------------------------
@@ -81,11 +76,7 @@ def book_fers_energy_sum(ctx):
                 "event_n",
                 ctx.fersboards.get_energy_sum_name(gain=gain, isCer=(var == "Cer"))))
 
-    def save():
-        save_hists_to_file(
-            hprofs, f"{ctx.paths['root']}/fers_energysum_vs_event.root")
-
-    return hprofs, save
+    ctx.hbook.add("fers_energysum_vs_event.root", hprofs)
 
 
 # ---------------------------------------------------------------------------
@@ -151,17 +142,15 @@ def book_fers_channels(ctx):
     hists_hg = _make_fers_1d_hists(ctx, gain="HG")
     hists_lg = _make_fers_1d_hists(ctx, gain="LG")
 
-    def save():
+    def post_save():
         pedestals_hg = _collect_pedestals(ctx, hists_hg, gain="HG")
         pedestals_lg = _collect_pedestals(ctx, hists_lg, gain="LG")
-        save_hists_to_file(
-            hists_hg, f"{ctx.paths['root']}/fers_all_channels_1d.root")
         with open(f"{ctx.paths['root']}/fers_pedestals_hg.json", "w") as f:
             json.dump(pedestals_hg, f, indent=4)
         with open(f"{ctx.paths['root']}/fers_pedestals_lg.json", "w") as f:
             json.dump(pedestals_lg, f, indent=4)
 
-    return hists_hg + hists_lg, save
+    ctx.hbook.add("fers_all_channels_1d.root", hists_hg + hists_lg, post_save)
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +171,7 @@ def book_fers_stats(ctx):
                 )
     all_lazy = [item for triple in stats_lazy.values() for item in triple]
 
-    def save():
+    def post_save():
         import os
         results = {}
         for ch, (mean, vmax, sat_count) in stats_lazy.items():
@@ -195,7 +184,7 @@ def book_fers_stats(ctx):
         with open(f"{ctx.paths['root']}/fers_stats.json", "w") as f:
             json.dump(results, f, indent=4)
 
-    return all_lazy, save
+    ctx.hbook.add(None, all_lazy, post_save)
 
 
 # ---------------------------------------------------------------------------
@@ -223,10 +212,7 @@ def book_fers_max(ctx):
                 nbins, xmin, xmax),
                 name))
 
-    def save():
-        save_hists_to_file(hists, f"{ctx.paths['root']}/fers_max_values.root")
-
-    return hists, save
+    ctx.hbook.add("fers_max_values.root", hists)
 
 
 # ---------------------------------------------------------------------------
@@ -274,11 +260,7 @@ def book_fers_2d(ctx):
                 chan_cer.get_channel_name(gain="HG"),
                 chan_cer.get_channel_name(gain="LG")))
 
-    def save():
-        save_hists_to_file(
-            hists, f"{ctx.paths['root']}/fers_all_channels_2d.root")
-
-    return hists, save
+    ctx.hbook.add("fers_all_channels_2d.root", hists)
 
 
 # ---------------------------------------------------------------------------
@@ -302,11 +284,7 @@ def book_fers_track(ctx):
                     _N_BINS_EVENT, 0, _N_EVENTS, 1000, 0, 9000),
                     "event_n", chan.get_channel_name(gain="HG")))
 
-    def save():
-        save_hists_to_file(
-            hists, f"{ctx.paths['root']}/fers_all_channels_2D_VS_event.root")
-
-    return hists, save
+    ctx.hbook.add("fers_all_channels_2D_VS_event.root", hists)
 
 
 # ---------------------------------------------------------------------------
@@ -367,10 +345,7 @@ def book_drs_waveforms(ctx):
         ymin, ymax = get_drs_plot_ranges(subtractMedian=True, is_mcp=True)
         hists.extend(_book_drs_channel_waveforms(ctx, mcp_channel, ymin, ymax))
 
-    def save():
-        save_hists_to_file(hists, f"{ctx.paths['root']}/drs_vs_ts.root")
-
-    return hists, save
+    ctx.hbook.add("drs_vs_ts.root", hists)
 
 
 # ---------------------------------------------------------------------------
@@ -420,10 +395,7 @@ def book_drs_stats(ctx):
                 500, 420, 520),
                 f"{channel_name}_TS_cfd_mcp"))
 
-    def save():
-        save_hists_to_file(hists, f"{ctx.paths['root']}/drs_stats.root")
-
-    return hists, save
+    ctx.hbook.add("drs_stats.root", hists)
 
 
 # ---------------------------------------------------------------------------
@@ -468,10 +440,7 @@ def book_drs_peak_ts(ctx):
 
     all_hists = hists_cer + hists_sci + hists_2d
 
-    def save():
-        save_hists_to_file(all_hists, f"{ctx.paths['root']}/drspeakts.root")
-
-    return all_hists, save
+    ctx.hbook.add("drspeakts.root", all_hists)
 
 
 # ---------------------------------------------------------------------------
@@ -520,10 +489,7 @@ def book_drs_sum_vs_fers(ctx):
                     chan_fers.get_channel_name(gain="LG"),
                     chan_drs.get_channel_sum_name()))
 
-    def save():
-        save_hists_to_file(hists, f"{ctx.paths['root']}/drssum_vs_fers.root")
-
-    return hists, save
+    ctx.hbook.add("drssum_vs_fers.root", hists)
 
 
 def book_drs_peak_vs_fers(ctx):
@@ -570,10 +536,7 @@ def book_drs_peak_vs_fers(ctx):
                     chan_fers.get_channel_name(gain="LG"),
                     chan_drs.get_channel_peak_name()))
 
-    def save():
-        save_hists_to_file(hists, f"{ctx.paths['root']}/drspeak_vs_fers.root")
-
-    return hists, save
+    ctx.hbook.add("drspeak_vs_fers.root", hists)
 
 
 # ===========================================================================
@@ -581,7 +544,7 @@ def book_drs_peak_vs_fers(ctx):
 # ===========================================================================
 
 
-def _analyze_pulse(rdf, channels, run_number):
+def _analyze_pulse(rdf, channels):
     """Book all histogram lazy objects for one set of service-DRS channels.
 
     Returns a flat list of lazy ROOT objects.
@@ -589,7 +552,6 @@ def _analyze_pulse(rdf, channels, run_number):
     hists = {}
 
     for det, channel in channels.items():
-        col = channel
         hists[channel] = {}
         wf_ymin, wf_ymax = get_service_drs_processed_info_ranges(
             det, "waveform")
@@ -606,28 +568,33 @@ def _analyze_pulse(rdf, channels, run_number):
         hists[channel]["cfd_ts"] = rdf.Histo1D(
             (f"{det}_cfd_ts",
              f"CFD TS {channel};CFD TS;Counts", 128, 0, 1024),
-            f"{col}_TS_cfd")
+            f"{channel}_TS_cfd")
         xmin, xmax = get_service_drs_processed_info_ranges(det, "peak_value")
         hists[channel]["peak_value_vs_cfd_ts"] = rdf.Histo2D(
             (f"{det}_peak_value_vs_cfd_ts",
              f"Peak Value vs CFD TS {channel};CFD TS;Peak Value;Counts",
              128, 0, 1024, 100, xmin, xmax),
-            f"{col}_TS_cfd", f"{col}_peak_value")
+            f"{channel}_TS_cfd", f"{channel}_peak_value")
         hists[channel]["peak_value"] = rdf.Histo1D(
             (f"{det}_peak_value",
              f"Peak Value {channel};ADC Counts;Counts", 50, xmin, xmax),
-            f"{col}_peak_value")
+            f"{channel}_peak_value")
         xmin, xmax = get_service_drs_processed_info_ranges(det, "sum")
         hists[channel]["energy"] = rdf.Histo1D(
             (f"{det}_energy",
              f"Energy {channel};Energy (ADC);Counts", 500, xmin, xmax),
-            f"{col}_energy")
+            f"{channel}_energy")
         hists[channel]["integral_to_peak"] = rdf.Histo1D(
             (f"{det}_integral_to_peak",
              f"Integral/Peak {channel};Integral/Peak [TS];Counts", 120, -5, 20),
-            f"{col}_integral_to_peak")
+            f"{channel}_integral_to_peak")
 
-    # 2D detector-pair correlations
+    return [h for hmap in hists.values() for h in hmap.values()]
+
+
+def _analyze_detector_pair_correlations(rdf, channels):
+    """Book 2D detector-pair correlation histograms for all valid channel pairs."""
+    hists = {}
     det_list = list(channels.keys())
     for idx1, det1 in enumerate(det_list):
         for idx2, det2 in enumerate(det_list):
@@ -637,8 +604,6 @@ def _analyze_pulse(rdf, channels, run_number):
             if (det1 in special_dets) ^ (det2 in special_dets):
                 continue
             channel1, channel2 = channels[det1], channels[det2]
-            col1 = det1 if det1.startswith("MCP") else channel1
-            col2 = det2 if det2.startswith("MCP") else channel2
             _, _, _, method1 = get_service_drs_cut(det1)
             _, _, _, method2 = get_service_drs_cut(det2)
             var1 = "peak_value" if method1 == "PeakValue" else "energy"
@@ -647,14 +612,13 @@ def _analyze_pulse(rdf, channels, run_number):
                 det1, "peak_value" if method1 == "PeakValue" else "sum")
             ymin, ymax = get_service_drs_processed_info_ranges(
                 det2, "peak_value" if method2 == "PeakValue" else "sum")
-            hists[f"{det1}_vs_{det2}"] = {}
-            hists[f"{det1}_vs_{det2}"]["corr2D"] = rdf.Histo2D(
+            hists[f"{det1}_vs_{det2}"] = rdf.Histo2D(
                 (f"{det1}_{var1}_vs_{det2}_{var2}",
                  f"{det1} vs {det2};{det1} {var1};{det2} {var2};Counts",
                  500, xmin, xmax, 500, ymin, ymax),
-                f"{col1}_{var1}", f"{col2}_{var2}")
+                f"{channel1}_{var1}", f"{channel2}_{var2}")
 
-    return [h for hmap in hists.values() for h in hmap.values()]
+    return list(hists.values())
 
 
 def _analyze_mcp_timing_diff(rdf, channels_mcp):
@@ -759,41 +723,24 @@ def _analyze_hodo_peak(rdf, run_number):
 # ---------------------------------------------------------------------------
 
 def book_service_drs_pid(ctx):
-    hists = _analyze_pulse(ctx.rdf, get_pid_channels(
-        ctx.run_number), ctx.run_number)
-
-    def save():
-        save_hists_to_file(hists, f"{ctx.paths['root']}/drs_services.root")
-
-    return hists, save
+    pid_channels = get_pid_channels(ctx.run_number)
+    hists = _analyze_pulse(ctx.rdf, pid_channels)
+    hists += _analyze_detector_pair_correlations(ctx.rdf, pid_channels)
+    ctx.hbook.add("drs_services.root", hists)
 
 
 def book_service_drs_mcp(ctx):
-    hists = _analyze_pulse(ctx.rdf, get_mcp_channels(
-        ctx.run_number), ctx.run_number)
-
-    def save():
-        save_hists_to_file(hists, f"{ctx.paths['root']}/drs_mcp.root")
-
-    return hists, save
+    hists = _analyze_pulse(ctx.rdf, get_mcp_channels(ctx.run_number))
+    ctx.hbook.add("drs_mcp.root", hists)
 
 
 def book_service_drs_mcp_timing(ctx):
     # ctx.rdf is already the MCP-filtered view (set by define_selection in registry)
     channels_mcp = get_mcp_channels(ctx.run_number)
     hists = _analyze_mcp_timing_diff(ctx.rdf, channels_mcp)
-
-    def save():
-        save_hists_to_file(
-            hists, f"{ctx.paths['root']}/drs_mcp_timing_diff.root")
-
-    return hists, save
+    ctx.hbook.add("drs_mcp_timing_diff.root", hists)
 
 
 def book_service_drs_hodo(ctx):
     hists = _analyze_hodo_peak(ctx.rdf, ctx.run_number)
-
-    def save():
-        save_hists_to_file(hists, f"{ctx.paths['root']}/hodoscope_peaks.root")
-
-    return hists, save
+    ctx.hbook.add("hodoscope_peaks.root", hists)

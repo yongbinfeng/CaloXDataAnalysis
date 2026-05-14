@@ -964,10 +964,7 @@ def _plot_pulse_correlations(channels, infile, pm, suffix):
     det_list_notrigger = [d for d in det_list if d not in trigger_dets]
 
     output_htmls = []
-    corr_categories = (
-        [("PID", det_list_notrigger)] if suffix == "mcp"
-        else [("PID", det_list_notrigger), ("Trigger", trigger_dets)]
-    )
+    corr_categories = [("PID", det_list_notrigger), ("Trigger", trigger_dets)]
 
     for cat, tmp_list in corr_categories:
         pm.reset_plots()
@@ -1032,8 +1029,8 @@ def _plot_pulse_correlations(channels, infile, pm, suffix):
     return output_htmls
 
 
-def _plot_pulse(ctx, channels, suffix):
-    """Combined plot runner: distributions + correlations."""
+def _plot_pulse(ctx, channels, suffix, include_correlations=True):
+    """Combined plot runner: distributions + (optionally) correlations."""
     infile_name = f"{ctx.paths['root']}/drs_{suffix}.root"
     infile = ROOT.TFile(infile_name, "READ")
     if not infile or infile.IsZombie():
@@ -1043,7 +1040,8 @@ def _plot_pulse(ctx, channels, suffix):
         pm.set_output_dir(f"drs_{suffix}")
         output_htmls = [_plot_pulse_distributions(
             channels, infile, pm, suffix)]
-        output_htmls += _plot_pulse_correlations(channels, infile, pm, suffix)
+        if include_correlations:
+            output_htmls += _plot_pulse_correlations(channels, infile, pm, suffix)
 
     infile.Close()
     return output_htmls
@@ -1197,7 +1195,8 @@ def plot_service_drs_pid(ctx):
 
 
 def plot_service_drs_mcp(ctx):
-    return _plot_pulse(ctx, get_mcp_channels(ctx.run_number), suffix="mcp")
+    return _plot_pulse(ctx, get_mcp_channels(ctx.run_number), suffix="mcp",
+                       include_correlations=False)
 
 
 def plot_service_drs_mcp_timing(ctx):

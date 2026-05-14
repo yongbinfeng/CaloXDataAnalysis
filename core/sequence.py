@@ -8,11 +8,11 @@ Steps (all optional):
   define_selection(ctx)  -> rdf | None   Return a filtered RDF view for this
                                          sequence only; does not affect other
                                          sequences.
-  book_hists(ctx)        -> (lazy_list, save_fn)
-                                         Book lazy ROOT histograms.  Called
-                                         with ctx.rdf already set to the
-                                         sequence-specific filtered view (if
-                                         define_selection is provided).
+  book_hists(ctx)        -> None          Book lazy ROOT histograms into
+                                         ctx.hbook.  Called with ctx.rdf
+                                         already set to the sequence-specific
+                                         filtered view (if define_selection
+                                         is provided).
   make_plots(ctx)        -> html_path(s) | None
                                          Generate HTML plots from the saved
                                          ROOT / JSON files.
@@ -41,7 +41,7 @@ class CaloXSequence:
     name: str
     define_vars: Optional[Callable] = None       # (ctx) -> rdf | None
     define_selection: Optional[Callable] = None  # (ctx) -> rdf | None
-    book_hists: Optional[Callable] = None        # (ctx) -> (lazy_list, save_fn)
+    book_hists: Optional[Callable] = None        # (ctx) -> None  (registers into ctx.hbook)
     make_plots: Optional[Callable] = None        # (ctx) -> html_path(s) | None
     enabled_by_default: bool = True
 
@@ -55,9 +55,7 @@ def run_hist_phase(sequences, ctx):
             if result is not None:
                 ctx.rdf = result
 
-    # Steps 2+3: collect lazy objects across all sequences
-    all_lazy = []
-    save_callbacks = []
+    # Step 2: book_hists — each call registers into ctx.hbook
     for seq in sequences:
         if seq.book_hists is None:
             continue
@@ -65,22 +63,20 @@ def run_hist_phase(sequences, ctx):
         if seq.define_selection is not None:
             orig_rdf = ctx.rdf
             ctx.rdf = seq.define_selection(ctx)
-            lazy, save_fn = seq.book_hists(ctx)
+            seq.book_hists(ctx)
             ctx.rdf = orig_rdf
         else:
-            lazy, save_fn = seq.book_hists(ctx)
-        all_lazy += lazy
-        save_callbacks.append((seq.name, save_fn))
+            seq.book_hists(ctx)
 
-    # Step 4: single RunGraphs call
-    if all_lazy:
-        print(f"\n\033[94mTriggering {len(all_lazy)} lazy computations...\033[0m")
-        ROOT.RDF.RunGraphs(all_lazy)
+    # Step 3: single RunGraphs call across all registered histograms
+    lazy = ctx.hbook.lazy_objects
+    if lazy:
+        print(f"\n\033[94mTriggering {len(lazy)} lazy computations...\033[0m")
+        ROOT.RDF.RunGraphs(lazy)
 
-    # Step 5: save (callbacks run on materialised histograms)
-    for name, save_fn in save_callbacks:
-        print(f"\033[94mSaving {name}\033[0m")
-        save_fn()
+    # Step 4: save all ROOT files and run post-save callbacks
+    print(f"\033[94mSaving all histograms...\033[0m")
+    ctx.hbook.save_all()
 
 
 def run_plot_phase(sequences, ctx):

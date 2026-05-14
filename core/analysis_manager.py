@@ -13,6 +13,7 @@ from core.selection_manager import SelectionManager
 from utils.data_loader import getRunInfo
 from utils.plot_helper import get_run_paths
 from utils.timing import register_manager
+from core.hist_book import HistBook
 
 
 class CaloXAnalysisManager:
@@ -43,6 +44,7 @@ class CaloXAnalysisManager:
         self.include_pedestals = True
         self.rdf = self._load_rdf() if load_data else None
 
+        self.hbook = HistBook(self.paths["root"])
         self.branches = {}  # Registry for branched particle managers
         # Track state to prevent re-definitions
         self._steps_applied = set()
