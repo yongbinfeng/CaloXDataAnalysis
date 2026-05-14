@@ -1065,6 +1065,9 @@ def _plot_mcp_timing_diff(ctx, channels_mcp):
                     continue
                 fit = ROOT.TF1("gaus_constrained", "gaus", -10, 10)
                 mean_guess = hist.GetMean()
+                fit.SetParameter(0, hist.GetMaximum())
+                fit.SetParameter(1, mean_guess)
+                fit.SetParameter(2, hist.GetRMS())
                 fit.SetParLimits(1, mean_guess - 1, mean_guess + 1)
                 fit.SetParLimits(2, 0.0, 2.0)
                 hist.Fit(fit, "QB")
@@ -1080,10 +1083,12 @@ def _plot_mcp_timing_diff(ctx, channels_mcp):
                 pave.AddText(f"Sigma: {sigma:.2f} TS")
                 pave.AddText(f"N (Gaussian): {n_gauss:.0f}")
                 pave.AddText(f"N (total): {n_total:.0f}")
+                fitted_mean = fit.GetParameter(1)
                 ymax = hist.GetMaximum() * 1.4
                 pm.plot_1d(
                     hist, f"{det1}_cfd_diff_vs_{det2}",
-                    f"#Delta t_{{CFD,ref}} ({det1} - {det2}) [TS]", (-10, 10),
+                    f"#Delta t_{{CFD,ref}} ({det1} - {det2}) [TS]",
+                    (fitted_mean - 2, fitted_mean + 2),
                     yrange=(0.1, ymax), ylabel="Counts", style=_STYLE_SVC_1D,
                     extraToDraw=[fit, pave])
             pm.add_newline()

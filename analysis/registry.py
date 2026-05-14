@@ -152,17 +152,16 @@ ALL_SEQUENCES: list[CaloXSequence] = [
 # Service DRS sequences  (ctx: CaloXAnalysisManager)
 # ---------------------------------------------------------------------------
 
+
 def _select_mcp_timing(ctx):
-    """Filter to events where both reference MCPs have clean pulses."""
+    """Filter to events where all MCPs have clean pulses."""
     from channels.channel_map import get_mcp_channels
-    channels_mcp = get_mcp_channels(ctx.run_number)
-    ref_det  = list(channels_mcp.keys())[0]
-    ref_det2 = list(channels_mcp.keys())[4]
-    return ctx.rdf.Filter(
-        f"{ref_det}_integral_to_peak > 4 && {ref_det}_peak_value > 20"
-    ).Filter(
-        f"{ref_det2}_integral_to_peak > 4 && {ref_det2}_peak_value > 20"
-    )
+    rdf = ctx.rdf
+    for det in get_mcp_channels(ctx.run_number):
+        rdf = rdf.Filter(
+            f"{det}_integral_to_peak > 4 && {det}_peak_value > 10"
+        )
+    return rdf
 
 
 SERVICE_DRS_SEQUENCES: list[CaloXSequence] = [
