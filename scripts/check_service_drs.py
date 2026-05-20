@@ -12,7 +12,7 @@ Usage
 Available sequences (see analysis/registry.py  SERVICE_DRS_SEQUENCES):
   service_drs_pid        — PID detector pulse analysis (HoleVeto, PSD, Cer, …)
   service_drs_mcp        — MCP pulse analysis
-  service_drs_mcp_timing — MCP CFD timing differences (define_selection applies MCP filter)
+  service_drs_mcp_timing — MCP CFD timing differences
   service_drs_hodo       — hodoscope peak positions (off by default)
 """
 
@@ -34,12 +34,14 @@ setup_root(n_threads=10, batch_mode=True, load_functions=True)
 args = get_args()
 
 # ------------------------------------------------------------------
-# Build RDataFrame (hole-veto flag applied, no FERS energy columns)
+# Build RDataFrame: DRS baseline subtraction + MCP clean-pulse
+# selection applied globally to all sequences
 # ------------------------------------------------------------------
 manager = (
     CaloXAnalysisManager(args)
     .prepare()
     .apply_hole_veto(flag_only=True)
+    .apply_mcp_selection()
 )
 
 # ------------------------------------------------------------------

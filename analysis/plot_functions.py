@@ -9,7 +9,7 @@ from configs.selection_config import get_service_drs_cut
 from configs.plot_config import get_service_drs_processed_info_ranges
 import ROOT
 from channels.channel_map import (
-    build_drs_boards, build_fers_boards, get_mcp_channels, get_pid_channels,
+    get_mcp_channels, get_pid_channels,
 )
 from channels.validate_map import DrawDRSBoards, DrawFERSBoards
 from plotting.my_function import LHistos2Hist
@@ -18,7 +18,7 @@ from utils.colors import colors
 from core.plot_manager import PlotManager
 from configs.plot_style import PlotStyle, STYLE_CER_SCI
 from plotting.calox_plot_helper import BoardPlotHelper, create_pave_text, create_board_info_pave
-from utils.utils import number_to_string, round_up_to_1eN, get_channel_var
+from utils.utils import number_to_string, round_up_to_1eN, get_channel_var, get_hist_mpv
 from variables.drs import get_ts_arr_name
 from utils.visualization import visualizeFERSBoards, visualizeDRSBoards
 
@@ -62,7 +62,8 @@ _STYLE_1D_LOG = PlotStyle(
 def _pm(ctx):
     """Convenience: create a PlotManager bound to ctx paths."""
     return PlotManager(
-        ctx.paths["root"], ctx.paths["plots"], ctx.paths["html"], ctx.run_number)
+        ctx.paths["root"], ctx.paths["plots"], ctx.paths["html"], ctx.run_number,
+        selection_text=getattr(ctx, "selection_summary", ""))
 
 
 # ---------------------------------------------------------------------------
@@ -447,7 +448,8 @@ def plot_drs_waveforms(ctx):
     map_mcp_channels = get_mcp_channels(ctx.run_number)
     list_mcp_channels = list(map_mcp_channels.values())
 
-    for mode in ["raw", "ref", "mcp"]:
+    #for mode in ["raw", "ref", "mcp"]:
+    for mode in ["mcp"]:
         with _pm(ctx) as pm:
             pm.set_output_dir("DRS_VS_TS")
             infile = pm._get_file("drs_vs_ts.root")
@@ -635,10 +637,13 @@ def plot_drs_stats(ctx):
                 if not hist:
                     continue
                 var = get_channel_var(chan)
-                pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
+                pave = create_pave_text(0.15, 0.68, 0.70, 0.90)
                 pave.AddText(
                     f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
                 pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                if hist.GetEntries() >= 5:
+                    mpv, mpv_err = get_hist_mpv(hist)
+                    pave.AddText(f"MPV: {mpv:.1f} #pm {mpv_err:.1f} TS")
                 pm.plot_1d(
                     hist, f"DRS_Time_FineBins_{ch}_{var}",
                     "CFD TS (MCP-corrected)", get_drs_cfd_finebins_range(chan.isCer),
@@ -671,8 +676,8 @@ def plot_drs_cfd_mpv(ctx):
             if hist.GetEntries() < 5:
                 mpv_map[ch] = 0.0
             else:
-                max_bin = hist.GetMaximumBin()
-                mpv_map[ch] = hist.GetXaxis().GetBinCenter(max_bin) - 400
+                mpv, _ = get_hist_mpv(hist)
+                mpv_map[ch] = mpv - 400
 
     cer_hists, sci_hists = visualizeDRSBoards(
         ctx.drsboards, valuemaps=mpv_map,
@@ -694,6 +699,7 @@ def plot_drs_cfd_mpv(ctx):
                 "Values are shifted by -400 TS for readability. "
                 "Channels with fewer than 5 entries are shown as 0."
             ))
+
 
 
 # ---------------------------------------------------------------------------
@@ -1088,7 +1094,8 @@ def _plot_pulse(ctx, channels, suffix, include_correlations=True):
         output_htmls = [_plot_pulse_distributions(
             channels, infile, pm, suffix)]
         if include_correlations:
-            output_htmls += _plot_pulse_correlations(channels, infile, pm, suffix)
+            output_htmls += _plot_pulse_correlations(
+                channels, infile, pm, suffix)
 
     infile.Close()
     return output_htmls
@@ -1112,9 +1119,10 @@ def _plot_mcp_timing_diff(ctx, channels_mcp):
                     continue
                 fit = ROOT.TF1("gaus_constrained", "gaus", -10, 10)
                 mean_guess = hist.GetMean()
+                sigma_guess = min(hist.GetRMS(), 1.9)
                 fit.SetParameter(0, hist.GetMaximum())
                 fit.SetParameter(1, mean_guess)
-                fit.SetParameter(2, hist.GetRMS())
+                fit.SetParameter(2, sigma_guess)
                 fit.SetParLimits(1, mean_guess - 1, mean_guess + 1)
                 fit.SetParLimits(2, 0.0, 2.0)
                 hist.Fit(fit, "QB")

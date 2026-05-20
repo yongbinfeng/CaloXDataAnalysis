@@ -68,6 +68,10 @@ def run_hist_phase(sequences, ctx):
         else:
             seq.book_hists(ctx)
 
+    # Include cutflow count/sum proxies so they're evaluated in the same pass
+    if hasattr(ctx, 'sel_mgr'):
+        ctx.hbook.add(None, ctx.sel_mgr.all_cutflow_proxies)
+
     # Step 3: single RunGraphs call across all registered histograms
     lazy = ctx.hbook.lazy_objects
     if lazy:

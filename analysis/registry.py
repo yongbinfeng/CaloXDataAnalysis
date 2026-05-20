@@ -156,35 +156,6 @@ ALL_SEQUENCES: list[CaloXSequence] = [
 # ---------------------------------------------------------------------------
 
 
-def _select_mcp(ctx):
-    """Filter to events where all MCPs have clean pulses."""
-    from channels.channel_map import get_mcp_channels
-    rdf = ctx.rdf
-    for det in get_mcp_channels(ctx.run_number):
-        rdf = rdf.Filter(
-            f"{det}_integral_to_peak > 4 && {det}_peak_value > 10"
-        )
-    return rdf
-
-
-def _select_mcp_diff(ctx):
-    """Filter to events where all MCPs have clean pulses and small CFD timing differences."""
-    from channels.channel_map import get_mcp_channels
-    rdf = ctx.rdf
-    rdf = _select_mcp(ctx)  # apply clean pulse filter first
-
-    # require MCP timing difference between two MCPs
-    dets = list(get_mcp_channels(ctx.run_number).keys())
-    det1 = dets[0]
-    det2 = dets[4]
-    # for i in range(len(dets)):
-    #    for j in range(i + 1, len(dets)):
-    #        det1, det2 = dets[i], dets[j]
-    rdf = rdf.Filter(
-        f"abs({det1}_TS_cfd_ref - {det2}_TS_cfd_ref) > 2 && abs({det1}_TS_cfd_ref - {det2}_TS_cfd_ref) < 5")
-    return rdf
-
-
 SERVICE_DRS_SEQUENCES: list[CaloXSequence] = [
     CaloXSequence(
         name="service_drs_pid",
@@ -200,7 +171,6 @@ SERVICE_DRS_SEQUENCES: list[CaloXSequence] = [
     ),
     CaloXSequence(
         name="service_drs_mcp_timing",
-        define_selection=_select_mcp,
         book_hists=book_service_drs_mcp_timing,
         make_plots=plot_service_drs_mcp_timing,
         enabled_by_default=True,
@@ -220,13 +190,11 @@ SERVICE_DRS_SEQUENCES: list[CaloXSequence] = [
 DRS_MCP_SEQUENCES: list[CaloXSequence] = [
     CaloXSequence(
         name="drs_waveforms",
-        define_selection=_select_mcp_diff,
         book_hists=book_drs_waveforms,
         make_plots=plot_drs_waveforms,
     ),
     CaloXSequence(
         name="drs_stats",
-        define_selection=_select_mcp_diff,
         book_hists=book_drs_stats,
         make_plots=plot_drs_stats,
     ),

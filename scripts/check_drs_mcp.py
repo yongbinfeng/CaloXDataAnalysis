@@ -29,12 +29,14 @@ setup_root(n_threads=10, batch_mode=True, load_functions=True)
 args = get_args()
 
 # ------------------------------------------------------------------
-# Build RDataFrame (DRS baseline subtraction + MCP column definitions)
+# Build RDataFrame: DRS baseline subtraction + MCP clean-pulse +
+# timing-difference selection applied globally to all sequences
 # ------------------------------------------------------------------
 manager = (
     CaloXAnalysisManager(args)
     .prepare(do_fers=False)
     .apply_hole_veto(flag_only=True)
+    .apply_mcp_diff_selection()
 )
 
 sequences = default_drs_mcp_sequences()

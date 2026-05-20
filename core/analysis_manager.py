@@ -174,19 +174,55 @@ class CaloXAnalysisManager:
 
         return self
 
+    def _get_or_create_sel_mgr(self):
+        """Return the shared SelectionManager, creating it from current rdf if needed."""
+        if not hasattr(self, 'sel_mgr'):
+            self.sel_mgr = SelectionManager(self.rdf, self.run_number)
+        return self.sel_mgr
+
     def apply_hole_veto(self, flag_only=False):
-        """
-        Applies hole vetoes via SelectionManager.
-        """
+        """Applies hole veto via SelectionManager."""
         if "hole_veto_applied" in self._steps_applied:
             return self
 
-        self.sel_mgr = SelectionManager(self.rdf, self.run_number)
-        self.rdf = (self.sel_mgr
+        self.rdf = (self._get_or_create_sel_mgr()
                     .apply_hole_veto(flag_only=flag_only)
                     .get_rdf())
 
         self._steps_applied.add("hole_veto_applied")
+        return self
+
+    def apply_mcp_selection(self, flag_only=False,
+                            min_integral_to_peak=4, min_peak_value=10):
+        """Applies MCP clean-pulse selection via SelectionManager with cutflow tracking."""
+        if "mcp_selection_applied" in self._steps_applied:
+            return self
+
+        self.rdf = (self._get_or_create_sel_mgr()
+                    .apply_mcp_selection(flag_only=flag_only,
+                                         min_integral_to_peak=min_integral_to_peak,
+                                         min_peak_value=min_peak_value)
+                    .get_rdf())
+
+        self._steps_applied.add("mcp_selection_applied")
+        return self
+
+    def apply_mcp_diff_selection(self, flag_only=False,
+                                 min_integral_to_peak=4, min_peak_value=10,
+                                 ts_diff_min=2, ts_diff_max=5):
+        """Applies MCP clean-pulse + timing-difference selection with cutflow tracking."""
+        if "mcp_diff_selection_applied" in self._steps_applied:
+            return self
+
+        self.rdf = (self._get_or_create_sel_mgr()
+                    .apply_mcp_diff_selection(flag_only=flag_only,
+                                              min_integral_to_peak=min_integral_to_peak,
+                                              min_peak_value=min_peak_value,
+                                              ts_diff_min=ts_diff_min,
+                                              ts_diff_max=ts_diff_max)
+                    .get_rdf())
+
+        self._steps_applied.add("mcp_diff_selection_applied")
         return self
 
     def get_particle_analysis(self, particle_type, flag_only=False):
@@ -212,6 +248,46 @@ class CaloXAnalysisManager:
         for name, mgr in self.branches.items():
             print(f"\n>>> PARTICLE BRANCH: {name.upper()}")
             mgr.print_cutflow()
+
+    @property
+    def selection_summary(self) -> str:
+        """Markdown-formatted selections and cutflow for the HTML intro block."""
+        if not hasattr(self, 'sel_mgr'):
+            return ""
+        lines = []
+        if self.sel_mgr.selection_descriptions:
+            lines.append("**Selections applied:**")
+            lines.extend(f"- {d}" for d in self.sel_mgr.selection_descriptions)
+        try:
+            data = self.sel_mgr.get_cutflow_dict()
+            W = 72
+            sep  = '=' * W
+            dash = '-' * W
+            title = f"Selection Cutflow (Run {self.run_number})"
+            header = f"{'Step':<30} | {'Count':>10} | {'Total Eff.':>11} | {'Step Eff.':>11}"
+            pre_lines = [
+                sep,
+                f"{title:^{W}}",
+                sep,
+                header,
+                dash,
+                f"{'Initial Events':<30} | {data['initial']:>10,} | {'100.0%':>11} | {'-':>11}",
+            ]
+            for s in data["steps"]:
+                pre_lines.append(
+                    f"{s['label']:<30} | {s['count']:>10,} | "
+                    f"{s['total_eff']:>10.2f}% | {s['step_eff']:>10.2f}%"
+                )
+            pre_lines.append(sep)
+            content = "&#10;".join(pre_lines)
+            lines.append(
+                f'<pre style="background:#eef4fb;border:1px solid #a8c8f0;'
+                f'border-radius:4px;padding:8px 12px;font-size:12px;'
+                f'margin:8px 0;overflow-x:auto">{content}</pre>'
+            )
+        except Exception:
+            pass
+        return "\n".join(lines)
 
     def get_rdf(self):
         """Returns the final processed RDataFrame node for booking."""

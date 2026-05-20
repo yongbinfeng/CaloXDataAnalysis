@@ -16,6 +16,7 @@ class SelectionManager:
         # Stats tracking
         self.initial_count_proxy = rdf.Count()
         self.stats_proxies = []  # List of (label, result_proxy)
+        self._selection_descriptions: list[str] = []
 
         self._apply_define("passNone", "1.0")
 
@@ -76,16 +77,63 @@ class SelectionManager:
         self._register_stats(pass_label, flag_only)
         return self
 
+    @property
+    def selection_descriptions(self) -> list[str]:
+        return list(self._selection_descriptions)
+
     def apply_hole_veto(self, flag_only=False, apply_veto=True):
+        suffix = " (flag only)" if flag_only else ""
+        self._selection_descriptions.append(f"Hole Veto{suffix}")
         return self._apply_selection("HoleVeto", flag_only, apply_veto)
 
+    def apply_mcp_selection(self, flag_only=False,
+                            min_integral_to_peak=4, min_peak_value=10,
+                            _describe=True):
+        """Apply clean-pulse filter over all MCP channels with cutflow tracking."""
+        from channels.channel_map import get_mcp_channels
+        if _describe:
+            suffix = " (flag only)" if flag_only else ""
+            self._selection_descriptions.append(f"MCP clean pulse{suffix}")
+        for det in get_mcp_channels(self.run_number):
+            pass_label = f"is_{det}_clean"
+            cut_expr = (f"{det}_integral_to_peak > {min_integral_to_peak}"
+                        f" && {det}_peak_value > {min_peak_value}")
+            self._apply_define(pass_label, cut_expr)
+            if not flag_only:
+                self._update_chain(self.rdf.Filter(pass_label, f"{det}_MCP_filter"))
+            self._register_stats(pass_label, flag_only)
+        return self
+
+    def apply_mcp_diff_selection(self, flag_only=False,
+                                 min_integral_to_peak=4, min_peak_value=10,
+                                 ts_diff_min=2, ts_diff_max=5):
+        """Apply MCP clean-pulse + timing-difference selection with cutflow tracking."""
+        from channels.channel_map import get_mcp_channels
+        suffix = " (flag only)" if flag_only else ""
+        self._selection_descriptions.append(
+            f"MCP clean pulse + timing difference [{ts_diff_min}, {ts_diff_max}] TS{suffix}")
+        self.apply_mcp_selection(flag_only=flag_only, _describe=False,
+                                 min_integral_to_peak=min_integral_to_peak,
+                                 min_peak_value=min_peak_value)
+        dets = list(get_mcp_channels(self.run_number).keys())
+        det1, det2 = dets[0], dets[4]
+        pass_label = f"is_{det1}_{det2}_timing_diff"
+        cut_expr = (f"abs({det1}_TS_cfd_ref - {det2}_TS_cfd_ref) > {ts_diff_min}"
+                    f" && abs({det1}_TS_cfd_ref - {det2}_TS_cfd_ref) < {ts_diff_max}")
+        self._apply_define(pass_label, cut_expr)
+        if not flag_only:
+            self._update_chain(self.rdf.Filter(pass_label, "MCP_timing_diff_filter"))
+        self._register_stats(pass_label, flag_only)
+        return self
+
     def apply_particle_selection(self, particle_type, flag_only=False):
-        """
-        Applies a suite of cuts to select a specific particle type.
-        """
+        """Applies a suite of cuts to select a specific particle type."""
         requirements = get_particle_selection(particle_type)
         if not requirements:
             raise ValueError(f"Unknown particle type: {particle_type}")
+
+        suffix = " (flag only)" if flag_only else ""
+        self._selection_descriptions.append(f"{particle_type} particle selection{suffix}")
 
         for detector, should_fire in requirements.items():
             # If should_fire is True, we want 'fired'.
@@ -95,6 +143,11 @@ class SelectionManager:
                 detector, flag_only=flag_only, apply_veto=apply_veto)
 
         return self
+
+    @property
+    def all_cutflow_proxies(self):
+        """All lazy count/sum proxies for cutflow — include in RunGraphs."""
+        return [self.initial_count_proxy] + [proxy for _, proxy in self.stats_proxies]
 
     def get_rdf(self):
         """Returns the final RDataFrame node."""

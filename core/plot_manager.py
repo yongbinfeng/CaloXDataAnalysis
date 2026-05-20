@@ -25,6 +25,7 @@ class PlotManager:
         htmldir: str,
         run_number: Optional[int] = None,
         default_style: Optional[PlotStyle] = None,
+        selection_text: str = "",
     ):
         """
         Initialize the PlotManager.
@@ -41,6 +42,7 @@ class PlotManager:
         self.htmldir = htmldir
         self.run_number = run_number
         self.default_style = default_style or PlotStyle()
+        self.selection_text = selection_text
 
         # Internal state
         self._plots: List[str] = []
@@ -345,7 +347,7 @@ class PlotManager:
         self,
         output_path: str,
         plots_per_row: int = 4,
-        title: str = "PNG Plot Viewer",
+        title: str = "",
         intro_text: str = "",
         clear_plots: bool = True
     ) -> str:
@@ -367,13 +369,15 @@ class PlotManager:
         if full_path not in PlotManager._generated_html_registry:
             PlotManager._generated_html_registry.append(full_path)
 
+        full_intro = "\n\n".join(
+            t for t in (self.selection_text, intro_text) if t)
         generate_html(
             self._plots,
             self.get_output_dir(),
             plots_per_row=plots_per_row,
             output_html=full_path,
             title=title,
-            intro_text=intro_text
+            intro_text=full_intro
         )
 
         if clear_plots:

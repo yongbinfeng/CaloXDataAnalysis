@@ -4,8 +4,10 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 
-def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.html", title="PNG Plot Viewer", intro_text=""):
+def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.html", title="", intro_text=""):
     html_dir = os.path.dirname(os.path.abspath(output_html))
+    if not title:
+        title = os.path.splitext(os.path.basename(output_html))[0].replace('_', ' ')
     real_png_files = [f for f in png_files if f != "NEWLINE"]
     png_paths = [os.path.join(png_dir, f) for f in real_png_files]
     rel_paths = [os.path.relpath(p, start=html_dir) for p in png_paths]
@@ -37,7 +39,10 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
             if in_list:
                 formatted_lines.append('</ul>')
                 in_list = False
-            formatted_lines.append(line + "<br>")
+            if stripped.startswith('<'):
+                formatted_lines.append(stripped)  # raw HTML block, no <br>
+            else:
+                formatted_lines.append(line + "<br>")
 
     if in_list:
         formatted_lines.append('</ul>')
