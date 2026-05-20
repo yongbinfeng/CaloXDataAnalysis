@@ -43,14 +43,21 @@ def get_hist_mpv(hist, window_ts=6.0):
 
     bin_width = xaxis.GetBinWidth(1)
 
-    # 1. Find the densest ±2-bin cluster (robust against single-bin noise spikes)
-    max_counts = -1.0
-    best_bin   = 1
+    # 1. Find the densest ±2-bin cluster 
+    # Uses Sum of Squares to prioritize distinct peaks over invisible 1-count noise.
+    max_score = -1.0
+    best_bin  = 1
     for b in range(1, n_bins + 1):
-        local_sum = hist.Integral(max(1, b - 2), min(n_bins, b + 2))
-        if local_sum > max_counts:
-            max_counts = local_sum
-            best_bin   = b
+        local_score = 0.0
+        # Replaces hist.Integral with a squared sum over the local window
+        for i in range(max(1, b - 2), min(n_bins, b + 2) + 1):
+            w = hist.GetBinContent(i)
+            local_score += w * w
+            
+        if local_score > max_score:
+            max_score = local_score
+            best_bin  = b
+            
     anchor_x = xaxis.GetBinCenter(best_bin)
 
     # 2. Fixed geometric window — avoids FWHM walk failures on jagged/Landau tails
@@ -77,16 +84,19 @@ def get_hist_mpv(hist, window_ts=6.0):
     rms      = math.sqrt(max(0.0, variance))
     stat_err = rms / math.sqrt(sum_w)
 
-    # 4. Poisson plateau penalty: bins within 1-sigma noise of the peak are
-    #    statistically "tied" for the maximum; their spread is an extra uncertainty.
-    #    Floor at 0.5 so that max_w=1 (where sqrt gives threshold=0) never
-    #    pulls in empty bins.
+    # 4. Poisson plateau penalty
     plateau_err = 0.0
     if max_w > 0:
-        threshold   = max(0.5, max_w - math.sqrt(max_w))
+        # Explicit override guarantees 1-count hits are caught in ultra-low stats
+        if max_w <= 4.0:
+            threshold = 0.5  
+        else:
+            threshold = max_w - math.sqrt(max_w)
+            
         candidate_x = [xaxis.GetBinCenter(b)
                        for b in range(bin_low, bin_high + 1)
                        if hist.GetBinContent(b) >= threshold]
+                       
         if candidate_x:
             spread      = max(candidate_x) - min(candidate_x) + bin_width
             plateau_err = spread / math.sqrt(12.0)

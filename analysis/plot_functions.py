@@ -562,7 +562,7 @@ def plot_drs_stats(ctx):
                 var = get_channel_var(chan)
                 pm.plot_1d(
                     hist, f"DRS_PeakValue_{ch}_{var}",
-                    "DRS peak value", (0, 800), "Counts", (1, None),
+                    "DRS peak value", (0, 800), "Counts", (0.9, None),
                     style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
         output_htmls.append(pm.generate_html(
             "DRS/DRS_Peak.html", plots_per_row=9))
@@ -587,7 +587,7 @@ def plot_drs_stats(ctx):
                 var = get_channel_var(chan)
                 pm.plot_1d(
                     hist, f"DRS_Energy_{ch}_{var}",
-                    "CFD Energy", (0, 6000), "Counts", (1, None),
+                    "CFD Energy", (0, 6000), "Counts", (0.9, None),
                     style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
         output_htmls.append(pm.generate_html(
             "DRS/DRS_Sum.html", plots_per_row=9))
@@ -617,7 +617,7 @@ def plot_drs_stats(ctx):
                 pm.plot_1d(
                     [hp_ref, hc_ref, hp_mcp, hc_mcp],
                     f"DRS_Time_{ch}_{var}",
-                    "Pulse TS", (0, 1024), "Counts", (1, None),
+                    "Pulse TS", (0, 1024), "Counts", (0.9, None),
                     legends=["TS_peak_ref", "TS_cfd_ref",
                              "TS_peak_mcp", "TS_cfd_mcp"],
                     legendPos=[0.55, 0.70, 0.90, 0.90],
@@ -647,7 +647,7 @@ def plot_drs_stats(ctx):
                 pm.plot_1d(
                     hist, f"DRS_Time_FineBins_{ch}_{var}",
                     "CFD TS (MCP-corrected)", get_drs_cfd_finebins_range(chan.isCer),
-                    "Counts", (1, None),
+                    "Counts", (0.9, None),
                     style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
         output_htmls.append(pm.generate_html(
             "DRS/DRS_Time_FineBins.html", plots_per_row=9))
@@ -1144,7 +1144,7 @@ def _plot_mcp_timing_diff(ctx, channels_mcp):
                     hist, f"{det1}_cfd_diff_vs_{det2}",
                     f"#Delta t_{{CFD,ref}} ({det1} - {det2}) [TS]",
                     (fitted_mean - 2, fitted_mean + 2),
-                    yrange=(0.1, ymax), ylabel="Counts", style=_STYLE_SVC_1D,
+                    yrange=(0.9, ymax), ylabel="Counts", style=_STYLE_SVC_1D,
                     extraToDraw=[fit, pave])
             pm.add_newline()
 
