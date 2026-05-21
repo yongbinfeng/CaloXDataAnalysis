@@ -231,7 +231,7 @@ def plot_fers_channels(ctx):
 # FERS: board-level statistics (mean, max, saturation, pedestal)
 # ---------------------------------------------------------------------------
 
-def plot_fers_stats(ctx):
+def plot_fers_stats(ctx, *, do_mean=True, do_max=True, do_satfreq=True, do_pedestal=True):
     import json
 
     output_htmls = []
@@ -276,12 +276,14 @@ def plot_fers_stats(ctx):
 
         helper = BoardPlotHelper(pm)
         plot_configs = [
-            ("mean",    "FERS/Stat/Channel_Mean.html",    0,    8000, 0),
-            ("max",     "FERS/Stat/Channel_Max.html",     0,    8000, 0),
-            ("satfreq", "FERS/Stat/Channel_SatFreq.html", 0,    1,    2),
-            ("pedestal", "FERS/Stat/Channel_Pedestal.html", 100, 300,  0),
+            ("mean",     "FERS/Stat/Channel_Mean.html",    0,    8000, 0, do_mean),
+            ("max",      "FERS/Stat/Channel_Max.html",     0,    8000, 0, do_max),
+            ("satfreq",  "FERS/Stat/Channel_SatFreq.html", 0,    1,    2, do_satfreq),
+            ("pedestal", "FERS/Stat/Channel_Pedestal.html", 100, 300,  0, do_pedestal),
         ]
-        for stat, html_path, zmin, zmax, digits in plot_configs:
+        for stat, html_path, zmin, zmax, digits, do_run in plot_configs:
+            if not do_run:
+                continue
             pm.reset_plots()
             for gain in ["HG", "LG"]:
                 helper.plot_cer_sci_pair(
@@ -441,27 +443,81 @@ def _plot_drs_channel_vs_ts(pm, infile, channel_name, mode, ymin, ymax, pave,
         style=_STYLE_2D_LOG, extraToDraw=pave, extra_text=extra_text)
 
 
-def plot_drs_waveforms(ctx):
+def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_service_drs_vs_ts=True, do_drs_prof=True):
     """Plot DRS waveform 2D hists for raw / ref / mcp TS correction modes
     plus service-DRS profiles. Returns list of HTML paths."""
     output_htmls = []
     map_mcp_channels = get_mcp_channels(ctx.run_number)
     list_mcp_channels = list(map_mcp_channels.values())
 
-    #for mode in ["raw", "ref", "mcp"]:
-    for mode in ["mcp"]:
+    if do_drs_vs_ts:
+        #for mode in ["raw", "ref", "mcp"]:
+        for mode in ["mcp"]:
+            with _pm(ctx) as pm:
+                pm.set_output_dir("DRS_VS_TS")
+                infile = pm._get_file("drs_vs_ts.root")
+                for _, board in ctx.drsboards.items():
+                    for chan in board:
+                        ch = chan.get_channel_name(blsub=False)
+                        ch_blsub = chan.get_channel_name(blsub=True)
+                        ymin, ymax = get_drs_plot_ranges(
+                            subtractMedian=True,
+                            is_amplified=chan.is_amplified,
+                            is6mm=chan.is6mm,
+                            is_reference=chan.is_reference)
+                        pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
+                        pave.AddText(
+                            f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+                        if not chan.is_reference:
+                            pave.AddText(
+                                f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                        var = get_channel_var(chan)
+                        _plot_drs_channel_vs_ts(
+                            pm, infile, ch, mode, ymin, ymax, pave,
+                            f"DRS_ADC_VS_ts_{mode}_{ch_blsub}_{var}",
+                            extra_text=var)
+                output_htmls.append(
+                    pm.generate_html(f"DRS/DRS_vs_ts_{mode}.html", plots_per_row=9))
+
+    if do_service_drs_vs_ts:
+        # Service DRS (MCP channels) raw mode
         with _pm(ctx) as pm:
-            pm.set_output_dir("DRS_VS_TS")
+            pm.set_output_dir("Service_DRS_VS_TS")
+            infile = pm._get_file("drs_vs_ts.root")
+            for channel_name in list_mcp_channels:
+                ymin, ymax = get_drs_plot_ranges(subtractMedian=True, is_mcp=True)
+                pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
+                pave.AddText(channel_name)
+                _plot_drs_channel_vs_ts(
+                    pm, infile, channel_name, "raw", ymin, ymax, pave,
+                    f"Service_DRS_ADC_VS_ts_raw_{channel_name}_blsub",
+                    extra_text="Service")
+            output_htmls.append(
+                pm.generate_html("DRS/Service_DRS_vs_ts_raw.html", plots_per_row=4))
+
+    if do_drs_prof:
+        # Profile plots
+        with _pm(ctx) as pm:
+            pm.set_output_dir("DRS_Prof_VS_TS")
             infile = pm._get_file("drs_vs_ts.root")
             for _, board in ctx.drsboards.items():
                 for chan in board:
-                    ch = chan.get_channel_name(blsub=False)
                     ch_blsub = chan.get_channel_name(blsub=True)
-                    ymin, ymax = get_drs_plot_ranges(
+                    hist = infile.Get(f"prof_{ch_blsub}_VS_ts")
+                    hist_ref = infile.Get(f"prof_{ch_blsub}_VS_ts_ref")
+                    hist_mcp = infile.Get(f"prof_{ch_blsub}_VS_ts_mcp")
+                    if not hist:
+                        print(f"Warning: prof_{ch_blsub}_VS_ts not found")
+                        continue
+                    for h in [hist, hist_ref, hist_mcp]:
+                        if h:
+                            h = h.ProjectionX()
+                    ymin_tmp, ymax_tmp = get_drs_prof_plot_ranges(
                         subtractMedian=True,
                         is_amplified=chan.is_amplified,
                         is6mm=chan.is6mm,
-                        is_reference=chan.is_reference)
+                        is_reference=chan.is_reference,
+                        is_cer=chan.isCer)
                     pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
                     pave.AddText(
                         f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
@@ -469,67 +525,16 @@ def plot_drs_waveforms(ctx):
                         pave.AddText(
                             f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
                     var = get_channel_var(chan)
-                    _plot_drs_channel_vs_ts(
-                        pm, infile, ch, mode, ymin, ymax, pave,
-                        f"DRS_ADC_VS_ts_{mode}_{ch_blsub}_{var}",
-                        extra_text=var)
+                    pm.plot_1d(
+                        [h for h in [hist, hist_ref, hist_mcp] if h],
+                        f"DRS_ADC_Prof_VS_ts_{ch_blsub}_{var}",
+                        "TS", (0, 1024),
+                        "Mean DRS Output", (ymin_tmp, ymax_tmp),
+                        legends=["raw ts", "ts_ref", "ts_mcp"],
+                        legendPos=[0.55, 0.70, 0.90, 0.90],
+                        style=_STYLE_1D, extraToDraw=pave, extra_text=var)
             output_htmls.append(
-                pm.generate_html(f"DRS/DRS_vs_ts_{mode}.html", plots_per_row=9))
-
-    # Service DRS (MCP channels) raw mode
-    with _pm(ctx) as pm:
-        pm.set_output_dir("Service_DRS_VS_TS")
-        infile = pm._get_file("drs_vs_ts.root")
-        for channel_name in list_mcp_channels:
-            ymin, ymax = get_drs_plot_ranges(subtractMedian=True, is_mcp=True)
-            pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-            pave.AddText(channel_name)
-            _plot_drs_channel_vs_ts(
-                pm, infile, channel_name, "raw", ymin, ymax, pave,
-                f"Service_DRS_ADC_VS_ts_raw_{channel_name}_blsub",
-                extra_text="Service")
-        output_htmls.append(
-            pm.generate_html("DRS/Service_DRS_vs_ts_raw.html", plots_per_row=4))
-
-    # Profile plots
-    with _pm(ctx) as pm:
-        pm.set_output_dir("DRS_Prof_VS_TS")
-        infile = pm._get_file("drs_vs_ts.root")
-        for _, board in ctx.drsboards.items():
-            for chan in board:
-                ch_blsub = chan.get_channel_name(blsub=True)
-                hist = infile.Get(f"prof_{ch_blsub}_VS_ts")
-                hist_ref = infile.Get(f"prof_{ch_blsub}_VS_ts_ref")
-                hist_mcp = infile.Get(f"prof_{ch_blsub}_VS_ts_mcp")
-                if not hist:
-                    print(f"Warning: prof_{ch_blsub}_VS_ts not found")
-                    continue
-                for h in [hist, hist_ref, hist_mcp]:
-                    if h:
-                        h = h.ProjectionX()
-                ymin_tmp, ymax_tmp = get_drs_prof_plot_ranges(
-                    subtractMedian=True,
-                    is_amplified=chan.is_amplified,
-                    is6mm=chan.is6mm,
-                    is_reference=chan.is_reference,
-                    is_cer=chan.isCer)
-                pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-                pave.AddText(
-                    f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                if not chan.is_reference:
-                    pave.AddText(
-                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
-                var = get_channel_var(chan)
-                pm.plot_1d(
-                    [h for h in [hist, hist_ref, hist_mcp] if h],
-                    f"DRS_ADC_Prof_VS_ts_{ch_blsub}_{var}",
-                    "TS", (0, 1024),
-                    "Mean DRS Output", (ymin_tmp, ymax_tmp),
-                    legends=["raw ts", "ts_ref", "ts_mcp"],
-                    legendPos=[0.55, 0.70, 0.90, 0.90],
-                    style=_STYLE_1D, extraToDraw=pave, extra_text=var)
-        output_htmls.append(
-            pm.generate_html("DRS/DRS_Prof_vs_TS.html", plots_per_row=9))
+                pm.generate_html("DRS/DRS_Prof_vs_TS.html", plots_per_row=9))
 
     return output_htmls
 
@@ -538,119 +543,123 @@ def plot_drs_waveforms(ctx):
 # DRS: pulse statistics (peak, energy, timing)
 # ---------------------------------------------------------------------------
 
-def plot_drs_stats(ctx):
+def plot_drs_stats(ctx, *, do_peak=True, do_energy=True, do_timing=True, do_timing_finebins=True):
     """Plot DRS peak, energy, and timing distributions. Returns list of HTML paths."""
     output_htmls = []
 
-    # -- peak values --
-    with _pm(ctx) as pm:
-        pm.set_output_dir("DRS_Stats")
-        infile = pm._get_file("drs_stats.root")
-        for _, board in ctx.drsboards.items():
-            for chan in board:
-                ch = chan.get_channel_name(blsub=False)
-                hist = infile.Get(f"hist_{ch}_peak_value")
-                if not hist:
-                    print(f"Warning: hist_{ch}_peak_value not found")
-                    continue
-                pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-                pave.AddText(
-                    f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                if not chan.is_reference:
+    if do_peak:
+        # -- peak values --
+        with _pm(ctx) as pm:
+            pm.set_output_dir("DRS_Stats")
+            infile = pm._get_file("drs_stats.root")
+            for _, board in ctx.drsboards.items():
+                for chan in board:
+                    ch = chan.get_channel_name(blsub=False)
+                    hist = infile.Get(f"hist_{ch}_peak_value")
+                    if not hist:
+                        print(f"Warning: hist_{ch}_peak_value not found")
+                        continue
+                    pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
                     pave.AddText(
-                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
-                var = get_channel_var(chan)
-                pm.plot_1d(
-                    hist, f"DRS_PeakValue_{ch}_{var}",
-                    "DRS peak value", (0, 800), "Counts", (0.9, None),
-                    style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
-        output_htmls.append(pm.generate_html(
-            "DRS/DRS_Peak.html", plots_per_row=9))
+                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+                    if not chan.is_reference:
+                        pave.AddText(
+                            f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    var = get_channel_var(chan)
+                    pm.plot_1d(
+                        hist, f"DRS_PeakValue_{ch}_{var}",
+                        "DRS peak value", (0, 800), "Counts", (0.9, None),
+                        style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
+            output_htmls.append(pm.generate_html(
+                "DRS/DRS_Peak.html", plots_per_row=9))
 
-    # -- energy (CFD integral) --
-    with _pm(ctx) as pm:
-        pm.set_output_dir("DRS_Stats")
-        infile = pm._get_file("drs_stats.root")
-        for _, board in ctx.drsboards.items():
-            for chan in board:
-                ch = chan.get_channel_name(blsub=False)
-                hist = infile.Get(f"hist_{ch}_energy")
-                if not hist:
-                    print(f"Warning: hist_{ch}_energy not found")
-                    continue
-                pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-                pave.AddText(
-                    f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                if not chan.is_reference:
+    if do_energy:
+        # -- energy (CFD integral) --
+        with _pm(ctx) as pm:
+            pm.set_output_dir("DRS_Stats")
+            infile = pm._get_file("drs_stats.root")
+            for _, board in ctx.drsboards.items():
+                for chan in board:
+                    ch = chan.get_channel_name(blsub=False)
+                    hist = infile.Get(f"hist_{ch}_energy")
+                    if not hist:
+                        print(f"Warning: hist_{ch}_energy not found")
+                        continue
+                    pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
                     pave.AddText(
-                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
-                var = get_channel_var(chan)
-                pm.plot_1d(
-                    hist, f"DRS_Energy_{ch}_{var}",
-                    "CFD Energy", (0, 6000), "Counts", (0.9, None),
-                    style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
-        output_htmls.append(pm.generate_html(
-            "DRS/DRS_Sum.html", plots_per_row=9))
+                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+                    if not chan.is_reference:
+                        pave.AddText(
+                            f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    var = get_channel_var(chan)
+                    pm.plot_1d(
+                        hist, f"DRS_Energy_{ch}_{var}",
+                        "CFD Energy", (0, 6000), "Counts", (0.9, None),
+                        style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
+            output_htmls.append(pm.generate_html(
+                "DRS/DRS_Sum.html", plots_per_row=9))
 
-    # -- timing --
-    with _pm(ctx) as pm:
-        pm.set_output_dir("DRS_Stats")
-        infile = pm._get_file("drs_stats.root")
-        for _, board in ctx.drsboards.items():
-            for chan in board:
-                if chan.is_reference:
-                    continue
-                ch = chan.get_channel_name(blsub=False)
-                hp_ref = infile.Get(f"hist_{ch}_TS_peak_ref")
-                hc_ref = infile.Get(f"hist_{ch}_TS_cfd_ref")
-                hp_mcp = infile.Get(f"hist_{ch}_TS_peak_mcp")
-                hc_mcp = infile.Get(f"hist_{ch}_TS_cfd_mcp")
-                hc_fine = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
-                if not hp_ref or not hc_ref:
-                    print(f"Warning: TS histograms for {ch} not found")
-                    continue
-                var = get_channel_var(chan)
-                pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-                pave.AddText(
-                    f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
-                pm.plot_1d(
-                    [hp_ref, hc_ref, hp_mcp, hc_mcp],
-                    f"DRS_Time_{ch}_{var}",
-                    "Pulse TS", (0, 1024), "Counts", (0.9, None),
-                    legends=["TS_peak_ref", "TS_cfd_ref",
-                             "TS_peak_mcp", "TS_cfd_mcp"],
-                    legendPos=[0.55, 0.70, 0.90, 0.90],
-                    style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
+    if do_timing:
+        # -- timing --
+        with _pm(ctx) as pm:
+            pm.set_output_dir("DRS_Stats")
+            infile = pm._get_file("drs_stats.root")
+            for _, board in ctx.drsboards.items():
+                for chan in board:
+                    if chan.is_reference:
+                        continue
+                    ch = chan.get_channel_name(blsub=False)
+                    hp_ref = infile.Get(f"hist_{ch}_TS_peak_ref")
+                    hc_ref = infile.Get(f"hist_{ch}_TS_cfd_ref")
+                    hp_mcp = infile.Get(f"hist_{ch}_TS_peak_mcp")
+                    hc_mcp = infile.Get(f"hist_{ch}_TS_cfd_mcp")
+                    if not hp_ref or not hc_ref:
+                        print(f"Warning: TS histograms for {ch} not found")
+                        continue
+                    var = get_channel_var(chan)
+                    pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
+                    pave.AddText(
+                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+                    pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pm.plot_1d(
+                        [hp_ref, hc_ref, hp_mcp, hc_mcp],
+                        f"DRS_Time_{ch}_{var}",
+                        "Pulse TS", (0, 1024), "Counts", (0.9, None),
+                        legends=["TS_peak_ref", "TS_cfd_ref",
+                                 "TS_peak_mcp", "TS_cfd_mcp"],
+                        legendPos=[0.55, 0.70, 0.90, 0.90],
+                        style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
+            output_htmls.append(pm.generate_html(
+                "DRS/DRS_Time.html", plots_per_row=9))
 
-        output_htmls.append(pm.generate_html(
-            "DRS/DRS_Time.html", plots_per_row=9))
-
-        # fine-binned CFD MCP
-        pm.reset_plots()
-        for _, board in ctx.drsboards.items():
-            for chan in board:
-                if chan.is_reference:
-                    continue
-                ch = chan.get_channel_name(blsub=False)
-                hist = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
-                if not hist:
-                    continue
-                var = get_channel_var(chan)
-                pave = create_pave_text(0.15, 0.68, 0.70, 0.90)
-                pave.AddText(
-                    f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
-                if hist.GetEntries() >= 5:
-                    mpv, mpv_err = get_hist_mpv(hist)
-                    pave.AddText(f"MPV: {mpv:.1f} #pm {mpv_err:.1f} TS")
-                pm.plot_1d(
-                    hist, f"DRS_Time_FineBins_{ch}_{var}",
-                    "CFD TS (MCP-corrected)", get_drs_cfd_finebins_range(chan.isCer),
-                    "Counts", (0.9, None),
-                    style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
-        output_htmls.append(pm.generate_html(
-            "DRS/DRS_Time_FineBins.html", plots_per_row=9))
+    if do_timing_finebins:
+        # -- fine-binned CFD MCP --
+        with _pm(ctx) as pm:
+            pm.set_output_dir("DRS_Stats")
+            infile = pm._get_file("drs_stats.root")
+            for _, board in ctx.drsboards.items():
+                for chan in board:
+                    if chan.is_reference:
+                        continue
+                    ch = chan.get_channel_name(blsub=False)
+                    hist = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
+                    if not hist:
+                        continue
+                    var = get_channel_var(chan)
+                    pave = create_pave_text(0.15, 0.68, 0.70, 0.90)
+                    pave.AddText(
+                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+                    pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    if hist.GetEntries() >= 5:
+                        mpv, mpv_err = get_hist_mpv(hist)
+                        pave.AddText(f"MPV: {mpv:.1f} #pm {mpv_err:.1f} TS")
+                    pm.plot_1d(
+                        hist, f"DRS_Time_FineBins_{ch}_{var}",
+                        "CFD TS (MCP-corrected)", get_drs_cfd_finebins_range(chan.isCer),
+                        "Counts", (0.9, None),
+                        style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
+            output_htmls.append(pm.generate_html(
+                "DRS/DRS_Time_FineBins.html", plots_per_row=9))
 
     return output_htmls
 
@@ -706,87 +715,90 @@ def plot_drs_cfd_mpv(ctx):
 # DRS: peak time-slice
 # ---------------------------------------------------------------------------
 
-def plot_drs_peak_ts(ctx):
+def plot_drs_peak_ts(ctx, *, do_peak_ts=True, do_cer_vs_sci=True):
     output_htmls = []
-    with _pm(ctx) as pm:
-        pm.set_output_dir("DRSPeakTS")
-        infile = pm._get_file("drspeakts.root")
-        hists_cer, hists_sci = [], []
 
-        for _, board in ctx.drsboards.items():
-            board_no = board.board_no
-            for i_tower_x, i_tower_y in board.get_list_of_towers():
-                s_x = number_to_string(i_tower_x)
-                s_y = number_to_string(i_tower_y)
-                hists, channel_nos = {}, {}
-                for var in ["Cer", "Sci"]:
-                    chan = board.get_channel_by_tower(
-                        i_tower_x, i_tower_y, isCer=(var == "Cer"))
-                    hist = infile.Get(f"hist_DRSPeakTS_{var}_{s_x}_{s_y}")
-                    hists[var] = hist
-                    channel_nos[var] = chan.channel_no if chan else -1
-                if not hists.get("Cer") or not hists.get("Sci"):
-                    continue
-                hists_cer.append(hists["Cer"])
-                hists_sci.append(hists["Sci"])
-                if ctx.do_detailed_plots:
-                    pave = create_board_info_pave(
-                        board_no, i_tower_x, i_tower_y,
-                        channel_info={"Cer": channel_nos["Cer"],
-                                      "Sci": channel_nos["Sci"]})
-                    pm.plot_1d(
-                        [hists["Cer"], hists["Sci"]],
-                        f"hist_DRSPeakTS_{s_x}_{s_y}",
-                        "Peak TS", (400, 600),
-                        yrange=(1, None), legends=["Cer", "Sci"],
-                        style=STYLE_CER_SCI, extraToDraw=pave)
+    if do_peak_ts:
+        with _pm(ctx) as pm:
+            pm.set_output_dir("DRSPeakTS")
+            infile = pm._get_file("drspeakts.root")
+            hists_cer, hists_sci = [], []
 
-        if hists_cer and hists_sci:
-            pm.plot_1d(
-                [LHistos2Hist(hists_cer, "hist_DRSPeakTS_Cer_Combined"),
-                 LHistos2Hist(hists_sci, "hist_DRSPeakTS_Sci_Combined")],
-                "DRS_PeakTS_Combined",
-                "Peak TS", (400, 600),
-                yrange=(1, None), legends=["Cer", "Sci"],
-                style=STYLE_CER_SCI, prepend=True)
-        output_htmls.append(pm.generate_html(
-            "DRS/DRS_PeakTS.html", plots_per_row=4))
+            for _, board in ctx.drsboards.items():
+                board_no = board.board_no
+                for i_tower_x, i_tower_y in board.get_list_of_towers():
+                    s_x = number_to_string(i_tower_x)
+                    s_y = number_to_string(i_tower_y)
+                    hists, channel_nos = {}, {}
+                    for var in ["Cer", "Sci"]:
+                        chan = board.get_channel_by_tower(
+                            i_tower_x, i_tower_y, isCer=(var == "Cer"))
+                        hist = infile.Get(f"hist_DRSPeakTS_{var}_{s_x}_{s_y}")
+                        hists[var] = hist
+                        channel_nos[var] = chan.channel_no if chan else -1
+                    if not hists.get("Cer") or not hists.get("Sci"):
+                        continue
+                    hists_cer.append(hists["Cer"])
+                    hists_sci.append(hists["Sci"])
+                    if ctx.do_detailed_plots:
+                        pave = create_board_info_pave(
+                            board_no, i_tower_x, i_tower_y,
+                            channel_info={"Cer": channel_nos["Cer"],
+                                          "Sci": channel_nos["Sci"]})
+                        pm.plot_1d(
+                            [hists["Cer"], hists["Sci"]],
+                            f"hist_DRSPeakTS_{s_x}_{s_y}",
+                            "Peak TS", (400, 600),
+                            yrange=(1, None), legends=["Cer", "Sci"],
+                            style=STYLE_CER_SCI, extraToDraw=pave)
 
-    # Cer vs Sci 2D
-    with _pm(ctx) as pm:
-        pm.set_output_dir("DRSPeakTSCerVSSci")
-        infile = pm._get_file("drspeakts.root")
-        diagonal = ROOT.TLine(0, 0, 1000, 1000)
-        diagonal.SetLineStyle(2)
-        diagonal.SetLineWidth(1)
-        diagonal.SetLineColor(ROOT.kRed)
-        hists = []
-        for _, board in ctx.drsboards.items():
-            for i_tower_x, i_tower_y in board.get_list_of_towers():
-                s_x = number_to_string(i_tower_x)
-                s_y = number_to_string(i_tower_y)
-                hist = infile.Get(f"hist_DRSPeakTS_Cer_VS_Sci_{s_x}_{s_y}")
-                if not hist:
-                    continue
-                hists.append(hist)
-                if ctx.do_detailed_plots:
-                    pm.plot_2d(
-                        hist,
-                        f"DRSPeakTS_Cer_VS_Sci_{s_x}_{s_y}",
-                        "Sci Peak TS", (400, 600), "Cer Peak TS", (400, 600),
-                        style=PlotStyle(dologz=True, drawoptions="COLZ",
-                                        zmin=1, zmax=1e2, addOverflow=False),
-                        extraToDraw=diagonal)
-        if hists:
-            pm.plot_2d(
-                LHistos2Hist(hists, "hist_DRSPeakTS_Cer_VS_Sci_Combined"),
-                "DRS_PeakTS_Cer_VS_Sci_Combined",
-                "Sci Peak TS", (400, 600), "Cer Peak TS", (400, 600),
-                style=PlotStyle(dologz=True, drawoptions="COLZ",
-                                zmin=1, zmax=1e2, addOverflow=False),
-                extraToDraw=diagonal, prepend=True)
-        output_htmls.append(
-            pm.generate_html("DRS/DRS_PeakTS_Cer_VS_Sci.html", plots_per_row=4))
+            if hists_cer and hists_sci:
+                pm.plot_1d(
+                    [LHistos2Hist(hists_cer, "hist_DRSPeakTS_Cer_Combined"),
+                     LHistos2Hist(hists_sci, "hist_DRSPeakTS_Sci_Combined")],
+                    "DRS_PeakTS_Combined",
+                    "Peak TS", (400, 600),
+                    yrange=(1, None), legends=["Cer", "Sci"],
+                    style=STYLE_CER_SCI, prepend=True)
+            output_htmls.append(pm.generate_html(
+                "DRS/DRS_PeakTS.html", plots_per_row=4))
+
+    if do_cer_vs_sci:
+        # Cer vs Sci 2D
+        with _pm(ctx) as pm:
+            pm.set_output_dir("DRSPeakTSCerVSSci")
+            infile = pm._get_file("drspeakts.root")
+            diagonal = ROOT.TLine(0, 0, 1000, 1000)
+            diagonal.SetLineStyle(2)
+            diagonal.SetLineWidth(1)
+            diagonal.SetLineColor(ROOT.kRed)
+            hists = []
+            for _, board in ctx.drsboards.items():
+                for i_tower_x, i_tower_y in board.get_list_of_towers():
+                    s_x = number_to_string(i_tower_x)
+                    s_y = number_to_string(i_tower_y)
+                    hist = infile.Get(f"hist_DRSPeakTS_Cer_VS_Sci_{s_x}_{s_y}")
+                    if not hist:
+                        continue
+                    hists.append(hist)
+                    if ctx.do_detailed_plots:
+                        pm.plot_2d(
+                            hist,
+                            f"DRSPeakTS_Cer_VS_Sci_{s_x}_{s_y}",
+                            "Sci Peak TS", (400, 600), "Cer Peak TS", (400, 600),
+                            style=PlotStyle(dologz=True, drawoptions="COLZ",
+                                            zmin=1, zmax=1e2, addOverflow=False),
+                            extraToDraw=diagonal)
+            if hists:
+                pm.plot_2d(
+                    LHistos2Hist(hists, "hist_DRSPeakTS_Cer_VS_Sci_Combined"),
+                    "DRS_PeakTS_Cer_VS_Sci_Combined",
+                    "Sci Peak TS", (400, 600), "Cer Peak TS", (400, 600),
+                    style=PlotStyle(dologz=True, drawoptions="COLZ",
+                                    zmin=1, zmax=1e2, addOverflow=False),
+                    extraToDraw=diagonal, prepend=True)
+            output_htmls.append(
+                pm.generate_html("DRS/DRS_PeakTS_Cer_VS_Sci.html", plots_per_row=4))
 
     return output_htmls
 
@@ -1010,16 +1022,18 @@ def _plot_pulse_distributions(channels, infile, pm, suffix):
         intro_text=intro_text, title=f"{suffix.upper()} Analysis")
 
 
-def _plot_pulse_correlations(channels, infile, pm, suffix):
+def _plot_pulse_correlations(channels, infile, pm, suffix, *, do_pid=True, do_trigger=True):
     """2D correlation plots between detector pairs."""
     det_list = list(channels.keys())
     trigger_dets = ["KT1", "KT2", "T3", "T4"]
     det_list_notrigger = [d for d in det_list if d not in trigger_dets]
 
     output_htmls = []
-    corr_categories = [("PID", det_list_notrigger), ("Trigger", trigger_dets)]
+    corr_categories = [("PID", det_list_notrigger, do_pid), ("Trigger", trigger_dets, do_trigger)]
 
-    for cat, tmp_list in corr_categories:
+    for cat, tmp_list, do_run in corr_categories:
+        if not do_run:
+            continue
         pm.reset_plots()
         for idx1, det1 in enumerate(tmp_list):
             for idx2, det2 in enumerate(tmp_list):
@@ -1082,7 +1096,8 @@ def _plot_pulse_correlations(channels, infile, pm, suffix):
     return output_htmls
 
 
-def _plot_pulse(ctx, channels, suffix, include_correlations=True):
+def _plot_pulse(ctx, channels, suffix, include_correlations=True, *,
+                do_distributions=True, do_pid_correlations=True, do_trigger_correlations=True):
     """Combined plot runner: distributions + (optionally) correlations."""
     infile_name = f"{ctx.paths['root']}/drs_{suffix}.root"
     infile = ROOT.TFile(infile_name, "READ")
@@ -1091,11 +1106,13 @@ def _plot_pulse(ctx, channels, suffix, include_correlations=True):
 
     with _pm(ctx) as pm:
         pm.set_output_dir(f"drs_{suffix}")
-        output_htmls = [_plot_pulse_distributions(
-            channels, infile, pm, suffix)]
+        output_htmls = []
+        if do_distributions:
+            output_htmls.append(_plot_pulse_distributions(channels, infile, pm, suffix))
         if include_correlations:
             output_htmls += _plot_pulse_correlations(
-                channels, infile, pm, suffix)
+                channels, infile, pm, suffix,
+                do_pid=do_pid_correlations, do_trigger=do_trigger_correlations)
 
     infile.Close()
     return output_htmls
@@ -1250,8 +1267,11 @@ def _plot_hodo_peak(ctx):
 # Public plot functions (ctx: CaloXAnalysisManager)
 # ---------------------------------------------------------------------------
 
-def plot_service_drs_pid(ctx):
-    return _plot_pulse(ctx, get_pid_channels(ctx.run_number), suffix="services")
+def plot_service_drs_pid(ctx, *, do_distributions=True, do_pid_correlations=True, do_trigger_correlations=True):
+    return _plot_pulse(ctx, get_pid_channels(ctx.run_number), suffix="services",
+                       do_distributions=do_distributions,
+                       do_pid_correlations=do_pid_correlations,
+                       do_trigger_correlations=do_trigger_correlations)
 
 
 def plot_service_drs_mcp(ctx):

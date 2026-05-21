@@ -37,21 +37,22 @@ HTMLDIR = "results/html/PositionScan"
 #          each channel keeps its own intercept.
 # False → independent linear fit per channel (original behaviour).
 FIT_SHARED_SLOPE = True
+SAVE_T0_JSON = True        # save MPV(1500mm) per channel to data/drs/drs_cfd_t0.json
+
+Y1500_EVAL  = 1500         # table position [mm] at which t0 is evaluated
+Y1500_SHIFT = 300          # display offset subtracted when plotting (add back for raw values)
+
+_TYPE_ORDER  = ["CerQuartz", "CerPlastic", "Sci"]
+_TYPE_COLORS = [ROOT.kBlue + 1, ROOT.kRed + 1, ROOT.kGreen + 2]
 
 
-def main():
-    with open("data/Runlist.json") as f:
-        runlist = json.load(f)
+# ---------------------------------------------------------------------------
+# Data collection
+# ---------------------------------------------------------------------------
 
-    def _parse_x(run):
-        raw = runlist[str(run)]["Table position X"]
-        return float(raw.replace("mm", "").strip())
-
-    run_x = {r: _parse_x(r) for r in SCAN_RUNS if str(r) in runlist}
-    drsboards = build_drs_boards(run=REFERENCE_RUN)
-
-    # Collect (x, mpv) per channel, sorted by table position
-    mpv_data = {}   # ch -> [(x, mpv), ...]
+def _collect_mpv_data(drsboards, run_x):
+    """Read MPV of fine-binned TS_cfd_mcp histogram for each run/channel."""
+    mpv_data = {}
     for run, x_val in sorted(run_x.items(), key=lambda kv: kv[1]):
         root_path = f"results/root/Run{run}/drs_stats.root"
         if not os.path.exists(root_path):
@@ -68,65 +69,87 @@ def main():
                     mpv, mpv_err = get_hist_mpv(hist)
                     mpv_data.setdefault(ch, []).append((x_val, mpv, mpv_err))
         infile.Close()
+    return mpv_data
 
-    xs_all = list(run_x.values())
-    xmin = min(xs_all) - 20
-    xmax = max(xs_all) + 20
 
-    _btypes = {"pion": "#pi^{+}", "pions": "#pi^{+}", "pi+": "#pi^{+}",
-               "positron": "e^{+}", "positrons": "e^{+}", "e+": "e^{+}",
-               "mu+": "#mu^{+}"}
-    btype, benergy = getRunInfo(REFERENCE_RUN)
-    lumi = f"{_btypes.get(btype.lower(), btype.lower())}, {benergy} GeV, 90^{{#circ}}"
-
-    # Build ordered list of channels with B/G/C info and type label
+def _build_channel_order(drsboards):
+    """Return list of (ch, board_no, group_no, chan_no, var, tower_x, tower_y, is6mm)."""
     channel_order = []
     for _, board in drsboards.items():
         for chan in board:
             if chan.is_reference:
                 continue
-            var = get_channel_var(chan)           # "CerQuartz", "CerPlastic", "Sci"
             channel_order.append((
                 chan.get_channel_name(blsub=False),
                 board.board_no, chan.group_no, chan.channel_no,
-                var,
+                get_channel_var(chan),
+                chan.i_tower_x, chan.i_tower_y,
+                chan.is6mm,
             ))
+    return channel_order
 
-    pm = PlotManager(
-        rootdir=f"results/root/Run{REFERENCE_RUN}",
-        plotdir=PLOTDIR,
-        htmldir=HTMLDIR,
-    )
-    pm.set_output_dir("DRS_CFD_MPV_Scan")
-    os.makedirs(pm.get_output_dir(), exist_ok=True)
 
-    # Pre-compute one shared slope per category when flag is set.
-    # Model: y_{c,i} = p0_c + p1_cat * x_{c,i}  (within-group OLS)
-    shared_fit = {}   # var -> (p1, e1, SXX_total, s2)
-    if FIT_SHARED_SLOPE:
-        for var_name in dict.fromkeys(v for _, _, _, _, v in channel_order):
-            chs_var = [(ch, sorted(mpv_data.get(ch, [])))
-                       for ch, _, _, _, v in channel_order if v == var_name]
-            SXX, SXY = 0.0, 0.0
-            for ch, pts in chs_var:
-                if len(pts) < 2:
-                    continue
-                w_c    = [1.0 / ye**2 for _, _, ye in pts]
-                W_c    = sum(w_c)
-                xbar_w = sum(wi * x for wi, (x, _, _) in zip(w_c, pts)) / W_c
-                ybar_w = sum(wi * y for wi, (_, y, _) in zip(w_c, pts)) / W_c
-                for wi, (x, y, _) in zip(w_c, pts):
-                    SXX += wi * (x - xbar_w) ** 2
-                    SXY += wi * (x - xbar_w) * (y - ybar_w)
-            if SXX == 0:
+# ---------------------------------------------------------------------------
+# Fitting
+# ---------------------------------------------------------------------------
+
+def _compute_shared_slopes(channel_order, mpv_data):
+    """Pre-compute one weighted slope per channel type (shared-slope model)."""
+    shared_fit = {}
+    for var_name in dict.fromkeys(v for _, _, _, _, v, _, _, _ in channel_order):
+        chs_var = [(ch, sorted(mpv_data.get(ch, [])))
+                   for ch, _, _, _, v, _, _, _ in channel_order if v == var_name]
+        SXX, SXY = 0.0, 0.0
+        for ch, pts in chs_var:
+            if len(pts) < 2:
                 continue
-            p1_shared = SXY / SXX
-            shared_fit[var_name] = (p1_shared, 1.0 / SXX ** 0.5, SXX)
+            w_c    = [1.0 / ye**2 for _, _, ye in pts]
+            W_c    = sum(w_c)
+            xbar_w = sum(wi * x for wi, (x, _, _) in zip(w_c, pts)) / W_c
+            ybar_w = sum(wi * y for wi, (_, y, _) in zip(w_c, pts)) / W_c
+            for wi, (x, y, _) in zip(w_c, pts):
+                SXX += wi * (x - xbar_w) ** 2
+                SXY += wi * (x - xbar_w) * (y - ybar_w)
+        if SXX == 0:
+            continue
+        shared_fit[var_name] = (SXY / SXX, 1.0 / SXX ** 0.5, SXX)
+    return shared_fit
 
-    plots_by_type = {}   # var -> [plot_name, ...]
+
+def _fit_channel(pts, var, shared_fit):
+    """Weighted least-squares linear fit. Returns (p0, p1, e0, e1)."""
+    w = [1.0 / ye**2 for _, _, ye in pts]
+    if FIT_SHARED_SLOPE and var in shared_fit:
+        p1, e1, SXX_cat = shared_fit[var]
+        W_c    = sum(w)
+        xbar_w = sum(wi * x for wi, (x, _, _) in zip(w, pts)) / W_c
+        ybar_w = sum(wi * y for wi, (_, y, _) in zip(w, pts)) / W_c
+        p0 = ybar_w - p1 * xbar_w
+        e0 = (1.0 / W_c + xbar_w ** 2 / SXX_cat) ** 0.5
+    else:
+        sw   = sum(w)
+        swx  = sum(wi * x     for wi, (x, _, _) in zip(w, pts))
+        swy  = sum(wi * y     for wi, (_, y, _) in zip(w, pts))
+        swxx = sum(wi * x**2  for wi, (x, _, _) in zip(w, pts))
+        swxy = sum(wi * x * y for wi, (x, y, _) in zip(w, pts))
+        denom = sw * swxx - swx ** 2
+        p1 = (sw * swxy - swx * swy) / denom
+        p0 = (swy - p1 * swx) / sw
+        e1 = (sw   / denom) ** 0.5
+        e0 = (swxx / denom) ** 0.5
+    return p0, p1, e0, e1
+
+
+# ---------------------------------------------------------------------------
+# Per-channel scan plots
+# ---------------------------------------------------------------------------
+
+def _plot_scan_channels(channel_order, mpv_data, shared_fit, pm, lumi, xmin, xmax):
+    """Draw one MPV-vs-X TGraph per channel. Returns (p0_map, p1_map, plots_by_type)."""
+    plots_by_type = {}
     p0_map, p1_map = {}, {}
 
-    for ch, b, g, c, var in channel_order:
+    for ch, b, g, c, var, tx, ty, _is6mm in channel_order:
         pts = sorted(mpv_data.get(ch, []))
         if not pts:
             continue
@@ -139,44 +162,26 @@ def main():
             gr.SetPointError(i, 0.0, ye)
         gr.SetLineWidth(2)
 
-        # Weighted least squares (w_i = 1/sigma_y_i^2)
-        n = len(pts)
-        w = [1.0 / ye**2 for _, _, ye in pts]
-        if FIT_SHARED_SLOPE and var in shared_fit:
-            p1, e1, SXX_cat = shared_fit[var]
-            W_c    = sum(w)
-            xbar_w = sum(wi * x for wi, (x, _, _) in zip(w, pts)) / W_c
-            ybar_w = sum(wi * y for wi, (_, y, _) in zip(w, pts)) / W_c
-            p0 = ybar_w - p1 * xbar_w
-            e0 = (1.0 / W_c + xbar_w ** 2 / SXX_cat) ** 0.5
-        else:
-            sw   = sum(w)
-            swx  = sum(wi * x     for wi, (x, _, _) in zip(w, pts))
-            swy  = sum(wi * y     for wi, (_, y, _) in zip(w, pts))
-            swxx = sum(wi * x**2  for wi, (x, _, _) in zip(w, pts))
-            swxy = sum(wi * x * y for wi, (x, y, _) in zip(w, pts))
-            denom = sw * swxx - swx ** 2
-            p1 = (sw * swxy - swx * swy) / denom
-            p0 = (swy - p1 * swx) / sw
-            e1 = (sw   / denom) ** 0.5
-            e0 = (swxx / denom) ** 0.5
+        p0, p1, e0, e1 = _fit_channel(pts, var, shared_fit)
+
         fit = ROOT.TF1(f"fit_{ch}", "pol1", xmin, xmax)
         fit.SetParameters(p0, p1)
         fit.SetParError(0, e0)
         fit.SetParError(1, e1)
         fit.SetLineColor(ROOT.kRed + 1)
         fit.SetLineWidth(2)
-        fit.SetLineStyle(2)   # dashed
+        fit.SetLineStyle(2)
         gr.GetListOfFunctions().Add(fit)
 
         ys = [y for _, y, _ in pts]
-        ymid = (max(ys) + min(ys)) / 2
+        ymid  = (max(ys) + min(ys)) / 2
         yhalf = max(30.0, (max(ys) - min(ys)) / 2 * 1.5 + 10)
 
-        pave_bgc = create_pave_text(0.15, 0.80, 0.60, 0.88)
+        pave_bgc = create_pave_text(0.18, 0.77, 0.60, 0.87)
         pave_bgc.AddText(f"B: {b}, G: {g}, C: {c}")
+        pave_bgc.AddText(f"Tower: ({tx}, {ty})")
 
-        pave_fit = create_pave_text(0.15, 0.13, 0.65, 0.28)
+        pave_fit = create_pave_text(0.18, 0.18, 0.60, 0.28)
         pave_fit.AddText(f"p0: {p0:.1f} #pm {e0:.1f} TS")
         pave_fit.AddText(f"p1: {p1:.3f} #pm {e1:.3f} TS/mm")
 
@@ -200,6 +205,392 @@ def main():
         p0_map[ch] = p0
         p1_map[ch] = p1
 
+    return p0_map, p1_map, plots_by_type
+
+
+# ---------------------------------------------------------------------------
+# Board-map HTML pages
+# ---------------------------------------------------------------------------
+
+def _new_pm():
+    pm = PlotManager(
+        rootdir=f"results/root/Run{REFERENCE_RUN}",
+        plotdir=PLOTDIR,
+        htmldir=HTMLDIR,
+    )
+    pm.set_output_dir("DRS_CFD_MPV_Scan")
+    return pm
+
+
+def _plot_fit_params_page(drsboards, p0_map, p1_map, channel_order, lumi):
+    """Board maps of p0, |p1|×100, 1/|p1| [cm/ns], plus speed 1D histogram."""
+    p0_shifted = {ch: v - 400          for ch, v in p0_map.items()}
+    p1_abs_map = {ch: abs(v) * 100     for ch, v in p1_map.items()}
+    p1_inv_map = {ch: 0.5 / abs(v)     for ch, v in p1_map.items() if v != 0}
+
+    pm_map = _new_pm()
+    helper = BoardPlotHelper(pm_map)
+
+    cer_hists, sci_hists = visualizeDRSBoards(drsboards, valuemaps=p0_shifted, suffix="MPV_scan_p0")
+    helper.plot_cer_sci_pair(cer_hists, sci_hists, "DRS_CFD_MPV_Scan_p0",
+                             zmin=None, zmax=None, nTextDigits=1, lumitext=lumi, usePDF=False)
+
+    cer_hists, sci_hists = visualizeDRSBoards(drsboards, valuemaps=p1_abs_map, suffix="MPV_scan_p1_abs")
+    helper.plot_cer_sci_pair(cer_hists, sci_hists, "DRS_CFD_MPV_Scan_p1_abs",
+                             zmin=None, zmax=None, nTextDigits=2, lumitext=lumi, usePDF=False)
+
+    p1i_sorted = sorted(p1_inv_map.values())
+    n_inv = len(p1i_sorted)
+    p5  = p1i_sorted[max(0, int(0.10 * n_inv))]
+    p95 = p1i_sorted[min(n_inv - 1, int(0.90 * n_inv))]
+    cer_hists, sci_hists = visualizeDRSBoards(drsboards, valuemaps=p1_inv_map, suffix="MPV_scan_p1_inv")
+    helper.plot_cer_sci_pair(cer_hists, sci_hists, "DRS_CFD_MPV_Scan_p1_inv",
+                             zmin=p5, zmax=p95, nTextDigits=1, lumitext=lumi, usePDF=False)
+
+    # Speed distribution (1/|p1| cm/ns) by channel type
+    speed_by_type = {var: [] for var in _TYPE_ORDER}
+    for ch, _b, _g, _c, var, _tx, _ty, _is6mm in channel_order:
+        if ch in p1_inv_map:
+            speed_by_type[var].append(p1_inv_map[ch])
+
+    xlo_h, xhi_h = 12.0, 22.0
+    hists_speed, speed_labels, speed_cols = [], [], []
+    for tname, col in zip(_TYPE_ORDER, _TYPE_COLORS):
+        vals = speed_by_type.get(tname, [])
+        if not vals:
+            continue
+        h = ROOT.TH1F(f"h_speed_{tname}", "", 20, xlo_h, xhi_h)
+        for v in vals:
+            h.Fill(v)
+        hists_speed.append(h)
+        speed_labels.append(tname)
+        speed_cols.append(col)
+
+    if hists_speed:
+        DrawHistos(
+            hists_speed, speed_labels,
+            xlo_h, xhi_h, "Speed [cm/ns]",
+            None, None, "Channels",
+            "drs_cfd_speed_distribution",
+            outdir=pm_map.get_output_dir(),
+            dology=False, usePDF=False,
+            mycolors=speed_cols,
+            drawoptions=["C"] * len(hists_speed),
+            lumitext=lumi,
+        )
+        pm_map.add_plot("drs_cfd_speed_distribution")
+
+    run_list = ", ".join(str(r) for r in SCAN_RUNS)
+    pm_map.generate_html(
+        "DRS_CFD_MPV_Scan_FitParams.html",
+        plots_per_row=2,
+        title="DRS CFD MPV Scan — Fit Parameters",
+        intro_text=(
+            f"**Linear fit parameters from the MPV position scan** "
+            f"(runs {run_list}, {lumi}).\n"
+            "For each channel the MPV of the fine-binned MCP-corrected CFD "
+            "time slice was fitted as a linear function of table position X: "
+            "MPV(X) = p0 + p1 * X.\n\n"
+            "* **p0 − 400 [TS]**: intercept shifted by 400 for readability.\n"
+            "* **|p1| × 100 [TS/mm × 100]**: absolute slope scaled by 100.\n"
+            "* **1/|p1| [cm/ns]**: effective speed of light in the medium "
+            "(1 TS = 200 ps).\n\n"
+            "Channels with no valid data across all runs are not filled."
+        ),
+    )
+
+
+def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
+                      x_eval=Y1500_EVAL, shift=Y1500_SHIFT):
+    """Board maps + 1D distribution of MPV evaluated at x_eval mm."""
+    y_map = {ch: p0_map[ch] + p1_map[ch] * x_eval - shift for ch in p0_map}
+
+    pm_y = _new_pm()
+    helper_y = BoardPlotHelper(pm_y)
+
+    cer_hists, sci_hists = visualizeDRSBoards(
+        drsboards, valuemaps=y_map, suffix=f"MPV_scan_y{x_eval}")
+    helper_y.plot_cer_sci_pair(
+        cer_hists, sci_hists, f"DRS_CFD_MPV_Scan_y{x_eval}",
+        zmin=None, zmax=None, nTextDigits=1, lumitext=lumi, usePDF=False)
+
+    # 1D distributions by (size, type) combination
+    _size_order = ["3mm", "6mm"]
+    _size_type_colors = {
+        ("3mm", "CerQuartz"):  ROOT.kBlue + 1,
+        ("3mm", "CerPlastic"): ROOT.kRed + 1,
+        ("3mm", "Sci"):        ROOT.kGreen + 2,
+        ("6mm", "CerQuartz"):  ROOT.kAzure + 7,
+        ("6mm", "CerPlastic"): ROOT.kOrange + 1,
+        ("6mm", "Sci"):        ROOT.kTeal + 3,
+    }
+
+    y_by_size_type = {}
+    for ch, _b, _g, _c, var, _tx, _ty, is6mm in channel_order:
+        if ch in y_map:
+            size = "6mm" if is6mm else "3mm"
+            y_by_size_type.setdefault((size, var), []).append(y_map[ch])
+
+    xlo_y, xhi_y = 73, 95
+    hists_y, y_labels, y_cols = [], [], []
+    group_mpv = {}
+    for size in _size_order:
+        for tname in _TYPE_ORDER:
+            vals = y_by_size_type.get((size, tname), [])
+            if not vals:
+                continue
+            h = ROOT.TH1F(f"h_y{x_eval}_{size}_{tname}", "",
+                          int((xhi_y - xlo_y) * 2), xlo_y, xhi_y)
+            for v in vals:
+                h.Fill(v)
+            mpv, _ = get_hist_mpv(h)
+            group_mpv[f"{size}_{tname}"] = mpv + shift  # add shift back: store unshifted MPV
+            hists_y.append(h)
+            y_labels.append(f"{size} {tname} (MPV = {mpv:.1f})")
+            y_cols.append(_size_type_colors[(size, tname)])
+
+    if group_mpv:
+        out_path = f"data/drs/drs_cfd_mpv_at_{x_eval}mm_by_type.json"
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "w") as f:
+            json.dump(group_mpv, f, indent=2)
+        print(f"Saved group MPVs to {out_path}")
+
+    if hists_y:
+        DrawHistos(
+            hists_y, y_labels,
+            xlo_y, xhi_y, f"MPV at X = {x_eval} mm - {shift} [TS]",
+            0, 25, "# Channels",
+            f"drs_cfd_mpv_at_{x_eval}mm",
+            outdir=pm_y.get_output_dir(),
+            dology=False, usePDF=False,
+            mycolors=y_cols,
+            drawoptions=["HIST"] * len(hists_y),
+            lumitext=lumi,
+            addOverflow=True,
+            addUnderflow=True,
+            legendPos=[0.20, 0.60, 0.60, 0.90],
+        )
+        pm_y.add_plot(f"drs_cfd_mpv_at_{x_eval}mm")
+
+    pm_y.generate_html(
+        f"DRS_CFD_MPV_Scan_y{x_eval}.html",
+        plots_per_row=2,
+        title=f"DRS CFD MPV at X = {x_eval} mm",
+        intro_text=(
+            f"Per-channel MPV evaluated at X = {x_eval} mm, shifted by −{shift} TS. "
+            f"Computed from the linear fit: MPV({x_eval}) − {shift} = p0 + p1 × {x_eval} − {shift}."
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# T0 JSON export
+# ---------------------------------------------------------------------------
+
+def _save_t0_json(p0_map, p1_map, x_eval=Y1500_EVAL, shift=Y1500_SHIFT):
+    """Save raw MPV(x_eval) per channel to data/drs_cfd_t0.json.
+
+    The plot subtracts `shift` for display; we add it back here so the JSON
+    stores the unmodified physical value: t0 = p0 + p1 * x_eval.
+    """
+    t0_map = {ch: (p0_map[ch] + p1_map[ch] * x_eval - shift) + shift for ch in p0_map}
+    out_path = "data/drs/drs_cfd_t0.json"
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "w") as f:
+        json.dump(t0_map, f, indent=2)
+    print(f"Saved {len(t0_map)} t0 values to {out_path}")
+
+
+# ---------------------------------------------------------------------------
+# p0 corrected board maps (one per type)
+# ---------------------------------------------------------------------------
+
+def _plot_p0_corrected_page(drsboards, p0_map, channel_order, lumi):
+    """Three board maps of p0 − group_MPV, one per type (CerQuartz / CerPlastic / Sci)."""
+    group_mpv_path = f"data/drs/drs_cfd_mpv_at_{Y1500_EVAL}mm_by_type.json"
+    if not os.path.exists(group_mpv_path):
+        print(f"Skipping p0-corrected page: {group_mpv_path} not found")
+        return
+
+    with open(group_mpv_path) as _f:
+        group_mpv = json.load(_f)
+
+    ch_meta = {
+        ch: (f"{'6mm' if is6mm else '3mm'}_{var}", var)
+        for ch, _b, _g, _c, var, _tx, _ty, is6mm in channel_order
+    }
+
+    _type_board = {"CerQuartz": "cer", "CerPlastic": "cer", "Sci": "sci"}
+    _cer_types  = {"CerQuartz", "CerPlastic"}
+
+    pm_corr = _new_pm()
+    helper = BoardPlotHelper(pm_corr)
+
+    for tname in _TYPE_ORDER:
+        filtered = {
+            ch: p0_map[ch] - group_mpv[grp_key]
+            for ch, (grp_key, var) in ch_meta.items()
+            if ch in p0_map and var == tname and grp_key in group_mpv
+        }
+        if not filtered:
+            continue
+        vals_sorted = sorted(filtered.values())
+        n = len(vals_sorted)
+        zmin_val = vals_sorted[max(0, int(0.10 * n))]
+        zmax_val = vals_sorted[min(n - 1, int(0.90 * n))]
+        # zero out the other Cer type so it doesn't appear as unfilled
+        if tname in _cer_types:
+            for ch, (_grp_key, var) in ch_meta.items():
+                if var in _cer_types - {tname} and ch in p0_map:
+                    filtered[ch] = 0.0
+        cer_hists, sci_hists = visualizeDRSBoards(
+            drsboards, valuemaps=filtered, suffix=f"MPV_scan_p0_corr_{tname}")
+        hists = cer_hists if _type_board[tname] == "cer" else sci_hists
+        helper.plot_board_map(
+            hists, f"DRS_CFD_MPV_Scan_p0_corr_{tname}",
+            extra_text=tname, zmin=zmin_val, zmax=zmax_val, nTextDigits=1,
+            lumitext=lumi, usePDF=False)
+
+    pm_corr.generate_html(
+        "DRS_CFD_MPV_Scan_p0_corrected.html",
+        plots_per_row=2,
+        title="DRS CFD MPV Scan — p0 corrected by type MPV",
+        intro_text=(
+            f"Per-channel p0 − group_MPV(type), where group_MPV is the MPV at "
+            f"X = {Y1500_EVAL} mm loaded from "
+            f"data/drs/drs_cfd_mpv_at_{Y1500_EVAL}mm_by_type.json. "
+            "One board pair per type; boards not used by that type show as zero."
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# (p0 − JSON) − 1500/p1 board maps
+# ---------------------------------------------------------------------------
+
+def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
+    """Four board maps of (p0 − group_MPV) − 1500×p1: CerQuartz, CerPlastic, Cer, Sci."""
+    group_mpv_path = f"data/drs/drs_cfd_mpv_at_{Y1500_EVAL}mm_by_type.json"
+    if not os.path.exists(group_mpv_path):
+        print(f"Skipping p0-corrected2 page: {group_mpv_path} not found")
+        return
+
+    with open(group_mpv_path) as _f:
+        group_mpv = json.load(_f)
+
+    ch_meta = {
+        ch: (f"{'6mm' if is6mm else '3mm'}_{var}", var)
+        for ch, _b, _g, _c, var, _tx, _ty, is6mm in channel_order
+    }
+
+    _cer_types  = {"CerQuartz", "CerPlastic"}
+    _type_board = {"CerQuartz": "cer", "CerPlastic": "cer", "Sci": "sci"}
+
+    def _corrected2(ch, grp_key):
+        val = (p0_map[ch] - group_mpv[grp_key]) - 1500.0 * abs(p1_map.get(ch, 0.0)) + 10.5
+        return val * 0.2
+
+    def _zrange(vals):
+        vs = sorted(vals)
+        n = len(vs)
+        return vs[max(0, int(0.12 * n))], vs[min(n - 1, int(0.95 * n))]
+
+    pm2 = _new_pm()
+    helper = BoardPlotHelper(pm2)
+
+    # One board per type (same loop structure as _plot_p0_corrected_page)
+    for tname in _TYPE_ORDER:
+        filtered = {
+            ch: _corrected2(ch, grp_key)
+            for ch, (grp_key, var) in ch_meta.items()
+            if ch in p0_map and var == tname and grp_key in group_mpv
+        }
+        if not filtered:
+            continue
+        zmin_val, zmax_val = _zrange(list(filtered.values()))
+        if tname in _cer_types:
+            for ch, (_grp_key, var) in ch_meta.items():
+                if var in _cer_types - {tname} and ch in p0_map:
+                    filtered[ch] = 0.0
+        cer_hists, sci_hists = visualizeDRSBoards(
+            drsboards, valuemaps=filtered, suffix=f"MPV_scan_p0c2_{tname}")
+        hists = cer_hists if _type_board[tname] == "cer" else sci_hists
+        helper.plot_board_map(
+            hists, f"DRS_CFD_MPV_Scan_p0c2_{tname}",
+            extra_text=tname, zmin=zmin_val, zmax=zmax_val, nTextDigits=1,
+            lumitext=lumi, usePDF=False)
+
+    # Combined Cer (CerQuartz + CerPlastic together)
+    cer_combined = {
+        ch: _corrected2(ch, grp_key)
+        for ch, (grp_key, var) in ch_meta.items()
+        if ch in p0_map and var in _cer_types and grp_key in group_mpv
+    }
+    if cer_combined:
+        zmin_val, zmax_val = _zrange(list(cer_combined.values()))
+        cer_hists, _ = visualizeDRSBoards(
+            drsboards, valuemaps=cer_combined, suffix="MPV_scan_p0c2_Cer")
+        helper.plot_board_map(
+            cer_hists, "DRS_CFD_MPV_Scan_p0c2_Cer",
+            extra_text="CaloX Cer", zmin=zmin_val, zmax=zmax_val,
+            nTextDigits=1, lumitext=lumi, usePDF=False)
+
+    pm2.generate_html(
+        "DRS_CFD_MPV_Scan_p0_corrected2.html",
+        plots_per_row=2,
+        title="DRS CFD MPV Scan — Channel timing residuals [ns]",
+        intro_text=(
+            f"Per-channel timing residual (in ns) defined as "
+            f"[(p0 − group_MPV) − {Y1500_EVAL}×|p1|] × 0.2 ns/TS, "
+            f"where p0 is the per-channel CFD intercept, group_MPV is the "
+            f"type-average MPV at {Y1500_EVAL} mm from "
+            f"data/drs/drs_cfd_mpv_at_{Y1500_EVAL}mm_by_type.json, "
+            f"and p1 is the fitted slope (TS/mm). "
+            "Color range set to 10–90% quantile of active channels. "
+            "Values shown to 0.1 ns precision."
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def main():
+    with open("data/Runlist.json") as f:
+        runlist = json.load(f)
+
+    def _parse_x(run):
+        raw = runlist[str(run)]["Table position X"]
+        return float(raw.replace("mm", "").strip())
+
+    run_x      = {r: _parse_x(r) for r in SCAN_RUNS if str(r) in runlist}
+    drsboards  = build_drs_boards(run=REFERENCE_RUN)
+    mpv_data   = _collect_mpv_data(drsboards, run_x)
+    channel_order = _build_channel_order(drsboards)
+
+    xs_all = list(run_x.values())
+    xmin, xmax = min(xs_all) - 20, max(xs_all) + 20
+
+    _btypes = {"pion": "#pi^{+}", "pions": "#pi^{+}", "pi+": "#pi^{+}",
+               "positron": "e^{+}", "positrons": "e^{+}", "e+": "e^{+}",
+               "mu+": "#mu^{+}"}
+    btype, benergy = getRunInfo(REFERENCE_RUN)
+    lumi = f"{_btypes.get(btype.lower(), btype.lower())}, {benergy} GeV, 90^{{#circ}}"
+
+    pm = PlotManager(
+        rootdir=f"results/root/Run{REFERENCE_RUN}",
+        plotdir=PLOTDIR,
+        htmldir=HTMLDIR,
+    )
+    pm.set_output_dir("DRS_CFD_MPV_Scan")
+    os.makedirs(pm.get_output_dir(), exist_ok=True)
+
+    shared_fit = _compute_shared_slopes(channel_order, mpv_data) if FIT_SHARED_SLOPE else {}
+    p0_map, p1_map, plots_by_type = _plot_scan_channels(
+        channel_order, mpv_data, shared_fit, pm, lumi, xmin, xmax)
+
     for type_name, plot_names in plots_by_type.items():
         pm.reset_plots()
         for name in plot_names:
@@ -209,110 +600,14 @@ def main():
             plots_per_row=4,
             title=f"DRS CFD MPV Scan — {type_name}",
         )
-    # --- Board maps: p0-400, |p1|×100, and 1/|p1| in cm/ns ---
+
     if p0_map and p1_map:
-        p0_shifted = {ch: v - 400
-                      for ch, v in p0_map.items()}
-        # ×100 to move decimal point; unit becomes (TS/mm)×100
-        p1_abs_map = {ch: abs(v) * 100
-                      for ch, v in p1_map.items()}
-        # 1/|p1| [mm/TS] → cm/ns: ×(0.1 cm/mm)/(0.2 ns/TS) = ×0.5
-        p1_inv_map = {ch: 0.5 / abs(v)
-                      for ch, v in p1_map.items() if v != 0}
-
-        pm_map = PlotManager(
-            rootdir=f"results/root/Run{REFERENCE_RUN}",
-            plotdir=PLOTDIR,
-            htmldir=HTMLDIR,
-        )
-        pm_map.set_output_dir("DRS_CFD_MPV_Scan")
-        helper = BoardPlotHelper(pm_map)
-
-        cer_hists, sci_hists = visualizeDRSBoards(
-            drsboards, valuemaps=p0_shifted, suffix="MPV_scan_p0")
-        helper.plot_cer_sci_pair(
-            cer_hists, sci_hists, "DRS_CFD_MPV_Scan_p0",
-            zmin=None, zmax=None,
-            nTextDigits=1, lumitext=lumi, usePDF=False)
-
-        cer_hists, sci_hists = visualizeDRSBoards(
-            drsboards, valuemaps=p1_abs_map, suffix="MPV_scan_p1_abs")
-        helper.plot_cer_sci_pair(
-            cer_hists, sci_hists, "DRS_CFD_MPV_Scan_p1_abs",
-            zmin=None, zmax=None,
-            nTextDigits=2, lumitext=lumi, usePDF=False)
-
-        p1i_sorted = sorted(p1_inv_map.values())
-        n_inv = len(p1i_sorted)
-        p5  = p1i_sorted[max(0, int(0.10 * n_inv))]
-        p95 = p1i_sorted[min(n_inv - 1, int(0.90 * n_inv))]
-
-        cer_hists, sci_hists = visualizeDRSBoards(
-            drsboards, valuemaps=p1_inv_map, suffix="MPV_scan_p1_inv")
-        helper.plot_cer_sci_pair(
-            cer_hists, sci_hists, "DRS_CFD_MPV_Scan_p1_inv",
-            zmin=p5, zmax=p95,
-            nTextDigits=1, lumitext=lumi, usePDF=False)
-
-        # Speed distribution 1D histograms by channel type
-        speed_by_type = {}
-        for ch, _b, _g, _c, var in channel_order:
-            if ch in p1_inv_map:
-                speed_by_type.setdefault(var, []).append(p1_inv_map[ch])
-
-        xlo_h = 12.0
-        xhi_h = 22.0
-        type_order = ["CerQuartz", "CerPlastic", "Sci"]
-        speed_colors = [ROOT.kBlue + 1, ROOT.kRed + 1, ROOT.kGreen + 2]
-        hists_speed, speed_labels, speed_cols_used = [], [], []
-        for tname, col in zip(type_order, speed_colors):
-            vals = speed_by_type.get(tname, [])
-            if not vals:
-                continue
-            h = ROOT.TH1F(f"h_speed_{tname}", "", 20, xlo_h, xhi_h)
-            for v in vals:
-                h.Fill(v)
-            hists_speed.append(h)
-            speed_labels.append(tname)
-            speed_cols_used.append(col)
-
-        if hists_speed:
-            speed_plot_name = "drs_cfd_speed_distribution"
-            DrawHistos(
-                hists_speed, speed_labels,
-                xlo_h, xhi_h, "Speed [cm/ns]",
-                None, None, "Channels",
-                speed_plot_name,
-                outdir=pm_map.get_output_dir(),
-                dology=False,
-                usePDF=False,
-                mycolors=speed_cols_used,
-                drawoptions=["C"] * len(hists_speed),
-                lumitext=lumi,
-            )
-            pm_map.add_plot(speed_plot_name)
-
-        run_list = ", ".join(str(r) for r in SCAN_RUNS)
-        pm_map.generate_html(
-            "DRS_CFD_MPV_Scan_FitParams.html",
-            plots_per_row=2,
-            title="DRS CFD MPV Scan — Fit Parameters",
-            intro_text=(
-                f"**Linear fit parameters from the MPV position scan** "
-                f"(runs {run_list}, {lumi}).\n"
-                "For each channel the MPV of the fine-binned MCP-corrected CFD "
-                "time slice was fitted as a linear function of table position X: "
-                "MPV(X) = p0 + p1 * X.\n\n"
-                "* **p0 − 400 [TS]**: intercept shifted by 400 for readability. "
-                "Represents the expected MPV offset at X = 0 mm.\n"
-                "* **|p1| × 100 [TS/mm × 100]**: absolute slope scaled by 100 "
-                "for readability — magnitude of the timing change per mm.\n"
-                "* **1/|p1| [cm/ns]**: inverted absolute slope converted from "
-                "mm/TS to cm/ns (1 TS = 200 ps). Interpretable as an effective "
-                "speed of light in the medium.\n\n"
-                "Channels with no valid data across all runs are not filled."
-            ),
-        )
+        _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi)
+        if SAVE_T0_JSON:
+            _save_t0_json(p0_map, p1_map)
+        _plot_fit_params_page(drsboards, p0_map, p1_map, channel_order, lumi)
+        _plot_p0_corrected_page(drsboards, p0_map, channel_order, lumi)
+        _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi)
 
     PlotManager.print_html_summary()
 
