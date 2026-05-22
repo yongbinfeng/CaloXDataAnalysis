@@ -533,7 +533,7 @@ def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
             drsboards, valuemaps=cer_combined, suffix="MPV_scan_p0c2_Cer")
         helper.plot_board_map(
             cer_hists, "DRS_CFD_MPV_Scan_p0c2_Cer",
-            extra_text="CaloX Cer", zmin=zmin_val, zmax=zmax_val,
+            extra_text="Cer", zmin=zmin_val, zmax=zmax_val,
             nTextDigits=1, lumitext=lumi, usePDF=False)
 
     pm2.generate_html(
