@@ -1,7 +1,10 @@
 # collect all functions related to DRS here
 import re
+import json
+import os
 from channels.channel_map import get_mcp_channels, get_pid_channels, get_service_drs_channels
 from configs.selection_config import get_service_drs_cut
+from utils.utils import get_channel_var
 
 TS_END = 1024
 MCP_REF = "MCP_DS_0"
@@ -221,3 +224,48 @@ def process_drs_data(rdf, run_number, drsboards):
         ch for ch in drs_branches if not ch.endswith("Channel8")]
     rdf = process_drs_channels(rdf, drs_channels_physics, mcp_det=MCP_REF)
     return rdf
+
+
+_MPV_JSON_PATH = "data/drs/drs_cfd_mpv_at_1500mm_by_type.json"
+
+
+def subtract_type_mpv(drsboards, raw_mpv_map, json_path=_MPV_JSON_PATH):
+    """Subtract the type-average MPV at 1500 mm from per-channel raw MPV values.
+
+    For 6mm CerPlastic a double-difference is used instead of direct subtraction,
+    because the 6mm plastic fibre has no direct reference in the JSON:
+        corrected = val - json["6mm_CerQuartz"] + (json["3mm_CerQuartz"] - json["3mm_CerPlastic"])
+
+    Returns a dict {ch: corrected_value} or None if the JSON file does not exist.
+    """
+    if not os.path.exists(json_path):
+        return None
+
+    with open(json_path) as _f:
+        group_mpv = json.load(_f)
+
+    corr_map = {}
+    for _, board in drsboards.items():
+        for chan in board:
+            if chan.is_reference:
+                continue
+            ch = chan.get_channel_name(blsub=False)
+            if ch not in raw_mpv_map:
+                continue
+            var = get_channel_var(chan)
+            grp_key = f"{'6mm' if chan.is6mm else '3mm'}_{var}"
+
+            if chan.is6mm and var == "CerPlastic":
+                # Double difference: no reliable 6mm plastic reference in JSON
+                ref_6mm = group_mpv.get("6mm_CerQuartz")
+                ref_3mm_q = group_mpv.get("3mm_CerQuartz")
+                ref_3mm_p = group_mpv.get("3mm_CerPlastic")
+                if None in (ref_6mm, ref_3mm_q, ref_3mm_p):
+                    continue
+                corr_map[ch] = raw_mpv_map[ch] - ref_6mm + (ref_3mm_q - ref_3mm_p)
+            else:
+                if grp_key not in group_mpv:
+                    continue
+                corr_map[ch] = raw_mpv_map[ch] - group_mpv[grp_key]
+
+    return corr_map

@@ -19,7 +19,7 @@ from core.plot_manager import PlotManager
 from configs.plot_style import PlotStyle, STYLE_CER_SCI
 from plotting.calox_plot_helper import BoardPlotHelper, create_pave_text, create_board_info_pave
 from utils.utils import number_to_string, round_up_to_1eN, get_channel_var, get_hist_mpv
-from variables.drs import get_ts_arr_name
+from variables.drs import get_ts_arr_name, subtract_type_mpv
 from utils.visualization import visualizeFERSBoards, visualizeDRSBoards
 
 
@@ -543,7 +543,7 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_service_drs_vs_ts=True, do_
 # DRS: pulse statistics (peak, energy, timing)
 # ---------------------------------------------------------------------------
 
-def plot_drs_stats(ctx, *, do_peak=True, do_energy=True, do_timing=True, do_timing_finebins=True):
+def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False, do_timing_finebins=True):
     """Plot DRS peak, energy, and timing distributions. Returns list of HTML paths."""
     output_htmls = []
 
@@ -674,6 +674,7 @@ def plot_drs_cfd_mpv(ctx):
     infile = ctx.hbook.open_file("drs_stats.root")
 
     mpv_map = {}
+    raw_mpv_map = {}
     for _, board in ctx.drsboards.items():
         for chan in board:
             if chan.is_reference:
@@ -687,6 +688,7 @@ def plot_drs_cfd_mpv(ctx):
             else:
                 mpv, _ = get_hist_mpv(hist)
                 mpv_map[ch] = mpv - 400
+                raw_mpv_map[ch] = mpv
 
     cer_hists, sci_hists = visualizeDRSBoards(
         ctx.drsboards, valuemaps=mpv_map,
@@ -699,6 +701,21 @@ def plot_drs_cfd_mpv(ctx):
             cer_hists, sci_hists,
             f"DRS_CFD_MPV_Run{ctx.run_number}",
             zmin=0, zmax=100, nTextDigits=1)
+
+        corr_map = subtract_type_mpv(ctx.drsboards, raw_mpv_map)
+        if corr_map:
+            vals = sorted(corr_map.values())
+            n = len(vals)
+            zmin_c = vals[max(0, int(0.05 * n))]
+            zmax_c = vals[min(n - 1, int(0.90 * n))]
+            cer_hists_c, sci_hists_c = visualizeDRSBoards(
+                ctx.drsboards, valuemaps=corr_map,
+                suffix=f"MPV_cfd_corr_Run{ctx.run_number}")
+            helper.plot_cer_sci_pair(
+                cer_hists_c, sci_hists_c,
+                f"DRS_CFD_MPV_corr_Run{ctx.run_number}",
+                zmin=zmin_c, zmax=zmax_c, nTextDigits=1)
+
         return pm.generate_html(
             "DRS/DRS_CFD_MPV.html", plots_per_row=2,
             title="DRS CFD MPV Board Map",
@@ -706,7 +723,10 @@ def plot_drs_cfd_mpv(ctx):
                 "Per-channel most probable value (MPV) of the fine-binned "
                 "MCP-corrected CFD time slice, displayed on the DRS board map. "
                 "Values are shifted by -400 TS for readability. "
-                "Channels with fewer than 5 entries are shown as 0."
+                "Channels with fewer than 5 entries are shown as 0. "
+                "If data/drs/drs_cfd_mpv_at_1500mm_by_type.json exists, "
+                "a second pair of plots shows the residual (MPV − type-average at 1500 mm), "
+                "with color range set to the 10–90% quantile."
             ))
 
 

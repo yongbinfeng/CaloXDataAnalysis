@@ -23,6 +23,7 @@ from utils.data_loader import getRunInfo
 from utils.root_setup import setup_root
 from utils.timing import auto_timer
 from utils.utils import get_channel_var, get_hist_mpv
+from variables.drs import subtract_type_mpv
 
 auto_timer("Total Execution Time")
 setup_root(batch_mode=True, load_functions=True)
@@ -409,16 +410,14 @@ def _save_t0_json(p0_map, p1_map, x_eval=Y1500_EVAL, shift=Y1500_SHIFT):
 def _plot_p0_corrected_page(drsboards, p0_map, channel_order, lumi):
     """Three board maps of p0 − group_MPV, one per type (CerQuartz / CerPlastic / Sci)."""
     group_mpv_path = f"data/drs/drs_cfd_mpv_at_{Y1500_EVAL}mm_by_type.json"
-    if not os.path.exists(group_mpv_path):
+    base_corr_map = subtract_type_mpv(drsboards, p0_map, json_path=group_mpv_path)
+    if base_corr_map is None:
         print(f"Skipping p0-corrected page: {group_mpv_path} not found")
         return
 
-    with open(group_mpv_path) as _f:
-        group_mpv = json.load(_f)
-
     ch_meta = {
-        ch: (f"{'6mm' if is6mm else '3mm'}_{var}", var)
-        for ch, _b, _g, _c, var, _tx, _ty, is6mm in channel_order
+        ch: var
+        for ch, _b, _g, _c, var, _tx, _ty, _ in channel_order
     }
 
     _type_board = {"CerQuartz": "cer", "CerPlastic": "cer", "Sci": "sci"}
@@ -429,9 +428,9 @@ def _plot_p0_corrected_page(drsboards, p0_map, channel_order, lumi):
 
     for tname in _TYPE_ORDER:
         filtered = {
-            ch: p0_map[ch] - group_mpv[grp_key]
-            for ch, (grp_key, var) in ch_meta.items()
-            if ch in p0_map and var == tname and grp_key in group_mpv
+            ch: base_corr_map[ch]
+            for ch, var in ch_meta.items()
+            if ch in base_corr_map and var == tname
         }
         if not filtered:
             continue
@@ -441,7 +440,7 @@ def _plot_p0_corrected_page(drsboards, p0_map, channel_order, lumi):
         zmax_val = vals_sorted[min(n - 1, int(0.90 * n))]
         # zero out the other Cer type so it doesn't appear as unfilled
         if tname in _cer_types:
-            for ch, (_grp_key, var) in ch_meta.items():
+            for ch, var in ch_meta.items():
                 if var in _cer_types - {tname} and ch in p0_map:
                     filtered[ch] = 0.0
         cer_hists, sci_hists = visualizeDRSBoards(
@@ -472,23 +471,21 @@ def _plot_p0_corrected_page(drsboards, p0_map, channel_order, lumi):
 def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
     """Four board maps of (p0 − group_MPV) − 1500×p1: CerQuartz, CerPlastic, Cer, Sci."""
     group_mpv_path = f"data/drs/drs_cfd_mpv_at_{Y1500_EVAL}mm_by_type.json"
-    if not os.path.exists(group_mpv_path):
+    base_corr_map = subtract_type_mpv(drsboards, p0_map, json_path=group_mpv_path)
+    if base_corr_map is None:
         print(f"Skipping p0-corrected2 page: {group_mpv_path} not found")
         return
 
-    with open(group_mpv_path) as _f:
-        group_mpv = json.load(_f)
-
     ch_meta = {
-        ch: (f"{'6mm' if is6mm else '3mm'}_{var}", var)
-        for ch, _b, _g, _c, var, _tx, _ty, is6mm in channel_order
+        ch: var
+        for ch, _b, _g, _c, var, _tx, _ty, _ in channel_order
     }
 
     _cer_types  = {"CerQuartz", "CerPlastic"}
     _type_board = {"CerQuartz": "cer", "CerPlastic": "cer", "Sci": "sci"}
 
-    def _corrected2(ch, grp_key):
-        val = (p0_map[ch] - group_mpv[grp_key]) - 1500.0 * abs(p1_map.get(ch, 0.0)) + 10.5
+    def _corrected2(ch):
+        val = base_corr_map[ch] - 1500.0 * abs(p1_map.get(ch, 0.0)) + 10.5
         return val * 0.2
 
     def _zrange(vals):
@@ -502,15 +499,15 @@ def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
     # One board per type (same loop structure as _plot_p0_corrected_page)
     for tname in _TYPE_ORDER:
         filtered = {
-            ch: _corrected2(ch, grp_key)
-            for ch, (grp_key, var) in ch_meta.items()
-            if ch in p0_map and var == tname and grp_key in group_mpv
+            ch: _corrected2(ch)
+            for ch, var in ch_meta.items()
+            if ch in base_corr_map and var == tname
         }
         if not filtered:
             continue
         zmin_val, zmax_val = _zrange(list(filtered.values()))
         if tname in _cer_types:
-            for ch, (_grp_key, var) in ch_meta.items():
+            for ch, var in ch_meta.items():
                 if var in _cer_types - {tname} and ch in p0_map:
                     filtered[ch] = 0.0
         cer_hists, sci_hists = visualizeDRSBoards(
@@ -523,9 +520,9 @@ def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
 
     # Combined Cer (CerQuartz + CerPlastic together)
     cer_combined = {
-        ch: _corrected2(ch, grp_key)
-        for ch, (grp_key, var) in ch_meta.items()
-        if ch in p0_map and var in _cer_types and grp_key in group_mpv
+        ch: _corrected2(ch)
+        for ch, var in ch_meta.items()
+        if ch in base_corr_map and var in _cer_types
     }
     if cer_combined:
         zmin_val, zmax_val = _zrange(list(cer_combined.values()))
