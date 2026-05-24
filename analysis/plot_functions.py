@@ -65,7 +65,6 @@ def _pm(ctx):
         ctx.paths["root"], ctx.paths["plots"], ctx.paths["html"], ctx.run_number,
         selection_text=getattr(ctx, "selection_summary", ""),
         use_jsroot=getattr(ctx.args, 'jsroot', False),
-        canvasdir=ctx.paths.get("canvases"),
     )
 
 
@@ -649,7 +648,7 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False, do_ti
                     if not hist:
                         continue
                     var = get_channel_var(chan)
-                    pave = create_pave_text(0.15, 0.68, 0.70, 0.90)
+                    pave = create_pave_text(0.15, 0.75, 0.70, 0.90)
                     pave.AddText(
                         f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
                     pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")

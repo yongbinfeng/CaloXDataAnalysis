@@ -747,13 +747,14 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         h1 = ROOT.TH2F("h2" + outputname, "", 80, xmin, xmax, 80, ymin, ymax)
         h1.GetZaxis().SetLabelSize(0.03)
         if zmin != None and zmax != None:
-            # print(f"configuring z range to {zmin}, {zmax}")
             h1.GetZaxis().SetRangeUser(zmin, zmax)
             for h in myhistos:
                 h.GetZaxis().SetTitle(zlabel)
                 h.GetZaxis().SetRangeUser(zmin, zmax)
                 h.GetZaxis().SetLabelSize(0.04)
                 h.GetZaxis().SetTitleSize(0.05)
+                h.SetMinimum(zmin)
+                h.SetMaximum(zmax)
 
     if doth2 and ncolors != None:
         from utils.colors import colors
@@ -777,8 +778,8 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     h1.GetYaxis().SetLabelSize(0.045/(padsize1+padsize3))
     h1.GetXaxis().SetTitleSize(0.050/(padsize1+padsize3))
     h1.GetXaxis().SetLabelSize(0.045/(padsize1+padsize3))
-    h1.GetYaxis().SetTitleOffset(1.3*(padsize1+padsize3)*(600.0/W))
-    h1.GetXaxis().SetTitleOffset(1.1*(padsize1+padsize3))
+    h1.GetYaxis().SetTitleOffset((1.6 if doth2 else 1.3)*(padsize1+padsize3)*(600.0/W))
+    h1.GetXaxis().SetTitleOffset((1.1 if doth2 else 1.2)*(padsize1+padsize3))
 
     if showratio or showpull:
         h1.GetXaxis().SetLabelSize(0)

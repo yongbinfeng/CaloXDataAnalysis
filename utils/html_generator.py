@@ -237,7 +237,7 @@ def generate_jsroot_html(canvas_keys, canvas_jsons, plots_per_row=4, output_html
             out += f"""      <div class="plot" data-filename="{key}">
         <div class="plot-header">
           <div class="filename">{key}</div>
-          <button class="pdf-btn" onclick="saveSVG({idx}, '{key}')">SVG</button>
+          <button class="pdf-btn" onclick="savePDF({idx}, '{key}')">PDF</button>
           <button class="pdf-btn" onclick="savePNG({idx}, '{key}')">PNG</button>
         </div>
         <div id="jsroot_{idx}" class="jsroot-canvas" data-idx="{idx}">
@@ -262,6 +262,8 @@ def generate_jsroot_html(canvas_keys, canvas_jsons, plots_per_row=4, output_html
 <head>
   <meta charset="UTF-8">
   <title>{title}</title>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.3/dist/svg2pdf.umd.min.js"></script>
   <style>
     body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 10px 20px; margin: 0; line-height: 1.4; color: #333; }}
     .top-bar {{ display: flex; align-items: center; gap: 30px; padding: 10px 0 0; border-bottom: 1px solid #eee; margin-bottom: 15px; position: sticky; top: 0; background: white; z-index: 100; flex-wrap: wrap; }}
@@ -359,37 +361,53 @@ def generate_jsroot_html(canvas_keys, canvas_jsons, plots_per_row=4, output_html
       }}
     }}
 
-    // Build a scaled SVG blob from the live DOM rendering (avoids makeImage
-    // re-render which has TLatex font/position bugs in JSROOT's SVG backend).
-    function _liveSvgBlob(div, origW, origH, renderW, renderH) {{
+    // Return a cleaned clone of the live JSROOT SVG plus its natural dimensions.
+    // Strips interactive UI nodes and paints the bottom-left margin white to
+    // cover the JSROOT colour-select indicator (lives in a <g transform=...> so
+    // element-removal heuristics miss it).
+    function _liveSvgClone(div, origW, origH) {{
       const liveSvg = div.querySelector('svg');
       if (!liveSvg) return null;
       const clone = liveSvg.cloneNode(true);
-      // Strip JSROOT interactive UI nodes (zoom handles, tooltips, color widgets).
       clone.querySelectorAll('[class*="jsroot_interactive"]').forEach(el => el.remove());
       clone.querySelectorAll('foreignObject').forEach(el => el.remove());
       const curW = parseFloat(liveSvg.getAttribute('width')) || origW;
       const curH = parseFloat(liveSvg.getAttribute('height')) || origH;
-      // Cover the bottom-left margin region with white to hide the JSROOT
-      // colour-select indicator.  It lives inside a <g transform="translate(...)">
-      // so element-removal heuristics miss it; a white paint-over is reliable.
-      // Width covers the left margin (~15% of canvas); height covers the bottom
-      // margin (~13% of canvas).  The x-axis label is centred so is unaffected.
+      // Use viewBox coordinate space if present so the cover rect lands correctly.
+      let svgW = curW, svgH = curH;
+      const vb = liveSvg.getAttribute('viewBox');
+      if (vb) {{
+        const parts = vb.trim().split(/[\s,]+/);
+        if (parts.length >= 4) {{ svgW = parseFloat(parts[2]); svgH = parseFloat(parts[3]); }}
+      }}
       const ns = 'http://www.w3.org/2000/svg';
-      const coverBL = document.createElementNS(ns, 'rect');
-      coverBL.setAttribute('x', '0');
-      coverBL.setAttribute('y', String(curH * 0.87));
-      coverBL.setAttribute('width', String(curW * 0.14));
-      coverBL.setAttribute('height', String(curH * 0.13));
-      coverBL.setAttribute('fill', 'white');
-      clone.appendChild(coverBL);
+      const cover = document.createElementNS(ns, 'rect');
+      cover.setAttribute('x', '0');
+      cover.setAttribute('y', String(svgH * 0.93));
+      cover.setAttribute('width', String(svgW * 0.10));
+      cover.setAttribute('height', String(svgH * 0.07));
+      cover.setAttribute('fill', '#ffffff');
+      cover.setAttribute('fill-opacity', '1');
+      cover.setAttribute('stroke', 'none');
+      clone.appendChild(cover);
       if (!clone.getAttribute('viewBox')) clone.setAttribute('viewBox', `0 0 ${{curW}} ${{curH}}`);
+      return {{ clone, curW, curH }};
+    }}
+
+    // Build a scaled SVG Blob from the cleaned live DOM rendering.
+    function _liveSvgBlob(div, origW, origH, renderW, renderH) {{
+      const result = _liveSvgClone(div, origW, origH);
+      if (!result) return null;
+      const {{ clone }} = result;
       clone.setAttribute('width', renderW);
       clone.setAttribute('height', renderH);
       return new Blob([new XMLSerializer().serializeToString(clone)], {{ type: 'image/svg+xml' }});
     }}
 
-    window.saveSVG = async function(idx, key) {{
+    // PDF export: true vector PDF via svg2pdf.js applied to the live DOM SVG.
+    // The browser's rendering is already correct; we avoid JSROOT's SVG backend
+    // which caused text-positioning bugs in earlier approaches.
+    window.savePDF = async function(idx, key) {{
       const div = document.getElementById('jsroot_' + idx);
       if (div && !div.dataset.loaded) await loadCanvas(div);
       const jsonEl = document.getElementById('jsdata_' + idx);
@@ -398,14 +416,30 @@ def generate_jsroot_html(canvas_keys, canvas_jsons, plots_per_row=4, output_html
         const obj = parse(jsonEl.textContent);
         const origW = obj.fWindowWidth || obj.fCw || 800;
         const origH = obj.fWindowHeight || obj.fCh || 600;
-        const blob = _liveSvgBlob(div, origW, origH, origW, origH);
-        if (!blob) {{ alert('Canvas SVG not found — scroll to load it first.'); return; }}
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = key + '.svg';
-        document.body.appendChild(a); a.click();
-        document.body.removeChild(a); URL.revokeObjectURL(url);
-      }} catch(e) {{ alert('SVG export failed: ' + e); }}
+        const result = _liveSvgClone(div, origW, origH);
+        if (!result) {{ alert('Canvas SVG not found — scroll to load it first.'); return; }}
+        const {{ clone, curW, curH }} = result;
+        clone.setAttribute('width', origW);
+        clone.setAttribute('height', origH);
+        // Attach off-screen so svg2pdf.js can resolve inherited styles/fonts.
+        const host = document.createElement('div');
+        host.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:0;height:0;overflow:hidden';
+        host.appendChild(clone);
+        document.body.appendChild(host);
+        try {{
+          const {{ jsPDF }} = window.jspdf;
+          const pdf = new jsPDF({{
+            orientation: origW > origH ? 'landscape' : 'portrait',
+            unit: 'pt',
+            format: [origW, origH]
+          }});
+          const {{ svg2pdf }} = window.svg2pdf;
+          await svg2pdf(clone, pdf, {{ x: 0, y: 0, width: origW, height: origH }});
+          pdf.save(key + '.pdf');
+        }} finally {{
+          document.body.removeChild(host);
+        }}
+      }} catch(e) {{ alert('PDF export failed: ' + e); }}
     }};
 
     window.savePNG = async function(idx, key) {{
@@ -431,7 +465,7 @@ def generate_jsroot_html(canvas_keys, canvas_jsons, plots_per_row=4, output_html
             ctx.drawImage(img, 0, 0);
             // Erase any JSROOT corner indicator that survived the SVG cleanup.
             ctx.fillStyle = 'white';
-            ctx.fillRect(0, Math.floor(origH * 0.87) * scale, Math.ceil(origW * 0.14) * scale, Math.ceil(origH * 0.13) * scale);
+            ctx.fillRect(0, Math.floor(origH * 0.93) * scale, Math.ceil(origW * 0.10) * scale, Math.ceil(origH * 0.07) * scale);
             URL.revokeObjectURL(url);
             const a = document.createElement('a');
             a.href = canvas.toDataURL('image/png'); a.download = key + '.png';

@@ -10,7 +10,7 @@ def create_pave_text(
     x2: float = 0.60,
     y2: float = 0.90,
     font: int = 42,
-    size: float = 0.05,
+    size: float = 0.04,
     align: int = 11
 ) -> ROOT.TPaveText:
     """

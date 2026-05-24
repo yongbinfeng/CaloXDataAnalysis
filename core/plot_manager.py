@@ -27,7 +27,6 @@ class PlotManager:
         default_style: Optional[PlotStyle] = None,
         selection_text: str = "",
         use_jsroot: bool = False,
-        canvasdir: Optional[str] = None,
     ):
         """
         Initialize the PlotManager.
@@ -38,8 +37,7 @@ class PlotManager:
             htmldir: Base directory for HTML output
             run_number: Run number for labeling (optional)
             default_style: Default PlotStyle to use (optional)
-            use_jsroot: If True, save canvases to ROOT file and generate JSROOT HTML
-            canvasdir: Directory for canvas ROOT files (default: <results>/canvases)
+            use_jsroot: If True, embed canvas JSON in JSROOT HTML
         """
         self.rootdir = rootdir
         self.plotdir = plotdir
@@ -48,12 +46,6 @@ class PlotManager:
         self.default_style = default_style or PlotStyle()
         self.selection_text = selection_text
         self.use_jsroot = use_jsroot
-
-        if canvasdir is not None:
-            self.canvasdir = canvasdir
-        else:
-            results_dir = os.path.dirname(os.path.abspath(plotdir))
-            self.canvasdir = os.path.join(results_dir, "canvases")
 
         # Internal state
         self._plots: List[str] = []
