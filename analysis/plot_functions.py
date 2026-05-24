@@ -711,10 +711,12 @@ def plot_drs_cfd_mpv(ctx):
             cer_hists_c, sci_hists_c = visualizeDRSBoards(
                 ctx.drsboards, valuemaps=corr_map,
                 suffix=f"MPV_cfd_corr_Run{ctx.run_number}")
-            helper.plot_cer_sci_pair(
-                cer_hists_c, sci_hists_c,
-                f"DRS_CFD_MPV_corr_Run{ctx.run_number}",
-                zmin=zmin_c, zmax=zmax_c, nTextDigits=1)
+            helper.plot_board_map(
+                cer_hists_c, f"DRS_CFD_MPV_corr_Run{ctx.run_number}_Cer",
+                extra_text="Cer", zmin=38.0, zmax=42.5, nTextDigits=1)
+            helper.plot_board_map(
+                sci_hists_c, f"DRS_CFD_MPV_corr_Run{ctx.run_number}_Sci",
+                extra_text="Sci", zmin=zmin_c, zmax=zmax_c, nTextDigits=1)
 
         return pm.generate_html(
             "DRS/DRS_CFD_MPV.html", plots_per_row=2,
