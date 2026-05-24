@@ -27,6 +27,7 @@ auto_timer("Total Execution Time")
 setup_root(n_threads=10, batch_mode=True, load_functions=True)
 
 args = get_args()
+args.jsroot = True  # default to JSROOT for this script; pass --no-jsroot is not supported, edit this line to disable
 
 # ------------------------------------------------------------------
 # Build RDataFrame: DRS baseline subtraction + MCP clean-pulse +

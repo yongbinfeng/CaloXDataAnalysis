@@ -550,7 +550,7 @@ def TH2ToTH1s(h2, projY=False, label="X"):
     return hs, labels
 
 
-def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outputname, dology=True, showratio=False, dologx=False, lheader=None, donormalize=False, binomialratio=False, yrmax=2.0, yrmin=0.0, yrlabel=None, MCOnly=False, leftlegend=False, mycolors=None, legendPos=None, legendNCols=1, linestyles=None, markerstyles=None, showpull=False, doNewman=False, doPearson=False, ignoreHistError=False, ypullmin=-3.99, ypullmax=3.99, drawashist=False, padsize=(2, 0.9, 1.1), setGridx=False, setGridy=False, drawoptions=None, legendoptions=None, ratiooptions=None, dologz=False, doth2=False, ratiobase=0, redrawihist=-1, extra_text=None, noCMS=False, noLumi=False, nMaxDigits=None, nTextDigits=0, addOverflow=False, addUnderflow=False, plotdiff=False, hratiopanel=None, doratios=None, hpulls=None, W_ref=600, H_ref=600, is5TeV=False, outdir="plots", savepdf=True, zmin=0, zmax=2, extralabels=None, extralheader=None, extraToDraw=None, exlegoffset=0.08, run_number=None, ncolors=None, zlabel="Events", lumitext=None, usePDF=False, usePNG=True):
+def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outputname, dology=True, showratio=False, dologx=False, lheader=None, donormalize=False, binomialratio=False, yrmax=2.0, yrmin=0.0, yrlabel=None, MCOnly=False, leftlegend=False, mycolors=None, legendPos=None, legendNCols=1, linestyles=None, markerstyles=None, showpull=False, doNewman=False, doPearson=False, ignoreHistError=False, ypullmin=-3.99, ypullmax=3.99, drawashist=False, padsize=(2, 0.9, 1.1), setGridx=False, setGridy=False, drawoptions=None, legendoptions=None, ratiooptions=None, dologz=False, doth2=False, ratiobase=0, redrawihist=-1, extra_text=None, noCMS=False, noLumi=False, nMaxDigits=None, nTextDigits=0, addOverflow=False, addUnderflow=False, plotdiff=False, hratiopanel=None, doratios=None, hpulls=None, W_ref=600, H_ref=600, is5TeV=False, outdir="plots", savepdf=True, zmin=0, zmax=2, extralabels=None, extralheader=None, extraToDraw=None, exlegoffset=0.08, run_number=None, ncolors=None, zlabel="Events", lumitext=None, usePDF=False, usePNG=True, savecanvas=None, canvas_json_store=None):
     """
     draw histograms with the CMS tdr style
     """
@@ -596,13 +596,13 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         from utils.data_loader import getRunInfo
         btype, benergy = getRunInfo(run_number)
         btypes = {
-            "pion": "#pi^{+}",
-            "pions": "#pi^{+}",
-            "pi+": "#pi^{+}",
-            "positron": "e^{+}",
-            "positrons": "e^{+}",
-            "e+": "e^{+}",
-            "mu+": "#mu^{+}",
+            "pion": "#pi+",
+            "pions": "#pi+",
+            "pi+": "#pi+",
+            "positron": "e+",
+            "positrons": "e+",
+            "e+": "e+",
+            "mu+": "#mu+",
         }
         CMS_lumi.lumi_13TeV = f"Run {run_number}: {btypes.get(btype.lower(), btype.lower())}, {benergy} GeV"
     else:
@@ -740,11 +740,11 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
             pad1.SetLogx()
 
     if not doth2:
-        h1 = ROOT.TH1F("h1" + outputname, "h1", 80, xmin, xmax)
+        h1 = ROOT.TH1F("h1" + outputname, "", 80, xmin, xmax)
         h1.SetMinimum(ymin)
         h1.SetMaximum(ymax)
     else:
-        h1 = ROOT.TH2F("h2" + outputname, "h2", 80, xmin, xmax, 80, ymin, ymax)
+        h1 = ROOT.TH2F("h2" + outputname, "", 80, xmin, xmax, 80, ymin, ymax)
         h1.GetZaxis().SetLabelSize(0.03)
         if zmin != None and zmax != None:
             # print(f"configuring z range to {zmin}, {zmax}")
@@ -777,7 +777,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     h1.GetYaxis().SetLabelSize(0.045/(padsize1+padsize3))
     h1.GetXaxis().SetTitleSize(0.050/(padsize1+padsize3))
     h1.GetXaxis().SetLabelSize(0.045/(padsize1+padsize3))
-    h1.GetYaxis().SetTitleOffset(1.6*(padsize1+padsize3)*(600.0/W))
+    h1.GetYaxis().SetTitleOffset(1.3*(padsize1+padsize3)*(600.0/W))
     h1.GetXaxis().SetTitleOffset(1.1*(padsize1+padsize3))
 
     if showratio or showpull:
@@ -1021,7 +1021,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         if dologx:
             pad2.SetLogx()
 
-        h2 = ROOT.TH1F("h2", "h2", 80, xmin, xmax)
+        h2 = ROOT.TH1F("h2", "", 80, xmin, xmax)
         h2.GetXaxis().SetTitleSize(0.050/(padsize2+0.3*padsize3))
         h2.GetXaxis().SetLabelSize(0.045/(padsize2+0.3*padsize3))
         h2.GetYaxis().SetTitleSize(0.050/(padsize2+0.3*padsize3))
@@ -1084,7 +1084,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         if dologx:
             pad3.SetLogx()
 
-        h3 = ROOT.TH1F("h3", "h3", 80, xmin, xmax)
+        h3 = ROOT.TH1F("h3", "", 80, xmin, xmax)
         h3.GetXaxis().SetTitle("%s" % xlabel)
         h3.GetXaxis().SetTitleOffset(1.1)
         h3.GetXaxis().SetTitleSize(0.050/(padsize3+0.3*padsize2))
@@ -1111,6 +1111,9 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
 
     canvas.Update()
 
+    if canvas_json_store is not None:
+        canvas_json_store[os.path.basename(outputname)] = ROOT.TBufferJSON.ToJSON(canvas).Data()
+
     if "/" not in outputname:
         # path not included; by default put to plots/outputname
         outputname = outdir + "/" + outputname
@@ -1121,12 +1124,21 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         os.makedirs(dirpath)
 
     if savepdf:
-        # print("save plot to %s.pdf" % outputname)
-        # canvas.Print("%s.C"%outputname)
-        # canvas.Print("%s.pdf" % outputname)
         if usePDF:
             canvas.Print("%s.pdf" % outputname)
         if usePNG:
             canvas.Print("%s.png" % outputname)
-        # canvas.Print("%s.root" % outputname)
+
+    if savecanvas:
+        canvas_key = os.path.basename(outputname)
+        canvas_dir = os.path.dirname(savecanvas)
+        if canvas_dir and not os.path.exists(canvas_dir):
+            os.makedirs(canvas_dir)
+        _outfile = ROOT.TFile.Open(savecanvas, "UPDATE")
+        if _outfile and not _outfile.IsZombie():
+            canvas.Write(canvas_key, ROOT.TObject.kOverwrite)
+            _outfile.Close()
+        else:
+            print(f"Warning: could not open {savecanvas} for writing canvas {canvas_key}")
+
     return hratios if showratio else None

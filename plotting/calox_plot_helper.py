@@ -10,7 +10,7 @@ def create_pave_text(
     x2: float = 0.60,
     y2: float = 0.90,
     font: int = 42,
-    size: float = 0.04,
+    size: float = 0.05,
     align: int = 11
 ) -> ROOT.TPaveText:
     """
@@ -96,6 +96,7 @@ class BoardPlotHelper:
             zmin, zmax: Z-axis range
             nTextDigits: Number of digits for text display
         """
+        pm = self.manager
         DrawHistos(
             hists, "",
             self.xrange[0], self.xrange[1], "iX",
@@ -103,18 +104,20 @@ class BoardPlotHelper:
             output_name,
             dology=False,
             drawoptions=["col,text", "col,text"],
-            outdir=self.manager.get_output_dir(),
+            outdir=pm.get_output_dir(),
             doth2=True,
             W_ref=self.W_ref,
             H_ref=self.H_ref,
             extra_text=extra_text,
-            run_number=self.manager.run_number,
+            run_number=pm.run_number,
             zmin=zmin,
             zmax=zmax,
             nTextDigits=nTextDigits,
+            usePNG=not pm.use_jsroot,
+            canvas_json_store=pm._canvas_jsons if pm.use_jsroot else None,
             **kwargs
         )
-        self.manager.add_plot(output_name)
+        pm.add_plot(output_name)
         return self
 
     def plot_cer_sci_pair(

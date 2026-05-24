@@ -8,7 +8,8 @@ def get_run_paths(run_number):
     return {
         "root": f"results/root/Run{run_number}",
         "plots": f"results/plots/Run{run_number}",
-        "html": f"results/html/Run{run_number}"
+        "html": f"results/html/Run{run_number}",
+        "canvases": f"results/canvases/Run{run_number}",
     }
 
 

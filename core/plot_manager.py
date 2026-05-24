@@ -3,7 +3,7 @@ from typing import Optional, Union, List, Dict, Tuple, Any
 import ROOT
 from configs.plot_style import PlotStyle, STYLE_2D_COLZ, STYLE_CER_SCI
 from plotting.my_function import DrawHistos
-from utils.html_generator import generate_html
+from utils.html_generator import generate_html, generate_jsroot_html
 
 
 class HistogramNotFoundError(Exception):
@@ -26,6 +26,8 @@ class PlotManager:
         run_number: Optional[int] = None,
         default_style: Optional[PlotStyle] = None,
         selection_text: str = "",
+        use_jsroot: bool = False,
+        canvasdir: Optional[str] = None,
     ):
         """
         Initialize the PlotManager.
@@ -36,6 +38,8 @@ class PlotManager:
             htmldir: Base directory for HTML output
             run_number: Run number for labeling (optional)
             default_style: Default PlotStyle to use (optional)
+            use_jsroot: If True, save canvases to ROOT file and generate JSROOT HTML
+            canvasdir: Directory for canvas ROOT files (default: <results>/canvases)
         """
         self.rootdir = rootdir
         self.plotdir = plotdir
@@ -43,15 +47,24 @@ class PlotManager:
         self.run_number = run_number
         self.default_style = default_style or PlotStyle()
         self.selection_text = selection_text
+        self.use_jsroot = use_jsroot
+
+        if canvasdir is not None:
+            self.canvasdir = canvasdir
+        else:
+            results_dir = os.path.dirname(os.path.abspath(plotdir))
+            self.canvasdir = os.path.join(results_dir, "canvases")
 
         # Internal state
         self._plots: List[str] = []
+        self._canvas_jsons: Dict[str, str] = {}  # canvas_key -> TBufferJSON string (jsroot mode)
         self._open_files: Dict[str, ROOT.TFile] = {}
         self._current_outdir: Optional[str] = None
 
     def reset_plots(self) -> 'PlotManager':
         """Clear the collected plots list."""
         self._plots = []
+        self._canvas_jsons = {}
         return self
 
     def set_output_dir(self, subdir: str) -> 'PlotManager':
@@ -131,12 +144,16 @@ class PlotManager:
 
     def add_plot(self, output_name: str, prepend: bool = False) -> 'PlotManager':
         """Add a plot to the collection."""
-        plot_file = output_name if output_name.endswith(
-            '.png') else f"{output_name}.png"
-        if prepend:
-            self._plots.insert(0, plot_file)
+        if self.use_jsroot:
+            # Store the bare canvas key (basename, no extension)
+            key = os.path.basename(output_name).replace('.png', '').replace('.pdf', '')
+            entry = key
         else:
-            self._plots.append(plot_file)
+            entry = output_name if output_name.endswith('.png') else f"{output_name}.png"
+        if prepend:
+            self._plots.insert(0, entry)
+        else:
+            self._plots.append(entry)
         return self
 
     def add_newline(self) -> 'PlotManager':
@@ -188,6 +205,9 @@ class PlotManager:
 
         run_number = run_number if run_number is not None else self.run_number
 
+        if self.use_jsroot:
+            plot_kwargs.setdefault('usePNG', False)
+
         DrawHistos(
             hists,
             legends,
@@ -198,6 +218,7 @@ class PlotManager:
             output_name,
             outdir=self.get_output_dir(),
             run_number=run_number if includeRunNumber else None,
+            canvas_json_store=self._canvas_jsons if self.use_jsroot else None,
             **plot_kwargs
         )
 
@@ -238,6 +259,9 @@ class PlotManager:
         plot_kwargs['doth2'] = True
         plot_kwargs.update(kwargs)
 
+        if self.use_jsroot:
+            plot_kwargs.setdefault('usePNG', False)
+
         DrawHistos(
             [hist],
             "",
@@ -248,6 +272,7 @@ class PlotManager:
             output_name,
             outdir=self.get_output_dir(),
             run_number=self.run_number,
+            canvas_json_store=self._canvas_jsons if self.use_jsroot else None,
             **plot_kwargs
         )
 
@@ -371,17 +396,29 @@ class PlotManager:
 
         full_intro = "\n\n".join(
             t for t in (self.selection_text, intro_text) if t)
-        generate_html(
-            self._plots,
-            self.get_output_dir(),
-            plots_per_row=plots_per_row,
-            output_html=full_path,
-            title=title,
-            intro_text=full_intro
-        )
+
+        if self.use_jsroot and self._canvas_jsons:
+            generate_jsroot_html(
+                self._plots,
+                self._canvas_jsons,
+                plots_per_row=plots_per_row,
+                output_html=full_path,
+                title=title,
+                intro_text=full_intro,
+            )
+        else:
+            generate_html(
+                self._plots,
+                self.get_output_dir(),
+                plots_per_row=plots_per_row,
+                output_html=full_path,
+                title=title,
+                intro_text=full_intro,
+            )
 
         if clear_plots:
             self._plots = []
+            self._canvas_jsons = {}
 
         return full_path
 

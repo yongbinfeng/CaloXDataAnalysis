@@ -124,6 +124,10 @@ def CMS_lumi(pad,  i_period,  i_pos_x, plot_cms=True):
         latex.SetTextAlign(11)
         latex.SetTextSize(cms_text_size*t)
         latex.DrawLatex(l, 1-t+lumi_text_offset*t, cms_text)
+        if write_extra_text and extra_text:
+            latex.SetTextFont(extra_text_font)
+            latex.SetTextSize(extra_text_size*t)
+            latex.DrawLatex(l + 0.13, 1-t+lumi_text_offset*t, extra_text)
 
     pad.cd()
 
@@ -163,9 +167,9 @@ def CMS_lumi(pad,  i_period,  i_pos_x, plot_cms=True):
             latex.SetTextSize(extra_text_size*t)
             latex.DrawLatex(posX_+0.1, posY_ - rel_extra_dy *
                             cms_text_size*t, extra_text)
-    elif (write_extra_text):
+    elif (write_extra_text and not (plot_cms and extra_text)):
+        # skip when extra_text was already merged into the out_of_frame cms draw above
         if (i_pos_x == 0):
-            # posX_ =   l +  relPosX*(1-l-r)
             posX_ = l
             posY_ = 1-t+lumi_text_offset*t
 

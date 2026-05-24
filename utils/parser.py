@@ -17,6 +17,9 @@ def get_args():
         "--sequences", default=None, nargs="+", metavar="SEQ",
         help="DQM sequences to run (default: all enabled-by-default sequences). "
              "Example: --sequences monitor_conditions drs_waveforms drs_stats")
+    parser.add_argument(
+        "--jsroot", action="store_true", default=False,
+        help="Save canvases to ROOT file and generate JSROOT-powered HTML (no PNG files)")
     args = parser.parse_args()
 
     print(f"Run number: {args.run}")

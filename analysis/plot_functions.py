@@ -63,7 +63,10 @@ def _pm(ctx):
     """Convenience: create a PlotManager bound to ctx paths."""
     return PlotManager(
         ctx.paths["root"], ctx.paths["plots"], ctx.paths["html"], ctx.run_number,
-        selection_text=getattr(ctx, "selection_summary", ""))
+        selection_text=getattr(ctx, "selection_summary", ""),
+        use_jsroot=getattr(ctx.args, 'jsroot', False),
+        canvasdir=ctx.paths.get("canvases"),
+    )
 
 
 # ---------------------------------------------------------------------------
