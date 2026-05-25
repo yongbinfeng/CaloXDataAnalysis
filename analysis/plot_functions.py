@@ -704,8 +704,10 @@ def plot_drs_cfd_mpv(ctx):
             f"DRS_CFD_MPV_Run{ctx.run_number}",
             zmin=0, zmax=100, nTextDigits=1, zlabel="MPV [TS]")
 
+        _TS_TO_NS = 0.2
         corr_map = subtract_type_mpv(ctx.drsboards, raw_mpv_map)
         if corr_map:
+            corr_map = {k: round(v * _TS_TO_NS, 2) for k, v in corr_map.items()}
             vals = sorted(corr_map.values())
             n = len(vals)
             zmin_c = vals[max(0, int(0.05 * n))]
@@ -715,12 +717,12 @@ def plot_drs_cfd_mpv(ctx):
                 suffix=f"MPV_cfd_corr_Run{ctx.run_number}")
             helper.plot_board_map(
                 cer_hists_c, f"DRS_CFD_MPV_corr_Run{ctx.run_number}_Cer",
-                extra_text="Cer", zmin=38.0, zmax=42.5, nTextDigits=1,
-                zlabel="MPV - type avg [TS]")
+                extra_text="Cer", zmin=7.6, zmax=8.5, nTextDigits=2,
+                zlabel="MPV [ns]")
             helper.plot_board_map(
                 sci_hists_c, f"DRS_CFD_MPV_corr_Run{ctx.run_number}_Sci",
-                extra_text="Sci", zmin=zmin_c, zmax=zmax_c, nTextDigits=1,
-                zlabel="MPV - type avg [TS]")
+                extra_text="Sci", zmin=zmin_c, zmax=zmax_c, nTextDigits=2,
+                zlabel="MPV [ns]")
 
         return pm.generate_html(
             "DRS/DRS_CFD_MPV.html", plots_per_row=2,
@@ -731,8 +733,8 @@ def plot_drs_cfd_mpv(ctx):
                 "Values are shifted by -400 TS for readability. "
                 "Channels with fewer than 5 entries are shown as 0. "
                 "If data/drs/drs_cfd_mpv_at_1500mm_by_type.json exists, "
-                "a second pair of plots shows the residual (MPV − type-average at 1500 mm), "
-                "with color range set to the 10–90% quantile."
+                "a second pair of plots shows the residual (MPV − type-average at 1500 mm) "
+                "converted to ns (1 TS = 0.2 ns), with color range set to the 10–90% quantile."
             ))
 
 

@@ -927,7 +927,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         myhistos_clone[redrawihist].Draw(
             " ".join(filter(None, [drawoptions[redrawihist], "same"])))
 
-    CMS_lumi.extra_text_x_offset = 0.13 * H / W if doth2 else 0.13
+    CMS_lumi.extra_text_x_offset = 0.13 * H / W
 
     i_pos_x = 0
     plot_cms = True
@@ -958,7 +958,10 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
             if not isinstance(extraToDraw, list):
                 extraToDraw = [extraToDraw]
             for todraw in extraToDraw:
-                todraw.Draw()
+                if isinstance(todraw, tuple):
+                    todraw[0].Draw(todraw[1])
+                else:
+                    todraw.Draw()
         pad1.Update()
 
     else:
@@ -979,7 +982,10 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
             if not isinstance(extraToDraw, list):
                 extraToDraw = [extraToDraw]
             for todraw in extraToDraw:
-                todraw.Draw("same")
+                if isinstance(todraw, tuple):
+                    todraw[0].Draw("same " + todraw[1])
+                else:
+                    todraw.Draw("same")
         canvas.Update()
 
     ##

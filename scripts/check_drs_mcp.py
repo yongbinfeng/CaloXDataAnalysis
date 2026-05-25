@@ -36,7 +36,7 @@ args.jsroot = True  # default to JSROOT for this script; pass --no-jsroot is not
 manager = (
     CaloXAnalysisManager(args)
     .prepare(do_fers=False)
-    .apply_hole_veto(flag_only=True)
+    .apply_hole_veto(flag_only=False)
     .apply_mcp_diff_selection()
 )
 
