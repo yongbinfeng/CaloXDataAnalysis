@@ -65,10 +65,10 @@ class BoardPlotHelper:
     def __init__(
         self,
         manager: PlotManager,
-        xrange: Tuple[float, float] = (-14, 14),
-        yrange: Tuple[float, float] = (-10, 10),
-        W_ref: int = 1000,
-        H_ref: int = 1100
+        xrange: Tuple[float, float] = (-16.8, 16.8),
+        yrange: Tuple[float, float] = (-16.0, 16.0),
+        W_ref: int = 1270,
+        H_ref: int = 1000
     ):
         self.manager = manager
         self.xrange = xrange
@@ -84,26 +84,18 @@ class BoardPlotHelper:
         zmin: float = 0,
         zmax: Optional[float] = None,
         nTextDigits: int = 0,
+        zlabel: str = "",
         **kwargs
     ) -> 'BoardPlotHelper':
-        """
-        Plot a board visualization map (2D histogram with text).
-
-        Args:
-            hists: List of 2D histograms (typically [main, 3mm])
-            output_name: Output filename
-            extra_text: Text label (e.g., "Cer", "Sci")
-            zmin, zmax: Z-axis range
-            nTextDigits: Number of digits for text display
-        """
         pm = self.manager
+        first_opt = "colz,text" if zlabel else "col,text"
         DrawHistos(
             hists, "",
-            self.xrange[0], self.xrange[1], "iX",
-            self.yrange[0], self.yrange[1], "iY",
+            self.xrange[0], self.xrange[1], "X [cm]",
+            self.yrange[0], self.yrange[1], "Y [cm]",
             output_name,
             dology=False,
-            drawoptions=["col,text", "col,text"],
+            drawoptions=[first_opt, "col,text"],
             outdir=pm.get_output_dir(),
             doth2=True,
             W_ref=self.W_ref,
@@ -113,6 +105,7 @@ class BoardPlotHelper:
             zmin=zmin,
             zmax=zmax,
             nTextDigits=nTextDigits,
+            zlabel=zlabel,
             usePNG=not pm.use_jsroot,
             canvas_json_store=pm._canvas_jsons if pm.use_jsroot else None,
             **kwargs
@@ -128,22 +121,17 @@ class BoardPlotHelper:
         zmin: float = 0,
         zmax: Optional[float] = None,
         nTextDigits: int = 0,
+        zlabel: str = "",
         **kwargs
     ) -> 'BoardPlotHelper':
-        """
-        Plot a Cer/Sci pair of board maps.
-
-        Args:
-            cer_hists: Cerenkov histograms [main, 3mm]
-            sci_hists: Scintillator histograms [main, 3mm]
-            output_base: Base output name (will append _Cer and _Sci)
-        """
         self.plot_board_map(
             cer_hists, f"{output_base}_Cer",
-            extra_text="Cer", zmin=zmin, zmax=zmax, nTextDigits=nTextDigits, **kwargs
+            extra_text="Cer", zmin=zmin, zmax=zmax, nTextDigits=nTextDigits,
+            zlabel=zlabel, **kwargs
         )
         self.plot_board_map(
             sci_hists, f"{output_base}_Sci",
-            extra_text="Sci", zmin=zmin, zmax=zmax, nTextDigits=nTextDigits, **kwargs
+            extra_text="Sci", zmin=zmin, zmax=zmax, nTextDigits=nTextDigits,
+            zlabel=zlabel, **kwargs
         )
         return self

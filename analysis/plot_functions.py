@@ -278,12 +278,12 @@ def plot_fers_stats(ctx, *, do_mean=True, do_max=True, do_satfreq=True, do_pedes
 
         helper = BoardPlotHelper(pm)
         plot_configs = [
-            ("mean",     "FERS/Stat/Channel_Mean.html",    0,    8000, 0, do_mean),
-            ("max",      "FERS/Stat/Channel_Max.html",     0,    8000, 0, do_max),
-            ("satfreq",  "FERS/Stat/Channel_SatFreq.html", 0,    1,    2, do_satfreq),
-            ("pedestal", "FERS/Stat/Channel_Pedestal.html", 100, 300,  0, do_pedestal),
+            ("mean",     "FERS/Stat/Channel_Mean.html",     0,   8000, 0, "Mean ADC",          do_mean),
+            ("max",      "FERS/Stat/Channel_Max.html",      0,   8000, 0, "Max ADC",            do_max),
+            ("satfreq",  "FERS/Stat/Channel_SatFreq.html",  0,   1,    2, "Saturation Rate",    do_satfreq),
+            ("pedestal", "FERS/Stat/Channel_Pedestal.html", 100, 300,  0, "Pedestal [ADC]",     do_pedestal),
         ]
-        for stat, html_path, zmin, zmax, digits, do_run in plot_configs:
+        for stat, html_path, zmin, zmax, digits, zlabel, do_run in plot_configs:
             if not do_run:
                 continue
             pm.reset_plots()
@@ -292,7 +292,7 @@ def plot_fers_stats(ctx, *, do_mean=True, do_max=True, do_satfreq=True, do_pedes
                     board_hists[f"{gain}_{stat}_Cer"],
                     board_hists[f"{gain}_{stat}_Sci"],
                     f"FERS_Boards_Run{ctx.run_number}_Stats_{gain}_{stat}",
-                    zmin=zmin, zmax=zmax, nTextDigits=digits)
+                    zmin=zmin, zmax=zmax, nTextDigits=digits, zlabel=zlabel)
             output_htmls.append(pm.generate_html(html_path, plots_per_row=2))
 
     return output_htmls
@@ -702,7 +702,7 @@ def plot_drs_cfd_mpv(ctx):
         helper.plot_cer_sci_pair(
             cer_hists, sci_hists,
             f"DRS_CFD_MPV_Run{ctx.run_number}",
-            zmin=0, zmax=100, nTextDigits=1)
+            zmin=0, zmax=100, nTextDigits=1, zlabel="MPV [TS]")
 
         corr_map = subtract_type_mpv(ctx.drsboards, raw_mpv_map)
         if corr_map:
@@ -715,10 +715,12 @@ def plot_drs_cfd_mpv(ctx):
                 suffix=f"MPV_cfd_corr_Run{ctx.run_number}")
             helper.plot_board_map(
                 cer_hists_c, f"DRS_CFD_MPV_corr_Run{ctx.run_number}_Cer",
-                extra_text="Cer", zmin=38.0, zmax=42.5, nTextDigits=1)
+                extra_text="Cer", zmin=38.0, zmax=42.5, nTextDigits=1,
+                zlabel="MPV - type avg [TS]")
             helper.plot_board_map(
                 sci_hists_c, f"DRS_CFD_MPV_corr_Run{ctx.run_number}_Sci",
-                extra_text="Sci", zmin=zmin_c, zmax=zmax_c, nTextDigits=1)
+                extra_text="Sci", zmin=zmin_c, zmax=zmax_c, nTextDigits=1,
+                zlabel="MPV - type avg [TS]")
 
         return pm.generate_html(
             "DRS/DRS_CFD_MPV.html", plots_per_row=2,

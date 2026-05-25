@@ -35,6 +35,8 @@ lumi_sqrtS = ""
 
 draw_logo = False
 
+extra_text_x_offset = 0.13
+
 
 def CMS_lumi(pad,  i_period,  i_pos_x, plot_cms=True):
     out_of_frame = False
@@ -127,7 +129,7 @@ def CMS_lumi(pad,  i_period,  i_pos_x, plot_cms=True):
         if write_extra_text and extra_text:
             latex.SetTextFont(extra_text_font)
             latex.SetTextSize(extra_text_size*t)
-            latex.DrawLatex(l + 0.13, 1-t+lumi_text_offset*t, extra_text)
+            latex.DrawLatex(l + extra_text_x_offset, 1-t+lumi_text_offset*t, extra_text)
 
     pad.cd()
 

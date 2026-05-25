@@ -667,7 +667,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
             if W_ref < 1000:
                 canvas.SetRightMargin(0.18)
             else:
-                canvas.SetRightMargin(0.12)
+                canvas.SetRightMargin(0.18)
         else:
             canvas.SetRightMargin(0.095)
         padsize2 = 0.
@@ -753,6 +753,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
                 h.GetZaxis().SetRangeUser(zmin, zmax)
                 h.GetZaxis().SetLabelSize(0.04)
                 h.GetZaxis().SetTitleSize(0.05)
+                h.GetZaxis().SetTitleOffset(1.4)
                 h.SetMinimum(zmin)
                 h.SetMaximum(zmax)
 
@@ -773,7 +774,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
 
     h1.GetXaxis().SetNdivisions(6, 5, 0)
     h1.GetYaxis().SetNdivisions(6, 5, 0)
-    h1.GetYaxis().SetTitle(ylabel)
+    h1.GetYaxis().SetTitle("Events" if ylabel == "Counts" else ylabel)
     h1.GetYaxis().SetTitleSize(0.050/(padsize1+padsize3))
     h1.GetYaxis().SetLabelSize(0.045/(padsize1+padsize3))
     h1.GetXaxis().SetTitleSize(0.050/(padsize1+padsize3))
@@ -925,6 +926,8 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     if redrawihist >= 0:
         myhistos_clone[redrawihist].Draw(
             " ".join(filter(None, [drawoptions[redrawihist], "same"])))
+
+    CMS_lumi.extra_text_x_offset = 0.13 * H / W if doth2 else 0.13
 
     i_pos_x = 0
     plot_cms = True
