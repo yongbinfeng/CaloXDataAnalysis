@@ -502,6 +502,12 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_service_drs_vs_ts=True, do_
         with _pm(ctx) as pm:
             pm.set_output_dir("DRS_Prof_VS_TS")
             infile = pm._get_file("drs_vs_ts.root")
+
+            _COMBO_VARS = ("CerQuartz", "CerPlastic", "Sci")
+            combo_profs = {}  # {(size_tag, var_tag): {"raw": h, "ref": h, "mcp": h}}
+
+            pm.add_newline()  # separator: combo plots (prepended) | per-channel plots
+
             for _, board in ctx.drsboards.items():
                 for chan in board:
                     ch_blsub = chan.get_channel_name(blsub=True)
@@ -535,6 +541,47 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_service_drs_vs_ts=True, do_
                         legends=["raw ts", "ts_ref", "ts_mcp"],
                         legendPos=[0.55, 0.70, 0.90, 0.90],
                         style=_STYLE_1D, extraToDraw=pave, extra_text=var)
+
+                    # Accumulate for combination plots
+                    if not chan.is_reference and var in _COMBO_VARS:
+                        size_tag = "6mm" if chan.is6mm else "3mm"
+                        key = (size_tag, var)
+                        if key not in combo_profs:
+                            combo_profs[key] = {"raw": None, "ref": None, "mcp": None}
+                        for mode, h_orig in [("raw", hist), ("ref", hist_ref), ("mcp", hist_mcp)]:
+                            if h_orig is None:
+                                continue
+                            if combo_profs[key][mode] is None:
+                                combo_profs[key][mode] = h_orig.Clone(
+                                    f"combo_prof_{size_tag}_{var}_{mode}")
+                            else:
+                                combo_profs[key][mode].Add(h_orig)
+
+            # Plot combination profiles; reverse sort so prepend yields 3mm-first order
+            _VAR_ORDER = {"CerQuartz": 0, "CerPlastic": 1, "Sci": 2}
+            for (size_tag, var_tag), modes in sorted(
+                    combo_profs.items(),
+                    key=lambda x: (x[0][0], _VAR_ORDER.get(x[0][1], 99)),
+                    reverse=True):
+                hists_combo = [modes[m] for m in ("raw", "ref", "mcp") if modes[m] is not None]
+                labels_combo = [lbl for m, lbl in [("raw", "raw ts"), ("ref", "ts_ref"), ("mcp", "ts_mcp")]
+                                if modes[m] is not None]
+                if not hists_combo:
+                    continue
+                ymin_tmp, ymax_tmp = get_drs_prof_plot_ranges(
+                    subtractMedian=True, is_amplified=True,
+                    is6mm=(size_tag == "6mm"), is_reference=False,
+                    is_cer=var_tag.startswith("Cer"))
+                pm.plot_1d(
+                    hists_combo,
+                    f"DRS_ADC_Prof_VS_ts_Combined_{size_tag}_{var_tag}",
+                    "TS", (0, 1024),
+                    "Mean DRS Output", (ymin_tmp, ymax_tmp),
+                    legends=labels_combo,
+                    legendPos=[0.55, 0.70, 0.90, 0.90],
+                    style=_STYLE_1D, extra_text=f"{size_tag} {var_tag}",
+                    prepend=True)
+
             output_htmls.append(
                 pm.generate_html("DRS/DRS_Prof_vs_TS.html", plots_per_row=9))
 
