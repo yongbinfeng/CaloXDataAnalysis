@@ -48,6 +48,7 @@ _STYLE_1D = PlotStyle(
     addOverflow=False,
     addUnderflow=False,
     legendPos=[0.25, 0.75, 0.40, 0.90],
+    legendoptions="L",
 )
 _STYLE_1D_LOG = PlotStyle(
     dology=True,
@@ -56,6 +57,7 @@ _STYLE_1D_LOG = PlotStyle(
     addOverflow=False,
     addUnderflow=False,
     legendPos=[0.25, 0.75, 0.40, 0.90],
+    legendoptions="L",
 )
 
 
@@ -445,9 +447,13 @@ def _plot_drs_channel_vs_ts(pm, infile, channel_name, mode, ymin, ymax, pave,
         style=_STYLE_2D_LOG, extraToDraw=pave, extra_text=extra_text)
 
 
-def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_service_drs_vs_ts=True, do_drs_prof=True):
+def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_service_drs_vs_ts=True, do_drs_prof=True, do_mcp_only=True):
     """Plot DRS waveform 2D hists for raw / ref / mcp TS correction modes
-    plus service-DRS profiles. Returns list of HTML paths."""
+    plus service-DRS profiles. Returns list of HTML paths.
+
+    do_mcp_only: if True, per-channel profile plots show only ts_mcp;
+                 combined plots always use ts_mcp only.
+    """
     output_htmls = []
     map_mcp_channels = get_mcp_channels(ctx.run_number)
     list_mcp_channels = list(map_mcp_channels.values())
@@ -503,23 +509,61 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_service_drs_vs_ts=True, do_
             pm.set_output_dir("DRS_Prof_VS_TS")
             infile = pm._get_file("drs_vs_ts.root")
 
-            _COMBO_VARS = ("CerQuartz", "CerPlastic", "Sci")
-            combo_profs = {}  # {(size_tag, var_tag): {"raw": h, "ref": h, "mcp": h}}
+            _VAR_ORDER = {"CerQuartz": 0, "CerPlastic": 1, "Sci": 2}
+            _SIZES = ("3mm", "6mm")
+            _VARS = ("CerQuartz", "CerPlastic", "Sci")
+            _COLORS_3 = [ROOT.kRed+1, ROOT.kMagenta+1, ROOT.kBlue+1]
+            _COLORS_6 = [ROOT.kRed+1, ROOT.kMagenta+1, ROOT.kBlue+1,
+                         ROOT.kGreen+2, ROOT.kOrange+1, ROOT.kCyan+2]
+
+            def _data_yrange(hists, pad=0.25):
+                lo, hi = float('inf'), float('-inf')
+                for h in hists:
+                    for i in range(1, h.GetNbinsX() + 1):
+                        if h.GetBinError(i) > 0:
+                            v = h.GetBinContent(i)
+                            lo = min(lo, v)
+                            hi = max(hi, v)
+                if lo == float('inf'):
+                    return -1.0, 1.0
+                span = hi - lo or 1.0
+                return lo - pad * span, hi + pad * span
+
+            def _combo_group_plots(entries, group_name, xlabel, xrange_fn, prefix):
+                if not entries:
+                    return
+                hists_c = [e[0] for e in entries]
+                labels_c = ([f"{e[2]} {e[1]}" for e in entries]
+                            if group_name == "all" else [e[1] for e in entries])
+                palette = _COLORS_6 if group_name == "all" else _COLORS_3
+                xmin, xmax = xrange_fn(hists_c)
+                ymin_c, ymax_c = _data_yrange(hists_c)
+                pm.plot_1d(
+                    hists_c,
+                    f"{prefix}_{group_name}",
+                    xlabel, (xmin, xmax),
+                    "Mean DRS Output", (ymin_c, ymax_c),
+                    legends=labels_c,
+                    legendPos=[0.55, 0.70, 0.90, 0.90],
+                    style=_STYLE_1D, mycolors=palette, extra_text=group_name,
+                    prepend=True)
 
             pm.add_newline()  # separator: combo plots (prepended) | per-channel plots
 
             for _, board in ctx.drsboards.items():
                 for chan in board:
                     ch_blsub = chan.get_channel_name(blsub=True)
-                    hist = infile.Get(f"prof_{ch_blsub}_VS_ts")
-                    hist_ref = infile.Get(f"prof_{ch_blsub}_VS_ts_ref")
-                    hist_mcp = infile.Get(f"prof_{ch_blsub}_VS_ts_mcp")
+
+                    def _get_proj(name):
+                        h = infile.Get(name)
+                        return h.ProjectionX() if h else None
+
+                    hist = _get_proj(f"prof_{ch_blsub}_VS_ts")
+                    hist_ref = _get_proj(f"prof_{ch_blsub}_VS_ts_ref")
+                    hist_mcp = _get_proj(f"prof_{ch_blsub}_VS_ts_mcp")
                     if not hist:
                         print(f"Warning: prof_{ch_blsub}_VS_ts not found")
                         continue
-                    for h in [hist, hist_ref, hist_mcp]:
-                        if h:
-                            h = h.ProjectionX()
                     ymin_tmp, ymax_tmp = get_drs_prof_plot_ranges(
                         subtractMedian=True,
                         is_amplified=chan.is_amplified,
@@ -533,54 +577,71 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_service_drs_vs_ts=True, do_
                         pave.AddText(
                             f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
                     var = get_channel_var(chan)
-                    pm.plot_1d(
-                        [h for h in [hist, hist_ref, hist_mcp] if h],
-                        f"DRS_ADC_Prof_VS_ts_{ch_blsub}_{var}",
-                        "TS", (0, 1024),
-                        "Mean DRS Output", (ymin_tmp, ymax_tmp),
-                        legends=["raw ts", "ts_ref", "ts_mcp"],
-                        legendPos=[0.55, 0.70, 0.90, 0.90],
-                        style=_STYLE_1D, extraToDraw=pave, extra_text=var)
 
-                    # Accumulate for combination plots
-                    if not chan.is_reference and var in _COMBO_VARS:
-                        size_tag = "6mm" if chan.is6mm else "3mm"
-                        key = (size_tag, var)
-                        if key not in combo_profs:
-                            combo_profs[key] = {"raw": None, "ref": None, "mcp": None}
-                        for mode, h_orig in [("raw", hist), ("ref", hist_ref), ("mcp", hist_mcp)]:
-                            if h_orig is None:
-                                continue
-                            if combo_profs[key][mode] is None:
-                                combo_profs[key][mode] = h_orig.Clone(
-                                    f"combo_prof_{size_tag}_{var}_{mode}")
-                            else:
-                                combo_profs[key][mode].Add(h_orig)
+                    if do_mcp_only:
+                        hists_to_plot = [h for h in [hist_mcp] if h]
+                        legends_to_use = ["ts_mcp"] if hist_mcp else []
+                    else:
+                        pairs = [(hist, "raw ts"), (hist_ref, "ts_ref"), (hist_mcp, "ts_mcp")]
+                        hists_to_plot = [h for h, _ in pairs if h]
+                        legends_to_use = [lbl for h, lbl in pairs if h]
 
-            # Plot combination profiles; reverse sort so prepend yields 3mm-first order
-            _VAR_ORDER = {"CerQuartz": 0, "CerPlastic": 1, "Sci": 2}
-            for (size_tag, var_tag), modes in sorted(
-                    combo_profs.items(),
-                    key=lambda x: (x[0][0], _VAR_ORDER.get(x[0][1], 99)),
-                    reverse=True):
-                hists_combo = [modes[m] for m in ("raw", "ref", "mcp") if modes[m] is not None]
-                labels_combo = [lbl for m, lbl in [("raw", "raw ts"), ("ref", "ts_ref"), ("mcp", "ts_mcp")]
-                                if modes[m] is not None]
-                if not hists_combo:
-                    continue
-                ymin_tmp, ymax_tmp = get_drs_prof_plot_ranges(
-                    subtractMedian=True, is_amplified=True,
-                    is6mm=(size_tag == "6mm"), is_reference=False,
-                    is_cer=var_tag.startswith("Cer"))
-                pm.plot_1d(
-                    hists_combo,
-                    f"DRS_ADC_Prof_VS_ts_Combined_{size_tag}_{var_tag}",
-                    "TS", (0, 1024),
-                    "Mean DRS Output", (ymin_tmp, ymax_tmp),
-                    legends=labels_combo,
-                    legendPos=[0.55, 0.70, 0.90, 0.90],
-                    style=_STYLE_1D, extra_text=f"{size_tag} {var_tag}",
-                    prepend=True)
+                    if hists_to_plot:
+                        pm.plot_1d(
+                            hists_to_plot,
+                            f"DRS_ADC_Prof_VS_ts_{ch_blsub}_{var}",
+                            "TS", (0, 1024),
+                            "Mean DRS Output", (ymin_tmp, ymax_tmp),
+                            legends=legends_to_use,
+                            legendPos=[0.55, 0.70, 0.90, 0.90],
+                            style=_STYLE_1D, extraToDraw=pave, extra_text=var)
+
+            # Corr combo plots (prepended first; TS combos prepended after → TS appears before corr)
+            try:
+                corr_file = pm._get_file("drs_prof_corr_combined.root")
+                corr_entries = []
+                for size_tag in _SIZES:
+                    for var in sorted(_VARS, key=lambda v: _VAR_ORDER[v]):
+                        h = corr_file.Get(f"combo_prof_corr_{size_tag}_{var}_mcp")
+                        if h:
+                            corr_entries.append((h, var, size_tag))
+                corr_grouped = {
+                    "3mm": [(h, v, s) for h, v, s in corr_entries if s == "3mm"],
+                    "6mm": [(h, v, s) for h, v, s in corr_entries if s == "6mm"],
+                    "all": corr_entries,
+                }
+                for group_name, entries in [("3mm", corr_grouped["3mm"]),
+                                            ("6mm", corr_grouped["6mm"]),
+                                            ("all", corr_grouped["all"])]:
+                    _combo_group_plots(
+                        entries, group_name,
+                        "Time (ns)",
+                        lambda hs: (hs[0].GetXaxis().GetXmin(), hs[0].GetXaxis().GetXmax()),
+                        "DRS_ADC_Prof_VS_corr_Combined")
+            except FileNotFoundError:
+                pass
+
+            # TS combo plots (prepended after corr → appear before corr in final HTML)
+            combo_file = pm._get_file("drs_prof_combined.root")
+            all_entries = []
+            for size_tag in _SIZES:
+                for var in sorted(_VARS, key=lambda v: _VAR_ORDER[v]):
+                    h = combo_file.Get(f"combo_prof_{size_tag}_{var}_mcp")
+                    if h:
+                        all_entries.append((h, var, size_tag))
+            grouped = {
+                "3mm": [(h, v, s) for h, v, s in all_entries if s == "3mm"],
+                "6mm": [(h, v, s) for h, v, s in all_entries if s == "6mm"],
+                "all": all_entries,
+            }
+            for group_name, entries in [("3mm", grouped["3mm"]),
+                                        ("6mm", grouped["6mm"]),
+                                        ("all", grouped["all"])]:
+                _combo_group_plots(
+                    entries, group_name,
+                    "TS",
+                    lambda hs: (0, 1024),
+                    "DRS_ADC_Prof_VS_ts_Combined")
 
             output_htmls.append(
                 pm.generate_html("DRS/DRS_Prof_vs_TS.html", plots_per_row=9))
@@ -686,6 +747,135 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False, do_ti
         with _pm(ctx) as pm:
             pm.set_output_dir("DRS_Stats")
             infile = pm._get_file("drs_stats.root")
+
+            _VAR_ORDER = {"CerQuartz": 0, "CerPlastic": 1, "Sci": 2}
+            _SIZE_ORDER = {"3mm": 0, "6mm": 1}
+            _VAR_IS_CER = {"CerQuartz": True, "CerPlastic": True, "Sci": False}
+            _SIZES = ("3mm", "6mm")
+            _VARS = ("CerQuartz", "CerPlastic", "Sci")
+            _COLORS_3 = [ROOT.kRed+1, ROOT.kMagenta+1, ROOT.kBlue+1]
+            _COLORS_6 = [ROOT.kRed+1, ROOT.kMagenta+1, ROOT.kBlue+1,
+                         ROOT.kGreen+2, ROOT.kOrange+1, ROOT.kCyan+2]
+
+            # --- Overlay + summary plots from pre-computed combined file ---
+            try:
+                combo_file = pm._get_file("drs_finebins_combined.root")
+                all_entries = []
+                for size_tag in _SIZES:
+                    for var in sorted(_VARS, key=lambda v: _VAR_ORDER[v]):
+                        h = combo_file.Get(f"combo_finebins_{size_tag}_{var}")
+                        if h:
+                            all_entries.append((h, var, size_tag))
+
+                grouped = {
+                    "3mm": [(h, v, s) for h, v, s in all_entries if s == "3mm"],
+                    "6mm": [(h, v, s) for h, v, s in all_entries if s == "6mm"],
+                    "all": all_entries,
+                }
+
+                # Overlay plots: all-3mm, all-6mm, all-6
+                for group_name, entries in [("3mm", grouped["3mm"]),
+                                            ("6mm", grouped["6mm"]),
+                                            ("all", grouped["all"])]:
+                    if not entries:
+                        continue
+                    hists_combo = [e[0] for e in entries]
+                    labels_combo = ([f"{e[2]} {e[1]}" for e in entries]
+                                    if group_name == "all" else [e[1] for e in entries])
+                    palette = _COLORS_6 if group_name == "all" else _COLORS_3
+                    pm.plot_1d(
+                        hists_combo,
+                        f"DRS_Time_FineBins_Combined_{group_name}",
+                        "CFD TS (MCP-corrected)", (410, 490),
+                        "Counts", (0.9, None),
+                        legends=labels_combo,
+                        legendPos=[0.55, 0.70, 0.90, 0.90],
+                        style=_STYLE_1D_LOG, mycolors=palette, extra_text=group_name)
+
+                pm.add_newline()
+
+                # Individual summary plots per (size, var) with MPV
+                for h, var, size_tag in sorted(
+                        all_entries,
+                        key=lambda e: (_SIZE_ORDER[e[2]], _VAR_ORDER[e[1]])):
+                    xrange_fb = get_drs_cfd_finebins_range(_VAR_IS_CER[var])
+                    pave = create_pave_text(0.15, 0.75, 0.70, 0.90)
+                    pave.AddText(f"{size_tag} {var}")
+                    if h.GetEntries() >= 5:
+                        mpv, mpv_err = get_hist_mpv(h)
+                        pave.AddText(f"MPV: {mpv:.1f} #pm {mpv_err:.1f} TS")
+                    pm.plot_1d(
+                        h, f"DRS_Time_FineBins_Summary_{size_tag}_{var}",
+                        "CFD TS (MCP-corrected)", xrange_fb,
+                        "Counts", (0.9, None),
+                        style=_STYLE_1D_LOG, extraToDraw=pave,
+                        extra_text=f"{size_tag} {var}")
+
+            except FileNotFoundError:
+                pass  # drs_finebins_combined.root not yet generated
+
+            # --- Corr overlay + summary plots (X axis in ns) ---
+            try:
+                corr_combo_file = pm._get_file("drs_finebins_corr_combined.root")
+                corr_entries = []
+                for size_tag in _SIZES:
+                    for var in sorted(_VARS, key=lambda v: _VAR_ORDER[v]):
+                        h = corr_combo_file.Get(f"combo_finebins_corr_{size_tag}_{var}")
+                        if h:
+                            corr_entries.append((h, var, size_tag))
+
+                corr_grouped = {
+                    "3mm": [(h, v, s) for h, v, s in corr_entries if s == "3mm"],
+                    "6mm": [(h, v, s) for h, v, s in corr_entries if s == "6mm"],
+                    "all": corr_entries,
+                }
+
+                for group_name, entries in [("3mm", corr_grouped["3mm"]),
+                                            ("6mm", corr_grouped["6mm"]),
+                                            ("all", corr_grouped["all"])]:
+                    if not entries:
+                        continue
+                    hists_combo = [e[0] for e in entries]
+                    labels_combo = ([f"{e[2]} {e[1]}" for e in entries]
+                                    if group_name == "all" else [e[1] for e in entries])
+                    palette = _COLORS_6 if group_name == "all" else _COLORS_3
+                    xmin_ns = hists_combo[0].GetXaxis().GetXmin()
+                    xmax_ns = hists_combo[0].GetXaxis().GetXmax()
+                    pm.plot_1d(
+                        hists_combo,
+                        f"DRS_Time_FineBins_Corr_Combined_{group_name}",
+                        "Time (ns)", (xmin_ns, xmax_ns),
+                        "Counts", (0.9, None),
+                        legends=labels_combo,
+                        legendPos=[0.55, 0.70, 0.90, 0.90],
+                        style=_STYLE_1D_LOG, mycolors=palette, extra_text=group_name)
+
+                pm.add_newline()
+
+                _NS_WINDOW = 1.2  # ±1.2 ns ≈ ±6 TS * 0.2 ns/TS
+                for h, var, size_tag in sorted(
+                        corr_entries,
+                        key=lambda e: (_SIZE_ORDER[e[2]], _VAR_ORDER[e[1]])):
+                    xmin_ns = h.GetXaxis().GetXmin()
+                    xmax_ns = h.GetXaxis().GetXmax()
+                    pave = create_pave_text(0.15, 0.75, 0.70, 0.90)
+                    pave.AddText(f"{size_tag} {var}")
+                    if h.GetEntries() >= 5:
+                        mpv, mpv_err = get_hist_mpv(h, window_ts=_NS_WINDOW)
+                        pave.AddText(f"MPV: {mpv:.2f} #pm {mpv_err:.2f} ns")
+                    pm.plot_1d(
+                        h, f"DRS_Time_FineBins_Corr_Summary_{size_tag}_{var}",
+                        "Time (ns)", (xmin_ns, xmax_ns),
+                        "Counts", (0.9, None),
+                        style=_STYLE_1D_LOG, extraToDraw=pave,
+                        extra_text=f"{size_tag} {var}")
+
+            except FileNotFoundError:
+                pass  # drs_finebins_corr_combined.root not yet generated
+
+            pm.add_newline()
+
+            # --- Per-channel plots ---
             for _, board in ctx.drsboards.items():
                 for chan in board:
                     if chan.is_reference:

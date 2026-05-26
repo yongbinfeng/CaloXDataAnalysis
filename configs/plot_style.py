@@ -24,6 +24,8 @@ class PlotStyle:
     zlabel: str = "Events"
     linestyles: Optional[List[int]] = None
     markerstyles: Optional[List[int]] = None
+    nMaxDigits: Optional[int] = None
+    legendoptions: Optional[Union[str, List]] = None
 
     def to_kwargs(self) -> Dict:
         """Convert to kwargs for DrawHistos."""
@@ -55,6 +57,10 @@ class PlotStyle:
             kwargs['linestyles'] = self.linestyles
         if self.markerstyles is not None:
             kwargs['markerstyles'] = self.markerstyles
+        if self.nMaxDigits is not None:
+            kwargs['nMaxDigits'] = self.nMaxDigits
+        if self.legendoptions is not None:
+            kwargs['legendoptions'] = self.legendoptions
         return kwargs
 
 

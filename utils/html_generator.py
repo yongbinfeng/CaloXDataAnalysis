@@ -280,9 +280,16 @@ def generate_jsroot_html(canvas_keys, canvas_jsons, plots_per_row=4, output_html
     .filename {{ font-weight: 600; font-size: 12px; word-break: break-all; color: #444; text-align: left; }}
     .pdf-btn {{ flex-shrink: 0; padding: 1px 7px; font-size: 11px; cursor: pointer; border: 1px solid #bbb; border-radius: 3px; background: #f5f5f5; color: #555; white-space: nowrap; }}
     .pdf-btn:hover {{ background: #e0e0e0; }}
-    .jsroot-canvas {{ width: 100%; min-height: 200px; }}
+    .jsroot-canvas {{ width: 100%; min-height: 200px; cursor: zoom-in; }}
     .jsroot-loading {{ display: flex; align-items: center; justify-content: center; height: 100%; color: #aaa; font-size: 13px; }}
     button {{ padding: 4px 12px; cursor: pointer; font-size: 13px; }}
+    #enlargeModal {{ display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; align-items: center; justify-content: center; }}
+    #enlargeModal.open {{ display: flex; }}
+    #enlargeOuter {{ display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }}
+    #enlargeBtnBar {{ display: flex; gap: 6px; }}
+    #enlargeBtnBar button {{ padding: 3px 12px; font-size: 12px; cursor: pointer; border: 1px solid #bbb; border-radius: 3px; background: rgba(255,255,255,0.9); color: #333; }}
+    #enlargeBtnBar button:hover {{ background: #fff; }}
+    #enlargeInner {{ background: #fff; box-shadow: 0 8px 40px rgba(0,0,0,0.5); }}
     .axis-bar {{ display: flex; align-items: center; gap: 6px; flex-basis: 100%; padding: 5px 0 8px; font-size: 12px; color: #555; flex-wrap: wrap; }}
     .axis-bar input[type="number"] {{ width: 72px; padding: 2px 4px; font-size: 12px; border: 1px solid #ccc; border-radius: 3px; }}
     .axis-bar label {{ display: flex; align-items: center; gap: 3px; cursor: pointer; }}
@@ -330,6 +337,18 @@ def generate_jsroot_html(canvas_keys, canvas_jsons, plots_per_row=4, output_html
   {f'<div class="intro-text">{formatted_intro}</div>' if intro_text else ''}
   <div id="plotContainer">
 {body}  </div>
+
+  <!-- Enlarge modal: intercepts JSROOT dblclick, draws at correct aspect ratio -->
+  <div id="enlargeModal">
+    <div id="enlargeOuter">
+      <div id="enlargeBtnBar">
+        <button onclick="saveEnlargePDF()">PDF</button>
+        <button onclick="saveEnlargePNG()">PNG</button>
+        <button onclick="closeEnlarge()" title="Close (Esc)">&#x2715;</button>
+      </div>
+      <div id="enlargeInner"></div>
+    </div>
+  </div>
 
   <script type="module">
     import {{ parse, draw, resize, makeImage }} from '{JSROOT_CDN}';
@@ -478,13 +497,146 @@ def generate_jsroot_html(canvas_keys, canvas_jsons, plots_per_row=4, output_html
       }} catch(e) {{ alert('PNG export failed: ' + e); }}
     }};
 
+    // --- Enlarge modal: draw at correct aspect ratio ---
+    let _enlargePainter = null;
+    let _enlargeIdx = null;
+    let _enlargeKey = null;
+
+    window.showEnlarge = async function(idx, key) {{
+      _enlargeIdx = idx;
+      _enlargeKey = key;
+      const jsonEl = document.getElementById('jsdata_' + idx);
+      if (!jsonEl) return;
+      const obj = parse(jsonEl.textContent);
+      const cw = obj.fWindowWidth || obj.fCw || 800;
+      const ch = obj.fWindowHeight || obj.fCh || 600;
+
+      // Fit within 90vw × 88vh while preserving ratio
+      const maxW = window.innerWidth  * 0.90;
+      const maxH = window.innerHeight * 0.88;
+      let dispW, dispH;
+      if (maxW / maxH > cw / ch) {{
+        dispH = maxH; dispW = maxH * cw / ch;
+      }} else {{
+        dispW = maxW; dispH = maxW * ch / cw;
+      }}
+
+      const inner = document.getElementById('enlargeInner');
+      inner.innerHTML = '';
+      const canvasDiv = document.createElement('div');
+      canvasDiv.className = 'enlarge-jsroot';
+      canvasDiv.style.cssText = `width:${{dispW}}px;height:${{dispH}}px;`;
+      inner.style.width  = dispW + 'px';
+      inner.style.height = dispH + 'px';
+      inner.appendChild(canvasDiv);
+
+      document.getElementById('enlargeModal').classList.add('open');
+      _enlargePainter = await draw(canvasDiv, obj, '');
+    }};
+
+    window.closeEnlarge = function() {{
+      document.getElementById('enlargeModal').classList.remove('open');
+      document.getElementById('enlargeInner').innerHTML = '';
+      _enlargePainter = null;
+      _enlargeIdx = null;
+      _enlargeKey = null;
+    }};
+
+    // Save from the enlarged modal canvas (full-size rendering = titles always visible)
+    window.saveEnlargePDF = async function() {{
+      if (_enlargeIdx === null) return;
+      const div = document.getElementById('enlargeInner').querySelector('.enlarge-jsroot');
+      if (!div) {{ alert('Canvas not ready.'); return; }}
+      const jsonEl = document.getElementById('jsdata_' + _enlargeIdx);
+      if (!jsonEl) return;
+      try {{
+        const obj = parse(jsonEl.textContent);
+        const origW = obj.fWindowWidth || obj.fCw || 800;
+        const origH = obj.fWindowHeight || obj.fCh || 600;
+        const result = _liveSvgClone(div, origW, origH);
+        if (!result) {{ alert('SVG not found.'); return; }}
+        const {{ clone }} = result;
+        clone.setAttribute('width', origW);
+        clone.setAttribute('height', origH);
+        const host = document.createElement('div');
+        host.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:0;height:0;overflow:hidden';
+        host.appendChild(clone);
+        document.body.appendChild(host);
+        try {{
+          const {{ jsPDF }} = window.jspdf;
+          const pdf = new jsPDF({{
+            orientation: origW > origH ? 'landscape' : 'portrait',
+            unit: 'pt', format: [origW, origH]
+          }});
+          const {{ svg2pdf }} = window.svg2pdf;
+          await svg2pdf(clone, pdf, {{ x: 0, y: 0, width: origW, height: origH }});
+          pdf.save((_enlargeKey || 'plot') + '.pdf');
+        }} finally {{ document.body.removeChild(host); }}
+      }} catch(e) {{ alert('PDF export failed: ' + e); }}
+    }};
+
+    window.saveEnlargePNG = async function() {{
+      if (_enlargeIdx === null) return;
+      const div = document.getElementById('enlargeInner').querySelector('.enlarge-jsroot');
+      if (!div) {{ alert('Canvas not ready.'); return; }}
+      const jsonEl = document.getElementById('jsdata_' + _enlargeIdx);
+      if (!jsonEl) return;
+      try {{
+        const obj = parse(jsonEl.textContent);
+        const origW = obj.fWindowWidth || obj.fCw || 800;
+        const origH = obj.fWindowHeight || obj.fCh || 600;
+        const scale = 2;
+        const blob = _liveSvgBlob(div, origW, origH, origW * scale, origH * scale);
+        if (!blob) {{ alert('SVG not found.'); return; }}
+        const url = URL.createObjectURL(blob);
+        await new Promise((resolve, reject) => {{
+          const img = new Image();
+          img.onload = () => {{
+            const canvas = document.createElement('canvas');
+            canvas.width = origW * scale; canvas.height = origH * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, Math.floor(origH * 0.93) * scale, Math.ceil(origW * 0.10) * scale, Math.ceil(origH * 0.07) * scale);
+            URL.revokeObjectURL(url);
+            const a = document.createElement('a');
+            a.href = canvas.toDataURL('image/png');
+            a.download = (_enlargeKey || 'plot') + '.png';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            resolve();
+          }};
+          img.onerror = reject;
+          img.src = url;
+        }});
+      }} catch(e) {{ alert('PNG export failed: ' + e); }}
+    }};
+
+    // Close on backdrop click or Escape
+    document.getElementById('enlargeModal').addEventListener('click', function(e) {{
+      if (e.target === this) closeEnlarge();
+    }});
+    document.addEventListener('keydown', function(e) {{
+      if (e.key === 'Escape') closeEnlarge();
+    }});
+
     const observer = new IntersectionObserver((entries) => {{
       for (const entry of entries) {{
         if (entry.isIntersecting) loadCanvas(entry.target);
       }}
     }}, {{ rootMargin: '300px' }});
 
-    document.querySelectorAll('.jsroot-canvas').forEach(div => observer.observe(div));
+    document.querySelectorAll('.jsroot-canvas').forEach(div => {{
+      observer.observe(div);
+      // Intercept dblclick in capture phase so JSROOT's own handler never fires
+      div.addEventListener('dblclick', function(e) {{
+        e.stopPropagation();
+        e.preventDefault();
+        const plot = div.closest('.plot');
+        const key = plot ? plot.getAttribute('data-filename') : '';
+        showEnlarge(parseInt(div.dataset.idx), key);
+      }}, true);
+    }});
 
     function getQueryParams() {{
       const p = new URLSearchParams(window.location.search);

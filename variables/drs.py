@@ -161,7 +161,7 @@ def update_ts(rdf, drs_channels_ref, mcp_det="MCP_US_0"):
         if mcp_det is not None:
             rdf = rdf.Define(
                 get_ts_arr_name(channel_name, use_mcp=True),
-                f"ts - {ref_TS} - {mcp_det}_TS_cfd_ref + 1300")
+                f"{get_ts_arr_name(channel_name, use_mcp=False)} - {mcp_det}_TS_cfd_ref + 500")
     return rdf
 
 
@@ -232,9 +232,13 @@ _MPV_JSON_PATH = "data/drs/drs_cfd_mpv_at_1500mm_by_type.json"
 def subtract_type_mpv(drsboards, raw_mpv_map, json_path=_MPV_JSON_PATH):
     """Subtract the type-average MPV at 1500 mm from per-channel raw MPV values.
 
-    For 6mm CerPlastic a double-difference is used instead of direct subtraction,
-    because the 6mm plastic fibre has no direct reference in the JSON:
-        corrected = val - json["6mm_CerQuartz"] + (json["3mm_CerQuartz"] - json["3mm_CerPlastic"])
+    For 6mm CerPlastic and 6mm Sci a double-difference is used instead of direct
+    subtraction, because neither has a reliable 6mm reference in the JSON.
+    The 6mm CerQuartz value is used as a common proxy, corrected by the 3mm offset
+    between CerQuartz and the target type:
+
+        6mm CerPlastic: val - json["6mm_CerQuartz"] + (json["3mm_CerQuartz"] - json["3mm_CerPlastic"])
+        6mm Sci:        val - json["6mm_CerQuartz"] + (json["3mm_CerQuartz"] - json["3mm_Sci"])
 
     Returns a dict {ch: corrected_value} or None if the JSON file does not exist.
     """
@@ -255,14 +259,15 @@ def subtract_type_mpv(drsboards, raw_mpv_map, json_path=_MPV_JSON_PATH):
             var = get_channel_var(chan)
             grp_key = f"{'6mm' if chan.is6mm else '3mm'}_{var}"
 
-            if chan.is6mm and var == "CerPlastic":
-                # Double difference: no reliable 6mm plastic reference in JSON
+            if chan.is6mm and var in ("CerPlastic", "Sci"):
+                # Double difference: no reliable 6mm plastic/Sci reference in JSON.
+                # Use 6mm CerQuartz as proxy, corrected by the 3mm quartz-vs-type offset.
                 ref_6mm = group_mpv.get("6mm_CerQuartz")
                 ref_3mm_q = group_mpv.get("3mm_CerQuartz")
-                ref_3mm_p = group_mpv.get("3mm_CerPlastic")
-                if None in (ref_6mm, ref_3mm_q, ref_3mm_p):
+                ref_3mm_t = group_mpv.get(f"3mm_{var}")
+                if None in (ref_6mm, ref_3mm_q, ref_3mm_t):
                     continue
-                corr_map[ch] = raw_mpv_map[ch] - ref_6mm + (ref_3mm_q - ref_3mm_p)
+                corr_map[ch] = raw_mpv_map[ch] - ref_6mm + (ref_3mm_q - ref_3mm_t)
             else:
                 if grp_key not in group_mpv:
                     continue

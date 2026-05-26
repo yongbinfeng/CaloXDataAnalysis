@@ -28,7 +28,11 @@ from analysis.hist_functions import (
     book_fers_2d,
     book_fers_track,
     book_drs_waveforms,
+    book_drs_prof_combined,
     book_drs_stats,
+    book_drs_finebins_combined,
+    book_drs_finebins_corr_combined,
+    book_drs_prof_corr_combined,
     book_drs_peak_ts,
     book_drs_sum_vs_fers,
     book_drs_peak_vs_fers,
@@ -124,9 +128,33 @@ ALL_SEQUENCES: list[CaloXSequence] = [
         enabled_by_default=True,
     ),
     CaloXSequence(
+        name="drs_prof_combined",
+        book_hists=book_drs_prof_combined,
+        make_plots=None,
+        enabled_by_default=True,
+    ),
+    CaloXSequence(
+        name="drs_prof_corr_combined",
+        book_hists=book_drs_prof_corr_combined,
+        make_plots=None,
+        enabled_by_default=True,
+    ),
+    CaloXSequence(
         name="drs_stats",
         book_hists=book_drs_stats,
         make_plots=plot_drs_stats,
+        enabled_by_default=True,
+    ),
+    CaloXSequence(
+        name="drs_finebins_combined",
+        book_hists=book_drs_finebins_combined,
+        make_plots=None,
+        enabled_by_default=True,
+    ),
+    CaloXSequence(
+        name="drs_finebins_corr_combined",
+        book_hists=book_drs_finebins_corr_combined,
+        make_plots=None,
         enabled_by_default=True,
     ),
     CaloXSequence(
@@ -194,9 +222,29 @@ DRS_MCP_SEQUENCES: list[CaloXSequence] = [
         make_plots=plot_drs_waveforms,
     ),
     CaloXSequence(
+        name="drs_prof_combined",
+        book_hists=book_drs_prof_combined,
+        make_plots=None,
+    ),
+    CaloXSequence(
+        name="drs_prof_corr_combined",
+        book_hists=book_drs_prof_corr_combined,
+        make_plots=None,
+    ),
+    CaloXSequence(
         name="drs_stats",
         book_hists=book_drs_stats,
         make_plots=plot_drs_stats,
+    ),
+    CaloXSequence(
+        name="drs_finebins_combined",
+        book_hists=book_drs_finebins_combined,
+        make_plots=None,
+    ),
+    CaloXSequence(
+        name="drs_finebins_corr_combined",
+        book_hists=book_drs_finebins_corr_combined,
+        make_plots=None,
     ),
     CaloXSequence(
         name="drs_cfd_mpv",

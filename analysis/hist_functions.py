@@ -11,10 +11,15 @@ save_fn()  — writes ROOT files / JSONs after the graph has been triggered
 from configs.selection_config import get_service_drs_cut
 from configs.plot_config import get_service_drs_processed_info_ranges
 import json
+import os
+import ROOT
 from configs.plot_config import get_drs_plot_ranges, get_drs_cfd_finebins_range, get_fers_saturation_value
-from utils.utils import number_to_string
-from variables.drs import get_ts_arr_name
+from utils.utils import number_to_string, get_channel_var
+from utils.plot_helper import save_hists_to_file
+from variables.drs import get_ts_arr_name, _MPV_JSON_PATH
 from channels.channel_map import get_mcp_channels, get_pid_channels
+
+_COMBO_VARS = ("CerQuartz", "CerPlastic", "Sci")
 
 _N_EVENTS = 60000
 _N_BINS_EVENT = 500
@@ -346,6 +351,270 @@ def book_drs_waveforms(ctx):
         hists.extend(_book_drs_channel_waveforms(ctx, mcp_channel, ymin, ymax))
 
     ctx.hbook.add("drs_vs_ts.root", hists)
+
+
+# ---------------------------------------------------------------------------
+# DRS: combined mcp profile histograms (accumulated per type/size)
+# ---------------------------------------------------------------------------
+
+def book_drs_prof_combined(ctx):
+    """Accumulate per-channel mcp waveform profiles into per-(size, var) sums.
+
+    Runs after book_drs_waveforms via post_save (drs_vs_ts.root must exist).
+    Writes drs_prof_combined.root with up to 6 histograms named
+    combo_prof_{3mm|6mm}_{CerQuartz|CerPlastic|Sci}_mcp.
+    """
+    def post_save():
+        infile = ROOT.TFile(f"{ctx.paths['root']}/drs_vs_ts.root", "READ")
+        if not infile or infile.IsZombie():
+            print("Warning: drs_vs_ts.root not found; skipping drs_prof_combined")
+            return
+
+        combo_profs = {}
+        for _, board in ctx.drsboards.items():
+            for chan in board:
+                if chan.is_reference:
+                    continue
+                var = get_channel_var(chan)
+                if var not in _COMBO_VARS:
+                    continue
+                ch_blsub = chan.get_channel_name(blsub=True)
+                h_raw = infile.Get(f"prof_{ch_blsub}_VS_ts_mcp")
+                if not h_raw:
+                    continue
+                size_tag = "6mm" if chan.is6mm else "3mm"
+                key = (size_tag, var)
+                clone_name = f"combo_prof_{size_tag}_{var}_mcp"
+                h = h_raw.ProjectionX(clone_name + "_tmp")
+                h.SetDirectory(0)
+                if key not in combo_profs:
+                    combo_profs[key] = h.Clone(clone_name)
+                    combo_profs[key].SetDirectory(0)
+                else:
+                    combo_profs[key].Add(h)
+
+        infile.Close()
+        if combo_profs:
+            save_hists_to_file(
+                list(combo_profs.values()),
+                f"{ctx.paths['root']}/drs_prof_combined.root")
+
+    ctx.hbook.add(None, [], post_save)
+
+
+# ---------------------------------------------------------------------------
+# DRS: combined mcp profiles with X axis in physical time (ns)
+# ---------------------------------------------------------------------------
+
+def book_drs_prof_corr_combined(ctx):
+    """Combine waveform profiles with X axis converted to physical time (ns).
+
+    Uses the same JSON reference MPVs as subtract_type_mpv.  For each
+    (size_tag, var) group the X axis is shifted by (ts - json_mpv) * 0.2 ns
+    so that the peak sits at 0 ns for each type.
+    Writes drs_prof_corr_combined.root with histograms named
+    combo_prof_corr_{3mm|6mm}_{CerQuartz|CerPlastic|Sci}_mcp.
+    """
+    _TS_TO_NS = 0.2
+
+    def post_save():
+        if not os.path.exists(_MPV_JSON_PATH):
+            print("Warning: MPV JSON not found; skipping drs_prof_corr_combined")
+            return
+        with open(_MPV_JSON_PATH) as f:
+            group_mpv = json.load(f)
+
+        # Build per-(size_tag, var) reference MPV using the same logic as subtract_type_mpv
+        type_mpv = {}
+        for size_tag in ("3mm", "6mm"):
+            for var in _COMBO_VARS:
+                if size_tag == "6mm" and var in ("CerPlastic", "Sci"):
+                    ref_6mm = group_mpv.get("6mm_CerQuartz")
+                    ref_3mm_q = group_mpv.get("3mm_CerQuartz")
+                    ref_3mm_t = group_mpv.get(f"3mm_{var}")
+                    if None in (ref_6mm, ref_3mm_q, ref_3mm_t):
+                        continue
+                    type_mpv[(size_tag, var)] = ref_6mm + ref_3mm_t - ref_3mm_q
+                else:
+                    val = group_mpv.get(f"{size_tag}_{var}")
+                    if val is not None:
+                        type_mpv[(size_tag, var)] = val
+
+        root_path = ctx.paths['root']
+        infile = ROOT.TFile(f"{root_path}/drs_vs_ts.root", "READ")
+        if not infile or infile.IsZombie():
+            print("Warning: drs_vs_ts.root not found; skipping drs_prof_corr_combined")
+            return
+
+        combo_profs = {}
+        for _, board in ctx.drsboards.items():
+            for chan in board:
+                if chan.is_reference:
+                    continue
+                var = get_channel_var(chan)
+                if var not in _COMBO_VARS:
+                    continue
+                size_tag = "6mm" if chan.is6mm else "3mm"
+                key = (size_tag, var)
+                if key not in type_mpv:
+                    continue
+                mpv_ts = type_mpv[key]
+                ch_blsub = chan.get_channel_name(blsub=True)
+                h_raw = infile.Get(f"prof_{ch_blsub}_VS_ts_mcp")
+                if not h_raw:
+                    continue
+                h_proj = h_raw.ProjectionX(f"_tmp_{ch_blsub}")
+                h_proj.SetDirectory(0)
+
+                n = h_proj.GetNbinsX()
+                x_lo = (h_proj.GetXaxis().GetXmin() - mpv_ts) * _TS_TO_NS
+                x_hi = (h_proj.GetXaxis().GetXmax() - mpv_ts) * _TS_TO_NS
+                clone_name = f"combo_prof_corr_{size_tag}_{var}_mcp"
+                h_ns = ROOT.TH1D(f"_ns_{ch_blsub}", "", n, x_lo, x_hi)
+                h_ns.SetDirectory(0)
+                for i in range(1, n + 1):
+                    h_ns.SetBinContent(i, h_proj.GetBinContent(i))
+                    h_ns.SetBinError(i, h_proj.GetBinError(i))
+
+                if key not in combo_profs:
+                    combo_profs[key] = h_ns.Clone(clone_name)
+                    combo_profs[key].SetDirectory(0)
+                else:
+                    combo_profs[key].Add(h_ns)
+
+        infile.Close()
+        if combo_profs:
+            save_hists_to_file(
+                list(combo_profs.values()),
+                f"{root_path}/drs_prof_corr_combined.root")
+
+    ctx.hbook.add(None, [], post_save)
+
+
+# ---------------------------------------------------------------------------
+# DRS: combined fine-binned CFD timing histograms (accumulated per type/size)
+# ---------------------------------------------------------------------------
+
+def book_drs_finebins_combined(ctx):
+    """Accumulate per-channel TS_cfd_mcp fine-binned histograms into per-type sums.
+
+    Must run after book_drs_stats (reads drs_stats.root via post_save).
+    Writes drs_finebins_combined.root with up to 6 histograms named
+    combo_finebins_{3mm|6mm}_{CerQuartz|CerPlastic|Sci}.
+    """
+    def post_save():
+        infile = ROOT.TFile(f"{ctx.paths['root']}/drs_stats.root", "READ")
+        if not infile or infile.IsZombie():
+            print("Warning: drs_stats.root not found; skipping drs_finebins_combined")
+            return
+
+        combo_hists = {}
+        for _, board in ctx.drsboards.items():
+            for chan in board:
+                if chan.is_reference:
+                    continue
+                var = get_channel_var(chan)
+                if var not in _COMBO_VARS:
+                    continue
+                ch = chan.get_channel_name(blsub=False)
+                h_raw = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
+                if not h_raw:
+                    continue
+                size_tag = "6mm" if chan.is6mm else "3mm"
+                key = (size_tag, var)
+                clone_name = f"combo_finebins_{size_tag}_{var}"
+                if key not in combo_hists:
+                    combo_hists[key] = h_raw.Clone(clone_name)
+                    combo_hists[key].SetDirectory(0)
+                else:
+                    combo_hists[key].Add(h_raw)
+
+        infile.Close()
+        if combo_hists:
+            save_hists_to_file(
+                list(combo_hists.values()),
+                f"{ctx.paths['root']}/drs_finebins_combined.root")
+
+    ctx.hbook.add(None, [], post_save)
+
+
+def book_drs_finebins_corr_combined(ctx):
+    """Accumulate fine-binned CFD histograms with X axis in physical time (ns).
+
+    Uses the same JSON reference MPVs as subtract_type_mpv to shift each
+    channel's histogram by (ts - json_mpv) * 0.2 ns before accumulating.
+    Writes drs_finebins_corr_combined.root with histograms named
+    combo_finebins_corr_{3mm|6mm}_{CerQuartz|CerPlastic|Sci}.
+    """
+    _TS_TO_NS = 0.2
+
+    def post_save():
+        if not os.path.exists(_MPV_JSON_PATH):
+            print("Warning: MPV JSON not found; skipping drs_finebins_corr_combined")
+            return
+        with open(_MPV_JSON_PATH) as f:
+            group_mpv = json.load(f)
+
+        type_mpv = {}
+        for size_tag in ("3mm", "6mm"):
+            for var in _COMBO_VARS:
+                if size_tag == "6mm" and var in ("CerPlastic", "Sci"):
+                    ref_6mm = group_mpv.get("6mm_CerQuartz")
+                    ref_3mm_q = group_mpv.get("3mm_CerQuartz")
+                    ref_3mm_t = group_mpv.get(f"3mm_{var}")
+                    if None in (ref_6mm, ref_3mm_q, ref_3mm_t):
+                        continue
+                    type_mpv[(size_tag, var)] = ref_6mm + ref_3mm_t - ref_3mm_q
+                else:
+                    val = group_mpv.get(f"{size_tag}_{var}")
+                    if val is not None:
+                        type_mpv[(size_tag, var)] = val
+
+        infile = ROOT.TFile(f"{ctx.paths['root']}/drs_stats.root", "READ")
+        if not infile or infile.IsZombie():
+            print("Warning: drs_stats.root not found; skipping drs_finebins_corr_combined")
+            return
+
+        combo_hists = {}
+        for _, board in ctx.drsboards.items():
+            for chan in board:
+                if chan.is_reference:
+                    continue
+                var = get_channel_var(chan)
+                if var not in _COMBO_VARS:
+                    continue
+                size_tag = "6mm" if chan.is6mm else "3mm"
+                key = (size_tag, var)
+                if key not in type_mpv:
+                    continue
+                mpv_ts = type_mpv[key]
+                ch = chan.get_channel_name(blsub=False)
+                h_raw = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
+                if not h_raw:
+                    continue
+                n = h_raw.GetNbinsX()
+                x_lo = (h_raw.GetXaxis().GetXmin() - mpv_ts) * _TS_TO_NS
+                x_hi = (h_raw.GetXaxis().GetXmax() - mpv_ts) * _TS_TO_NS
+                clone_name = f"combo_finebins_corr_{size_tag}_{var}"
+                h_ns = ROOT.TH1D(f"_ns_{ch}", "", n, x_lo, x_hi)
+                h_ns.SetDirectory(0)
+                for i in range(1, n + 1):
+                    h_ns.SetBinContent(i, h_raw.GetBinContent(i))
+                    h_ns.SetBinError(i, h_raw.GetBinError(i))
+
+                if key not in combo_hists:
+                    combo_hists[key] = h_ns.Clone(clone_name)
+                    combo_hists[key].SetDirectory(0)
+                else:
+                    combo_hists[key].Add(h_ns)
+
+        infile.Close()
+        if combo_hists:
+            save_hists_to_file(
+                list(combo_hists.values()),
+                f"{ctx.paths['root']}/drs_finebins_corr_combined.root")
+
+    ctx.hbook.add(None, [], post_save)
 
 
 # ---------------------------------------------------------------------------
