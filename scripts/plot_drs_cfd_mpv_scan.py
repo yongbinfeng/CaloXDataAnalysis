@@ -551,22 +551,28 @@ def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
                 cer_combined[ch] = 0.0
         cer_hists, _ = visualizeDRSBoards(
             drsboards, valuemaps=cer_combined, suffix="MPV_scan_p0c2_Cer")
-        _aw = 1.5  # arrowhead length (cm in data coords)
-        _ah = 0.7  # arrowhead half-height (cm)
-        _tip_x, _tip_y = -9.5, -1.0
-        beam_shaft = ROOT.TLine(-13, _tip_y, _tip_x, _tip_y)
+        # Beam arrow — coordinates in the zoomed [-10,10] x [-11,11] frame
+        _aw = 1.2  # arrowhead length (cm)
+        _ah = 0.55  # arrowhead half-height (cm)
+        _tip_x, _tip_y = -6.5, -1.0
+        beam_shaft = ROOT.TLine(-9.2, _tip_y, _tip_x, _tip_y)
         beam_top   = ROOT.TLine(_tip_x, _tip_y, _tip_x - _aw, _tip_y + _ah)
         beam_bot   = ROOT.TLine(_tip_x, _tip_y, _tip_x - _aw, _tip_y - _ah)
         for obj in (beam_shaft, beam_top, beam_bot):
             obj.SetLineWidth(2)
             obj.SetLineColor(ROOT.kBlack)
-        beam_label = ROOT.TLatex(-11.25, -0.1, "e^{+}, 40 GeV")
+        beam_label = ROOT.TLatex(-7.85, -0.05, "e^{+}, 40 GeV")
         beam_label.SetTextAlign(22)
         beam_label.SetTextSize(0.030)
-        helper.plot_board_map(
+        # Custom helper: zoomed range + 1:1 physical aspect ratio
+        # Δx=20, Δy=22; H/W = (22×0.67)/(20×0.81) ≈ 0.91
+        from plotting.calox_plot_helper import BoardPlotHelper as _BPH
+        helper_cer = _BPH(pm2, xrange=(-10, 10), yrange=(-11, 11),
+                          W_ref=1100, H_ref=1000)
+        helper_cer.plot_board_map(
             cer_hists, "DRS_CFD_MPV_Scan_p0c2_Cer",
             extra_text="Cer  ", zmin=zmin_val, zmax=zmax_val,
-            nTextDigits=1, zlabel="Time [ns]", lumitext=lumi, usePDF=True,
+            nTextDigits=2, zlabel="Time [ns]", lumitext=lumi, usePDF=True,
             extraToDraw=[beam_shaft, beam_top, beam_bot, beam_label])
         pm2.add_pdf_link("DRS_CFD_MPV_Scan_p0c2_Cer")
 

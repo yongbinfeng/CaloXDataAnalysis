@@ -123,6 +123,7 @@ def run_comparison(runs, labels, use_jsroot=False):
                 includeRunNumber=False,
             )
 
+
     pm.add_newline()
 
     # ── CFD finebins: corr (ns) ──────────────────────────────────────────────
@@ -135,17 +136,51 @@ def run_comparison(runs, labels, use_jsroot=False):
                     hists.append(h)
             if len(hists) < 2:
                 continue
-            xmin = min(h.GetXaxis().GetXmin() for h in hists)
-            xmax = max(h.GetXaxis().GetXmax() for h in hists)
             pm.plot_1d(
                 _normalize(hists), f"FineBins_corr_{size_tag}_{var}",
-                "Time [ns]", (xmin, xmax),
+                "Time [ns]", (5, 15),
                 "A.U.", (1e-4, None),
                 legends=labels[:len(hists)],
                 style=_make_style(len(hists), dology=True),
                 extra_text=f"{size_tag} {var}",
                 includeRunNumber=False,
             )
+
+    pm.add_newline()
+
+    # ── CFD finebins: 3mm+6mm overlay per Cer type ───────────────────────────
+    # Each plot: 4 histograms = (3mm run0, 3mm run1, 6mm run0, 6mm run1)
+    _COLORS_3MM = [ROOT.kBlue+1, ROOT.kAzure+7]
+    _COLORS_6MM = [ROOT.kRed+1,  ROOT.kOrange+1]
+    for var in ("CerQuartz", "CerPlastic"):
+        hists4, legends4, cols4 = [], [], []
+        for size_tag, cols in (("3mm", _COLORS_3MM), ("6mm", _COLORS_6MM)):
+            for i, r in enumerate(runs):
+                h = _load_finebins(r, size_tag, var)
+                if h:
+                    hists4.append(h)
+                    legends4.append(f"{size_tag} {labels[i]}")
+                    cols4.append(cols[i % len(cols)])
+        if len(hists4) < 2:
+            continue
+        style4 = PlotStyle(
+            dology=True,
+            drawoptions="HIST",
+            mycolors=cols4,
+            addOverflow=False,
+            addUnderflow=False,
+            legendPos=[0.50, 0.65, 0.90, 0.90],
+            legendoptions="L",
+        )
+        pm.plot_1d(
+            _normalize(hists4), f"FineBins_corr_3mm6mm_{var}",
+            "Time [ns]", (5, 15),
+            "A.U.", (1e-4, None),
+            legends=legends4,
+            style=style4,
+            extra_text=var,
+            includeRunNumber=False,
+        )
 
     output_html = pm.generate_html(f"{out_tag}.html", plots_per_row=6)
     print(f"Output: {output_html}")

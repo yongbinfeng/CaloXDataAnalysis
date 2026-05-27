@@ -20,6 +20,9 @@ from variables.drs import get_ts_arr_name, _MPV_GROUP_JSON_PATH
 from channels.channel_map import get_mcp_channels, get_pid_channels
 
 _COMBO_VARS = ("CerQuartz", "CerPlastic", "Sci")
+_COMBO_NS_MIN = 0.0     # fixed x-axis range for combined corrected histograms [ns]
+_COMBO_NS_MAX = 15.0
+_COMBO_NS_BINS = 300    # 0.05 ns/bin = 50 ps/bin
 
 _N_EVENTS = 60000
 _N_BINS_EVENT = 500
@@ -454,21 +457,24 @@ def book_drs_prof_corr_combined(ctx):
                 h_proj = h_raw.ProjectionX(f"_tmp_{ch_blsub}")
                 h_proj.SetDirectory(0)
 
-                n = h_proj.GetNbinsX()
-                x_lo = (h_proj.GetXaxis().GetXmin() - mpv_ts) * _TS_TO_NS
-                x_hi = (h_proj.GetXaxis().GetXmax() - mpv_ts) * _TS_TO_NS
+                combo_key = (size_tag, var)
                 clone_name = f"combo_prof_corr_{size_tag}_{var}_mcp"
-                h_ns = ROOT.TH1D(f"_ns_{ch_blsub}", "", n, x_lo, x_hi)
-                h_ns.SetDirectory(0)
-                for i in range(1, n + 1):
-                    h_ns.SetBinContent(i, h_proj.GetBinContent(i))
-                    h_ns.SetBinError(i, h_proj.GetBinError(i))
-
-                if grp_key not in combo_profs:
-                    combo_profs[grp_key] = h_ns.Clone(clone_name)
-                    combo_profs[grp_key].SetDirectory(0)
-                else:
-                    combo_profs[grp_key].Add(h_ns)
+                if combo_key not in combo_profs:
+                    h_combo = ROOT.TH1D(clone_name, "", _COMBO_NS_BINS, _COMBO_NS_MIN, _COMBO_NS_MAX)
+                    h_combo.SetDirectory(0)
+                    combo_profs[combo_key] = h_combo
+                h_combo = combo_profs[combo_key]
+                for i in range(1, h_proj.GetNbinsX() + 1):
+                    content = h_proj.GetBinContent(i)
+                    if content == 0:
+                        continue
+                    x_corr = (h_proj.GetBinCenter(i) - mpv_ts) * _TS_TO_NS
+                    b = h_combo.FindBin(x_corr)
+                    if 1 <= b <= _COMBO_NS_BINS:
+                        h_combo.SetBinContent(b, h_combo.GetBinContent(b) + content)
+                        err = h_proj.GetBinError(i)
+                        prev_err = h_combo.GetBinError(b)
+                        h_combo.SetBinError(b, (prev_err**2 + err**2)**0.5)
 
         infile.Close()
         if combo_profs:
@@ -569,21 +575,24 @@ def book_drs_finebins_corr_combined(ctx):
                 h_raw = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
                 if not h_raw:
                     continue
-                n = h_raw.GetNbinsX()
-                x_lo = (h_raw.GetXaxis().GetXmin() - mpv_ts) * _TS_TO_NS
-                x_hi = (h_raw.GetXaxis().GetXmax() - mpv_ts) * _TS_TO_NS
+                combo_key = (size_tag, var)
                 clone_name = f"combo_finebins_corr_{size_tag}_{var}"
-                h_ns = ROOT.TH1D(f"_ns_{ch}", "", n, x_lo, x_hi)
-                h_ns.SetDirectory(0)
-                for i in range(1, n + 1):
-                    h_ns.SetBinContent(i, h_raw.GetBinContent(i))
-                    h_ns.SetBinError(i, h_raw.GetBinError(i))
-
-                if grp_key not in combo_hists:
-                    combo_hists[grp_key] = h_ns.Clone(clone_name)
-                    combo_hists[grp_key].SetDirectory(0)
-                else:
-                    combo_hists[grp_key].Add(h_ns)
+                if combo_key not in combo_hists:
+                    h_combo = ROOT.TH1D(clone_name, "", _COMBO_NS_BINS, _COMBO_NS_MIN, _COMBO_NS_MAX)
+                    h_combo.SetDirectory(0)
+                    combo_hists[combo_key] = h_combo
+                h_combo = combo_hists[combo_key]
+                for i in range(1, h_raw.GetNbinsX() + 1):
+                    content = h_raw.GetBinContent(i)
+                    if content == 0:
+                        continue
+                    x_corr = (h_raw.GetBinCenter(i) - mpv_ts) * _TS_TO_NS
+                    b = h_combo.FindBin(x_corr)
+                    if 1 <= b <= _COMBO_NS_BINS:
+                        h_combo.SetBinContent(b, h_combo.GetBinContent(b) + content)
+                        err = h_raw.GetBinError(i)
+                        prev_err = h_combo.GetBinError(b)
+                        h_combo.SetBinError(b, (prev_err**2 + err**2)**0.5)
 
         infile.Close()
         if combo_hists:

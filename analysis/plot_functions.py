@@ -59,6 +59,15 @@ _STYLE_1D_LOG = PlotStyle(
     legendPos=[0.25, 0.75, 0.40, 0.90],
     legendoptions="L",
 )
+_STYLE_1D_SMOOTH = PlotStyle(
+    dology=False,
+    drawoptions="C",
+    mycolors=[2, 6, 4, 8],
+    addOverflow=False,
+    addUnderflow=False,
+    legendPos=[0.25, 0.75, 0.40, 0.90],
+    legendoptions="L",
+)
 
 
 def _pm(ctx):
@@ -545,7 +554,7 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_service_drs_vs_ts=True, do_
                     "Mean DRS Output", (ymin_c, ymax_c),
                     legends=labels_c,
                     legendPos=[0.55, 0.70, 0.90, 0.90],
-                    style=_STYLE_1D, mycolors=palette, extra_text=group_name,
+                    style=_STYLE_1D_SMOOTH, mycolors=palette, extra_text=group_name,
                     prepend=True)
 
             pm.add_newline()  # separator: combo plots (prepended) | per-channel plots
@@ -594,7 +603,7 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_service_drs_vs_ts=True, do_
                             "Mean DRS Output", (ymin_tmp, ymax_tmp),
                             legends=legends_to_use,
                             legendPos=[0.55, 0.70, 0.90, 0.90],
-                            style=_STYLE_1D, extraToDraw=pave, extra_text=var)
+                            style=_STYLE_1D_SMOOTH, extraToDraw=pave, extra_text=var)
 
             # Corr combo plots (prepended first; TS combos prepended after → TS appears before corr)
             try:
@@ -757,28 +766,47 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False, do_ti
             _COLORS_6 = [ROOT.kRed+1, ROOT.kMagenta+1, ROOT.kBlue+1,
                          ROOT.kGreen+2, ROOT.kOrange+1, ROOT.kCyan+2]
 
-            # --- Overlay + summary plots from pre-computed combined file ---
+            # --- Overlay + summary plots from pre-computed combined files ---
+            # Load both files upfront (may be absent if not yet generated)
             try:
                 combo_file = pm._get_file("drs_finebins_combined.root")
-                all_entries = []
+            except FileNotFoundError:
+                combo_file = None
+            try:
+                corr_combo_file = pm._get_file("drs_finebins_corr_combined.root")
+            except FileNotFoundError:
+                corr_combo_file = None
+
+            all_entries = []
+            if combo_file:
                 for size_tag in _SIZES:
                     for var in sorted(_VARS, key=lambda v: _VAR_ORDER[v]):
                         h = combo_file.Get(f"combo_finebins_{size_tag}_{var}")
                         if h:
                             all_entries.append((h, var, size_tag))
 
-                grouped = {
-                    "3mm": [(h, v, s) for h, v, s in all_entries if s == "3mm"],
-                    "6mm": [(h, v, s) for h, v, s in all_entries if s == "6mm"],
-                    "all": all_entries,
-                }
+            corr_entries = []
+            if corr_combo_file:
+                for size_tag in _SIZES:
+                    for var in sorted(_VARS, key=lambda v: _VAR_ORDER[v]):
+                        h = corr_combo_file.Get(f"combo_finebins_corr_{size_tag}_{var}")
+                        if h:
+                            corr_entries.append((h, var, size_tag))
 
-                # Overlay plots: all-3mm, all-6mm, all-6
-                for group_name, entries in [("3mm", grouped["3mm"]),
-                                            ("6mm", grouped["6mm"]),
-                                            ("all", grouped["all"])]:
-                    if not entries:
-                        continue
+            # Overlay plots: TS combined then ns combined (3mm, 6mm, all)
+            grouped = {
+                "3mm": [(h, v, s) for h, v, s in all_entries if s == "3mm"],
+                "6mm": [(h, v, s) for h, v, s in all_entries if s == "6mm"],
+                "all": all_entries,
+            }
+            corr_grouped = {
+                "3mm": [(h, v, s) for h, v, s in corr_entries if s == "3mm"],
+                "6mm": [(h, v, s) for h, v, s in corr_entries if s == "6mm"],
+                "all": corr_entries,
+            }
+            for group_name in ("3mm", "6mm", "all"):
+                entries = grouped[group_name]
+                if entries:
                     hists_combo = [e[0] for e in entries]
                     labels_combo = ([f"{e[2]} {e[1]}" for e in entries]
                                     if group_name == "all" else [e[1] for e in entries])
@@ -791,87 +819,53 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False, do_ti
                         legends=labels_combo,
                         legendPos=[0.55, 0.70, 0.90, 0.90],
                         style=_STYLE_1D_LOG, mycolors=palette, extra_text=group_name)
-
-                pm.add_newline()
-
-                # Individual summary plots per (size, var) with MPV
-                for h, var, size_tag in sorted(
-                        all_entries,
-                        key=lambda e: (_SIZE_ORDER[e[2]], _VAR_ORDER[e[1]])):
-                    xrange_fb = get_drs_cfd_finebins_range(_VAR_IS_CER[var])
-                    pave = create_pave_text(0.15, 0.75, 0.70, 0.90)
-                    pave.AddText(f"{size_tag} {var}")
-                    if h.GetEntries() >= 5:
-                        mpv, mpv_err = get_hist_mpv(h)
-                        pave.AddText(f"MPV: {mpv:.1f} #pm {mpv_err:.1f} TS")
-                    pm.plot_1d(
-                        h, f"DRS_Time_FineBins_Summary_{size_tag}_{var}",
-                        "CFD TS (MCP-corrected)", xrange_fb,
-                        "Counts", (0.9, None),
-                        style=_STYLE_1D_LOG, extraToDraw=pave,
-                        extra_text=f"{size_tag} {var}")
-
-            except FileNotFoundError:
-                pass  # drs_finebins_combined.root not yet generated
-
-            # --- Corr overlay + summary plots (X axis in ns) ---
-            try:
-                corr_combo_file = pm._get_file("drs_finebins_corr_combined.root")
-                corr_entries = []
-                for size_tag in _SIZES:
-                    for var in sorted(_VARS, key=lambda v: _VAR_ORDER[v]):
-                        h = corr_combo_file.Get(f"combo_finebins_corr_{size_tag}_{var}")
-                        if h:
-                            corr_entries.append((h, var, size_tag))
-
-                corr_grouped = {
-                    "3mm": [(h, v, s) for h, v, s in corr_entries if s == "3mm"],
-                    "6mm": [(h, v, s) for h, v, s in corr_entries if s == "6mm"],
-                    "all": corr_entries,
-                }
-
-                for group_name, entries in [("3mm", corr_grouped["3mm"]),
-                                            ("6mm", corr_grouped["6mm"]),
-                                            ("all", corr_grouped["all"])]:
-                    if not entries:
-                        continue
-                    hists_combo = [e[0] for e in entries]
-                    labels_combo = ([f"{e[2]} {e[1]}" for e in entries]
-                                    if group_name == "all" else [e[1] for e in entries])
+                entries_c = corr_grouped[group_name]
+                if entries_c:
+                    hists_combo = [e[0] for e in entries_c]
+                    labels_combo = ([f"{e[2]} {e[1]}" for e in entries_c]
+                                    if group_name == "all" else [e[1] for e in entries_c])
                     palette = _COLORS_6 if group_name == "all" else _COLORS_3
-                    xmin_ns = hists_combo[0].GetXaxis().GetXmin()
-                    xmax_ns = hists_combo[0].GetXaxis().GetXmax()
                     pm.plot_1d(
                         hists_combo,
                         f"DRS_Time_FineBins_Corr_Combined_{group_name}",
-                        "Time (ns)", (xmin_ns, xmax_ns),
+                        "Time (ns)", (5, 15),
                         "Counts", (0.9, None),
                         legends=labels_combo,
                         legendPos=[0.55, 0.70, 0.90, 0.90],
                         style=_STYLE_1D_LOG, mycolors=palette, extra_text=group_name)
 
-                pm.add_newline()
+            pm.add_newline()
 
-                _NS_WINDOW = 1.2  # ±1.2 ns ≈ ±6 TS * 0.2 ns/TS
-                for h, var, size_tag in sorted(
-                        corr_entries,
-                        key=lambda e: (_SIZE_ORDER[e[2]], _VAR_ORDER[e[1]])):
-                    xmin_ns = h.GetXaxis().GetXmin()
-                    xmax_ns = h.GetXaxis().GetXmax()
-                    pave = create_pave_text(0.15, 0.75, 0.70, 0.90)
-                    pave.AddText(f"{size_tag} {var}")
-                    if h.GetEntries() >= 5:
-                        mpv, mpv_err = get_hist_mpv(h, window_ts=_NS_WINDOW)
-                        pave.AddText(f"MPV: {mpv:.2f} #pm {mpv_err:.2f} ns")
-                    pm.plot_1d(
-                        h, f"DRS_Time_FineBins_Corr_Summary_{size_tag}_{var}",
-                        "Time (ns)", (xmin_ns, xmax_ns),
-                        "Counts", (0.9, None),
-                        style=_STYLE_1D_LOG, extraToDraw=pave,
-                        extra_text=f"{size_tag} {var}")
+            # Individual summary plots: TS then ns, sorted by (size, var)
+            for h, var, size_tag in sorted(
+                    all_entries, key=lambda e: (_SIZE_ORDER[e[2]], _VAR_ORDER[e[1]])):
+                xrange_fb = get_drs_cfd_finebins_range(_VAR_IS_CER[var])
+                pave = create_pave_text(0.15, 0.75, 0.70, 0.90)
+                pave.AddText(f"{size_tag} {var}")
+                if h.GetEntries() >= 5:
+                    mpv, mpv_err = get_hist_mpv(h)
+                    pave.AddText(f"MPV: {mpv:.1f} #pm {mpv_err:.1f} TS")
+                pm.plot_1d(
+                    h, f"DRS_Time_FineBins_Summary_{size_tag}_{var}",
+                    "CFD TS (MCP-corrected)", xrange_fb,
+                    "Counts", (0.9, None),
+                    style=_STYLE_1D_LOG, extraToDraw=pave,
+                    extra_text=f"{size_tag} {var}")
 
-            except FileNotFoundError:
-                pass  # drs_finebins_corr_combined.root not yet generated
+            _NS_WINDOW = 1.2  # ±1.2 ns ≈ ±6 TS * 0.2 ns/TS
+            for h, var, size_tag in sorted(
+                    corr_entries, key=lambda e: (_SIZE_ORDER[e[2]], _VAR_ORDER[e[1]])):
+                pave = create_pave_text(0.15, 0.75, 0.70, 0.90)
+                pave.AddText(f"{size_tag} {var}")
+                if h.GetEntries() >= 5:
+                    mpv, mpv_err = get_hist_mpv(h, window_ts=_NS_WINDOW)
+                    pave.AddText(f"MPV: {mpv:.2f} #pm {mpv_err:.2f} ns")
+                pm.plot_1d(
+                    h, f"DRS_Time_FineBins_Corr_Summary_{size_tag}_{var}",
+                    "Time (ns)", (5, 15),
+                    "Counts", (0.9, None),
+                    style=_STYLE_1D_LOG, extraToDraw=pave,
+                    extra_text=f"{size_tag} {var}")
 
             pm.add_newline()
 

@@ -24,7 +24,8 @@ from channels.channel_map import build_drs_boards
 from plotting.my_function import DrawHistos
 from utils.html_generator import generate_jsroot_html
 from utils.root_setup import setup_root
-from utils.utils import get_channel_var, get_hist_mpv
+from utils.utils import get_hist_mpv
+from variables.drs import subtract_type_mpv
 
 setup_root(batch_mode=True, load_functions=True)
 
@@ -36,7 +37,6 @@ IY_TARGETS  = [-3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5]
 IX_CELL_CM  = 1.2
 IY_CELL_CM  = 1.6
 TS_TO_NS    = 0.2
-MPV_JSON_PATH = "data/drs/drs_cfd_mpv_at_1500mm_by_type.json"
 PLOTDIR     = "results/plots/RotationScan"
 HTMLDIR     = "results/html/RotationScan"
 
@@ -47,33 +47,13 @@ MARKER_SIZES = [1.4, 1.6, 1.8, 2.0]
 LINE_WIDTH   = 3
 
 
-def _corr_mpv_ns(chan, raw_mpv_ts, raw_err_ts, group_mpv):
-    var      = get_channel_var(chan)
-    size_tag = "6mm" if chan.is6mm else "3mm"
-    grp_key  = f"{size_tag}_{var}"
-
-    if chan.is6mm and var == "CerPlastic":
-        ref_6mm   = group_mpv.get("6mm_CerQuartz")
-        ref_3mm_q = group_mpv.get("3mm_CerQuartz")
-        ref_3mm_p = group_mpv.get("3mm_CerPlastic")
-        if None in (ref_6mm, ref_3mm_q, ref_3mm_p):
-            return None, None
-        corr_ts = raw_mpv_ts - ref_6mm + (ref_3mm_q - ref_3mm_p)
-    else:
-        if grp_key not in group_mpv:
-            return None, None
-        corr_ts = raw_mpv_ts - group_mpv[grp_key]
-
-    return corr_ts * TS_TO_NS, raw_err_ts * TS_TO_NS
-
-
 def _combine(mpvs, errs):
     weights  = [1.0 / e**2 for e in errs]
     W        = sum(weights)
     return sum(w * m for w, m in zip(weights, mpvs)) / W, 1.0 / W**0.5
 
 
-def _collect_for_channels(channels, runs, runlist, group_mpv):
+def _collect_for_channels(channels, runs, runlist, drsboards):
     """Return (degrees, comb_mpvs, comb_errs) for a channel list over runs."""
     degrees, comb_mpvs, comb_errs = [], [], []
     for run in runs:
@@ -85,18 +65,26 @@ def _collect_for_channels(channels, runs, runlist, group_mpv):
         if not os.path.exists(root_path):
             continue
         infile = ROOT.TFile(root_path, "READ")
-        run_mpvs, run_errs = [], []
+        raw_mpv_map, raw_err_map = {}, {}
         for chan in channels:
-            hist = infile.Get(f"hist_{chan.get_channel_name(blsub=False)}_TS_cfd_mcp_finebins")
+            ch = chan.get_channel_name(blsub=False)
+            hist = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
             if not hist or hist.GetEntries() < 5:
                 continue
             raw_mpv, raw_err = get_hist_mpv(hist)
-            corr, err = _corr_mpv_ns(chan, raw_mpv, raw_err, group_mpv)
-            if corr is None or err <= 0:
-                continue
-            run_mpvs.append(corr)
-            run_errs.append(err)
+            raw_mpv_map[ch] = raw_mpv
+            raw_err_map[ch] = raw_err
         infile.Close()
+        corr_map = subtract_type_mpv(drsboards, raw_mpv_map)
+        if not corr_map:
+            continue
+        run_mpvs, run_errs = [], []
+        for ch, corr_ts in corr_map.items():
+            err_ts = raw_err_map.get(ch, 0)
+            if err_ts <= 0:
+                continue
+            run_mpvs.append(corr_ts * TS_TO_NS)
+            run_errs.append(err_ts * TS_TO_NS)
         if not run_mpvs:
             continue
         comb, comb_e = _combine(run_mpvs, run_errs)
@@ -106,7 +94,7 @@ def _collect_for_channels(channels, runs, runlist, group_mpv):
     return degrees, comb_mpvs, comb_errs
 
 
-def _collect_all(runs, drsboards, runlist, group_mpv, iy_target=None, iy_exclude=()):
+def _collect_all(runs, drsboards, runlist, iy_target=None, iy_exclude=()):
     """Return {ix_idx: (degrees, mpvs, errs)} for all IX_TARGETS."""
     result = {}
     for ix_idx, ix_target in enumerate(IX_TARGETS):
@@ -122,7 +110,7 @@ def _collect_all(runs, drsboards, runlist, group_mpv, iy_target=None, iy_exclude
         ]
         if not channels:
             continue
-        degrees, mpvs, errs = _collect_for_channels(channels, runs, runlist, group_mpv)
+        degrees, mpvs, errs = _collect_for_channels(channels, runs, runlist, drsboards)
         if degrees:
             result[ix_idx] = (degrees, mpvs, errs)
     return result
@@ -234,8 +222,6 @@ def _global_yrange(all_data_list):
 def main():
     with open("data/Runlist.json") as f:
         runlist = json.load(f)
-    with open(MPV_JSON_PATH) as f:
-        group_mpv = json.load(f)
 
     drsboards = build_drs_boards(run=REFERENCE_RUN)
     os.makedirs(PLOTDIR, exist_ok=True)
@@ -243,14 +229,14 @@ def main():
 
     # ── pre-collect all data ──────────────────────────────────────────────
     print("Collecting e+ data...")
-    eplus_data = {None: _collect_all(RUNS_EPLUS, drsboards, runlist, group_mpv, iy_exclude=(-3.5, 3.5))}
+    eplus_data = {None: _collect_all(RUNS_EPLUS, drsboards, runlist, iy_exclude=(-3.5, 3.5))}
     for iy in IY_TARGETS:
-        eplus_data[iy] = _collect_all(RUNS_EPLUS, drsboards, runlist, group_mpv, iy_target=iy)
+        eplus_data[iy] = _collect_all(RUNS_EPLUS, drsboards, runlist, iy_target=iy)
 
     print("\nCollecting muon data...")
-    muon_data = {None: _collect_all(RUNS_MUON, drsboards, runlist, group_mpv, iy_exclude=(-3.5, 3.5))}
+    muon_data = {None: _collect_all(RUNS_MUON, drsboards, runlist, iy_exclude=(-3.5, 3.5))}
     for iy in IY_TARGETS:
-        muon_data[iy] = _collect_all(RUNS_MUON, drsboards, runlist, group_mpv, iy_target=iy)
+        muon_data[iy] = _collect_all(RUNS_MUON, drsboards, runlist, iy_target=iy)
 
     # ── shared y ranges ───────────────────────────────────────────────────
     ymin_ep, ymax_ep = _global_yrange(list(eplus_data.values()))
