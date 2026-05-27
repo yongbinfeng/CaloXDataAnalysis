@@ -62,7 +62,7 @@ class SelectionManager:
 
         # 2. Define Boolean Label (Is the detector firing?)
         firing_label = f"is{det}Fired"
-        self._apply_define(firing_label, f"{calc_col} < {val_cut}")
+        self._apply_define(firing_label, f"{calc_col} > {val_cut}")
 
         # 3. Determine Cut Logic (Selection vs Veto)
         # We create a specific 'pass' column to ensure Sum() works in flag_only mode

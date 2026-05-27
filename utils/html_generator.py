@@ -70,6 +70,9 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
     .plot {{ border: 1px solid #e1e4e8; padding: 8px; text-align: center; border-radius: 6px; background: #fff; }}
     .filename {{ font-weight: 600; font-size: 12px; margin-bottom: 8px; word-break: break-all; color: #444; }}
     img {{ max-width: 100%; height: auto; border-radius: 2px; }}
+    .pdf-card {{ display: flex; align-items: center; justify-content: center; min-height: 60px; }}
+    .pdf-card a {{ font-size: 14px; color: #0066cc; text-decoration: none; padding: 6px 12px; border: 1px solid #0066cc; border-radius: 4px; }}
+    .pdf-card a:hover {{ background: #e8f0fe; }}
     button {{ padding: 4px 12px; cursor: pointer; font-size: 13px; }}
     @media (max-width: 1100px) {{ .grid {{ grid-template-columns: repeat(2, 1fr); }} }}
     @media (max-width: 800px) {{ .top-bar {{ flex-direction: column; align-items: flex-start; gap: 10px; }} }}
@@ -100,8 +103,17 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
             return ""
         grid_html = '    <div class="grid">\n'
         for filename in plots:
-            rel_path = path_map[filename]
-            grid_html += f"""      <div class="plot" data-filename="{filename}">
+            if filename.startswith("PDF_LINK:"):
+                key = filename[len("PDF_LINK:"):]
+                pdf_abs = os.path.join(png_dir, f"{key}.pdf")
+                pdf_rel = os.path.relpath(pdf_abs, start=html_dir)
+                grid_html += f"""      <div class="plot" data-filename="{filename}">
+        <div class="filename">{key}.pdf</div>
+        <div class="pdf-card"><a href="{pdf_rel}" target="_blank">&#128196; Open PDF</a></div>
+      </div>\n"""
+            else:
+                rel_path = path_map[filename]
+                grid_html += f"""      <div class="plot" data-filename="{filename}">
         <div class="filename">{filename}</div>
         <a href="{rel_path}" target="_blank">
           <img src="{rel_path}" alt="{filename}">

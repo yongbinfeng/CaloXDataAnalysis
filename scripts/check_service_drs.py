@@ -41,7 +41,7 @@ manager = (
     CaloXAnalysisManager(args)
     .prepare()
     .apply_hole_veto(flag_only=True)
-    .apply_mcp_selection()
+    .apply_mcp_selection(flag_only=True)
 )
 
 # ------------------------------------------------------------------

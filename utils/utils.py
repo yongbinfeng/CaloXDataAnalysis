@@ -42,18 +42,18 @@ def get_hist_mpv(hist, window_ts=6.0):
         return 0.0, 999.0
 
     bin_width = xaxis.GetBinWidth(1)
+    half_win = max(2, round(window_ts / bin_width))
 
-    # 1. Find the densest ±2-bin cluster 
-    # Uses Sum of Squares to prioritize distinct peaks over invisible 1-count noise.
+    # 1. Find the densest cluster using a window matching the fit window.
+    # Sum-of-squares prioritizes distinct peaks over sparse noise.
     max_score = -1.0
     best_bin  = 1
     for b in range(1, n_bins + 1):
         local_score = 0.0
-        # Replaces hist.Integral with a squared sum over the local window
-        for i in range(max(1, b - 2), min(n_bins, b + 2) + 1):
+        for i in range(max(1, b - half_win), min(n_bins, b + half_win) + 1):
             w = hist.GetBinContent(i)
             local_score += w * w
-            
+
         if local_score > max_score:
             max_score = local_score
             best_bin  = b

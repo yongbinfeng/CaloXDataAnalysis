@@ -16,7 +16,7 @@ import ROOT
 from configs.plot_config import get_drs_plot_ranges, get_drs_cfd_finebins_range, get_fers_saturation_value
 from utils.utils import number_to_string, get_channel_var
 from utils.plot_helper import save_hists_to_file
-from variables.drs import get_ts_arr_name, _MPV_JSON_PATH
+from variables.drs import get_ts_arr_name, _MPV_GROUP_JSON_PATH
 from channels.channel_map import get_mcp_channels, get_pid_channels
 
 _COMBO_VARS = ("CerQuartz", "CerPlastic", "Sci")
@@ -418,27 +418,11 @@ def book_drs_prof_corr_combined(ctx):
     _TS_TO_NS = 0.2
 
     def post_save():
-        if not os.path.exists(_MPV_JSON_PATH):
+        if not os.path.exists(_MPV_GROUP_JSON_PATH):
             print("Warning: MPV JSON not found; skipping drs_prof_corr_combined")
             return
-        with open(_MPV_JSON_PATH) as f:
+        with open(_MPV_GROUP_JSON_PATH) as f:
             group_mpv = json.load(f)
-
-        # Build per-(size_tag, var) reference MPV using the same logic as subtract_type_mpv
-        type_mpv = {}
-        for size_tag in ("3mm", "6mm"):
-            for var in _COMBO_VARS:
-                if size_tag == "6mm" and var in ("CerPlastic", "Sci"):
-                    ref_6mm = group_mpv.get("6mm_CerQuartz")
-                    ref_3mm_q = group_mpv.get("3mm_CerQuartz")
-                    ref_3mm_t = group_mpv.get(f"3mm_{var}")
-                    if None in (ref_6mm, ref_3mm_q, ref_3mm_t):
-                        continue
-                    type_mpv[(size_tag, var)] = ref_6mm + ref_3mm_t - ref_3mm_q
-                else:
-                    val = group_mpv.get(f"{size_tag}_{var}")
-                    if val is not None:
-                        type_mpv[(size_tag, var)] = val
 
         root_path = ctx.paths['root']
         infile = ROOT.TFile(f"{root_path}/drs_vs_ts.root", "READ")
@@ -455,10 +439,14 @@ def book_drs_prof_corr_combined(ctx):
                 if var not in _COMBO_VARS:
                     continue
                 size_tag = "6mm" if chan.is6mm else "3mm"
-                key = (size_tag, var)
-                if key not in type_mpv:
+                cer_key = "Cer" if var in ("CerQuartz", "CerPlastic") else "Sci"
+                if not chan.is6mm and var == "CerQuartz" and board.board_no == 5:
+                    grp_key = "3mm_CerQuartz_B5"
+                else:
+                    grp_key = f"{size_tag}_{cer_key}"
+                mpv_ts = group_mpv.get(grp_key)
+                if mpv_ts is None:
                     continue
-                mpv_ts = type_mpv[key]
                 ch_blsub = chan.get_channel_name(blsub=True)
                 h_raw = infile.Get(f"prof_{ch_blsub}_VS_ts_mcp")
                 if not h_raw:
@@ -476,11 +464,11 @@ def book_drs_prof_corr_combined(ctx):
                     h_ns.SetBinContent(i, h_proj.GetBinContent(i))
                     h_ns.SetBinError(i, h_proj.GetBinError(i))
 
-                if key not in combo_profs:
-                    combo_profs[key] = h_ns.Clone(clone_name)
-                    combo_profs[key].SetDirectory(0)
+                if grp_key not in combo_profs:
+                    combo_profs[grp_key] = h_ns.Clone(clone_name)
+                    combo_profs[grp_key].SetDirectory(0)
                 else:
-                    combo_profs[key].Add(h_ns)
+                    combo_profs[grp_key].Add(h_ns)
 
         infile.Close()
         if combo_profs:
@@ -549,26 +537,11 @@ def book_drs_finebins_corr_combined(ctx):
     _TS_TO_NS = 0.2
 
     def post_save():
-        if not os.path.exists(_MPV_JSON_PATH):
+        if not os.path.exists(_MPV_GROUP_JSON_PATH):
             print("Warning: MPV JSON not found; skipping drs_finebins_corr_combined")
             return
-        with open(_MPV_JSON_PATH) as f:
+        with open(_MPV_GROUP_JSON_PATH) as f:
             group_mpv = json.load(f)
-
-        type_mpv = {}
-        for size_tag in ("3mm", "6mm"):
-            for var in _COMBO_VARS:
-                if size_tag == "6mm" and var in ("CerPlastic", "Sci"):
-                    ref_6mm = group_mpv.get("6mm_CerQuartz")
-                    ref_3mm_q = group_mpv.get("3mm_CerQuartz")
-                    ref_3mm_t = group_mpv.get(f"3mm_{var}")
-                    if None in (ref_6mm, ref_3mm_q, ref_3mm_t):
-                        continue
-                    type_mpv[(size_tag, var)] = ref_6mm + ref_3mm_t - ref_3mm_q
-                else:
-                    val = group_mpv.get(f"{size_tag}_{var}")
-                    if val is not None:
-                        type_mpv[(size_tag, var)] = val
 
         infile = ROOT.TFile(f"{ctx.paths['root']}/drs_stats.root", "READ")
         if not infile or infile.IsZombie():
@@ -584,10 +557,14 @@ def book_drs_finebins_corr_combined(ctx):
                 if var not in _COMBO_VARS:
                     continue
                 size_tag = "6mm" if chan.is6mm else "3mm"
-                key = (size_tag, var)
-                if key not in type_mpv:
+                cer_key = "Cer" if var in ("CerQuartz", "CerPlastic") else "Sci"
+                if not chan.is6mm and var == "CerQuartz" and board.board_no == 5:
+                    grp_key = "3mm_CerQuartz_B5"
+                else:
+                    grp_key = f"{size_tag}_{cer_key}"
+                mpv_ts = group_mpv.get(grp_key)
+                if mpv_ts is None:
                     continue
-                mpv_ts = type_mpv[key]
                 ch = chan.get_channel_name(blsub=False)
                 h_raw = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
                 if not h_raw:
@@ -602,11 +579,11 @@ def book_drs_finebins_corr_combined(ctx):
                     h_ns.SetBinContent(i, h_raw.GetBinContent(i))
                     h_ns.SetBinError(i, h_raw.GetBinError(i))
 
-                if key not in combo_hists:
-                    combo_hists[key] = h_ns.Clone(clone_name)
-                    combo_hists[key].SetDirectory(0)
+                if grp_key not in combo_hists:
+                    combo_hists[grp_key] = h_ns.Clone(clone_name)
+                    combo_hists[grp_key].SetDirectory(0)
                 else:
-                    combo_hists[key].Add(h_ns)
+                    combo_hists[grp_key].Add(h_ns)
 
         infile.Close()
         if combo_hists:

@@ -213,11 +213,12 @@ def _plot_scan_channels(channel_order, mpv_data, shared_fit, pm, lumi, xmin, xma
 # Board-map HTML pages
 # ---------------------------------------------------------------------------
 
-def _new_pm():
+def _new_pm(use_jsroot=False):
     pm = PlotManager(
         rootdir=f"results/root/Run{REFERENCE_RUN}",
         plotdir=PLOTDIR,
         htmldir=HTMLDIR,
+        use_jsroot=use_jsroot,
     )
     pm.set_output_dir("DRS_CFD_MPV_Scan")
     return pm
@@ -327,12 +328,15 @@ def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
     }
 
     y_by_size_type = {}
-    for ch, _b, _g, _c, var, _tx, _ty, is6mm in channel_order:
+    y_3mm_cerq_b5 = []
+    for ch, b, _g, _c, var, _tx, _ty, is6mm in channel_order:
         if ch in y_map:
             size = "6mm" if is6mm else "3mm"
             y_by_size_type.setdefault((size, var), []).append(y_map[ch])
+            if not is6mm and var == "CerQuartz" and b == 5:
+                y_3mm_cerq_b5.append(y_map[ch])
 
-    xlo_y, xhi_y = 73, 95
+    xlo_y, xhi_y = 73, 105
     hists_y, y_labels, y_cols = [], [], []
     group_mpv = {}
     for size in _size_order:
@@ -344,18 +348,23 @@ def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
                           int((xhi_y - xlo_y) * 2), xlo_y, xhi_y)
             for v in vals:
                 h.Fill(v)
-            mpv, _ = get_hist_mpv(h)
+            mpv, _ = get_hist_mpv(h, window_ts=3.0)
             group_mpv[f"{size}_{tname}"] = mpv + shift  # add shift back: store unshifted MPV
             hists_y.append(h)
             y_labels.append(f"{size} {tname} (MPV = {mpv:.1f})")
             y_cols.append(_size_type_colors[(size, tname)])
 
-    if group_mpv:
-        out_path = f"data/drs/drs_cfd_mpv_at_{x_eval}mm_by_type.json"
-        os.makedirs(os.path.dirname(out_path), exist_ok=True)
-        with open(out_path, "w") as f:
-            json.dump(group_mpv, f, indent=2)
-        print(f"Saved group MPVs to {out_path}")
+    if y_3mm_cerq_b5:
+        h_b5 = ROOT.TH1F(f"h_y{x_eval}_3mm_CerQuartz_B5", "",
+                         int((xhi_y - xlo_y) * 2), xlo_y, xhi_y)
+        for v in y_3mm_cerq_b5:
+            h_b5.Fill(v)
+        mpv_b5, _ = get_hist_mpv(h_b5, window_ts=3.0)
+        group_mpv["3mm_CerQuartz_B5"] = mpv_b5 + shift
+        hists_y.append(h_b5)
+        y_labels.append(f"3mm CerQuartz B5 (MPV = {mpv_b5:.1f})")
+        y_cols.append(ROOT.kViolet + 1)
+
 
     if hists_y:
         DrawHistos(
@@ -373,6 +382,73 @@ def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
             legendPos=[0.20, 0.60, 0.60, 0.90],
         )
         pm_y.add_plot(f"drs_cfd_mpv_at_{x_eval}mm")
+
+    # ── Merged-Cer plot: CerQuartz+CerPlastic combined per size ──────────────
+    _cer_merged_colors = {
+        ("3mm", "Cer"): ROOT.kBlue + 1,
+        ("3mm", "Sci"): ROOT.kGreen + 2,
+        ("6mm", "Cer"): ROOT.kAzure + 7,
+        ("6mm", "Sci"): ROOT.kTeal + 3,
+    }
+    y_by_size_cer = {}
+    for ch, b, _g, _c, var, _tx, _ty, is6mm in channel_order:
+        if ch not in y_map:
+            continue
+        size = "6mm" if is6mm else "3mm"
+        cer_key = "Cer" if var in ("CerQuartz", "CerPlastic") else "Sci"
+        y_by_size_cer.setdefault((size, cer_key), []).append(y_map[ch])
+
+    _cer_order = [("3mm", "Cer"), ("3mm", "Sci"), ("6mm", "Cer"), ("6mm", "Sci")]
+    hists_cer, cer_labels, cer_cols = [], [], []
+    group_mpv_cer = {}
+    for size, cer_key in _cer_order:
+        vals = y_by_size_cer.get((size, cer_key), [])
+        if not vals:
+            continue
+        h = ROOT.TH1F(f"h_y{x_eval}_{size}_{cer_key}", "",
+                      int((xhi_y - xlo_y) * 2), xlo_y, xhi_y)
+        for v in vals:
+            h.Fill(v)
+        mpv, _ = get_hist_mpv(h, window_ts=3.0)
+        group_mpv_cer[f"{size}_{cer_key}"] = mpv + shift
+        hists_cer.append(h)
+        cer_labels.append(f"{size} {cer_key} (MPV = {mpv:.1f})")
+        cer_cols.append(_cer_merged_colors[(size, cer_key)])
+
+    if y_3mm_cerq_b5:
+        h_b5_cer = ROOT.TH1F(f"h_y{x_eval}_3mm_CerQuartz_B5_cer", "",
+                             int((xhi_y - xlo_y) * 2), xlo_y, xhi_y)
+        for v in y_3mm_cerq_b5:
+            h_b5_cer.Fill(v)
+        mpv_b5_cer, _ = get_hist_mpv(h_b5_cer, window_ts=3.0)
+        group_mpv_cer["3mm_CerQuartz_B5"] = mpv_b5_cer + shift
+        hists_cer.append(h_b5_cer)
+        cer_labels.append(f"3mm CerQuartz B5 (MPV = {mpv_b5_cer:.1f})")
+        cer_cols.append(ROOT.kViolet + 1)
+
+    if group_mpv_cer:
+        out_path_cer = f"data/drs/drs_cfd_mpv_at_{x_eval}mm_by_group.json"
+        os.makedirs(os.path.dirname(out_path_cer), exist_ok=True)
+        with open(out_path_cer, "w") as f:
+            json.dump(group_mpv_cer, f, indent=2)
+        print(f"Saved group MPVs to {out_path_cer}")
+
+    if hists_cer:
+        DrawHistos(
+            hists_cer, cer_labels,
+            xlo_y, xhi_y, f"MPV at X = {x_eval} mm - {shift} [TS]",
+            0, 25, "# Channels",
+            f"drs_cfd_mpv_at_{x_eval}mm_by_group",
+            outdir=pm_y.get_output_dir(),
+            dology=False, usePDF=False,
+            mycolors=cer_cols,
+            drawoptions=["HIST"] * len(hists_cer),
+            lumitext=lumi,
+            addOverflow=True,
+            addUnderflow=True,
+            legendPos=[0.20, 0.60, 0.60, 0.90],
+        )
+        pm_y.add_plot(f"drs_cfd_mpv_at_{x_eval}mm_by_group")
 
     pm_y.generate_html(
         f"DRS_CFD_MPV_Scan_y{x_eval}.html",
@@ -407,85 +483,27 @@ def _save_t0_json(p0_map, p1_map, x_eval=Y1500_EVAL, shift=Y1500_SHIFT):
 # p0 corrected board maps (one per type)
 # ---------------------------------------------------------------------------
 
-def _plot_p0_corrected_page(drsboards, p0_map, channel_order, lumi):
-    """Three board maps of p0 − group_MPV, one per type (CerQuartz / CerPlastic / Sci)."""
-    group_mpv_path = f"data/drs/drs_cfd_mpv_at_{Y1500_EVAL}mm_by_type.json"
-    base_corr_map = subtract_type_mpv(drsboards, p0_map, json_path=group_mpv_path)
-    if base_corr_map is None:
-        print(f"Skipping p0-corrected page: {group_mpv_path} not found")
-        return
-
-    ch_meta = {
-        ch: var
-        for ch, _b, _g, _c, var, _tx, _ty, _ in channel_order
-    }
-
-    _type_board = {"CerQuartz": "cer", "CerPlastic": "cer", "Sci": "sci"}
-    _cer_types  = {"CerQuartz", "CerPlastic"}
-
-    pm_corr = _new_pm()
-    helper = BoardPlotHelper(pm_corr)
-
-    for tname in _TYPE_ORDER:
-        filtered = {
-            ch: base_corr_map[ch]
-            for ch, var in ch_meta.items()
-            if ch in base_corr_map and var == tname
-        }
-        if not filtered:
-            continue
-        vals_sorted = sorted(filtered.values())
-        n = len(vals_sorted)
-        zmin_val = vals_sorted[max(0, int(0.10 * n))]
-        zmax_val = vals_sorted[min(n - 1, int(0.90 * n))]
-        # zero out the other Cer type so it doesn't appear as unfilled
-        if tname in _cer_types:
-            for ch, var in ch_meta.items():
-                if var in _cer_types - {tname} and ch in p0_map:
-                    filtered[ch] = 0.0
-        cer_hists, sci_hists = visualizeDRSBoards(
-            drsboards, valuemaps=filtered, suffix=f"MPV_scan_p0_corr_{tname}")
-        hists = cer_hists if _type_board[tname] == "cer" else sci_hists
-        helper.plot_board_map(
-            hists, f"DRS_CFD_MPV_Scan_p0_corr_{tname}",
-            extra_text=tname, zmin=zmin_val, zmax=zmax_val, nTextDigits=1,
-            lumitext=lumi, usePDF=False)
-
-    pm_corr.generate_html(
-        "DRS_CFD_MPV_Scan_p0_corrected.html",
-        plots_per_row=2,
-        title="DRS CFD MPV Scan — p0 corrected by type MPV",
-        intro_text=(
-            f"Per-channel p0 − group_MPV(type), where group_MPV is the MPV at "
-            f"X = {Y1500_EVAL} mm loaded from "
-            f"data/drs/drs_cfd_mpv_at_{Y1500_EVAL}mm_by_type.json. "
-            "One board pair per type; boards not used by that type show as zero."
-        ),
-    )
-
-
 # ---------------------------------------------------------------------------
 # (p0 − JSON) − 1500/p1 board maps
 # ---------------------------------------------------------------------------
 
 def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
     """Four board maps of (p0 − group_MPV) − 1500×p1: CerQuartz, CerPlastic, Cer, Sci."""
-    group_mpv_path = f"data/drs/drs_cfd_mpv_at_{Y1500_EVAL}mm_by_type.json"
-    base_corr_map = subtract_type_mpv(drsboards, p0_map, json_path=group_mpv_path)
+    base_corr_map = subtract_type_mpv(drsboards, p0_map)
     if base_corr_map is None:
-        print(f"Skipping p0-corrected2 page: {group_mpv_path} not found")
+        print("Skipping p0-corrected2 page: MPV JSON not found")
         return
 
     ch_meta = {
-        ch: var
-        for ch, _b, _g, _c, var, _tx, _ty, _ in channel_order
+        ch: (var, is6mm)
+        for ch, _b, _g, _c, var, _tx, _ty, is6mm in channel_order
     }
 
     _cer_types  = {"CerQuartz", "CerPlastic"}
     _type_board = {"CerQuartz": "cer", "CerPlastic": "cer", "Sci": "sci"}
 
     def _corrected2(ch):
-        val = base_corr_map[ch] - 1500.0 * abs(p1_map.get(ch, 0.0)) + 10.5
+        val = base_corr_map[ch] - 1500.0 * abs(p1_map.get(ch, 0.0)) + 3.5
         return val * 0.2
 
     def _zrange(vals):
@@ -496,18 +514,18 @@ def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
     pm2 = _new_pm()
     helper = BoardPlotHelper(pm2)
 
-    # One board per type (same loop structure as _plot_p0_corrected_page)
+    # One board per type
     for tname in _TYPE_ORDER:
         filtered = {
             ch: _corrected2(ch)
-            for ch, var in ch_meta.items()
+            for ch, (var, _is6mm) in ch_meta.items()
             if ch in base_corr_map and var == tname
         }
         if not filtered:
             continue
         zmin_val, zmax_val = _zrange(list(filtered.values()))
         if tname in _cer_types:
-            for ch, var in ch_meta.items():
+            for ch, (var, _is6mm) in ch_meta.items():
                 if var in _cer_types - {tname} and ch in p0_map:
                     filtered[ch] = 0.0
         cer_hists, sci_hists = visualizeDRSBoards(
@@ -516,22 +534,41 @@ def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
         helper.plot_board_map(
             hists, f"DRS_CFD_MPV_Scan_p0c2_{tname}",
             extra_text=tname, zmin=zmin_val, zmax=zmax_val, nTextDigits=1,
-            lumitext=lumi, usePDF=False)
+            zlabel="Time [ns]", lumitext=lumi, usePDF=False)
 
-    # Combined Cer (CerQuartz + CerPlastic together)
+    # Combined Cer (CerQuartz + CerPlastic together, excluding 6mm CerPlastic)
     cer_combined = {
         ch: _corrected2(ch)
-        for ch, var in ch_meta.items()
+        for ch, (var, is6mm) in ch_meta.items()
         if ch in base_corr_map and var in _cer_types
+        and not (is6mm and var == "CerPlastic")
     }
     if cer_combined:
         zmin_val, zmax_val = _zrange(list(cer_combined.values()))
+        # Zero out 6mm CerPlastic so visualizeDRSBoards doesn't fill them with channel IDs
+        for ch, (var, is6mm) in ch_meta.items():
+            if is6mm and var == "CerPlastic":
+                cer_combined[ch] = 0.0
         cer_hists, _ = visualizeDRSBoards(
             drsboards, valuemaps=cer_combined, suffix="MPV_scan_p0c2_Cer")
+        _aw = 1.5  # arrowhead length (cm in data coords)
+        _ah = 0.7  # arrowhead half-height (cm)
+        _tip_x, _tip_y = -9.5, -1.0
+        beam_shaft = ROOT.TLine(-13, _tip_y, _tip_x, _tip_y)
+        beam_top   = ROOT.TLine(_tip_x, _tip_y, _tip_x - _aw, _tip_y + _ah)
+        beam_bot   = ROOT.TLine(_tip_x, _tip_y, _tip_x - _aw, _tip_y - _ah)
+        for obj in (beam_shaft, beam_top, beam_bot):
+            obj.SetLineWidth(2)
+            obj.SetLineColor(ROOT.kBlack)
+        beam_label = ROOT.TLatex(-11.25, -0.1, "e^{+}, 40 GeV")
+        beam_label.SetTextAlign(22)
+        beam_label.SetTextSize(0.030)
         helper.plot_board_map(
             cer_hists, "DRS_CFD_MPV_Scan_p0c2_Cer",
-            extra_text="Cer", zmin=zmin_val, zmax=zmax_val,
-            nTextDigits=1, lumitext=lumi, usePDF=False)
+            extra_text="Cer  ", zmin=zmin_val, zmax=zmax_val,
+            nTextDigits=1, zlabel="Time [ns]", lumitext=lumi, usePDF=True,
+            extraToDraw=[beam_shaft, beam_top, beam_bot, beam_label])
+        pm2.add_pdf_link("DRS_CFD_MPV_Scan_p0c2_Cer")
 
     pm2.generate_html(
         "DRS_CFD_MPV_Scan_p0_corrected2.html",
@@ -603,7 +640,6 @@ def main():
         if SAVE_T0_JSON:
             _save_t0_json(p0_map, p1_map)
         _plot_fit_params_page(drsboards, p0_map, p1_map, channel_order, lumi)
-        _plot_p0_corrected_page(drsboards, p0_map, channel_order, lumi)
         _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi)
 
     PlotManager.print_html_summary()

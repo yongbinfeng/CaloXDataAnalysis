@@ -148,6 +148,12 @@ class PlotManager:
             self._plots.append(entry)
         return self
 
+    def add_pdf_link(self, output_name: str) -> 'PlotManager':
+        """Add a PDF download link card to the HTML gallery."""
+        key = os.path.basename(output_name).replace('.png', '').replace('.pdf', '')
+        self._plots.append(f"PDF_LINK:{key}")
+        return self
+
     def add_newline(self) -> 'PlotManager':
         """Add a newline marker in the plot list (for HTML layout)."""
         self._plots.append("NEWLINE")

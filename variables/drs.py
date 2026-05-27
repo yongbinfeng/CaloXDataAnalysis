@@ -226,20 +226,17 @@ def process_drs_data(rdf, run_number, drsboards):
     return rdf
 
 
-_MPV_JSON_PATH = "data/drs/drs_cfd_mpv_at_1500mm_by_type.json"
+_MPV_GROUP_JSON_PATH = "data/drs/drs_cfd_mpv_at_1500mm_by_group.json"
 
 
-def subtract_type_mpv(drsboards, raw_mpv_map, json_path=_MPV_JSON_PATH):
-    """Subtract the type-average MPV at 1500 mm from per-channel raw MPV values.
+def subtract_type_mpv(drsboards, raw_mpv_map, json_path=_MPV_GROUP_JSON_PATH):
+    """Subtract the group-average MPV at 1500 mm from per-channel raw MPV values.
 
-    For 6mm CerPlastic and 6mm Sci a double-difference is used instead of direct
-    subtraction, because neither has a reliable 6mm reference in the JSON.
-    The 6mm CerQuartz value is used as a common proxy, corrected by the 3mm offset
-    between CerQuartz and the target type:
+    Uses the group JSON (drs_cfd_mpv_at_1500mm_by_group.json) with keys:
+        3mm_Cer, 3mm_Sci, 6mm_Cer, 6mm_Sci, 3mm_CerQuartz_B5
 
-        6mm CerPlastic: val - json["6mm_CerQuartz"] + (json["3mm_CerQuartz"] - json["3mm_CerPlastic"])
-        6mm Sci:        val - json["6mm_CerQuartz"] + (json["3mm_CerQuartz"] - json["3mm_Sci"])
-
+    Both CerQuartz and CerPlastic channels use the inclusive Cer reference.
+    Board-5 3mm CerQuartz uses the dedicated 3mm_CerQuartz_B5 reference.
     Returns a dict {ch: corrected_value} or None if the JSON file does not exist.
     """
     if not os.path.exists(json_path):
@@ -257,20 +254,16 @@ def subtract_type_mpv(drsboards, raw_mpv_map, json_path=_MPV_JSON_PATH):
             if ch not in raw_mpv_map:
                 continue
             var = get_channel_var(chan)
-            grp_key = f"{'6mm' if chan.is6mm else '3mm'}_{var}"
+            size = "6mm" if chan.is6mm else "3mm"
+            cer_key = "Cer" if var in ("CerQuartz", "CerPlastic") else "Sci"
 
-            if chan.is6mm and var in ("CerPlastic", "Sci"):
-                # Double difference: no reliable 6mm plastic/Sci reference in JSON.
-                # Use 6mm CerQuartz as proxy, corrected by the 3mm quartz-vs-type offset.
-                ref_6mm = group_mpv.get("6mm_CerQuartz")
-                ref_3mm_q = group_mpv.get("3mm_CerQuartz")
-                ref_3mm_t = group_mpv.get(f"3mm_{var}")
-                if None in (ref_6mm, ref_3mm_q, ref_3mm_t):
-                    continue
-                corr_map[ch] = raw_mpv_map[ch] - ref_6mm + (ref_3mm_q - ref_3mm_t)
+            if not chan.is6mm and var == "CerQuartz" and board.board_no == 5:
+                grp_key = "3mm_CerQuartz_B5"
             else:
-                if grp_key not in group_mpv:
-                    continue
-                corr_map[ch] = raw_mpv_map[ch] - group_mpv[grp_key]
+                grp_key = f"{size}_{cer_key}"
+
+            if grp_key not in group_mpv:
+                continue
+            corr_map[ch] = raw_mpv_map[ch] - group_mpv[grp_key]
 
     return corr_map

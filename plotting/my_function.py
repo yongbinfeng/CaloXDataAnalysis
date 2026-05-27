@@ -753,7 +753,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
                 h.GetZaxis().SetRangeUser(zmin, zmax)
                 h.GetZaxis().SetLabelSize(0.04)
                 h.GetZaxis().SetTitleSize(0.05)
-                h.GetZaxis().SetTitleOffset(1.4)
+                h.GetZaxis().SetTitleOffset(1.1)
                 h.SetMinimum(zmin)
                 h.SetMaximum(zmax)
 
