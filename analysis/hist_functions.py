@@ -13,16 +13,15 @@ from configs.plot_config import get_service_drs_processed_info_ranges
 import json
 import os
 import ROOT
-from configs.plot_config import get_drs_plot_ranges, get_drs_cfd_finebins_range, get_fers_saturation_value
+from configs.plot_config import (get_drs_plot_ranges, get_drs_cfd_finebins_range,
+                                  get_drs_time_ns_range, get_drs_time_ns_finebins_range,
+                                  get_drs_time_arr_ns_range, get_fers_saturation_value)
 from utils.utils import number_to_string, get_channel_var
 from utils.plot_helper import save_hists_to_file
-from variables.drs import get_ts_arr_name, _MPV_GROUP_JSON_PATH
+from variables.drs import get_arr_name
 from channels.channel_map import get_mcp_channels, get_pid_channels
 
 _COMBO_VARS = ("CerQuartz", "CerPlastic", "Sci")
-_COMBO_NS_MIN = 0.0     # fixed x-axis range for combined corrected histograms [ns]
-_COMBO_NS_MAX = 15.0
-_COMBO_NS_BINS = 300    # 0.05 ns/bin = 50 ps/bin
 
 _N_EVENTS = 60000
 _N_BINS_EVENT = 500
@@ -299,7 +298,7 @@ def book_fers_track(ctx):
 # DRS: waveform 2D histograms (vs TS, raw / ref / mcp)
 # ---------------------------------------------------------------------------
 
-def _book_drs_channel_waveforms(ctx, channel_name, ymin, ymax):
+def _book_drs_channel_waveforms_2d(ctx, channel_name, ymin, ymax, with_time_ns=False):
     hists = []
     ch_blsub = f"{channel_name}_blsub"
     hists.append(ctx.rdf.Histo2D((
@@ -307,31 +306,51 @@ def _book_drs_channel_waveforms(ctx, channel_name, ymin, ymax):
         "DRS values vs raw TS;TS;DRS values",
         1024, 0, 1024, 50, ymin, ymax),
         "ts", ch_blsub))
+    hists.append(ctx.rdf.Histo2D((
+        f"hist_{ch_blsub}_VS_ts_ref",
+        "DRS values vs ref-corrected TS;ts_ref;DRS values",
+        1024, 0, 1024, 50, ymin, ymax),
+        get_arr_name(channel_name), ch_blsub))
+    hists.append(ctx.rdf.Histo2D((
+        f"hist_{ch_blsub}_VS_ts_mcp",
+        "DRS values vs ref+MCP-corrected TS;ts_mcp;DRS values",
+        1024, 0, 1024, 50, ymin, ymax),
+        get_arr_name(channel_name, use_mcp=True), ch_blsub))
+    if with_time_ns:
+        t_lo, t_hi = get_drs_time_arr_ns_range()
+        hists.append(ctx.rdf.Histo2D((
+            f"hist_{ch_blsub}_VS_time_mcp",
+            "DRS values vs time (MCP-corrected);time [ns];DRS values",
+            1000, t_lo, t_hi, 50, ymin, ymax),
+            get_arr_name(channel_name, in_ns=True), ch_blsub))
+    return hists
+
+
+def _book_drs_channel_profiles(ctx, channel_name, with_time_ns=False):
+    hists = []
+    ch_blsub = f"{channel_name}_blsub"
     hists.append(ctx.rdf.Profile1D((
         f"prof_{ch_blsub}_VS_ts",
         "Mean DRS values vs raw TS;TS;Mean DRS values",
         1024, 0, 1024),
         "ts", ch_blsub))
-    hists.append(ctx.rdf.Histo2D((
-        f"hist_{ch_blsub}_VS_ts_ref",
-        "DRS values vs ref-corrected TS;ts_ref;DRS values",
-        1024, 0, 1024, 50, ymin, ymax),
-        get_ts_arr_name(channel_name), ch_blsub))
     hists.append(ctx.rdf.Profile1D((
         f"prof_{ch_blsub}_VS_ts_ref",
         "Mean DRS values vs ref-corrected TS;ts_ref;Mean DRS values",
         1024, 0, 1024),
-        get_ts_arr_name(channel_name), ch_blsub))
-    hists.append(ctx.rdf.Histo2D((
-        f"hist_{ch_blsub}_VS_ts_mcp",
-        "DRS values vs ref+MCP-corrected TS;ts_mcp;DRS values",
-        1024, 0, 1024, 50, ymin, ymax),
-        get_ts_arr_name(channel_name, use_mcp=True), ch_blsub))
+        get_arr_name(channel_name), ch_blsub))
     hists.append(ctx.rdf.Profile1D((
         f"prof_{ch_blsub}_VS_ts_mcp",
         "Mean DRS values vs ref+MCP-corrected TS;ts_mcp;Mean DRS values",
         1024, 0, 1024),
-        get_ts_arr_name(channel_name, use_mcp=True), ch_blsub))
+        get_arr_name(channel_name, use_mcp=True), ch_blsub))
+    if with_time_ns:
+        t_lo, t_hi = get_drs_time_arr_ns_range()
+        hists.append(ctx.rdf.Profile1D((
+            f"prof_{ch_blsub}_VS_time_mcp",
+            "Mean DRS values vs time (MCP-corrected);time [ns];Mean DRS values",
+            1000, t_lo, t_hi),
+            get_arr_name(channel_name, in_ns=True), ch_blsub))
     return hists
 
 
@@ -346,14 +365,31 @@ def book_drs_waveforms(ctx):
                 is_amplified=chan.is_amplified,
                 is6mm=chan.is6mm,
                 is_reference=chan.is_reference)
-            hists.extend(_book_drs_channel_waveforms(
-                ctx, chan.get_channel_name(blsub=False), ymin, ymax))
+            hists.extend(_book_drs_channel_waveforms_2d(
+                ctx, chan.get_channel_name(blsub=False), ymin, ymax,
+                with_time_ns=not chan.is_reference))
 
     for _, mcp_channel in get_mcp_channels(ctx.run_number).items():
         ymin, ymax = get_drs_plot_ranges(subtractMedian=True, is_mcp=True)
-        hists.extend(_book_drs_channel_waveforms(ctx, mcp_channel, ymin, ymax))
+        hists.extend(_book_drs_channel_waveforms_2d(ctx, mcp_channel, ymin, ymax))
 
     ctx.hbook.add("drs_vs_ts.root", hists)
+
+
+def book_drs_profiles(ctx):
+    hists = []
+    for _, board in ctx.drsboards.items():
+        for chan in board:
+            if chan is None:
+                continue
+            hists.extend(_book_drs_channel_profiles(
+                ctx, chan.get_channel_name(blsub=False),
+                with_time_ns=not chan.is_reference))
+
+    for _, mcp_channel in get_mcp_channels(ctx.run_number).items():
+        hists.extend(_book_drs_channel_profiles(ctx, mcp_channel))
+
+    ctx.hbook.add("drs_profiles.root", hists)
 
 
 # ---------------------------------------------------------------------------
@@ -368,10 +404,11 @@ def book_drs_prof_combined(ctx):
     combo_prof_{3mm|6mm}_{CerQuartz|CerPlastic|Sci}_mcp.
     """
     def post_save():
-        infile = ROOT.TFile(f"{ctx.paths['root']}/drs_vs_ts.root", "READ")
-        if not infile or infile.IsZombie():
-            print("Warning: drs_vs_ts.root not found; skipping drs_prof_combined")
+        path = f"{ctx.paths['root']}/drs_profiles.root"
+        if not os.path.exists(path):
+            print("Warning: drs_profiles.root not found; skipping drs_prof_combined")
             return
+        infile = ROOT.TFile(path, "READ")
 
         combo_profs = {}
         for _, board in ctx.drsboards.items():
@@ -410,28 +447,19 @@ def book_drs_prof_combined(ctx):
 # ---------------------------------------------------------------------------
 
 def book_drs_prof_corr_combined(ctx):
-    """Combine waveform profiles with X axis converted to physical time (ns).
+    """Combine per-channel time [ns] waveform profiles into per-(size, var) sums.
 
-    Uses the same JSON reference MPVs as subtract_type_mpv.  For each
-    (size_tag, var) group the X axis is shifted by (ts - json_mpv) * 0.2 ns
-    so that the peak sits at 0 ns for each type.
+    Reads prof_{ch_blsub}_VS_time_mcp from drs_vs_ts.root (already in ns).
     Writes drs_prof_corr_combined.root with histograms named
     combo_prof_corr_{3mm|6mm}_{CerQuartz|CerPlastic|Sci}_mcp.
     """
-    _TS_TO_NS = 0.2
-
     def post_save():
-        if not os.path.exists(_MPV_GROUP_JSON_PATH):
-            print("Warning: MPV JSON not found; skipping drs_prof_corr_combined")
-            return
-        with open(_MPV_GROUP_JSON_PATH) as f:
-            group_mpv = json.load(f)
-
         root_path = ctx.paths['root']
-        infile = ROOT.TFile(f"{root_path}/drs_vs_ts.root", "READ")
-        if not infile or infile.IsZombie():
-            print("Warning: drs_vs_ts.root not found; skipping drs_prof_corr_combined")
+        path = f"{root_path}/drs_profiles.root"
+        if not os.path.exists(path):
+            print("Warning: drs_profiles.root not found; skipping drs_prof_corr_combined")
             return
+        infile = ROOT.TFile(path, "READ")
 
         combo_profs = {}
         for _, board in ctx.drsboards.items():
@@ -442,39 +470,17 @@ def book_drs_prof_corr_combined(ctx):
                 if var not in _COMBO_VARS:
                     continue
                 size_tag = "6mm" if chan.is6mm else "3mm"
-                cer_key = "Cer" if var in ("CerQuartz", "CerPlastic") else "Sci"
-                if not chan.is6mm and var == "CerQuartz" and board.board_no == 5:
-                    grp_key = "3mm_CerQuartz_B5"
-                else:
-                    grp_key = f"{size_tag}_{cer_key}"
-                mpv_ts = group_mpv.get(grp_key)
-                if mpv_ts is None:
-                    continue
                 ch_blsub = chan.get_channel_name(blsub=True)
-                h_raw = infile.Get(f"prof_{ch_blsub}_VS_ts_mcp")
-                if not h_raw:
+                h = infile.Get(f"prof_{ch_blsub}_VS_time_mcp")
+                if not h:
                     continue
-                h_proj = h_raw.ProjectionX(f"_tmp_{ch_blsub}")
-                h_proj.SetDirectory(0)
-
                 combo_key = (size_tag, var)
                 clone_name = f"combo_prof_corr_{size_tag}_{var}_mcp"
                 if combo_key not in combo_profs:
-                    h_combo = ROOT.TH1D(clone_name, "", _COMBO_NS_BINS, _COMBO_NS_MIN, _COMBO_NS_MAX)
-                    h_combo.SetDirectory(0)
-                    combo_profs[combo_key] = h_combo
-                h_combo = combo_profs[combo_key]
-                for i in range(1, h_proj.GetNbinsX() + 1):
-                    content = h_proj.GetBinContent(i)
-                    if content == 0:
-                        continue
-                    x_corr = (h_proj.GetBinCenter(i) - mpv_ts) * _TS_TO_NS
-                    b = h_combo.FindBin(x_corr)
-                    if 1 <= b <= _COMBO_NS_BINS:
-                        h_combo.SetBinContent(b, h_combo.GetBinContent(b) + content)
-                        err = h_proj.GetBinError(i)
-                        prev_err = h_combo.GetBinError(b)
-                        h_combo.SetBinError(b, (prev_err**2 + err**2)**0.5)
+                    combo_profs[combo_key] = h.Clone(clone_name)
+                    combo_profs[combo_key].SetDirectory(0)
+                else:
+                    combo_profs[combo_key].Add(h)
 
         infile.Close()
         if combo_profs:
@@ -533,22 +539,13 @@ def book_drs_finebins_combined(ctx):
 
 
 def book_drs_finebins_corr_combined(ctx):
-    """Accumulate fine-binned CFD histograms with X axis in physical time (ns).
+    """Combine per-channel time [ns] CFD histograms into per-(size, var) sums.
 
-    Uses the same JSON reference MPVs as subtract_type_mpv to shift each
-    channel's histogram by (ts - json_mpv) * 0.2 ns before accumulating.
+    Reads hist_{ch}_Time_cfd_mcp_finebins from drs_stats.root (already in ns).
     Writes drs_finebins_corr_combined.root with histograms named
     combo_finebins_corr_{3mm|6mm}_{CerQuartz|CerPlastic|Sci}.
     """
-    _TS_TO_NS = 0.2
-
     def post_save():
-        if not os.path.exists(_MPV_GROUP_JSON_PATH):
-            print("Warning: MPV JSON not found; skipping drs_finebins_corr_combined")
-            return
-        with open(_MPV_GROUP_JSON_PATH) as f:
-            group_mpv = json.load(f)
-
         infile = ROOT.TFile(f"{ctx.paths['root']}/drs_stats.root", "READ")
         if not infile or infile.IsZombie():
             print("Warning: drs_stats.root not found; skipping drs_finebins_corr_combined")
@@ -563,36 +560,17 @@ def book_drs_finebins_corr_combined(ctx):
                 if var not in _COMBO_VARS:
                     continue
                 size_tag = "6mm" if chan.is6mm else "3mm"
-                cer_key = "Cer" if var in ("CerQuartz", "CerPlastic") else "Sci"
-                if not chan.is6mm and var == "CerQuartz" and board.board_no == 5:
-                    grp_key = "3mm_CerQuartz_B5"
-                else:
-                    grp_key = f"{size_tag}_{cer_key}"
-                mpv_ts = group_mpv.get(grp_key)
-                if mpv_ts is None:
-                    continue
                 ch = chan.get_channel_name(blsub=False)
-                h_raw = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
-                if not h_raw:
+                h = infile.Get(f"hist_{ch}_Time_cfd_mcp_finebins")
+                if not h:
                     continue
                 combo_key = (size_tag, var)
                 clone_name = f"combo_finebins_corr_{size_tag}_{var}"
                 if combo_key not in combo_hists:
-                    h_combo = ROOT.TH1D(clone_name, "", _COMBO_NS_BINS, _COMBO_NS_MIN, _COMBO_NS_MAX)
-                    h_combo.SetDirectory(0)
-                    combo_hists[combo_key] = h_combo
-                h_combo = combo_hists[combo_key]
-                for i in range(1, h_raw.GetNbinsX() + 1):
-                    content = h_raw.GetBinContent(i)
-                    if content == 0:
-                        continue
-                    x_corr = (h_raw.GetBinCenter(i) - mpv_ts) * _TS_TO_NS
-                    b = h_combo.FindBin(x_corr)
-                    if 1 <= b <= _COMBO_NS_BINS:
-                        h_combo.SetBinContent(b, h_combo.GetBinContent(b) + content)
-                        err = h_raw.GetBinError(i)
-                        prev_err = h_combo.GetBinError(b)
-                        h_combo.SetBinError(b, (prev_err**2 + err**2)**0.5)
+                    combo_hists[combo_key] = h.Clone(clone_name)
+                    combo_hists[combo_key].SetDirectory(0)
+                else:
+                    combo_hists[combo_key].Add(h)
 
         infile.Close()
         if combo_hists:
@@ -650,6 +628,18 @@ def book_drs_stats(ctx):
                 "DRS CFD TS (ref+MCP-corrected);TS_cfd_mcp;Counts",
                 500, fb_min, fb_max),
                 f"{channel_name}_TS_cfd_mcp"))
+            t_lo, t_hi = get_drs_time_ns_range()
+            hists.append(ctx.rdf.Histo1D((
+                f"hist_{channel_name}_Time_cfd_mcp",
+                "DRS CFD time (MCP-corrected);Time_cfd_mcp [ns];Counts",
+                200, t_lo, t_hi),
+                f"{channel_name}_Time_cfd_mcp"))
+            tfb_lo, tfb_hi = get_drs_time_ns_finebins_range(chan.isCer)
+            hists.append(ctx.rdf.Histo1D((
+                f"hist_{channel_name}_Time_cfd_mcp_finebins",
+                "DRS CFD time (MCP-corrected);Time_cfd_mcp [ns];Counts",
+                300, tfb_lo, tfb_hi),
+                f"{channel_name}_Time_cfd_mcp"))
 
     ctx.hbook.add("drs_stats.root", hists)
 

@@ -11,6 +11,20 @@ _XMAX =  _NX / 2 * _X_SCALE   #  16.8 cm
 _YMIN = -_NY / 2 * _Y_SCALE   # -16.0 cm
 _YMAX =  _NY / 2 * _Y_SCALE   #  16.0 cm
 
+# Full calorimeter face (FERS boards span the complete active area).
+FERS_XMIN_DISPLAY = _XMIN   # -16.8 cm
+FERS_XMAX_DISPLAY = _XMAX   #  16.8 cm
+FERS_YMIN_DISPLAY = _YMIN   # -16.0 cm
+FERS_YMAX_DISPLAY = _YMAX   #  16.0 cm
+FERS_W_REF = 1270
+FERS_H_REF = 1000
+
+# DRS channels occupy only the central ±~4 cm in X; display in [-6, 6] cm.
+# W_ref is scaled from the FERS reference so pixels/cm stays equal in X and Y.
+DRS_XMIN_DISPLAY = -10.0
+DRS_XMAX_DISPLAY =  10.0
+DRS_W_REF = round(FERS_W_REF * (DRS_XMAX_DISPLAY - DRS_XMIN_DISPLAY) / (FERS_XMAX_DISPLAY - FERS_XMIN_DISPLAY))  # 454
+
 
 def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", gain="HG", quartzOnly=0):
     # quartzOnly: 0 use both quartz and plastic channels; 1 use only quartz channels; 2 use only plastic channels
@@ -82,12 +96,16 @@ def visualizeDRSBoards(drs_boards, valuemaps=None, suffix="", quartzOnly=0):
 
     for _, DRSBoard in drs_boards.items():
         for channel_Sci in DRSBoard.get_list_of_channels(isCer=False):
-            sci_encoded = channel_Sci.board_no * 100 + \
-                channel_Sci.group_no * 10 + channel_Sci.channel_no
-            if sci_encoded == 0:
-                sci_encoded = 0.001
-            if valuemaps and channel_Sci.get_channel_name() in valuemaps:
-                sci_encoded = valuemaps[channel_Sci.get_channel_name()]
+            ch_name = channel_Sci.get_channel_name()
+            if valuemaps is not None:
+                if ch_name not in valuemaps:
+                    continue
+                sci_encoded = valuemaps[ch_name]
+            else:
+                sci_encoded = channel_Sci.board_no * 100 + \
+                    channel_Sci.group_no * 10 + channel_Sci.channel_no
+                if sci_encoded == 0:
+                    sci_encoded = 0.001
             if not channel_Sci.is6mm:
                 h2_DRS_Sci_3mm.Fill(channel_Sci.i_tower_x * _X_SCALE, channel_Sci.i_tower_y * _Y_SCALE,
                                     sci_encoded)
@@ -95,16 +113,20 @@ def visualizeDRSBoards(drs_boards, valuemaps=None, suffix="", quartzOnly=0):
                 h2_DRS_Sci.Fill(channel_Sci.i_tower_x * _X_SCALE, channel_Sci.i_tower_y * _Y_SCALE,
                                 sci_encoded)
         for channel_Cer in DRSBoard.get_list_of_channels(isCer=True):
-            cer_encoded = channel_Cer.board_no * 100 + \
-                channel_Cer.group_no * 10 + channel_Cer.channel_no
             if quartzOnly == 1 and not channel_Cer.isQuartz:
                 continue
             if quartzOnly == 2 and channel_Cer.isQuartz:
                 continue
-            if cer_encoded == 0:
-                cer_encoded = 0.001
-            if valuemaps and channel_Cer.get_channel_name() in valuemaps:
-                cer_encoded = valuemaps[channel_Cer.get_channel_name()]
+            ch_name = channel_Cer.get_channel_name()
+            if valuemaps is not None:
+                if ch_name not in valuemaps:
+                    continue
+                cer_encoded = valuemaps[ch_name]
+            else:
+                cer_encoded = channel_Cer.board_no * 100 + \
+                    channel_Cer.group_no * 10 + channel_Cer.channel_no
+                if cer_encoded == 0:
+                    cer_encoded = 0.001
             if not channel_Cer.is6mm:
                 h2_DRS_Cer_3mm.Fill(channel_Cer.i_tower_x * _X_SCALE, channel_Cer.i_tower_y * _Y_SCALE,
                                     cer_encoded)

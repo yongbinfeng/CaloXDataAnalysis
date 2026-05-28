@@ -604,7 +604,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
             "e+": "e+",
             "mu+": "#mu+",
         }
-        CMS_lumi.lumi_13TeV = f"Run {run_number}: {btypes.get(btype.lower(), btype.lower())}, {benergy} GeV"
+        CMS_lumi.lumi_13TeV = f"{btypes.get(btype.lower(), btype.lower())}, {benergy} GeV"
     else:
         CMS_lumi.lumi_13TeV = ""
 
@@ -664,10 +664,9 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         canvas.SetTicks(1, 1)
         padsize1 = 1.0
         if doth2:
-            if W_ref < 1000:
-                canvas.SetRightMargin(0.18)
-            else:
-                canvas.SetRightMargin(0.18)
+            # For tall canvases (H > W) the colorbar title needs more horizontal room.
+            right_margin = max(0.18, 0.18 * H / W)
+            canvas.SetRightMargin(right_margin)
         else:
             canvas.SetRightMargin(0.095)
         padsize2 = 0.
@@ -753,7 +752,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
                 h.GetZaxis().SetRangeUser(zmin, zmax)
                 h.GetZaxis().SetLabelSize(0.04)
                 h.GetZaxis().SetTitleSize(0.05)
-                h.GetZaxis().SetTitleOffset(1.1)
+                h.GetZaxis().SetTitleOffset(max(1.1, 1.3 * H / W))
                 h.SetMinimum(zmin)
                 h.SetMaximum(zmax)
 
@@ -792,11 +791,9 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     x1_l = 0.88
     y1_l = 0.88
 
-    # dx_l = 0.20
-    dy_l = 0.22*0.66/padsize1
     dx_l = 0.35*0.66/padsize1
-    x0_l = x1_l-dx_l
-    y0_l = y1_l-dy_l
+    x0_l = x1_l - dx_l
+    y0_l = y1_l - len(myhistos) * 0.07
 
     if len(legendPos) == 4:
         x0_l = legendPos[0]
@@ -927,7 +924,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         myhistos_clone[redrawihist].Draw(
             " ".join(filter(None, [drawoptions[redrawihist], "same"])))
 
-    CMS_lumi.extra_text_x_offset = 0.13 * H / W
+    CMS_lumi.extra_text_x_offset = 0.13 * min(1.0, H / W)
 
     i_pos_x = 0
     plot_cms = True
@@ -1128,12 +1125,10 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         # path not included; by default put to plots/outputname
         outputname = outdir + "/" + outputname
 
-    dirpath = outputname.rpartition('/')[0]
-    if not os.path.exists(dirpath):
-        print(f"Make the directory {dirpath}")
-        os.makedirs(dirpath)
-
     if savepdf:
+        dirpath = outputname.rpartition('/')[0]
+        if dirpath and not os.path.exists(dirpath):
+            os.makedirs(dirpath)
         if usePDF:
             canvas.Print("%s.pdf" % outputname)
         if usePNG:

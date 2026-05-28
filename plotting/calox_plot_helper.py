@@ -2,6 +2,8 @@ import ROOT
 from typing import Optional, Union, List, Dict, Tuple, Any
 from plotting.my_function import DrawHistos
 from core.plot_manager import PlotManager
+from utils.visualization import (DRS_XMIN_DISPLAY, DRS_XMAX_DISPLAY, DRS_W_REF,
+                                  FERS_YMIN_DISPLAY, FERS_YMAX_DISPLAY, FERS_H_REF)
 
 
 def create_pave_text(
@@ -54,6 +56,24 @@ def create_board_info_pave(
     return pave
 
 
+def _pct_range_from_hists(hists, lo=0.05, hi=0.90):
+    """Return (zmin, zmax) from the lo–hi percentile of non-zero TH2 bin contents."""
+    vals = []
+    for h in hists:
+        if h is None:
+            continue
+        for bx in range(1, h.GetNbinsX() + 1):
+            for by in range(1, h.GetNbinsY() + 1):
+                v = h.GetBinContent(bx, by)
+                if v != 0.0:
+                    vals.append(v)
+    if not vals:
+        return None, None
+    vals.sort()
+    n = len(vals)
+    return vals[max(0, int(lo * n))], vals[min(n - 1, int(hi * n))]
+
+
 class BoardPlotHelper:
     """
     Helper class for plotting board visualization histograms (2D maps).
@@ -65,10 +85,10 @@ class BoardPlotHelper:
     def __init__(
         self,
         manager: PlotManager,
-        xrange: Tuple[float, float] = (-16.8, 16.8),
-        yrange: Tuple[float, float] = (-16.0, 16.0),
-        W_ref: int = 1270,
-        H_ref: int = 1000
+        xrange: Tuple[float, float] = (DRS_XMIN_DISPLAY, DRS_XMAX_DISPLAY),
+        yrange: Tuple[float, float] = (FERS_YMIN_DISPLAY, FERS_YMAX_DISPLAY),
+        W_ref: int = DRS_W_REF,
+        H_ref: int = FERS_H_REF
     ):
         self.manager = manager
         self.xrange = xrange
@@ -81,12 +101,18 @@ class BoardPlotHelper:
         hists: List[ROOT.TH2],
         output_name: str,
         extra_text: str = "",
-        zmin: float = 0,
+        zmin: Optional[float] = None,
         zmax: Optional[float] = None,
         nTextDigits: int = 0,
         zlabel: str = "",
         **kwargs
     ) -> 'BoardPlotHelper':
+        if zmin is None or zmax is None:
+            auto_lo, auto_hi = _pct_range_from_hists(hists)
+            if zmin is None:
+                zmin = auto_lo
+            if zmax is None:
+                zmax = auto_hi
         pm = self.manager
         first_opt = "colz,text" if zlabel else "col,text"
         DrawHistos(
@@ -118,12 +144,18 @@ class BoardPlotHelper:
         cer_hists: List[ROOT.TH2],
         sci_hists: List[ROOT.TH2],
         output_base: str,
-        zmin: float = 0,
+        zmin: Optional[float] = None,
         zmax: Optional[float] = None,
         nTextDigits: int = 0,
         zlabel: str = "",
         **kwargs
     ) -> 'BoardPlotHelper':
+        if zmin is None or zmax is None:
+            auto_lo, auto_hi = _pct_range_from_hists(cer_hists + sci_hists)
+            if zmin is None:
+                zmin = auto_lo
+            if zmax is None:
+                zmax = auto_hi
         self.plot_board_map(
             cer_hists, f"{output_base}_Cer",
             extra_text="Cer", zmin=zmin, zmax=zmax, nTextDigits=nTextDigits,

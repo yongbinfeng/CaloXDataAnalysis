@@ -9,17 +9,19 @@ from utils.utils import get_channel_var
 TS_END = 1024
 MCP_REF = "MCP_DS_0"
 
-# Column naming convention (all time quantities are time-slice indices, not physical time):
+# Column naming convention — uppercase prefix = scalar, lowercase prefix = RVec array:
 #   _ref_TS          scalar: LED discriminator crossing time slice of the reference channel (Channel8)
 #   _ref_TS_peak     scalar: peak position time slice of the reference channel
 #   _TS_cfd          scalar float: CFD crossing time slice from compute_cfd_integral
 #   _TS_peak         scalar float: peak position time slice from compute_cfd_integral
 #   _TS_cfd_ref      scalar: _TS_cfd corrected for the reference channel timing
 #   _TS_peak_ref     scalar: _TS_peak corrected for the reference channel timing
-#   _TS_cfd_mcp      scalar: _TS_cfd_ref further corrected for MCP timing
-#   _TS_peak_mcp     scalar: _TS_peak_ref further corrected for MCP timing
+#   _TS_cfd_mcp      scalar: _TS_cfd_ref further corrected for MCP timing  [TS]
+#   _TS_peak_mcp     scalar: _TS_peak_ref further corrected for MCP timing [TS]
 #   _ts_ref          RVec:   per-event TS array shifted by the reference channel time slice
 #   _ts_mcp          RVec:   per-event TS array shifted by reference + MCP time slice
+#   _Time_cfd_mcp    scalar: _TS_cfd_mcp group-MPV-corrected, converted to ns
+#   _time_mcp        RVec:   _ts_mcp group-MPV-corrected, converted to ns
 
 
 def get_drs_branches(rdf):
@@ -144,10 +146,17 @@ def process_pid_channels(rdf, run_number):
     return rdf
 
 
-def get_ts_arr_name(drs_channel_name, use_mcp=False):
-    """Return the calibrated ts array column name (_ts_ref or _ts_mcp) for a given DRS channel."""
-    board_group_name = drs_channel_name.rsplit("_Channel", 1)[0]
-    return f"{board_group_name}_ts_mcp" if use_mcp else f"{board_group_name}_ts_ref"
+def get_arr_name(drs_channel_name, use_mcp=False, in_ns=False):
+    """Return the time array column name for a DRS channel.
+
+    in_ns=False (default): board-group TS array (_ts_ref or _ts_mcp) [TS]
+    in_ns=True:            per-channel corrected time array (_time_mcp) [ns]
+    use_mcp: selects _ts_mcp vs _ts_ref (only relevant when in_ns=False)
+    """
+    if in_ns:
+        return f"{drs_channel_name}_time_mcp"
+    board_group = drs_channel_name.rsplit("_Channel", 1)[0]
+    return f"{board_group}_ts_mcp" if use_mcp else f"{board_group}_ts_ref"
 
 
 def update_ts(rdf, drs_channels_ref, mcp_det="MCP_US_0"):
@@ -156,12 +165,12 @@ def update_ts(rdf, drs_channels_ref, mcp_det="MCP_US_0"):
         board_group_name = channel_name.replace("_Channel8", "")
         ref_TS = f"{board_group_name}_ref_TS"
 
-        rdf = rdf.Define(get_ts_arr_name(channel_name, use_mcp=False),
+        rdf = rdf.Define(get_arr_name(channel_name),
                          f"ts - {ref_TS} + 790")
         if mcp_det is not None:
             rdf = rdf.Define(
-                get_ts_arr_name(channel_name, use_mcp=True),
-                f"{get_ts_arr_name(channel_name, use_mcp=False)} - {mcp_det}_TS_cfd_ref + 500")
+                get_arr_name(channel_name, use_mcp=True),
+                f"{get_arr_name(channel_name)} - {mcp_det}_TS_cfd_ref + 500")
     return rdf
 
 
@@ -223,10 +232,22 @@ def process_drs_data(rdf, run_number, drsboards):
     drs_channels_physics = [
         ch for ch in drs_branches if not ch.endswith("Channel8")]
     rdf = process_drs_channels(rdf, drs_channels_physics, mcp_det=MCP_REF)
+    rdf = define_time_ns(rdf, drsboards)
     return rdf
 
 
 _MPV_GROUP_JSON_PATH = "data/drs/drs_cfd_mpv_at_1500mm_by_group.json"
+_TS_TO_NS = 0.2
+
+
+def _grp_key(chan, board):
+    """Return the group JSON key for a channel (board needed for B5 special case)."""
+    var = get_channel_var(chan)
+    size = "6mm" if chan.is6mm else "3mm"
+    cer_key = "Cer" if var in ("CerQuartz", "CerPlastic") else "Sci"
+    if not chan.is6mm and var == "CerQuartz" and board.board_no == 5:
+        return "3mm_CerQuartz_B5"
+    return f"{size}_{cer_key}"
 
 
 def subtract_type_mpv(drsboards, raw_mpv_map, json_path=_MPV_GROUP_JSON_PATH):
@@ -253,17 +274,41 @@ def subtract_type_mpv(drsboards, raw_mpv_map, json_path=_MPV_GROUP_JSON_PATH):
             ch = chan.get_channel_name(blsub=False)
             if ch not in raw_mpv_map:
                 continue
-            var = get_channel_var(chan)
-            size = "6mm" if chan.is6mm else "3mm"
-            cer_key = "Cer" if var in ("CerQuartz", "CerPlastic") else "Sci"
-
-            if not chan.is6mm and var == "CerQuartz" and board.board_no == 5:
-                grp_key = "3mm_CerQuartz_B5"
-            else:
-                grp_key = f"{size}_{cer_key}"
-
-            if grp_key not in group_mpv:
+            key = _grp_key(chan, board)
+            if key not in group_mpv:
                 continue
-            corr_map[ch] = raw_mpv_map[ch] - group_mpv[grp_key]
+            corr_map[ch] = raw_mpv_map[ch] - group_mpv[key]
 
     return corr_map
+
+
+def define_time_ns(rdf, drsboards, json_path=_MPV_GROUP_JSON_PATH):
+    """Define per-channel time_cfd_mcp and time_mcp columns in physical units [ns].
+
+    For each non-reference DRS channel adds:
+        {ch}_Time_cfd_mcp  scalar: ({ch}_TS_cfd_mcp - group_mpv) * 0.2  [ns]
+        {ch}_time_mcp      RVec:   ({board_group}_ts_mcp - group_mpv) * 0.2  [ns]
+
+    Channels whose group key is absent from the JSON are skipped.
+    """
+    if not os.path.exists(json_path):
+        return rdf
+
+    with open(json_path) as _f:
+        group_mpv = json.load(_f)
+
+    for _, board in drsboards.items():
+        for chan in board:
+            if chan.is_reference:
+                continue
+            key = _grp_key(chan, board)
+            ref_ts = group_mpv.get(key)
+            if ref_ts is None:
+                continue
+            ch = chan.get_channel_name(blsub=False)
+            rdf = rdf.Define(f"{ch}_Time_cfd_mcp",
+                             f"({ch}_TS_cfd_mcp - {ref_ts}) * {_TS_TO_NS}")
+            rdf = rdf.Define(get_arr_name(ch, in_ns=True),
+                             f"({get_arr_name(ch, use_mcp=True)} - {ref_ts}) * {_TS_TO_NS}")
+
+    return rdf

@@ -138,6 +138,21 @@ def get_drs_cfd_finebins_range(is_cer):
     return (410, 450) if is_cer else (420, 490)
 
 
+def get_drs_time_ns_range():
+    """Broad range [ns] for scalar time_mcp / time_cfd_mcp timing histograms."""
+    return (0, 20)
+
+
+def get_drs_time_ns_finebins_range(is_cer):
+    """Fine-binned range [ns] for time_cfd_mcp_finebins histograms."""
+    return (6.5, 12.5) if is_cer else (7.5, 16.5)
+
+
+def get_drs_time_arr_ns_range():
+    """Waveform window [ns] for time_mcp 2D hist / profile."""
+    return (0, 100)
+
+
 def get_drs_prof_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, is_reference=False, is_cer=False):
     xmin, xmax = get_drs_plot_ranges(
         subtractMedian, is_amplified, is6mm, is_reference)

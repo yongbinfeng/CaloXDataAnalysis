@@ -28,6 +28,7 @@ from analysis.hist_functions import (
     book_fers_2d,
     book_fers_track,
     book_drs_waveforms,
+    book_drs_profiles,
     book_drs_prof_combined,
     book_drs_stats,
     book_drs_finebins_combined,
@@ -51,6 +52,7 @@ from analysis.plot_functions import (
     plot_fers_2d,
     plot_fers_track,
     plot_drs_waveforms,
+    plot_drs_profiles,
     plot_drs_stats,
     plot_drs_cfd_mpv,
     plot_drs_peak_ts,
@@ -125,6 +127,12 @@ ALL_SEQUENCES: list[CaloXSequence] = [
         name="drs_waveforms",
         book_hists=book_drs_waveforms,
         make_plots=plot_drs_waveforms,
+        enabled_by_default=True,
+    ),
+    CaloXSequence(
+        name="drs_profiles",
+        book_hists=book_drs_profiles,
+        make_plots=plot_drs_profiles,
         enabled_by_default=True,
     ),
     CaloXSequence(
@@ -216,10 +224,15 @@ SERVICE_DRS_SEQUENCES: list[CaloXSequence] = [
 # ---------------------------------------------------------------------------
 
 DRS_MCP_SEQUENCES: list[CaloXSequence] = [
+    #CaloXSequence(
+    #    name="drs_waveforms",
+    #    book_hists=book_drs_waveforms,
+    #    make_plots=plot_drs_waveforms,
+    #),
     CaloXSequence(
-        name="drs_waveforms",
-        book_hists=book_drs_waveforms,
-        make_plots=plot_drs_waveforms,
+        name="drs_profiles",
+        book_hists=book_drs_profiles,
+        make_plots=plot_drs_profiles,
     ),
     CaloXSequence(
         name="drs_prof_combined",

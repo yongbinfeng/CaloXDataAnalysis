@@ -64,6 +64,11 @@ class PlotStyle:
         return kwargs
 
 
+def legend_pos(n_entries, x1=0.50, x2=0.90, top=0.90, entry_height=0.07):
+    """Return [x1, y1, x2, y2] with y-span = entry_height * n_entries."""
+    return [x1, top - n_entries * entry_height, x2, top]
+
+
 # Pre-defined styles for common use cases
 STYLE_1D_LINEAR = PlotStyle(dology=False, drawoptions="HIST")
 STYLE_1D_LOG = PlotStyle(dology=True, drawoptions="HIST")
