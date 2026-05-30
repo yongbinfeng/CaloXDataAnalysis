@@ -21,12 +21,18 @@ Set enabled_by_default=False to keep a sequence opt-in (--sequences on CLI).
 from core.sequence import CaloXSequence
 from analysis.hist_functions import (
     book_monitor_conditions,
-    book_fers_energy_sum,
+    book_fers_esum_vs_event,
     book_fers_channels,
     book_fers_stats,
     book_fers_max,
     book_fers_2d,
     book_fers_track,
+    book_fers_energy_sum,
+    book_fers_cer_vs_sci,
+    book_fers_dr,
+    book_fers_ewc,
+    book_fers_ewc_vs_hodo,
+    book_fers_shower_shape,
     book_drs_waveforms,
     book_drs_profiles,
     book_drs_prof_combined,
@@ -44,13 +50,19 @@ from analysis.hist_functions import (
 )
 from analysis.plot_functions import (
     plot_monitor_conditions,
-    plot_fers_energy_sum,
+    plot_fers_esum_vs_event,
     plot_fers_mapping,
     plot_fers_channels,
     plot_fers_stats,
     plot_fers_max,
     plot_fers_2d,
     plot_fers_track,
+    plot_fers_energy_sum,
+    plot_fers_cer_vs_sci,
+    plot_fers_dr,
+    plot_fers_ewc,
+    plot_fers_ewc_vs_hodo,
+    plot_fers_shower_shape,
     plot_drs_waveforms,
     plot_drs_profiles,
     plot_drs_stats,
@@ -77,9 +89,9 @@ ALL_SEQUENCES: list[CaloXSequence] = [
         enabled_by_default=True,
     ),
     CaloXSequence(
-        name="fers_energy_sum",
-        book_hists=book_fers_energy_sum,
-        make_plots=plot_fers_energy_sum,
+        name="fers_esum_vs_event",
+        book_hists=book_fers_esum_vs_event,
+        make_plots=plot_fers_esum_vs_event,
         enabled_by_default=True,
     ),
     # plot-only: channel layout maps (no histogram step)
@@ -267,11 +279,53 @@ DRS_MCP_SEQUENCES: list[CaloXSequence] = [
 ]
 
 # ---------------------------------------------------------------------------
+# FERS physics sequences  (require define_physics_variables on the manager)
+# ---------------------------------------------------------------------------
+
+FERS_SEQUENCES: list[CaloXSequence] = [
+    CaloXSequence(
+        name="fers_energy_sum",
+        book_hists=book_fers_energy_sum,
+        make_plots=plot_fers_energy_sum,
+    ),
+    #CaloXSequence(
+    #    name="fers_stats",
+    #    book_hists=book_fers_stats,
+    #    make_plots=plot_fers_stats,
+    #),
+    CaloXSequence(
+        name="fers_cer_vs_sci",
+        book_hists=book_fers_cer_vs_sci,
+        make_plots=plot_fers_cer_vs_sci,
+    ),
+    CaloXSequence(
+        name="fers_dr",
+        book_hists=book_fers_dr,
+        make_plots=plot_fers_dr,
+    ),
+    CaloXSequence(
+        name="fers_ewc",
+        book_hists=book_fers_ewc,
+        make_plots=plot_fers_ewc,
+    ),
+    CaloXSequence(
+        name="fers_ewc_vs_hodo",
+        book_hists=book_fers_ewc_vs_hodo,
+        make_plots=plot_fers_ewc_vs_hodo,
+    ),
+    CaloXSequence(
+        name="fers_shower_shape",
+        book_hists=book_fers_shower_shape,
+        make_plots=plot_fers_shower_shape,
+    ),
+]
+
+# ---------------------------------------------------------------------------
 # Lookup helpers — work for all lists
 # ---------------------------------------------------------------------------
 
 _ALL_BY_NAME: dict[str, CaloXSequence] = {
-    s.name: s for s in ALL_SEQUENCES + SERVICE_DRS_SEQUENCES
+    s.name: s for s in ALL_SEQUENCES + SERVICE_DRS_SEQUENCES + FERS_SEQUENCES
 }
 
 
@@ -295,6 +349,11 @@ def default_service_drs_sequences() -> list[CaloXSequence]:
 def default_drs_mcp_sequences() -> list[CaloXSequence]:
     """DRS-only sequences run under MCP timing selection."""
     return list(DRS_MCP_SEQUENCES)
+
+
+def default_fers_sequences() -> list[CaloXSequence]:
+    """FERS physics sequences (require define_physics_variables)."""
+    return list(FERS_SEQUENCES)
 
 
 def select_sequences(names: list[str],

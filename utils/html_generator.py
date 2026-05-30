@@ -10,7 +10,9 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
     html_dir = os.path.dirname(os.path.abspath(output_html))
     if not title:
         title = os.path.splitext(os.path.basename(output_html))[0].replace('_', ' ')
-    real_png_files = [f for f in png_files if f != "NEWLINE"]
+    real_png_files = [f for f in png_files
+                      if f != "NEWLINE" and not f.startswith("PDF_LINK:")
+                      and not f.startswith("PNG_WITH_PDF:")]
     png_paths = [os.path.join(png_dir, f) for f in real_png_files]
     rel_paths = [os.path.relpath(p, start=html_dir) for p in png_paths]
     path_map = dict(zip(real_png_files, rel_paths))
@@ -73,6 +75,9 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
     .pdf-card {{ display: flex; align-items: center; justify-content: center; min-height: 60px; }}
     .pdf-card a {{ font-size: 14px; color: #0066cc; text-decoration: none; padding: 6px 12px; border: 1px solid #0066cc; border-radius: 4px; }}
     .pdf-card a:hover {{ background: #e8f0fe; }}
+    .pdf-inline {{ font-weight: 400; font-size: 11px; margin-left: 6px; white-space: nowrap; }}
+    .pdf-inline a {{ color: #0066cc; text-decoration: none; }}
+    .pdf-inline a:hover {{ text-decoration: underline; }}
     button {{ padding: 4px 12px; cursor: pointer; font-size: 13px; }}
     @media (max-width: 1100px) {{ .grid {{ grid-template-columns: repeat(2, 1fr); }} }}
     @media (max-width: 800px) {{ .top-bar {{ flex-direction: column; align-items: flex-start; gap: 10px; }} }}
@@ -110,6 +115,16 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
                 grid_html += f"""      <div class="plot" data-filename="{filename}">
         <div class="filename">{key}.pdf</div>
         <div class="pdf-card"><a href="{pdf_rel}" target="_blank">&#128196; Open PDF</a></div>
+      </div>\n"""
+            elif filename.startswith("PNG_WITH_PDF:"):
+                key = filename[len("PNG_WITH_PDF:"):]
+                png_rel = os.path.relpath(os.path.join(png_dir, f"{key}.png"), start=html_dir)
+                pdf_rel = os.path.relpath(os.path.join(png_dir, f"{key}.pdf"), start=html_dir)
+                grid_html += f"""      <div class="plot" data-filename="{key}">
+        <div class="filename">{key}<span class="pdf-inline"><a href="{pdf_rel}" target="_blank">&#128196;&nbsp;PDF</a></span></div>
+        <a href="{png_rel}" target="_blank">
+          <img src="{png_rel}" alt="{key}">
+        </a>
       </div>\n"""
             else:
                 rel_path = path_map[filename]

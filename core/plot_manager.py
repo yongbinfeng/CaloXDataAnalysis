@@ -27,6 +27,7 @@ class PlotManager:
         default_style: Optional[PlotStyle] = None,
         selection_text: str = "",
         use_jsroot: bool = False,
+        save_pdf: bool = False,
     ):
         """
         Initialize the PlotManager.
@@ -46,6 +47,7 @@ class PlotManager:
         self.default_style = default_style or PlotStyle()
         self.selection_text = selection_text
         self.use_jsroot = use_jsroot
+        self.save_pdf = save_pdf
 
         # Internal state
         self._plots: List[str] = []
@@ -134,12 +136,14 @@ class PlotManager:
         hist_name = f"{prefix}{varname}_{suffix}" if suffix else f"{prefix}{varname}"
         return self.get_histogram(filename, hist_name, required=required)
 
-    def add_plot(self, output_name: str, prepend: bool = False) -> 'PlotManager':
+    def add_plot(self, output_name: str, prepend: bool = False, with_pdf: bool = False) -> 'PlotManager':
         """Add a plot to the collection."""
         if self.use_jsroot:
-            # Store the bare canvas key (basename, no extension)
             key = os.path.basename(output_name).replace('.png', '').replace('.pdf', '')
             entry = key
+        elif with_pdf or self.save_pdf:
+            key = os.path.basename(output_name).replace('.png', '').replace('.pdf', '')
+            entry = f"PNG_WITH_PDF:{key}"
         else:
             entry = output_name if output_name.endswith('.png') else f"{output_name}.png"
         if prepend:
@@ -203,6 +207,10 @@ class PlotManager:
 
         run_number = run_number if run_number is not None else self.run_number
 
+        use_pdf = plot_kwargs.pop('usePDF', self.save_pdf)
+        if use_pdf:
+            plot_kwargs['usePDF'] = True
+
         if self.use_jsroot:
             plot_kwargs.setdefault('usePNG', False)
 
@@ -220,7 +228,7 @@ class PlotManager:
             **plot_kwargs
         )
 
-        return self.add_plot(output_name, prepend=prepend)
+        return self.add_plot(output_name, prepend=prepend, with_pdf=use_pdf)
 
     def plot_2d(
         self,
@@ -257,6 +265,10 @@ class PlotManager:
         plot_kwargs['doth2'] = True
         plot_kwargs.update(kwargs)
 
+        use_pdf = plot_kwargs.pop('usePDF', self.save_pdf)
+        if use_pdf:
+            plot_kwargs['usePDF'] = True
+
         if self.use_jsroot:
             plot_kwargs.setdefault('usePNG', False)
 
@@ -274,7 +286,7 @@ class PlotManager:
             **plot_kwargs
         )
 
-        return self.add_plot(output_name, prepend=prepend)
+        return self.add_plot(output_name, prepend=prepend, with_pdf=use_pdf)
 
     def plot_from_file(
         self,

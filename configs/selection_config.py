@@ -9,7 +9,7 @@ def get_service_drs_cut(service_drs: str) -> tuple:
     cuts = {
         "HoleVeto":    (100, 350,  20, 150, 2e3,    "Sum"),
         "PSD":         (100, 400,  20, 150, 3500.0,  "Sum"),
-        "TTUMuonVeto": (200, 400,  20, 150, 2e3,    "Sum"),
+        "TTUMuonVeto": (200, 400,  20, 150, 5e3,    "Sum"),
         "Cer474":      (800, 1000,  20, 150, 2000.0,  "Sum"),
         "Cer519":      (400, 800,  5, 100, 1000.0,  "Sum"),
         "Cer537":      (400, 800,  5, 80, 500.0,   "Sum"),

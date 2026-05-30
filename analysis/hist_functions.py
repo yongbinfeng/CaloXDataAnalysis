@@ -15,7 +15,8 @@ import os
 import ROOT
 from configs.plot_config import (get_drs_plot_ranges, get_drs_cfd_finebins_range,
                                   get_drs_time_ns_range, get_drs_time_ns_finebins_range,
-                                  get_drs_time_arr_ns_range, get_fers_saturation_value)
+                                  get_drs_time_arr_ns_range, get_fers_saturation_value,
+                                  getRangesForFERSEnergySums, get_ttu_hodo_ranges)
 from utils.utils import number_to_string, get_channel_var
 from utils.plot_helper import save_hists_to_file
 from variables.drs import get_arr_name
@@ -62,7 +63,7 @@ def book_monitor_conditions(ctx):
 # FERS: energy sum vs event
 # ---------------------------------------------------------------------------
 
-def book_fers_energy_sum(ctx):
+def book_fers_esum_vs_event(ctx):
     hprofs = []
     for fersboard in ctx.fersboards.values():
         for var in ["Cer", "Sci"]:
@@ -990,3 +991,222 @@ def book_service_drs_mcp_timing(ctx):
 def book_service_drs_hodo(ctx):
     hists = _analyze_hodo_peak(ctx.rdf, ctx.run_number)
     ctx.hbook.add("hodoscope_peaks.root", hists)
+
+
+# ---------------------------------------------------------------------------
+# FERS: advanced physics sequences (require define_physics_variables first)
+# ---------------------------------------------------------------------------
+
+_FERS_GAIN_CALIBS = [("HG", False), ("LG", False), ("Mix", True)]
+
+
+def book_fers_energy_sum(ctx):
+    """Book FERS energy sum 1D distributions (per-board and total, all gains, pdsub)."""
+    HE = ctx.beam_energy >= 50
+    hists = []
+    for gain, calib in _FERS_GAIN_CALIBS:
+        cfg = getRangesForFERSEnergySums(
+            pdsub=True, calib=calib, clip=False, HE=HE,
+            run_number=ctx.run_number, beam_energy=ctx.beam_energy)
+        for cat in ["cer", "sci"]:
+            is_cer = (cat == "cer")
+            for fb in ctx.fersboards.values():
+                vname = fb.get_energy_sum_name(gain=gain, isCer=is_cer, pdsub=True, calib=calib)
+                hists.append(ctx.rdf.Histo1D((
+                    f"hist_{vname}", f"hist_{vname}",
+                    500, cfg["xmin_board"][f"{gain}_{cat}"], cfg["xmax_board"][f"{gain}_{cat}"]),
+                    vname))
+            vname = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=is_cer, pdsub=True, calib=calib)
+            hists.append(ctx.rdf.Histo1D((
+                f"hist_{vname}", f"hist_{vname}",
+                100, cfg["xmin_total"][f"{gain}_{cat}"], cfg["xmax_total"][f"{gain}_{cat}"]),
+                vname))
+    ctx.hbook.add("fers_energy_sum.root", hists)
+
+
+def book_fers_cer_vs_sci(ctx):
+    """Book FERS Cer vs Sci 2D histograms (per-board and total, all gains)."""
+    HE = ctx.beam_energy >= 50
+    hists = []
+    for gain, calib in _FERS_GAIN_CALIBS:
+        cfg = getRangesForFERSEnergySums(
+            pdsub=True, calib=calib, clip=False, HE=HE,
+            run_number=ctx.run_number, beam_energy=ctx.beam_energy)
+        for fb in ctx.fersboards.values():
+            vc = fb.get_energy_sum_name(gain=gain, isCer=True,  pdsub=True, calib=calib)
+            vs = fb.get_energy_sum_name(gain=gain, isCer=False, pdsub=True, calib=calib)
+            hists.append(ctx.rdf.Histo2D((
+                f"hist_{vc}_VS_{vs}", f"hist_{vc}_VS_{vs}",
+                500, cfg["xmin_board"][f"{gain}_sci"], cfg["xmax_board"][f"{gain}_sci"],
+                500, cfg["xmin_board"][f"{gain}_cer"], cfg["xmax_board"][f"{gain}_cer"]),
+                vs, vc))
+        vc = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=True,  pdsub=True, calib=calib)
+        vs = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=False, pdsub=True, calib=calib)
+        hists.append(ctx.rdf.Histo2D((
+            f"hist_{vc}_VS_{vs}", f"hist_{vc}_VS_{vs}",
+            500, cfg["xmin_total"][f"{gain}_sci"], cfg["xmax_total"][f"{gain}_sci"],
+            500, cfg["xmin_total"][f"{gain}_cer"], cfg["xmax_total"][f"{gain}_cer"]),
+            vs, vc))
+        if gain == "Mix":
+            for is_cer, vx in [(True, vc), (False, vs)]:
+                hists.append(ctx.rdf.Histo2D((
+                    f"hist_{vx}_VS_PSD_Sum", f"hist_{vx}_VS_PSD_Sum",
+                    500, *get_service_drs_processed_info_ranges("PSD", "sum"),
+                    500, cfg[f"xmin_total"][f"{gain}_{'cer' if is_cer else 'sci'}"],
+                    cfg[f"xmax_total"][f"{gain}_{'cer' if is_cer else 'sci'}"]),
+                    "PSD_Sum", vx))
+    ctx.hbook.add("fers_cer_vs_sci.root", hists)
+
+
+def book_fers_dr(ctx):
+    """Book dual-readout histograms (Mix gain, calibrated)."""
+    HE = ctx.beam_energy >= 50
+    gain, calib = "Mix", True
+    cfg = getRangesForFERSEnergySums(
+        pdsub=True, calib=calib, clip=False, HE=HE,
+        run_number=ctx.run_number, beam_energy=ctx.beam_energy)
+    vc = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=True,  pdsub=True, calib=calib)
+    vs = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=False, pdsub=True, calib=calib)
+    xlo, xhi = cfg["xmin_total"][f"{gain}_sci"], cfg["xmax_total"][f"{gain}_sci"]
+
+    hists = []
+    for vx in [vc, vs]:
+        hists.append(ctx.rdf.Histo1D(
+            (f"hist_{vx}_OuterRing", f"hist_{vx}_OuterRing", 500, 0, 20.0),
+            vx + "_OuterRing"))
+        hists.append(ctx.rdf.Histo1D(
+            (f"hist_{vx}_LeakCorr", f"hist_{vx}_LeakCorr", 500, xlo, xhi),
+            vx + "_LeakCorr"))
+    hists.append(ctx.rdf.Histo1D((f"hist_COverS", f"hist_COverS", 100, 0, 2.0), "COverS"))
+    hists.append(ctx.rdf.Histo1D((f"hist_fEM",    f"hist_fEM",    100, 0, 2.0), "fEM"))
+    vcersc = vc.replace("Cer", "CerSci")
+    hists.append(ctx.rdf.Histo1D(
+        (f"hist_{vcersc}", f"hist_{vcersc}", 500, xlo, xhi * 2.5), vcersc))
+    for method in ["", "_method2", "_method3"]:
+        vdr = vc.replace("Cer", "DR") + method
+        hists.append(ctx.rdf.Histo1D(
+            (f"hist_{vdr}", f"hist_{vdr}", 500, xlo, xhi), vdr))
+    vsum = vc.replace("Cer", "CerSci")
+    for vx, vy in [(vsum, vs), (vsum, vc)]:
+        hists.append(ctx.rdf.Histo2D((
+            f"hist_{vy}_VS_{vx}", f"hist_{vy}_VS_{vx}",
+            500, xlo, xhi * 2.5, 500, xlo, xhi), vx, vy))
+    for vx, vy in [(vc, vs), (vc, vc)]:
+        cat = "cer" if vy == vc else "sci"
+        hists.append(ctx.rdf.Histo2D((
+            f"hist_{vy}_VS_fEM", f"hist_{vy}_VS_fEM",
+            500, 0., 2.0, 500, cfg[f"xmin_total"][f"{gain}_{cat}"],
+            cfg[f"xmax_total"][f"{gain}_{cat}"]), "fEM", vy))
+    vdr_base = vc.replace("Cer", "DR")
+    for method in ["", "_method2", "_method3"]:
+        vdr = vdr_base + method
+        for vy, cat in [(vc, "cer"), (vs, "sci")]:
+            hists.append(ctx.rdf.Histo2D((
+                f"hist_{vy}_VS_{vdr}", f"hist_{vy}_VS_{vdr}",
+                500, xlo, xhi,
+                500, cfg[f"xmin_total"][f"{gain}_{cat}"],
+                cfg[f"xmax_total"][f"{gain}_{cat}"]), vdr, vy))
+    ctx.hbook.add("fers_dr.root", hists)
+
+
+def book_fers_ewc(ctx):
+    """Book FERS energy-weighted centre histograms (Mix gain, calibrated)."""
+    HE = ctx.beam_energy >= 50
+    gain, calib = "Mix", True
+    cfg = getRangesForFERSEnergySums(
+        pdsub=True, calib=calib, clip=False, HE=HE,
+        run_number=ctx.run_number, beam_energy=ctx.beam_energy)
+    hists = []
+    for cat in ["cer", "sci"]:
+        is_cer = (cat == "cer")
+        vx = ctx.fersboards.get_energy_weighted_center_name(
+            gain=gain, isCer=is_cer, pdsub=True, calib=calib, isX=True)
+        vy = ctx.fersboards.get_energy_weighted_center_name(
+            gain=gain, isCer=is_cer, pdsub=True, calib=calib, isX=False)
+        ve = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=is_cer, pdsub=True, calib=calib)
+        hists += [
+            ctx.rdf.Histo1D((f"hist_{vx}", f"hist_{vx}", 300, -15, 15), vx),
+            ctx.rdf.Histo1D((f"hist_{vy}", f"hist_{vy}", 300, -15, 15), vy),
+            ctx.rdf.Histo2D((f"hist_{vy}_VS_{vx}", f"hist_{vy}_VS_{vx}",
+                             300, -15, 15, 300, -15, 15), vx, vy),
+            ctx.rdf.Profile2D((f"hprof_{vy}_VS_{vx}_WithEnergy",
+                               f"hprof_{vy}_VS_{vx}_WithEnergy",
+                               300, -15, 15, 300, -15, 15), vx, vy, ve),
+        ]
+    ctx.hbook.add("fers_ewc.root", hists)
+
+
+def book_fers_ewc_vs_hodo(ctx):
+    """Book EWC vs TTU hodoscope histograms."""
+    HE = ctx.beam_energy >= 50
+    gain, calib = "Mix", True
+    hodo_min, hodo_max, hodo_nbins = get_ttu_hodo_ranges()
+    hists = []
+    for cat in ["cer", "sci"]:
+        is_cer = (cat == "cer")
+        vx = ctx.fersboards.get_energy_weighted_center_name(
+            gain=gain, isCer=is_cer, pdsub=True, calib=calib, isX=True)
+        vy = ctx.fersboards.get_energy_weighted_center_name(
+            gain=gain, isCer=is_cer, pdsub=True, calib=calib, isX=False)
+        ve = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=is_cer, pdsub=True, calib=calib)
+        for ewc_v, hodo_v in [(vx, "TTU_Hodo_X"), (vy, "TTU_Hodo_Y")]:
+            hists += [
+                ctx.rdf.Histo2D((f"hist_{ewc_v}_VS_{hodo_v.split('_')[-1]}",
+                                 f"hist_{ewc_v}_VS_{hodo_v.split('_')[-1]}",
+                                 hodo_nbins, hodo_min, hodo_max, 300, -15, 15),
+                                hodo_v, ewc_v),
+                ctx.rdf.Profile2D((f"hprof_{ewc_v}_VS_{hodo_v.split('_')[-1]}_WithEnergy",
+                                   f"hprof_{ewc_v}_VS_{hodo_v.split('_')[-1]}_WithEnergy",
+                                   hodo_nbins, hodo_min, hodo_max, 300, -15, 15),
+                                  hodo_v, ewc_v, ve),
+            ]
+        hists.append(ctx.rdf.Profile2D((
+            f"hprof_HodoY_VS_HodoX_WithEnergy_{cat}",
+            f"hprof_HodoY_VS_HodoX_WithEnergy_{cat}",
+            hodo_nbins, hodo_min, hodo_max, hodo_nbins, hodo_min, hodo_max),
+            "TTU_Hodo_X", "TTU_Hodo_Y", ve))
+    ctx.hbook.add("fers_ewc_vs_hodo.root", hists)
+
+
+def book_fers_shower_shape(ctx):
+    """Book per-channel shower-shape histograms (Mix gain, calibrated)."""
+    from plotting.my_function import LHistos2Hist
+    gain, calib = "Mix", True
+    all_proxies = []
+    groups = {}  # key → list of lazy hists to combine
+    n_evt_proxy = ctx.rdf.Count()
+    all_proxies.append(n_evt_proxy)
+
+    for cat in ["cer", "sci"]:
+        is_cer = (cat == "cer")
+        for fb in ctx.fersboards.values():
+            for chan in fb.get_list_of_channels(isCer=is_cer):
+                ch = chan.get_channel_name(gain=gain, pdsub=True, calib=calib)
+                rpos_x = chan.get_real_pos_name(isX=True)
+                rpos_y = chan.get_real_pos_name(isX=False)
+                for axis, rpos, gkey in [("X", rpos_x, f"RealX_{gain}_{cat}"),
+                                         ("Y", rpos_y, f"RealY_{gain}_{cat}")]:
+                    h = ctx.rdf.Histo1D((
+                        f"hist_{axis}_{ch}", f"hist_{axis}_{ch}", 100, -20, 20), rpos, ch)
+                    all_proxies.append(h)
+                    groups.setdefault(gkey, []).append(h)
+                h_r2d = ctx.rdf.Histo2D((
+                    f"hist_YX_{ch}", f"hist_YX_{ch}",
+                    100, -20, 20, 100, -20, 20), rpos_x, rpos_y, ch)
+                all_proxies.append(h_r2d)
+                groups.setdefault(f"RealYX_{gain}_{cat}", []).append(h_r2d)
+
+    def post_save():
+        nEvts = n_evt_proxy.GetValue()
+        hists_out = []
+        for gkey, proxies in groups.items():
+            hl = [p.GetValue() for p in proxies]
+            hc = LHistos2Hist(hl, f"hist_{gkey}")
+            hc.Scale(1.0 / max(nEvts, 1))
+            hists_out.append(hc)
+        with ROOT.TFile(f"{ctx.paths['root']}/fers_shower_shape.root", "RECREATE") as f:
+            for h in hists_out:
+                ROOT.SetOwnership(h, False)
+                h.Write()
+
+    ctx.hbook.add(None, all_proxies, post_save)

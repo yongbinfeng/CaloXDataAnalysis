@@ -5,6 +5,15 @@ from plotting import CMS_lumi
 from plotting import tdrstyle
 
 
+def _pdf_italic_fix(text):
+    """Wrap every character after the first in #kern[0.01]{c} to prevent
+    ROOT's font-52 PDF encoder from forming ligatures that silently drop
+    glyphs (e.g. 'Cer'→'C', 'MuonCounter'→'M' in PDF output)."""
+    if not text or '#' in text:
+        return text
+    return text[0] + ''.join(f'#kern[0.01]{{{c}}}' for c in text[1:])
+
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -587,7 +596,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     # CMS_lumi.extraText = "Internal"
     CMS_lumi.extra_text = ""
     if extra_text:
-        CMS_lumi.extra_text = extra_text
+        CMS_lumi.extra_text = _pdf_italic_fix(extra_text) + "   "
     elif MCOnly:
         CMS_lumi.extra_text = "Simulation"
     # CMS_lumi.extraText += " Preliminary"
@@ -596,12 +605,12 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
         from utils.data_loader import getRunInfo
         btype, benergy = getRunInfo(run_number)
         btypes = {
-            "pion": "#pi+",
-            "pions": "#pi+",
-            "pi+": "#pi+",
-            "positron": "e+",
-            "positrons": "e+",
-            "e+": "e+",
+            "pion": "#pi^{+}",
+            "pions": "#pi^{+}",
+            "pi+": "#pi^{+}",
+            "positron": "e^{+}",
+            "positrons": "e^{+}",
+            "e+": "e^{+}",
             "mu+": "#mu+",
         }
         CMS_lumi.lumi_13TeV = f"{btypes.get(btype.lower(), btype.lower())}, {benergy} GeV"
@@ -752,7 +761,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
                 h.GetZaxis().SetRangeUser(zmin, zmax)
                 h.GetZaxis().SetLabelSize(0.04)
                 h.GetZaxis().SetTitleSize(0.05)
-                h.GetZaxis().SetTitleOffset(max(1.1, 1.3 * H / W))
+                h.GetZaxis().SetTitleOffset(max(0.9, 1.1 * H / W))
                 h.SetMinimum(zmin)
                 h.SetMaximum(zmax)
 
@@ -778,7 +787,7 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     h1.GetYaxis().SetLabelSize(0.045/(padsize1+padsize3))
     h1.GetXaxis().SetTitleSize(0.050/(padsize1+padsize3))
     h1.GetXaxis().SetLabelSize(0.045/(padsize1+padsize3))
-    h1.GetYaxis().SetTitleOffset((1.6 if doth2 else 1.3)*(padsize1+padsize3)*(600.0/W))
+    h1.GetYaxis().SetTitleOffset((1.4 if doth2 else 1.3)*(padsize1+padsize3)*(600.0/W))
     h1.GetXaxis().SetTitleOffset((1.1 if doth2 else 1.2)*(padsize1+padsize3))
 
     if showratio or showpull:

@@ -2,6 +2,16 @@ import ROOT
 import os
 import json
 from channels.channel_map import build_fers_boards, build_drs_boards
+
+_BEAM_TO_PARTICLE = {
+    "pion":      "pion",
+    "pions":     "pion",
+    "pi+":       "pion",
+    "positron":  "electron",
+    "positrons": "electron",
+    "e+":        "electron",
+}
+
 from variables.fers import (
     vectorizeFERS, subtractFERSPedestal, mixFERSHGLG,
     calibrateFERSChannels, get_fers_energy_sum,
@@ -192,6 +202,30 @@ class CaloXAnalysisManager:
         self._steps_applied.add("hole_veto_applied")
         return self
 
+    def apply_beam_pid_selection(self, flag_only=False, particle=None):
+        """Applies particle ID selection based on beam type.
+
+        Electron beams: electron selection (PSD fired, Cherenkovs fired).
+        Pion beams: pion selection (PSD vetoed, Cherenkovs fired).
+        No-op for unrecognised beam types (e.g. muon).
+
+        Pass particle= to override the beam-type lookup (e.g. select protons
+        from a pion run).
+        """
+        if "beam_pid_applied" in self._steps_applied:
+            return self
+
+        particle = particle or _BEAM_TO_PARTICLE.get((self.beam_type or "").lower())
+        if particle is None:
+            return self
+
+        self.rdf = (self._get_or_create_sel_mgr()
+                    .apply_particle_selection(particle, flag_only=flag_only)
+                    .get_rdf())
+
+        self._steps_applied.add("beam_pid_applied")
+        return self
+
     def apply_mcp_selection(self, flag_only=False,
                             min_integral_to_peak=4, min_peak_value=10):
         """Applies MCP clean-pulse selection via SelectionManager with cutflow tracking."""
@@ -236,6 +270,18 @@ class CaloXAnalysisManager:
         # Register for automatic reporting
         self.branches[particle_type.lower()] = branch_mgr
         return branch_mgr.get_rdf()
+
+    def get_particle_type(self, override=None):
+        """Return the effective particle type: override if given, else beam-type default."""
+        return override or _BEAM_TO_PARTICLE.get((self.beam_type or "").lower())
+
+    def set_output_subdir(self, subdir):
+        """Append a subdirectory to all output paths (root, plots, html)
+        and reinitialise the hbook. Useful for separating particle selections."""
+        for key in ("root", "plots", "html"):
+            self.paths[key] = f"{self.paths[key]}/{subdir}"
+        self.hbook = HistBook(self.paths["root"])
+        return self
 
     def report_all(self):
         """Prints the global cutflow (hole veto) and all particle branches."""

@@ -1,4 +1,5 @@
 import math
+from array import array
 
 
 def number_to_string(n):
@@ -26,6 +27,17 @@ def getBranchStats(rdf, branches):
         } for br in branches
     }
     return stats
+
+
+def get_hist_sigma_eff(hist):
+    """Return the effective sigma of a TH1 distribution as half the 16%–84% quantile interval.
+
+    Equal to the Gaussian sigma for a symmetric distribution, but robust against
+    asymmetric tails (e.g. shower leakage, pedestal contamination).
+    """
+    q = array('d', [0.0, 0.0])
+    hist.GetQuantiles(2, q, array('d', [0.16, 0.84]))
+    return 0.5 * (q[1] - q[0])
 
 
 def get_hist_mpv(hist, window_ts=6.0):

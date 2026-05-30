@@ -15,10 +15,11 @@ from channels.validate_map import DrawDRSBoards, DrawFERSBoards
 from plotting.my_function import LHistos2Hist
 from configs.plot_config import (get_drs_plot_ranges, get_drs_cfd_finebins_range,
                                   get_drs_prof_plot_ranges, get_drs_time_arr_ns_range,
-                                  get_drs_time_ns_finebins_range)
+                                  get_drs_time_ns_finebins_range,
+                                  getRangesForFERSEnergySums, get_ttu_hodo_ranges)
 from utils.colors import colors
 from core.plot_manager import PlotManager
-from configs.plot_style import PlotStyle, STYLE_CER_SCI
+from configs.plot_style import PlotStyle, STYLE_CER, STYLE_SCI, STYLE_CER_SCI
 from plotting.calox_plot_helper import BoardPlotHelper, create_pave_text, create_board_info_pave
 from utils.utils import number_to_string, round_up_to_1eN, get_channel_var, get_hist_mpv
 from variables.drs import get_arr_name
@@ -141,7 +142,7 @@ def plot_monitor_conditions(ctx):
 # FERS: energy sum
 # ---------------------------------------------------------------------------
 
-def plot_fers_energy_sum(ctx):
+def plot_fers_esum_vs_event(ctx):
     with _pm(ctx) as pm:
         pm.set_output_dir("FERS_EnergySum_VS_Event")
         infile = pm._get_file("fers_energysum_vs_event.root")
@@ -443,6 +444,283 @@ def plot_fers_track(ctx):
                                         drawoptions="COLZ", zmin=1, zmax=1e4),
                         extraToDraw=pave)
         return pm.generate_html("FERS_VS_Event/index.html", plots_per_row=4)
+
+
+# ---------------------------------------------------------------------------
+# FERS: advanced physics plots (require define_physics_variables)
+# ---------------------------------------------------------------------------
+
+_FERS_GAIN_CALIBS = [("HG", False), ("LG", False), ("Mix", True)]
+
+
+def plot_fers_energy_sum(ctx):
+    HE = ctx.beam_energy >= 50
+    with _pm(ctx) as pm:
+        pm.set_output_dir("FERS_EnergySum")
+        infile = pm._get_file("fers_energy_sum.root")
+        for gain, calib in _FERS_GAIN_CALIBS:
+            cfg = getRangesForFERSEnergySums(
+                pdsub=True, calib=calib, clip=False, HE=HE,
+                run_number=ctx.run_number, beam_energy=ctx.beam_energy)
+            gain_unit = cfg[f"title_{gain}"]
+            gain_title = f"[{gain_unit}]" if gain == "Mix" else f"{gain} {gain_unit}"
+            for cat in ["cer", "sci"]:
+                is_cer = (cat == "cer")
+                vname = ctx.fersboards.get_energy_sum_name(
+                    gain=gain, isCer=is_cer, pdsub=True, calib=calib)
+                h = infile.Get(f"hist_{vname}")
+                if h:
+                    style = STYLE_CER if is_cer else STYLE_SCI
+                    pm.plot_1d(h, f"FERS_ESum_{gain}_{cat}",
+                               f"{cat.capitalize()} {gain_title}",
+                               (cfg["xmin_total"][f"{gain}_{cat}"],
+                                cfg["xmax_total"][f"{gain}_{cat}"]),
+                               style=style, prepend=(cat == "cer"))
+        return pm.generate_html("FERS/ESum.html", plots_per_row=6,
+                                title="FERS Energy Sums")
+
+
+def plot_fers_cer_vs_sci(ctx):
+    HE = ctx.beam_energy >= 50
+    with _pm(ctx) as pm:
+        pm.set_output_dir("FERS_Cer_vs_Sci")
+        infile = pm._get_file("fers_cer_vs_sci.root")
+        for gain, calib in _FERS_GAIN_CALIBS:
+            cfg = getRangesForFERSEnergySums(
+                pdsub=True, calib=calib, clip=False, HE=HE,
+                run_number=ctx.run_number, beam_energy=ctx.beam_energy)
+            vc = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=True,  pdsub=True, calib=calib)
+            vs = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=False, pdsub=True, calib=calib)
+            hist = infile.Get(f"hist_{vc}_VS_{vs}")
+            if not hist:
+                continue
+            extra = []
+            gain_unit = cfg[f'title_{gain}']
+            gain_title = f"[{gain_unit}]" if gain == "Mix" else f"{gain} {gain_unit}"
+            if gain == "Mix":
+                for fn, col in [("x", ROOT.kRed), ("0.5*x", ROOT.kBlue)]:
+                    f = ROOT.TF1(f"f_{fn}_{gain}", fn, 0, 200)
+                    f.SetLineColor(col); f.SetLineStyle(2); f.SetLineWidth(2)
+                    extra.append(f)
+            pm.plot_2d(hist, f"FERS_Total_Cer_VS_Sci_{gain}",
+                       f"Sci {gain_title}",
+                       (cfg["xmin_total"][f"{gain}_sci"], cfg["xmax_total"][f"{gain}_sci"]),
+                       f"Cer {gain_title}",
+                       (cfg["xmin_total"][f"{gain}_cer"], cfg["xmax_total"][f"{gain}_cer"]),
+                       style=PlotStyle(dology=False, dologz=True, drawoptions="COLZ", zmin=1),
+                       extraToDraw=extra or None, prepend=True, usePDF=True)
+            if gain == "Mix":
+                pm.add_newline()
+                for cat, vx in [("Cer", vc), ("Sci", vs)]:
+                    h = infile.Get(f"hist_{vx}_VS_PSD_Sum")
+                    if h:
+                        pm.plot_2d(h, f"FERS_Total_{cat}_VS_PSD_{gain}",
+                                   "PSD Sum [ADC]", get_service_drs_processed_info_ranges("PSD", "sum"),
+                                   f"{cat} {gain_title}",
+                                   (cfg[f"xmin_total"][f"{gain}_{cat.lower()}"],
+                                    cfg[f"xmax_total"][f"{gain}_{cat.lower()}"]),
+                                   style=PlotStyle(dology=False, dologz=True, drawoptions="COLZ", zmin=1))
+                        prof = h.ProfileX(f"prof_{h.GetName()}", 1, -1)
+                        pm.plot_1d(prof, f"FERS_Total_{cat}_VS_PSD_{gain}_Prof",
+                                   "PSD Sum [ADC]", get_service_drs_processed_info_ranges("PSD", "sum"),
+                                   f"{cat} {gain_title}",
+                                   style=PlotStyle(dology=False, drawoptions="HIST", mycolors=[2 if cat == "Cer" else 4]))
+        return pm.generate_html("FERS/Cer_VS_Sci.html", plots_per_row=3,
+                                title="FERS Cer vs Sci correlations")
+
+
+def plot_fers_dr(ctx):
+    HE = ctx.beam_energy >= 50
+    gain, calib = "Mix", True
+    cfg = getRangesForFERSEnergySums(
+        pdsub=True, calib=calib, clip=False, HE=HE,
+        run_number=ctx.run_number, beam_energy=ctx.beam_energy)
+    vc = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=True,  pdsub=True, calib=calib)
+    vs = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=False, pdsub=True, calib=calib)
+    xlo, xhi = cfg["xmin_total"][f"{gain}_sci"], cfg["xmax_total"][f"{gain}_sci"]
+
+    with _pm(ctx) as pm:
+        pm.set_output_dir("FERS_DR")
+        infile = pm._get_file("fers_dr.root")
+
+        for var_sfx, xlabel, xrange in [("OuterRing", "Leakage Energy", (0, 20)),
+                                         ("LeakCorr",  f"Leak-corrected [{cfg[f'title_{gain}']}]", (xlo, xhi))]:
+            hl = [infile.Get(f"hist_{v}_{var_sfx}") for v in [vc, vs]]
+            hl = [h for h in hl if h]
+            if hl:
+                pm.plot_1d(hl, f"FERS_DR_{var_sfx}", xlabel, xrange,
+                           legends=["Cer", "Sci"], style=STYLE_CER_SCI)
+        pm.add_newline()
+
+        for vn, xlabel, xrange, style in [
+            ("COverS", "C/S", (0, 2), STYLE_CER),
+            ("fEM",    "f_{EM}", (0, 1.5), STYLE_SCI),
+        ]:
+            h = infile.Get(f"hist_{vn}")
+            if h:
+                pm.plot_1d(h, f"FERS_DR_{vn}", xlabel, xrange, style=style)
+
+        vcersc = vc.replace("Cer", "CerSci")
+        h = infile.Get(f"hist_{vcersc}")
+        if h:
+            pm.plot_1d(h, "FERS_DR_CerSci", f"Cer+Sci [{cfg[f'title_{gain}']}]", (xlo, xhi * 2.5),
+                       style=PlotStyle(dology=False, drawoptions="HIST", mycolors=[6]))
+        pm.add_newline()
+
+        hists_combined, legends_combined, tf1s, pave = [], [], [], create_pave_text(0.20, 0.65, 0.60, 0.90)
+        for label, vn in [("Cer", vc), ("Sci", vs),
+                           ("DR", vc.replace("Cer", "DR")),
+                           ("DR m2", vc.replace("Cer", "DR") + "_method2"),
+                           ("DR m3", vc.replace("Cer", "DR") + "_method3")]:
+            h = infile.Get(f"hist_{vn}" if label in ("DR", "DR m2", "DR m3") else
+                           f"hist_{vn}")
+            if h and h.Integral() > 0:
+                fr = h.Fit("gaus", "SQ")
+                if fr and fr.IsValid():
+                    ff = h.GetFunction("gaus")
+                    pave.AddText(f"{label}: #mu={ff.GetParameter(1):.1f}, "
+                                 f"#sigma={ff.GetParameter(2):.1f}")
+                    tf1s.append(ff)
+                hists_combined.append(h)
+                legends_combined.append(label)
+        if hists_combined:
+            pm.plot_1d(hists_combined, "FERS_DR_Energy_Combined",
+                       "Energy [GeV]", (xlo, xhi),
+                       legends=legends_combined,
+                       style=PlotStyle(dology=False, drawoptions="HIST",
+                                       mycolors=[2, 4, 1, 7, 8]),
+                       extraToDraw=[pave] + tf1s, prepend=True)
+        pm.add_newline()
+
+        for sfx, cat, vy in [("Sci", "sci", vs), ("Cer", "cer", vc)]:
+            for method in ["", "_method2", "_method3"]:
+                vdr = vc.replace("Cer", "DR") + method
+                h = infile.Get(f"hist_{vy}_VS_{vdr}")
+                if h:
+                    pm.plot_2d(h, f"FERS_DR_{sfx}_VS_DR{method}",
+                               f"DR{method}", (xlo, xhi),
+                               f"[{cfg[f'title_{gain}']}]", (cfg[f"xmin_total"][f"{gain}_{cat}"],
+                                                                    cfg[f"xmax_total"][f"{gain}_{cat}"]),
+                               style=PlotStyle(dology=False, dologz=True, drawoptions="COLZ", zmin=1),
+                               extra_text=sfx)
+
+        return pm.generate_html("FERS/DR.html", plots_per_row=4, title="FERS Dual Readout")
+
+
+def plot_fers_ewc(ctx):
+    HE = ctx.beam_energy >= 50
+    gain, calib = "Mix", True
+    with _pm(ctx) as pm:
+        pm.set_output_dir("FERS_EWC")
+        infile = pm._get_file("fers_ewc.root")
+        for cat in ["cer", "sci"]:
+            is_cer = (cat == "cer")
+            style = STYLE_CER if is_cer else STYLE_SCI
+            vx = ctx.fersboards.get_energy_weighted_center_name(
+                gain=gain, isCer=is_cer, pdsub=True, calib=calib, isX=True)
+            vy = ctx.fersboards.get_energy_weighted_center_name(
+                gain=gain, isCer=is_cer, pdsub=True, calib=calib, isX=False)
+            for axis, vn in [("X", vx), ("Y", vy)]:
+                h = infile.Get(f"hist_{vn}")
+                if h:
+                    pave = create_pave_text(0.20, 0.85, 0.60, 0.90)
+                    pave.AddText(f"Mean = {h.GetMean():.2f}, RMS = {h.GetRMS():.2f}")
+                    pm.plot_1d(h, f"FERS_{cat.capitalize()}_EWC_{axis}",
+                               f"EWC {axis} [cm]", (-15, 15),
+                               style=style, extraToDraw=pave, extra_text=cat.capitalize())
+            h2 = infile.Get(f"hist_{vy}_VS_{vx}")
+            if h2:
+                pm.plot_2d(h2, f"FERS_{cat.capitalize()}_EWC_Y_vs_X",
+                           "EWC X [cm]", (-15, 15), "EWC Y [cm]", (-15, 15),
+                           style=PlotStyle(drawoptions=["colz"], addOverflow=False,
+                                           addUnderflow=False, zmin=1),
+                           extra_text=cat.capitalize())
+            hp = infile.Get(f"hprof_{vy}_VS_{vx}_WithEnergy")
+            if hp:
+                zmin = 0.7 * ctx.beam_energy if cat == "sci" else 0.5 * ctx.beam_energy
+                zmax = 1.2 * ctx.beam_energy if cat == "sci" else 1.1 * ctx.beam_energy
+                pm.plot_2d(hp, f"FERS_{cat.capitalize()}_EWC_Y_vs_X_WithEnergy",
+                           "EWC X [cm]", (-15, 15), "EWC Y [cm]", (-15, 15),
+                           style=PlotStyle(drawoptions=["colz"], addOverflow=False,
+                                           addUnderflow=False, zmin=zmin, zmax=zmax,
+                                           zlabel="Avg Energy [GeV]"),
+                           extra_text=cat.capitalize())
+        return pm.generate_html("FERS/EWC.html", plots_per_row=4,
+                                title="FERS Energy Weighted Centre")
+
+
+def plot_fers_ewc_vs_hodo(ctx):
+    gain, calib = "Mix", True
+    hodo_min, hodo_max, _ = get_ttu_hodo_ranges()
+    with _pm(ctx) as pm:
+        pm.set_output_dir("FERS_EWC_vs_Hodo")
+        infile = pm._get_file("fers_ewc_vs_hodo.root")
+        for cat in ["cer", "sci"]:
+            is_cer = (cat == "cer")
+            vx = ctx.fersboards.get_energy_weighted_center_name(
+                gain=gain, isCer=is_cer, pdsub=True, calib=calib, isX=True)
+            vy = ctx.fersboards.get_energy_weighted_center_name(
+                gain=gain, isCer=is_cer, pdsub=True, calib=calib, isX=False)
+            zmin = 0.7 * ctx.beam_energy if cat == "sci" else 0.5 * ctx.beam_energy
+            zmax = 1.2 * ctx.beam_energy if cat == "sci" else 1.1 * ctx.beam_energy
+            for axis, ewc_v, hodo_ax in [("X", vx, "HodoX"), ("Y", vy, "HodoY")]:
+                h = infile.Get(f"hist_{ewc_v}_VS_{hodo_ax}")
+                if h:
+                    pm.plot_2d(h, f"FERS_{cat.capitalize()}_EWC_{axis}_vs_{hodo_ax}",
+                               f"Hodo {axis} [cm]", (hodo_min, hodo_max),
+                               f"EWC {axis} [cm]", (-15, 15),
+                               style=PlotStyle(drawoptions=["colz"], addOverflow=False,
+                                               addUnderflow=False, zmin=1),
+                               extra_text=cat.capitalize())
+                hp = infile.Get(f"hprof_{ewc_v}_VS_{hodo_ax}_WithEnergy")
+                if hp:
+                    pm.plot_2d(hp, f"FERS_{cat.capitalize()}_EWC_{axis}_vs_{hodo_ax}_WithEnergy",
+                               f"Hodo {axis} [cm]", (hodo_min, hodo_max),
+                               f"EWC {axis} [cm]", (-15, 15),
+                               style=PlotStyle(drawoptions=["colz"], addOverflow=False,
+                                               addUnderflow=False, zmin=zmin, zmax=zmax,
+                                               zlabel="Avg Energy [GeV]"),
+                               extra_text=cat.capitalize(), usePDF=True)
+            hp_hodo = infile.Get(f"hprof_HodoY_VS_HodoX_WithEnergy_{cat}")
+            if hp_hodo:
+                pm.plot_2d(hp_hodo, f"FERS_{cat.capitalize()}_HodoY_vs_HodoX_WithEnergy",
+                           "Hodo X [cm]", (hodo_min, hodo_max),
+                           "Hodo Y [cm]", (hodo_min, hodo_max),
+                           style=PlotStyle(drawoptions=["colz"], addOverflow=False,
+                                           addUnderflow=False, zmin=zmin, zmax=zmax,
+                                           zlabel="Avg Energy [GeV]"),
+                           extra_text=cat.capitalize(), usePDF=True)
+        return pm.generate_html("FERS/EWC_vs_Hodo.html", plots_per_row=5,
+                                title="EWC vs TTU Hodoscope")
+
+
+def plot_fers_shower_shape(ctx):
+    gain = "Mix"
+    with _pm(ctx) as pm:
+        pm.set_output_dir("FERS_ShowerShape")
+        infile = pm._get_file("fers_shower_shape.root")
+        hists_R = []
+        for cat in ["cer", "sci"]:
+            style = PlotStyle(dology=True, drawoptions="HIST",
+                              mycolors=[2] if cat == "cer" else [4], donormalize=True)
+            for axis in ["X", "Y"]:
+                h = infile.Get(f"hist_Real{axis}_{gain}_{cat}")
+                if h:
+                    pm.plot_1d(h, f"FERS_ShowerShape_Real{axis}_{gain}_{cat}",
+                               f"{axis} [cm]", (-20, 20),
+                               ylabel="Frac. of Energy", yrange=(1e-4, 1), style=style,
+                               extra_text=cat.capitalize())
+            hR = infile.Get(f"hist_RealR_{gain}_{cat}")
+            if hR:
+                hists_R.append(hR)
+        if hists_R:
+            pm.plot_1d(hists_R, f"FERS_ShowerShape_RealR_{gain}",
+                       "R [cm]", (0, 25), ylabel="Frac. of Energy",
+                       yrange=(1e-4, 1), legends=["Cer", "Sci"],
+                       style=PlotStyle(dology=True, drawoptions="HIST",
+                                       mycolors=[2, 4], donormalize=True))
+        return pm.generate_html("FERS/ShowerShape.html", plots_per_row=6,
+                                title="FERS Shower Shape")
 
 
 # ---------------------------------------------------------------------------

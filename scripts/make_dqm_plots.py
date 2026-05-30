@@ -11,7 +11,7 @@ Usage
   python scripts/make_dqm_plots.py --sequences fers_channels fers_stats fers_max
 
 Available sequences (see analysis/registry.py):
-  monitor_conditions  fers_energy_sum  fers_mapping  fers_channels  fers_stats
+  monitor_conditions  fers_esum_vs_event  fers_mapping  fers_channels  fers_stats
   fers_max  fers_2d  fers_track  drs_waveforms  drs_stats  drs_peak_ts
   drs_sum_vs_fers  drs_peak_vs_fers
 """

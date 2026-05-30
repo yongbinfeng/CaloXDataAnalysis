@@ -18,6 +18,10 @@ def get_args():
         help="DQM sequences to run (default: all enabled-by-default sequences). "
              "Example: --sequences monitor_conditions drs_waveforms drs_stats")
     parser.add_argument(
+        "--particle", default=None, type=str, metavar="TYPE",
+        help="Select a specific particle type before analysis "
+             "(e.g. pion, electron, proton, muon). Default: no selection.")
+    parser.add_argument(
         "--jsroot", action="store_true", default=False,
         help="Save canvases to ROOT file and generate JSROOT-powered HTML (no PNG files)")
     args = parser.parse_args()
