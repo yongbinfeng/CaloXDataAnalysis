@@ -2,16 +2,13 @@ import ROOT
 from plotting.my_function import DrawHistos
 from channels.channel_map import build_fers_boards, build_drs_boards
 from utils.html_generator import generate_html
-from utils.visualization import visualizeFERSBoards, visualizeDRSBoards
+from utils.visualization import (
+    visualizeFERSBoards, visualizeDRSBoards,
+    FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY, FERS_YMIN_DISPLAY, FERS_YMAX_DISPLAY,
+    FERS_W_REF, FERS_H_REF,
+)
 
 ROOT.gROOT.SetBatch(True)  # Disable interactive mode
-
-xmax = 14
-xmin = -14
-ymax = 10
-ymin = -10
-W_ref = 1000
-H_ref = 1100
 
 
 def DrawFERSBoards(run=316):
@@ -31,18 +28,18 @@ def DrawFERSBoards(run=316):
 
     output_dir = f"results/plots/Run{run}/ChannelMaps/"
     output_name = f"FERS_Boards_Run{run}"
-    DrawHistos([h2_Cer, h2_Cer_3mm], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Cer", run_number=run, ncolors=16, zmin=0, zmax=1600)
-    DrawHistos([h2_Sci, h2_Sci_3mm], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Sci", run_number=run, ncolors=16, zmin=0, zmax=1600)
-    DrawHistos([h2_Cer_quartz, h2_Cer_3mm_quartz], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Cer_quartz", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Quartz", run_number=run, ncolors=16, zmin=0, zmax=1600)
-    DrawHistos([h2_Cer_plastic, h2_Cer_3mm_plastic], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Cer_plastic", dology=False, drawoptions=["col,text", "col,text"],
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Plastic", run_number=run, ncolors=16, zmin=0, zmax=1600)
+    DrawHistos([h2_Cer, h2_Cer_3mm], "", FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY, "X [cm]", FERS_YMIN_DISPLAY,
+               FERS_YMAX_DISPLAY, "Y [cm]", output_name + "_Cer", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=output_dir, doth2=True, W_ref=FERS_W_REF, H_ref=FERS_H_REF, extra_text="Cer", run_number=run, ncolors=16, zmin=0, zmax=1600)
+    DrawHistos([h2_Sci, h2_Sci_3mm], "", FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY, "X [cm]", FERS_YMIN_DISPLAY,
+               FERS_YMAX_DISPLAY, "Y [cm]", output_name + "_Sci", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=output_dir, doth2=True, W_ref=FERS_W_REF, H_ref=FERS_H_REF, extra_text="Sci", run_number=run, ncolors=16, zmin=0, zmax=1600)
+    DrawHistos([h2_Cer_quartz, h2_Cer_3mm_quartz], "", FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY, "X [cm]", FERS_YMIN_DISPLAY,
+               FERS_YMAX_DISPLAY, "Y [cm]", output_name + "_Cer_quartz", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=output_dir, doth2=True, W_ref=FERS_W_REF, H_ref=FERS_H_REF, extra_text="Quartz", run_number=run, ncolors=16, zmin=0, zmax=1600)
+    DrawHistos([h2_Cer_plastic, h2_Cer_3mm_plastic], "", FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY, "X [cm]", FERS_YMIN_DISPLAY,
+               FERS_YMAX_DISPLAY, "Y [cm]", output_name + "_Cer_plastic", dology=False, drawoptions=["col,text", "col,text"],
+               outdir=output_dir, doth2=True, W_ref=FERS_W_REF, H_ref=FERS_H_REF, extra_text="Plastic", run_number=run, ncolors=16, zmin=0, zmax=1600)
 
     output_html = f"results/html/Run{run}/ChannelMaps/FERSBoards.html"
     generate_html(
@@ -70,18 +67,18 @@ def DrawDRSBoards(run=316):
     [h2_DRS_Cer_plastic, h2_DRS_Cer_3mm_plastic], _ = visualizeDRSBoards(
         drs_boards, suffix=f"Run{run}_plastic", quartzOnly=2)
 
-    DrawHistos([h2_DRS_Cer, h2_DRS_Cer_3mm], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Cer", dology=False, drawoptions=["text,col", "text,col"],
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Cer", run_number=run, zmax=1600, zmin=0, ncolors=16)
-    DrawHistos([h2_DRS_Sci, h2_DRS_Sci_3mm], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Sci", dology=False, drawoptions=["text,col", "text,col"],
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Sci", run_number=run, zmax=1600, zmin=0, ncolors=16)
-    DrawHistos([h2_DRS_Cer_quartz, h2_DRS_Cer_3mm_quartz], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Cer_quartz", dology=False, drawoptions=["text,col", "text,col"],
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Quartz", run_number=run, zmax=1600, zmin=0, ncolors=16)
-    DrawHistos([h2_DRS_Cer_plastic, h2_DRS_Cer_3mm_plastic], "", xmin, xmax, "iX", ymin,
-               ymax, "iY", output_name + "_Cer_plastic", dology=False, drawoptions=["text,col", "text,col"],
-               outdir=output_dir, doth2=True, W_ref=W_ref, H_ref=H_ref, extra_text="Plastic", run_number=run, zmax=1600, zmin=0, ncolors=16)
+    DrawHistos([h2_DRS_Cer, h2_DRS_Cer_3mm], "", FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY, "X [cm]", FERS_YMIN_DISPLAY,
+               FERS_YMAX_DISPLAY, "Y [cm]", output_name + "_Cer", dology=False, drawoptions=["text,col", "text,col"],
+               outdir=output_dir, doth2=True, W_ref=FERS_W_REF, H_ref=FERS_H_REF, extra_text="Cer", run_number=run, zmax=1600, zmin=0, ncolors=16)
+    DrawHistos([h2_DRS_Sci, h2_DRS_Sci_3mm], "", FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY, "X [cm]", FERS_YMIN_DISPLAY,
+               FERS_YMAX_DISPLAY, "Y [cm]", output_name + "_Sci", dology=False, drawoptions=["text,col", "text,col"],
+               outdir=output_dir, doth2=True, W_ref=FERS_W_REF, H_ref=FERS_H_REF, extra_text="Sci", run_number=run, zmax=1600, zmin=0, ncolors=16)
+    DrawHistos([h2_DRS_Cer_quartz, h2_DRS_Cer_3mm_quartz], "", FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY, "X [cm]", FERS_YMIN_DISPLAY,
+               FERS_YMAX_DISPLAY, "Y [cm]", output_name + "_Cer_quartz", dology=False, drawoptions=["text,col", "text,col"],
+               outdir=output_dir, doth2=True, W_ref=FERS_W_REF, H_ref=FERS_H_REF, extra_text="Quartz", run_number=run, zmax=1600, zmin=0, ncolors=16)
+    DrawHistos([h2_DRS_Cer_plastic, h2_DRS_Cer_3mm_plastic], "", FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY, "X [cm]", FERS_YMIN_DISPLAY,
+               FERS_YMAX_DISPLAY, "Y [cm]", output_name + "_Cer_plastic", dology=False, drawoptions=["text,col", "text,col"],
+               outdir=output_dir, doth2=True, W_ref=FERS_W_REF, H_ref=FERS_H_REF, extra_text="Plastic", run_number=run, zmax=1600, zmin=0, ncolors=16)
 
     output_html = f"results/html/Run{run}/ChannelMaps/DRSBoards.html"
     generate_html(

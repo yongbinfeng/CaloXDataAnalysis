@@ -201,8 +201,11 @@ def plot_fers_esum_vs_event(ctx):
 # ---------------------------------------------------------------------------
 
 def plot_fers_mapping(ctx):
-    DrawFERSBoards(run=ctx.run_number)
-    DrawDRSBoards(run=ctx.run_number)
+    return DrawFERSBoards(run=ctx.run_number)
+
+
+def plot_drs_mapping(ctx):
+    return DrawDRSBoards(run=ctx.run_number)
 
 
 # ---------------------------------------------------------------------------
@@ -397,14 +400,13 @@ def plot_fers_2d(ctx):
                         f"hist_FERS_Board{board_no}_{var}_{s_x}_{s_y}_hg_VS_lg")
                     if not hist:
                         continue
-                    pave = create_board_info_pave(
-                        board_no, i_tower_x, i_tower_y,
-                        channel_info={var: chan.channel_no},
-                        position=(0.20, 0.70, 0.60, 0.90))
+                    pave = create_pave_text(0.20, 0.70, 0.60, 0.90)
+                    pave.AddText(f"Board: {board_no}, Ch: {chan.channel_no}")
+                    pave.AddText(f"Tower: ({i_tower_x}, {i_tower_y})")
                     pm.plot_2d(
                         hist,
                         f"FERS_Board{board_no}_{var}_{s_x}_{s_y}_hg_VS_lg",
-                        "HG", (0, 9000), "LG", (0, 1500),
+                        "HG [ADC]", (0, 9000), "LG [ADC]", (0, 1500),
                         style=_STYLE_2D_LOG, extraToDraw=pave)
         return pm.generate_html("FERS/LG_vs_HG.html", plots_per_row=4)
 
@@ -478,6 +480,34 @@ def plot_fers_energy_sum(ctx):
                                style=style, prepend=(cat == "cer"))
         return pm.generate_html("FERS/ESum.html", plots_per_row=6,
                                 title="FERS Energy Sums")
+
+
+def plot_fers_lg_vs_mix(ctx):
+    """Plot FERS LG vs Mix 2D histograms per channel (requires Mix variables defined)."""
+    with _pm(ctx) as pm:
+        pm.set_output_dir("FERS_LG_vs_Mix")
+        infile = pm._get_file("fers_lg_vs_mix_2d.root")
+        for fersboard in ctx.fersboards.values():
+            board_no = fersboard.board_no
+            for i_tower_x, i_tower_y in fersboard.get_list_of_towers():
+                s_x = number_to_string(i_tower_x)
+                s_y = number_to_string(i_tower_y)
+                for var in ["Cer", "Sci"]:
+                    chan = fersboard.get_channel_by_tower(
+                        i_tower_x, i_tower_y, isCer=(var == "Cer"))
+                    hist = infile.Get(
+                        f"hist_FERS_Board{board_no}_{var}_{s_x}_{s_y}_mix_VS_lg")
+                    if not hist:
+                        continue
+                    pave = create_pave_text(0.20, 0.70, 0.60, 0.90)
+                    pave.AddText(f"Board: {board_no}, Ch: {chan.channel_no}")
+                    pave.AddText(f"Tower: ({i_tower_x}, {i_tower_y})")
+                    pm.plot_2d(
+                        hist,
+                        f"FERS_Board{board_no}_{var}_{s_x}_{s_y}_mix_VS_lg",
+                        "Mix [ADC]", (0, 40000), "LG [ADC]", (0, 2000),
+                        style=_STYLE_2D_LOG, extraToDraw=pave)
+        return pm.generate_html("FERS/LG_vs_Mix.html", plots_per_row=4)
 
 
 def plot_fers_cer_vs_sci(ctx):
@@ -1470,8 +1500,10 @@ def plot_drs_peak_ts(ctx, *, do_peak_ts=True, do_cer_vs_sci=True):
 # ---------------------------------------------------------------------------
 
 def plot_drs_sum_vs_fers(ctx):
-    xymax = {"Cer": (20000, 8500), "Sci": (30000, 8500)}
-    xymax_LG = {"Cer": (20000, 2000), "Sci": (30000, 4000)}
+    xymax     = {"Cer": (20000, 8500),  "Sci": (30000, 8500)}
+    xymax_LG  = {"Cer": (20000, 2000),  "Sci": (30000, 4000)}
+    xymax_Mix = {"Cer": (40000, 40000), "Sci": (60000, 40000)}
+    _ranges = {"FERS": xymax, "FERSLG": xymax_LG, "FERSMix": xymax_Mix}
 
     with _pm(ctx) as pm:
         pm.set_output_dir("DRSSum_VS_FERS")
@@ -1482,7 +1514,7 @@ def plot_drs_sum_vs_fers(ctx):
                 s_x = number_to_string(i_tower_x)
                 s_y = number_to_string(i_tower_y)
                 for var in ["Cer", "Sci"]:
-                    for gain_tag in ["FERS", "FERSLG"]:
+                    for gain_tag in ["FERS", "FERSLG", "FERSMix"]:
                         hname = f"hist_DRSSum_VS_{gain_tag}_{var}_{s_x}_{s_y}"
                         hist = infile.Get(hname)
                         if not hist:
@@ -1492,16 +1524,16 @@ def plot_drs_sum_vs_fers(ctx):
                         if ctx.do_detailed_plots:
                             zmax = round_up_to_1eN(
                                 hist.Integral(0, 10000, 0, 10000))
-                            tmp = xymax[var] if gain_tag == "FERS" else xymax_LG[var]
+                            tmp = _ranges[gain_tag][var]
                             pm.plot_2d(
                                 hist, hname.replace("hist_", ""),
-                                gain_tag, (0, tmp[1]), "DRSSum", (0, tmp[0]),
+                                f"{gain_tag} [ADC]", (0, tmp[1]), "DRS Sum [ADC]", (0, tmp[0]),
                                 style=PlotStyle(dologz=True, drawoptions="COLZ",
                                                 zmin=1, zmax=zmax),
                                 extra_text=var)
 
         for var in ["Cer", "Sci"]:
-            for gain_tag in ["FERS", "FERSLG"]:
+            for gain_tag in ["FERS", "FERSLG", "FERSMix"]:
                 subset = [
                     h for h in hists if f"_{gain_tag}_{var}_" in h.GetName()]
                 if subset:
@@ -1509,10 +1541,10 @@ def plot_drs_sum_vs_fers(ctx):
                         subset, f"hist_DRSSum_VS_{gain_tag}_{var}_Combined")
                     zmax = round_up_to_1eN(
                         combined.Integral(0, 10000, 0, 10000))
-                    tmp = xymax[var] if gain_tag == "FERS" else xymax_LG[var]
+                    tmp = _ranges[gain_tag][var]
                     pm.plot_2d(
                         combined, f"DRSSum_VS_{gain_tag}_{var}_Combined",
-                        gain_tag, (0, tmp[1]), "DRSSum", (0, tmp[0]),
+                        f"{gain_tag} [ADC]", (0, tmp[1]), "DRS Sum [ADC]", (0, tmp[0]),
                         style=PlotStyle(dologz=True, drawoptions="COLZ",
                                         zmin=1, zmax=zmax),
                         extra_text=var, prepend=True)
@@ -1538,17 +1570,18 @@ def plot_drs_peak_vs_fers(ctx):
                         subtractMedian=True,
                         is_amplified=chan.is_amplified,
                         is6mm=chan.is6mm)
-                    hname = f"hist_DRSPeak_VS_FERS_{var}_{s_x}_{s_y}"
-                    hist = infile.Get(hname)
-                    if not hist:
-                        print(f"Warning: {hname} not found")
-                        continue
-                    pm.plot_2d(
-                        hist, hname.replace("hist_", ""),
-                        "FERS ADC", (0, 9000), "DRS Peak", (0, ymax),
-                        style=PlotStyle(dologz=True, drawoptions="COLZ",
-                                        zmin=1, zmax=None),
-                        extra_text=var)
+                    for gain_tag, xmax in [("FERS", 9000), ("FERSLG", 3000), ("FERSMix", 40000)]:
+                        hname = f"hist_DRSPeak_VS_{gain_tag}_{var}_{s_x}_{s_y}"
+                        hist = infile.Get(hname)
+                        if not hist:
+                            print(f"Warning: {hname} not found")
+                            continue
+                        pm.plot_2d(
+                            hist, hname.replace("hist_", ""),
+                            f"FERS {gain_tag} [ADC]", (0, xmax), "DRS Peak [ADC]", (0, ymax),
+                            style=PlotStyle(dologz=True, drawoptions="COLZ",
+                                            zmin=1, zmax=None),
+                            extra_text=var)
         return pm.generate_html("DRS_VS_FERS/DRSPeak_vs_FERS.html", plots_per_row=4)
 
 

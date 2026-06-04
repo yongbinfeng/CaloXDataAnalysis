@@ -695,8 +695,9 @@ def book_drs_peak_ts(ctx):
 # ---------------------------------------------------------------------------
 
 def book_drs_sum_vs_fers(ctx):
-    xymax = {"Cer": (20000, 8500), "Sci": (30000, 8500)}
-    xymax_LG = {"Cer": (20000, 2000), "Sci": (30000, 4000)}
+    xymax     = {"Cer": (20000, 8500),  "Sci": (30000, 8500)}
+    xymax_LG  = {"Cer": (20000, 2000),  "Sci": (30000, 4000)}
+    xymax_Mix = {"Cer": (40000, 40000), "Sci": (60000, 40000)}
     hists = []
     for _, board in ctx.drsboards.items():
         board_no = board.board_no
@@ -721,20 +722,28 @@ def book_drs_sum_vs_fers(ctx):
                     print(f"Warning: FERS channel not found for "
                           f"Board{board_no}, Tower({s_x},{s_y}), {var}")
                     continue
+                drs_energy = chan_drs.get_channel_name(blsub=False) + "_energy"
                 hists.append(ctx.rdf.Histo2D((
                     f"hist_DRSSum_VS_FERS_{var}_{s_x}_{s_y}",
-                    f"DRS sum VS FERS HG Board{board_no} Tower({s_x},{s_y}) {var};"
-                    f"FERS Energy HG;DRS Sum",
+                    f"DRS energy VS FERS HG Board{board_no} Tower({s_x},{s_y}) {var};"
+                    f"FERS Energy HG [ADC];DRS Sum [ADC]",
                     100, 0, xymax[var][1], 100, 0, xymax[var][0]),
                     chan_fers.get_channel_name(gain="HG"),
-                    chan_drs.get_channel_sum_name()))
+                    drs_energy))
                 hists.append(ctx.rdf.Histo2D((
                     f"hist_DRSSum_VS_FERSLG_{var}_{s_x}_{s_y}",
-                    f"DRS sum VS FERS LG Board{board_no} Tower({s_x},{s_y}) {var};"
-                    f"FERS Energy LG;DRS Sum",
+                    f"DRS energy VS FERS LG Board{board_no} Tower({s_x},{s_y}) {var};"
+                    f"FERS Energy LG [ADC];DRS Sum [ADC]",
                     100, 0, xymax_LG[var][1], 100, 0, xymax_LG[var][0]),
                     chan_fers.get_channel_name(gain="LG"),
-                    chan_drs.get_channel_sum_name()))
+                    drs_energy))
+                hists.append(ctx.rdf.Histo2D((
+                    f"hist_DRSSum_VS_FERSMix_{var}_{s_x}_{s_y}",
+                    f"DRS energy VS FERS Mix Board{board_no} Tower({s_x},{s_y}) {var};"
+                    f"FERS Energy Mix [ADC];DRS Sum [ADC]",
+                    100, 0, xymax_Mix[var][1], 100, 0, xymax_Mix[var][0]),
+                    chan_fers.get_channel_name(gain="Mix"),
+                    drs_energy))
 
     ctx.hbook.add("drssum_vs_fers.root", hists)
 
@@ -768,20 +777,28 @@ def book_drs_peak_vs_fers(ctx):
                     subtractMedian=True,
                     is_amplified=chan_drs.is_amplified,
                     is6mm=chan_drs.is6mm)
+                drs_peak = chan_drs.get_channel_name(blsub=False) + "_peak_value"
                 hists.append(ctx.rdf.Histo2D((
                     f"hist_DRSPeak_VS_FERS_{var}_{s_x}_{s_y}",
                     f"DRS Peak VS FERS HG Board{board_no} Tower({s_x},{s_y}) {var};"
                     f"FERS Energy HG;DRS Peak",
                     100, 0, 9000, 100, 0, ymax),
                     chan_fers.get_channel_name(gain="HG"),
-                    chan_drs.get_channel_peak_name()))
+                    drs_peak))
                 hists.append(ctx.rdf.Histo2D((
                     f"hist_DRSPeak_VS_FERSLG_{var}_{s_x}_{s_y}",
                     f"DRS Peak VS FERS LG Board{board_no} Tower({s_x},{s_y}) {var};"
                     f"FERS Energy LG;DRS Peak",
                     100, 0, 3000, 100, 0, ymax),
                     chan_fers.get_channel_name(gain="LG"),
-                    chan_drs.get_channel_peak_name()))
+                    drs_peak))
+                hists.append(ctx.rdf.Histo2D((
+                    f"hist_DRSPeak_VS_FERSMix_{var}_{s_x}_{s_y}",
+                    f"DRS Peak VS FERS Mix Board{board_no} Tower({s_x},{s_y}) {var};"
+                    f"FERS Energy Mix;DRS Peak",
+                    100, 0, 40000, 100, 0, ymax),
+                    chan_fers.get_channel_name(gain="Mix"),
+                    drs_peak))
 
     ctx.hbook.add("drspeak_vs_fers.root", hists)
 
@@ -1022,6 +1039,35 @@ def book_fers_energy_sum(ctx):
                 100, cfg["xmin_total"][f"{gain}_{cat}"], cfg["xmax_total"][f"{gain}_{cat}"]),
                 vname))
     ctx.hbook.add("fers_energy_sum.root", hists)
+
+
+def book_fers_lg_vs_mix(ctx):
+    """Book FERS LG vs Mix 2D histograms per channel (requires Mix variables defined)."""
+    hists = []
+    for fersboard in ctx.fersboards.values():
+        board_no = fersboard.board_no
+        for i_tower_x, i_tower_y in fersboard.get_list_of_towers():
+            s_x = number_to_string(i_tower_x)
+            s_y = number_to_string(i_tower_y)
+            chan_cer = fersboard.get_channel_by_tower(
+                i_tower_x, i_tower_y, isCer=True)
+            chan_sci = fersboard.get_channel_by_tower(
+                i_tower_x, i_tower_y, isCer=False)
+            i_cer = chan_cer.channel_no
+            i_sci = chan_sci.channel_no
+            hists.append(ctx.rdf.Histo2D((
+                f"hist_FERS_Board{board_no}_Sci_{s_x}_{s_y}_mix_VS_lg",
+                f"SCI {i_sci} LG VS Mix;SCI Energy Mix;SCI Energy LG",
+                300, 0, 40000, 300, 0, 2000),
+                chan_sci.get_channel_name(gain="Mix"),
+                chan_sci.get_channel_name(gain="LG")))
+            hists.append(ctx.rdf.Histo2D((
+                f"hist_FERS_Board{board_no}_Cer_{s_x}_{s_y}_mix_VS_lg",
+                f"CER {i_cer} LG VS Mix;CER Energy Mix;CER Energy LG",
+                300, 0, 40000, 300, 0, 2000),
+                chan_cer.get_channel_name(gain="Mix"),
+                chan_cer.get_channel_name(gain="LG")))
+    ctx.hbook.add("fers_lg_vs_mix_2d.root", hists)
 
 
 def book_fers_cer_vs_sci(ctx):

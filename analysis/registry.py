@@ -28,6 +28,7 @@ from analysis.hist_functions import (
     book_fers_2d,
     book_fers_track,
     book_fers_energy_sum,
+    book_fers_lg_vs_mix,
     book_fers_cer_vs_sci,
     book_fers_dr,
     book_fers_ewc,
@@ -52,12 +53,14 @@ from analysis.plot_functions import (
     plot_monitor_conditions,
     plot_fers_esum_vs_event,
     plot_fers_mapping,
+    plot_drs_mapping,
     plot_fers_channels,
     plot_fers_stats,
     plot_fers_max,
     plot_fers_2d,
     plot_fers_track,
     plot_fers_energy_sum,
+    plot_fers_lg_vs_mix,
     plot_fers_cer_vs_sci,
     plot_fers_dr,
     plot_fers_ewc,
@@ -99,6 +102,12 @@ ALL_SEQUENCES: list[CaloXSequence] = [
         name="fers_mapping",
         book_hists=None,
         make_plots=plot_fers_mapping,
+        enabled_by_default=True,
+    ),
+    CaloXSequence(
+        name="drs_mapping",
+        book_hists=None,
+        make_plots=plot_drs_mapping,
         enabled_by_default=True,
     ),
     # per-channel 1D distributions + pedestal extraction
@@ -184,19 +193,6 @@ ALL_SEQUENCES: list[CaloXSequence] = [
         enabled_by_default=False,
     ),
 
-    # --- DRS ↔ FERS correlations ---
-    CaloXSequence(
-        name="drs_sum_vs_fers",
-        book_hists=book_drs_sum_vs_fers,
-        make_plots=plot_drs_sum_vs_fers,
-        enabled_by_default=False,
-    ),
-    CaloXSequence(
-        name="drs_peak_vs_fers",
-        book_hists=book_drs_peak_vs_fers,
-        make_plots=plot_drs_peak_vs_fers,
-        enabled_by_default=False,
-    ),
 ]
 
 # ---------------------------------------------------------------------------
@@ -279,6 +275,23 @@ DRS_MCP_SEQUENCES: list[CaloXSequence] = [
 ]
 
 # ---------------------------------------------------------------------------
+# DRS ↔ FERS correlation sequences  (require DRS integral variables defined)
+# ---------------------------------------------------------------------------
+
+DRS_FERS_SEQUENCES: list[CaloXSequence] = [
+    CaloXSequence(
+        name="drs_sum_vs_fers",
+        book_hists=book_drs_sum_vs_fers,
+        make_plots=plot_drs_sum_vs_fers,
+    ),
+    CaloXSequence(
+        name="drs_peak_vs_fers",
+        book_hists=book_drs_peak_vs_fers,
+        make_plots=plot_drs_peak_vs_fers,
+    ),
+]
+
+# ---------------------------------------------------------------------------
 # FERS physics sequences  (require define_physics_variables on the manager)
 # ---------------------------------------------------------------------------
 
@@ -287,6 +300,11 @@ FERS_SEQUENCES: list[CaloXSequence] = [
         name="fers_energy_sum",
         book_hists=book_fers_energy_sum,
         make_plots=plot_fers_energy_sum,
+    ),
+    CaloXSequence(
+        name="fers_lg_vs_mix",
+        book_hists=book_fers_lg_vs_mix,
+        make_plots=plot_fers_lg_vs_mix,
     ),
     #CaloXSequence(
     #    name="fers_stats",
@@ -325,7 +343,7 @@ FERS_SEQUENCES: list[CaloXSequence] = [
 # ---------------------------------------------------------------------------
 
 _ALL_BY_NAME: dict[str, CaloXSequence] = {
-    s.name: s for s in ALL_SEQUENCES + SERVICE_DRS_SEQUENCES + FERS_SEQUENCES
+    s.name: s for s in ALL_SEQUENCES + SERVICE_DRS_SEQUENCES + DRS_FERS_SEQUENCES + FERS_SEQUENCES
 }
 
 

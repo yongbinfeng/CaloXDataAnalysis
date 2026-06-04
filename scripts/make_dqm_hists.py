@@ -14,7 +14,6 @@ Usage
 Available sequences (see analysis/registry.py):
   monitor_conditions  fers_esum_vs_event  fers_channels  fers_stats  fers_max
   fers_2d  fers_track  drs_waveforms  drs_stats  drs_peak_ts
-  drs_sum_vs_fers  drs_peak_vs_fers
 """
 
 from channels.channel_map import get_mcp_channels

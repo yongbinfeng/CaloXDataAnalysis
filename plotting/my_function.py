@@ -1128,7 +1128,12 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
     canvas.Update()
 
     if canvas_json_store is not None:
-        canvas_json_store[os.path.basename(outputname)] = ROOT.TBufferJSON.ToJSON(canvas).Data()
+        import tempfile
+        _tmp = tempfile.mktemp(suffix=".json")
+        canvas.Print(_tmp)
+        with open(_tmp) as _f:
+            canvas_json_store[os.path.basename(outputname)] = _f.read()
+        os.unlink(_tmp)
 
     if "/" not in outputname:
         # path not included; by default put to plots/outputname

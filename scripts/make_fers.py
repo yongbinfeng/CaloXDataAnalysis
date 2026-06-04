@@ -15,6 +15,7 @@ Usage
 
 Available sequences (see analysis/registry.py  FERS_SEQUENCES):
   fers_energy_sum    — 1D energy sum distributions (per-board + total, all gains)
+  fers_lg_vs_mix     — LG vs Mix 2D per-channel correlations
   fers_stats         — per-channel mean / max / saturation maps
   fers_cer_vs_sci    — Cer vs Sci 2D correlations (all gains)
   fers_dr            — dual-readout histograms (Mix, calibrated)
