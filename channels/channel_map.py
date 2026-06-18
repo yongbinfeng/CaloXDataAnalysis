@@ -174,7 +174,7 @@ def build_fers_boards(run=316):
         fersboards["Board7"].move_to(-1.5, 1.875)
         fersboards["Board8"].move_to(0.5, 1.875)
 
-    elif run >= 1342:
+    elif run >= 1342 and run < 1600:
         fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
         fersboards["Board3"] = base_FERSBoard_6mm.copy(board_no=3)
         fersboards["Board4"] = base_FERSBoard_6mm.copy(board_no=4)
@@ -207,6 +207,39 @@ def build_fers_boards(run=316):
         # 3mm
         fersboards["Board9"].move_to(-1.5, 1.875)
         fersboards["Board10"].move_to(0.5, 1.875)
+    elif run >= 1720:
+        fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
+        fersboards["Board3"] = base_FERSBoard_6mm.copy(board_no=3)
+        fersboards["Board4"] = base_FERSBoard_6mm.copy(board_no=4)
+        fersboards["Board5"] = base_FERSBoard_6mm.copy(board_no=5)
+        fersboards["Board8"] = base_FERSBoard_6mm.copy(board_no=8)
+        fersboards["Board9"] = base_FERSBoard_6mm.copy(board_no=9)
+        fersboards["Board10"] = base_FERSBoard_6mm.copy(board_no=10)
+        fersboards["Board11"] = base_FERSBoard_6mm.copy(board_no=11)
+        fersboards["Board12"] = base_FERSBoard_6mm.copy(board_no=12)
+        fersboards["Board13"] = base_FERSBoard_6mm.copy(board_no=13)
+        fersboards["Board14"] = base_FERSBoard_6mm.copy(board_no=14)
+        fersboards["Board15"] = base_FERSBoard_6mm.copy(board_no=15)
+
+        fersboards["Board6"] = base_FERSBoard_3mm.copy(board_no=6)
+        fersboards["Board7"] = base_FERSBoard_3mm.copy(board_no=7)
+
+        fersboards["Board12"].move_to(-13.5, 3.5)
+        fersboards["Board13"].move_to(-9.5, 7.5)
+        fersboards["Board14"].move_to(-5.5, 7.5)
+        fersboards["Board15"].move_to(-1.5, 9.5)
+        fersboards["Board10"].move_to(2.5, 7.5)
+        fersboards["Board11"].move_to(6.5, 7.5)
+        fersboards["Board9"].move_to(10.5, 3.5)
+        fersboards["Board2"].move_to(-9.5, -0.5)
+        fersboards["Board3"].move_to(-5.5, -0.5)
+        fersboards["Board4"].move_to(-1.5, -2.5)
+        fersboards["Board5"].move_to(2.5, -0.5)
+        fersboards["Board8"].move_to(6.5, -0.5)
+
+        # 3mm
+        fersboards["Board6"].move_to(-1.5, 1.875)
+        fersboards["Board7"].move_to(0.5, 1.875)
 
     else:
         raise ValueError(f"Unsupported run number {run} for FERS boards.")

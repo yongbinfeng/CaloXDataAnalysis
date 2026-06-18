@@ -217,34 +217,36 @@ def plot_fers_channels(ctx):
         pm.set_output_dir("FERS_1D")
         infile = pm._get_file("fers_all_channels_1d.root")
 
-        for fersboard in ctx.fersboards.values():
-            board_no = fersboard.board_no
-            for i_tower_x, i_tower_y in fersboard.get_list_of_towers():
-                s_x = number_to_string(i_tower_x)
-                s_y = number_to_string(i_tower_y)
-                hist_c = infile.Get(
-                    f"hist_FERS_Board{board_no}_Cer_{s_x}_{s_y}")
-                hist_s = infile.Get(
-                    f"hist_FERS_Board{board_no}_Sci_{s_x}_{s_y}")
-                if not hist_c or not hist_s:
-                    print(
-                        f"Warning: Hists not found Board{board_no} Tower({i_tower_x},{i_tower_y})")
-                    continue
-                pave = create_board_info_pave(
-                    board_no, i_tower_x, i_tower_y,
-                    channel_info={
-                        "Cer": fersboard.get_channel_by_tower(i_tower_x, i_tower_y, isCer=True).channel_no,
-                        "Sci": fersboard.get_channel_by_tower(i_tower_x, i_tower_y, isCer=False).channel_no,
-                    })
-                pm.plot_1d(
-                    [hist_c, hist_s],
-                    f"Energy_Board{board_no}_iTowerX{s_x}_iTowerY{s_y}",
-                    "Energy HG", (0, 1000),
-                    ylabel="Counts", yrange=(1, 1e5),
-                    legends=["Cer", "Sci"],
-                    style=PlotStyle(
-                        dology=True, drawoptions="HIST", mycolors=[2, 4]),
-                    extraToDraw=pave)
+        _xrange = {"HG": (0, 800), "LG": (0, 300)}
+        for gain in ["HG", "LG"]:
+            for fersboard in ctx.fersboards.values():
+                board_no = fersboard.board_no
+                for i_tower_x, i_tower_y in fersboard.get_list_of_towers():
+                    s_x = number_to_string(i_tower_x)
+                    s_y = number_to_string(i_tower_y)
+                    hist_c = infile.Get(
+                        f"hist_FERS_Board{board_no}_Cer_{s_x}_{s_y}_{gain}")
+                    hist_s = infile.Get(
+                        f"hist_FERS_Board{board_no}_Sci_{s_x}_{s_y}_{gain}")
+                    if not hist_c or not hist_s:
+                        print(
+                            f"Warning: Hists not found Board{board_no} Tower({i_tower_x},{i_tower_y}) {gain}")
+                        continue
+                    cer_ch = fersboard.get_channel_by_tower(i_tower_x, i_tower_y, isCer=True).channel_no
+                    sci_ch = fersboard.get_channel_by_tower(i_tower_x, i_tower_y, isCer=False).channel_no
+                    pave = create_pave_text(0.20, 0.65, 0.60, 0.90)
+                    pave.AddText(f"Board: {board_no}, Tower: ({i_tower_x}, {i_tower_y})")
+                    pave.AddText(f"Cer Ch: {cer_ch}")
+                    pave.AddText(f"Sci Ch: {sci_ch}")
+                    pm.plot_1d(
+                        [hist_c, hist_s],
+                        f"Energy_{gain}_Board{board_no}_iTowerX{s_x}_iTowerY{s_y}",
+                        f"Energy {gain} [ADC]", _xrange[gain],
+                        ylabel="Counts", yrange=(1, 1e5),
+                        legends=["Cer", "Sci"],
+                        style=PlotStyle(
+                            dology=True, drawoptions="HIST", mycolors=[2, 4]),
+                        extraToDraw=pave)
 
         return pm.generate_html("FERS/ChannelADC.html")
 

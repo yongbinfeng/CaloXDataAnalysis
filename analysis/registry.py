@@ -1,10 +1,13 @@
 """
 Sequence registry.
 
-There are three sequence lists:
+Sequence lists:
 
-ALL_SEQUENCES         — main DQM (FERS + DRS readout), used by
-                        make_dqm_hists.py and make_dqm_plots.py
+FERS_DQM_SEQUENCES    — FERS monitoring only; runs without DRS data.
+                        Used by make_fers_dqm_hists.py / make_fers_dqm_plots.py
+DRS_DQM_SEQUENCES     — DRS monitoring; requires DRS data.
+                        Used by make_dqm_hists.py / make_dqm_plots.py
+ALL_SEQUENCES         — FERS_DQM + DRS_DQM combined (backward compat)
 SERVICE_DRS_SEQUENCES — service DRS (PID detectors, MCP, hodoscope), used by
                         check_service_drs.py
 DRS_MCP_SEQUENCES     — DRS-only sequences run under MCP timing selection,
@@ -80,11 +83,10 @@ from analysis.plot_functions import (
 )
 
 # ---------------------------------------------------------------------------
-# Canonical sequence list — order determines execution order.
+# FERS-only DQM sequences — run without DRS data.
 # ---------------------------------------------------------------------------
 
-ALL_SEQUENCES: list[CaloXSequence] = [
-    # --- FERS monitoring ---
+FERS_DQM_SEQUENCES: list[CaloXSequence] = [
     CaloXSequence(
         name="monitor_conditions",
         book_hists=book_monitor_conditions,
@@ -97,17 +99,11 @@ ALL_SEQUENCES: list[CaloXSequence] = [
         make_plots=plot_fers_esum_vs_event,
         enabled_by_default=True,
     ),
-    # plot-only: channel layout maps (no histogram step)
+    # plot-only: channel layout map (no histogram step)
     CaloXSequence(
         name="fers_mapping",
         book_hists=None,
         make_plots=plot_fers_mapping,
-        enabled_by_default=True,
-    ),
-    CaloXSequence(
-        name="drs_mapping",
-        book_hists=None,
-        make_plots=plot_drs_mapping,
         enabled_by_default=True,
     ),
     # per-channel 1D distributions + pedestal extraction
@@ -142,8 +138,20 @@ ALL_SEQUENCES: list[CaloXSequence] = [
         make_plots=plot_fers_track,
         enabled_by_default=False,
     ),
+]
 
-    # --- DRS ---
+# ---------------------------------------------------------------------------
+# DRS DQM sequences — require DRS data.
+# ---------------------------------------------------------------------------
+
+DRS_DQM_SEQUENCES: list[CaloXSequence] = [
+    # plot-only: channel layout map (no histogram step)
+    CaloXSequence(
+        name="drs_mapping",
+        book_hists=None,
+        make_plots=plot_drs_mapping,
+        enabled_by_default=True,
+    ),
     CaloXSequence(
         name="drs_waveforms",
         book_hists=book_drs_waveforms,
@@ -192,8 +200,10 @@ ALL_SEQUENCES: list[CaloXSequence] = [
         make_plots=plot_drs_peak_ts,
         enabled_by_default=False,
     ),
-
 ]
+
+# Combined list for backward compatibility.
+ALL_SEQUENCES: list[CaloXSequence] = FERS_DQM_SEQUENCES + DRS_DQM_SEQUENCES
 
 # ---------------------------------------------------------------------------
 # Service DRS sequences  (ctx: CaloXAnalysisManager)
@@ -343,7 +353,14 @@ FERS_SEQUENCES: list[CaloXSequence] = [
 # ---------------------------------------------------------------------------
 
 _ALL_BY_NAME: dict[str, CaloXSequence] = {
-    s.name: s for s in ALL_SEQUENCES + SERVICE_DRS_SEQUENCES + DRS_FERS_SEQUENCES + FERS_SEQUENCES
+    s.name: s
+    for s in (
+        ALL_SEQUENCES
+        + SERVICE_DRS_SEQUENCES
+        + DRS_MCP_SEQUENCES
+        + DRS_FERS_SEQUENCES
+        + FERS_SEQUENCES
+    )
 }
 
 
@@ -355,8 +372,18 @@ def get_sequence(name: str) -> CaloXSequence:
 
 
 def default_sequences() -> list[CaloXSequence]:
-    """Main DQM sequences enabled by default."""
+    """All DQM sequences (FERS + DRS) enabled by default."""
     return [s for s in ALL_SEQUENCES if s.enabled_by_default]
+
+
+def default_fers_dqm_sequences() -> list[CaloXSequence]:
+    """FERS-only DQM sequences enabled by default (no DRS required)."""
+    return [s for s in FERS_DQM_SEQUENCES if s.enabled_by_default]
+
+
+def default_drs_dqm_sequences() -> list[CaloXSequence]:
+    """DRS DQM sequences enabled by default."""
+    return [s for s in DRS_DQM_SEQUENCES if s.enabled_by_default]
 
 
 def default_service_drs_sequences() -> list[CaloXSequence]:

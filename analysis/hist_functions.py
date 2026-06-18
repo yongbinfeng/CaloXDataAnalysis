@@ -91,7 +91,10 @@ def book_fers_esum_vs_event(ctx):
 # FERS: per-channel 1D distributions + pedestals
 # ---------------------------------------------------------------------------
 
+_FERS_1D_RANGE = {"HG": (800, 0, 800), "LG": (300, 0, 300)}
+
 def _make_fers_1d_hists(ctx, gain):
+    nbins, xmin, xmax = _FERS_1D_RANGE[gain]
     hists = []
     for fersboard in ctx.fersboards.values():
         board_no = fersboard.board_no
@@ -102,10 +105,10 @@ def _make_fers_1d_hists(ctx, gain):
                 chan = fersboard.get_channel_by_tower(
                     i_tower_x, i_tower_y, isCer=(var == "Cer"))
                 hists.append(ctx.rdf.Histo1D((
-                    f"hist_FERS_Board{board_no}_{var}_{s_x}_{s_y}",
+                    f"hist_FERS_Board{board_no}_{var}_{s_x}_{s_y}_{gain}",
                     f"FERS Board {board_no} - {var} iTowerX {s_x} iTowerY {s_y};"
-                    f"{var} Energy;Counts",
-                    3000, 0, 9000),
+                    f"{var} Energy {gain};Counts",
+                    nbins, xmin, xmax),
                     chan.get_channel_name(gain=gain)))
     return hists
 
@@ -127,7 +130,7 @@ def _collect_pedestals(ctx, hists, gain):
                 chan = fersboard.get_channel_by_tower(
                     i_tower_x, i_tower_y, isCer=(var == "Cer"))
                 channel_name = chan.get_channel_name(gain=gain)
-                hname = f"hist_FERS_Board{board_no}_{var}_{s_x}_{s_y}"
+                hname = f"hist_FERS_Board{board_no}_{var}_{s_x}_{s_y}_{gain}"
                 hist = hist_by_name.get(hname)
                 if hist is None:
                     print(
