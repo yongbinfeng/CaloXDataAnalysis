@@ -73,16 +73,21 @@ class FERSChannel(CaloXChannel):
 class DRSChannel(CaloXChannel):
     def __init__(self, i_tower_x: float, i_tower_y: float, isCer: bool,
                  channel_no: int, group_no: int, board_no: int,
-                 is_amplified: bool = False, is6mm: bool = True, isQuartz: bool = False, is_reference: bool = False):
+                 is_amplified: bool = False, is6mm: bool = True, isQuartz: bool = False, is_reference: bool = False,
+                 bridge_no=None):
         super().__init__(i_tower_x, i_tower_y, isCer, isQuartz, is6mm)
         self.channel_no = channel_no
         self.group_no = group_no
         self.board_no = board_no
+        self.bridge_no = bridge_no  # None → old format; int → DRS_Brg{N}_Board...
         self.is_amplified = is_amplified
         self.is_reference = is_reference
 
     def get_channel_name(self, blsub=False):
-        channelName = f"DRS_Board{self.board_no}_Group{self.group_no}_Channel{self.channel_no}"
+        if self.bridge_no is not None:
+            channelName = f"DRS_Brg{self.bridge_no}_Board{self.board_no}_Group{self.group_no}_Channel{self.channel_no}"
+        else:
+            channelName = f"DRS_Board{self.board_no}_Group{self.group_no}_Channel{self.channel_no}"
         if blsub:
             channelName += "_blsub"
         return channelName
@@ -276,17 +281,25 @@ class DRSBoard(Board):
     channels: flat list[DRSChannel]
     """
 
-    def __init__(self, board_no, is6mm=True, channels=None):
+    def __init__(self, board_no, is6mm=True, channels=None, bridge_no=None):
         """
         Initialize a DRS board with a specific board number and channel configuration.
-        :param boardNo: The board number.
+        bridge_no=None uses the old naming (DRS_Board…); bridge_no=int uses DRS_Brg{N}_Board….
         """
         super().__init__(board_no)
-        # channels is a 2D list of DRSChannel objects
+        self.bridge_no = bridge_no
         if channels is not None:
             self.channels = channels
+            for ch in self.channels:
+                ch.bridge_no = bridge_no
         else:
-            self.channels = build_drs_base(is6mm=is6mm, board_no=board_no)
+            self.channels = build_drs_base(is6mm=is6mm, board_no=board_no, bridge_no=bridge_no)
+
+    def set_bridge_no(self, bridge_no):
+        """Update bridge_no on the board and all its channels."""
+        self.bridge_no = bridge_no
+        for ch in self.channels:
+            ch.bridge_no = bridge_no
 
     def get_channel_by_group_channel(self, group_no, chan_no):
         """
@@ -428,7 +441,7 @@ def build_fers_base(is6mm=False, board_no=0):
     return channels_FERS
 
 
-def build_drs_base(is6mm=True, board_no=0):
+def build_drs_base(is6mm=True, board_no=0, bridge_no=None):
     channels_DRS = []
     for ix in range(0, 4):
         for iy in range(0, 8):
@@ -441,27 +454,27 @@ def build_drs_base(is6mm=True, board_no=0):
             if is6mm:
                 isCer = (iy % 2 == 0)
                 channel = DRSChannel(ix, -int(iy/2), isCer,
-                                     chan_no, group_no, board_no, is6mm=is6mm)
+                                     chan_no, group_no, board_no, is6mm=is6mm, bridge_no=bridge_no)
             else:
                 # this is INCONSISTENT with the FERS 3mm channels
                 # need to CHECK
                 isCer = (ix % 2 == 1)
                 # 3mm has higher granularity in global Y
                 channel = DRSChannel(
-                    int(ix/2), -float(iy)/4, isCer, chan_no, group_no, board_no, is6mm=False, is_amplified=True)
+                    int(ix/2), -float(iy)/4, isCer, chan_no, group_no, board_no, is6mm=False, is_amplified=True, bridge_no=bridge_no)
             channels_DRS.append(channel)
         # add reference channel for each group
-        ref_channel = add_drs_reference_channel(ix, board_no, is6mm=is6mm)
+        ref_channel = add_drs_reference_channel(ix, board_no, is6mm=is6mm, bridge_no=bridge_no)
         channels_DRS.append(ref_channel)
     return channels_DRS
 
 
-def add_drs_reference_channel(group_no, board_no, is6mm=True):
+def add_drs_reference_channel(group_no, board_no, is6mm=True, bridge_no=None):
     """
     Add a reference channel (Channel 8) to a DRS board for a specific group.
     """
     ref_channel = DRSChannel(-999, -999, False, 8,
-                             group_no, board_no, is6mm=is6mm, is_reference=True)
+                             group_no, board_no, is6mm=is6mm, is_reference=True, bridge_no=bridge_no)
     return ref_channel
 
 

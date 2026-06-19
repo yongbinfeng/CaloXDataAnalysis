@@ -26,7 +26,7 @@ MCP_REF = "MCP_DS_0"
 
 def get_drs_branches(rdf):
     branches = [str(b) for b in rdf.GetColumnNames()]
-    pattern = re.compile(r"^DRS_Board\d+_Group\d+_Channel\d+$")
+    pattern = re.compile(r"^DRS_(Brg\d+_)?Board\d+_Group\d+_Channel\d+$")
     drs_branches = [b for b in branches if pattern.search(b)]
     return drs_branches
 
@@ -98,9 +98,12 @@ def process_reference_channels(rdf, drs_channels_ref):
 
 def process_mcp_channels(rdf, run_number):
     """Define _TS_cfd, _TS_peak, and their ref-corrected variants for each MCP detector."""
+    existing = [str(c) for c in rdf.GetColumnNames()]
     map_mcp_channels = get_mcp_channels(run_number)
     for det, channel_name in map_mcp_channels.items():
         channel_name_blsub = channel_name + "_blsub"
+        if channel_name_blsub not in existing:
+            continue
         ts_begin, ts_end, window_pre, window_post, _, _ = get_service_drs_cut(
             det)
 
@@ -126,10 +129,15 @@ def process_mcp_channels(rdf, run_number):
 
 def process_pid_channels(rdf, run_number):
     """Define _CFD-derived columns for each PID service-DRS detector."""
+    existing = [str(c) for c in rdf.GetColumnNames()]
     for det, channel in get_pid_channels(run_number).items():
+        if channel is None:
+            continue
+        channel_blsub = channel + "_blsub"
+        if channel_blsub not in existing:
+            continue
         ts_begin, ts_end, window_pre, window_post, _, _ = get_service_drs_cut(
             det)
-        channel_blsub = channel + "_blsub"
 
         rdf = rdf.Define(f"{det}_CFD",
                          f"compute_cfd_integral({channel_blsub}, 1, 10.0, {ts_begin}, {ts_end}, {window_pre}, {window_post})")
@@ -160,17 +168,23 @@ def get_arr_name(drs_channel_name, use_mcp=False, in_ns=False):
 
 
 def update_ts(rdf, drs_channels_ref, mcp_det="MCP_US_0"):
-    """Define per-event calibrated ts arrays (_ts_ref and _ts_mcp) for each board."""
+    """Define per-event calibrated ts arrays (_ts_ref and _ts_mcp) for each board.
+
+    When mcp_det is None (no MCP available), _ts_mcp is set equal to _ts_ref
+    so that downstream code using _ts_mcp still works with zero MCP correction.
+    """
     for channel_name in drs_channels_ref:
         board_group_name = channel_name.replace("_Channel8", "")
         ref_TS = f"{board_group_name}_ref_TS"
 
-        rdf = rdf.Define(get_arr_name(channel_name),
-                         f"ts - {ref_TS} + 790")
+        ts_ref = get_arr_name(channel_name)
+        rdf = rdf.Define(ts_ref, f"ts - {ref_TS} + 790")
         if mcp_det is not None:
             rdf = rdf.Define(
                 get_arr_name(channel_name, use_mcp=True),
-                f"{get_arr_name(channel_name)} - {mcp_det}_TS_cfd_ref + 500")
+                f"{ts_ref} - {mcp_det}_TS_cfd_ref + 500")
+        else:
+            rdf = rdf.Define(get_arr_name(channel_name, use_mcp=True), ts_ref)
     return rdf
 
 
@@ -204,11 +218,21 @@ def process_drs_channels(rdf, drs_channel_names, mcp_det="MCP_US_0"):
                              f"{channel_name}_TS_cfd_ref - {mcp_det}_TS_cfd_ref + 500")
             rdf = rdf.Define(f"{channel_name}_TS_peak_mcp",
                              f"{channel_name}_TS_peak_ref - {mcp_det}_TS_cfd_ref + 500")
+        else:
+            rdf = rdf.Define(f"{channel_name}_TS_cfd_mcp",
+                             f"{channel_name}_TS_cfd_ref")
+            rdf = rdf.Define(f"{channel_name}_TS_peak_mcp",
+                             f"{channel_name}_TS_peak_ref")
     return rdf
 
 
 def get_psd_energy_deposit(rdf, run_number, TS_start=100, TS_end=400):
     channel_name = get_service_drs_channels(run_number).get("PSD")
+    if channel_name is None:
+        return rdf
+    existing = [str(c) for c in rdf.GetColumnNames()]
+    if f"{channel_name}_blsub" not in existing:
+        return rdf
     rdf = rdf.Define(
         "PSD_Sum", f"SumRange({channel_name}_blsub, {TS_start}, {TS_end})")
     rdf = rdf.Define(
@@ -217,21 +241,24 @@ def get_psd_energy_deposit(rdf, run_number, TS_start=100, TS_end=400):
     return rdf
 
 
-def process_drs_data(rdf, run_number, drsboards):
+def process_drs_data(rdf, run_number, drsboards, do_mcp=True):
     drs_branches = get_drs_branches(rdf)
     drs_channels_ref = [ch for ch in drs_branches if ch.endswith("Channel8")]
     drs_branches_to_flip = get_drs_branches_to_flip(
         run_number, drs_channels_ref=drs_channels_ref, drsboards=drsboards)
 
+    mcp_det = MCP_REF if do_mcp else None
+
     rdf = subtract_baseline(
         rdf, drs_branches, drs_channels_to_flip=drs_branches_to_flip)
     rdf = process_reference_channels(rdf, drs_channels_ref)
-    rdf = process_mcp_channels(rdf, run_number)
-    rdf = process_pid_channels(rdf, run_number)
-    rdf = update_ts(rdf, drs_channels_ref, mcp_det=MCP_REF)
+    if do_mcp:
+        rdf = process_mcp_channels(rdf, run_number)
+        rdf = process_pid_channels(rdf, run_number)
+    rdf = update_ts(rdf, drs_channels_ref, mcp_det=mcp_det)
     drs_channels_physics = [
         ch for ch in drs_branches if not ch.endswith("Channel8")]
-    rdf = process_drs_channels(rdf, drs_channels_physics, mcp_det=MCP_REF)
+    rdf = process_drs_channels(rdf, drs_channels_physics, mcp_det=mcp_det)
     rdf = define_time_ns(rdf, drsboards)
     return rdf
 
@@ -297,6 +324,7 @@ def define_time_ns(rdf, drsboards, json_path=_MPV_GROUP_JSON_PATH):
     with open(json_path) as _f:
         group_mpv = json.load(_f)
 
+    existing = [str(c) for c in rdf.GetColumnNames()]
     for _, board in drsboards.items():
         for chan in board:
             if chan.is_reference:
@@ -306,6 +334,8 @@ def define_time_ns(rdf, drsboards, json_path=_MPV_GROUP_JSON_PATH):
             if ref_ts is None:
                 continue
             ch = chan.get_channel_name(blsub=False)
+            if f"{ch}_TS_cfd_mcp" not in existing:
+                continue
             rdf = rdf.Define(f"{ch}_Time_cfd_mcp",
                              f"({ch}_TS_cfd_mcp - {ref_ts}) * {_TS_TO_NS}")
             rdf = rdf.Define(get_arr_name(ch, in_ns=True),

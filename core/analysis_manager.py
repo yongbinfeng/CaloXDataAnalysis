@@ -114,12 +114,13 @@ class CaloXAnalysisManager:
         ROOT.RDF.Experimental.AddProgressBar(self.rdf_org)
         return self.rdf_org.Filter(f"event_n >= {first_event} && event_n < {last_event}")
 
-    def prepare(self, do_drs=True, do_fers=True, do_hodo=True):
+    def prepare(self, do_drs=True, do_fers=True, do_hodo=True, do_mcp=True):
         """Initializes standard baseline subtractions and vectorization."""
         if do_drs and "drs_init" not in self._steps_applied:
             self.rdf = process_drs_data(
-                self.rdf, self.run_number, drsboards=self.drsboards)
-            self.rdf = get_psd_energy_deposit(self.rdf, self.run_number)
+                self.rdf, self.run_number, drsboards=self.drsboards, do_mcp=do_mcp)
+            if do_mcp:
+                self.rdf = get_psd_energy_deposit(self.rdf, self.run_number)
             self._steps_applied.add("drs_init")
 
         if do_fers and "fers_init" not in self._steps_applied:

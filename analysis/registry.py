@@ -171,12 +171,6 @@ DRS_DQM_SEQUENCES: list[CaloXSequence] = [
         enabled_by_default=True,
     ),
     CaloXSequence(
-        name="drs_prof_corr_combined",
-        book_hists=book_drs_prof_corr_combined,
-        make_plots=None,
-        enabled_by_default=True,
-    ),
-    CaloXSequence(
         name="drs_stats",
         book_hists=book_drs_stats,
         make_plots=plot_drs_stats,
@@ -185,12 +179,6 @@ DRS_DQM_SEQUENCES: list[CaloXSequence] = [
     CaloXSequence(
         name="drs_finebins_combined",
         book_hists=book_drs_finebins_combined,
-        make_plots=None,
-        enabled_by_default=True,
-    ),
-    CaloXSequence(
-        name="drs_finebins_corr_combined",
-        book_hists=book_drs_finebins_corr_combined,
         make_plots=None,
         enabled_by_default=True,
     ),

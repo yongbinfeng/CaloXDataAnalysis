@@ -373,7 +373,10 @@ def book_drs_waveforms(ctx):
                 ctx, chan.get_channel_name(blsub=False), ymin, ymax,
                 with_time_ns=not chan.is_reference))
 
+    existing = [str(c) for c in ctx.rdf.GetColumnNames()]
     for _, mcp_channel in get_mcp_channels(ctx.run_number).items():
+        if f"{mcp_channel}_blsub" not in existing:
+            continue
         ymin, ymax = get_drs_plot_ranges(subtractMedian=True, is_mcp=True)
         hists.extend(_book_drs_channel_waveforms_2d(ctx, mcp_channel, ymin, ymax))
 
@@ -390,7 +393,10 @@ def book_drs_profiles(ctx):
                 ctx, chan.get_channel_name(blsub=False),
                 with_time_ns=not chan.is_reference))
 
+    existing = [str(c) for c in ctx.rdf.GetColumnNames()]
     for _, mcp_channel in get_mcp_channels(ctx.run_number).items():
+        if f"{mcp_channel}_blsub" not in existing:
+            continue
         hists.extend(_book_drs_channel_profiles(ctx, mcp_channel))
 
     ctx.hbook.add("drs_profiles.root", hists)

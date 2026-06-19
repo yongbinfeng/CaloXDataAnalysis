@@ -3,6 +3,16 @@ from utils.data_loader import is_scan_run
 import json
 from collections import OrderedDict
 
+# Run number at which DRS branches gained the "Brg{N}_" prefix.
+_DRS_BRG_RUN = 1700
+
+
+def _drs(board, group, ch, brg=None):
+    """Build a DRS channel branch name, optionally with a bridge prefix."""
+    if brg is not None:
+        return f"DRS_Brg{brg}_Board{board}_Group{group}_Channel{ch}"
+    return f"DRS_Board{board}_Group{group}_Channel{ch}"
+
 f_triggerdelay = "data/triggerdelay.json"
 with open(f_triggerdelay, 'r') as f:
     triggerdelay = json.load(f)
@@ -345,8 +355,18 @@ def build_drs_boards(run=316):
         DRSBoards["Board4"] = buildDRSBoardTestBeam(board_no=4)
         DRSBoards["Board5"] = buildDRSBoardTestBeam(board_no=5)
         DRSBoards["Board6"] = buildDRSBoardTestBeam(board_no=6)
+    elif run >= _DRS_BRG_RUN:
+        # 2025+ test beam: 3 calo boards (0, 1, 2), all channels are signal (no MCP)
+        DRSBoards["Board0"] = base_DRSBoard_3mm.copy(board_no=0)
+        DRSBoards["Board1"] = base_DRSBoard_3mm.copy(board_no=1)
+        DRSBoards["Board2"] = base_DRSBoard_3mm.copy(board_no=2)
+
+        DRSBoards["Board0"].move_to(-1.5, 1.875)
+        DRSBoards["Board1"].move_to(-1.5, -0.125)
+        DRSBoards["Board2"].move_to(0.5, 1.875)
+
     elif run >= 1342:
-        # september 2nd test beam channel maps
+        # September 2024 test beam: 4 calo boards + 3 test beam boards
         DRSBoards["Board0"] = base_DRSBoard_3mm.copy(board_no=0)
         DRSBoards["Board1"] = base_DRSBoard_3mm.copy(board_no=1)
         DRSBoards["Board2"] = base_DRSBoard_3mm.copy(board_no=2)
@@ -372,6 +392,11 @@ def build_drs_boards(run=316):
 
     else:
         raise ValueError(f"Unsupported run number {run} for DRS boards.")
+
+    if run >= _DRS_BRG_RUN:
+        for board in DRSBoards.values():
+            board.set_bridge_no(1)
+
     update_quartz_channels(DRSBoards)
     return DRSBoards
 
@@ -710,20 +735,21 @@ def build_time_reference_channels(run=316):
         # since no drs boards
         return time_reference_channels
 
+    brg = 1 if run >= _DRS_BRG_RUN else None
     if run < 685:
-        time_reference_channels.append("DRS_Board0_Group3_Channel7")
-        time_reference_channels.append("DRS_Board2_Group3_Channel7")
-        time_reference_channels.append("DRS_Board1_Group0_Channel0")
+        time_reference_channels.append(_drs(0, 3, 7))
+        time_reference_channels.append(_drs(2, 3, 7))
+        time_reference_channels.append(_drs(1, 0, 0))
     elif run >= 685:
-        time_reference_channels.append("DRS_Board1_Group0_Channel8")
-        time_reference_channels.append("DRS_Board1_Group1_Channel8")
-        time_reference_channels.append("DRS_Board1_Group2_Channel8")
-        time_reference_channels.append("DRS_Board1_Group3_Channel8")
-        time_reference_channels.append("DRS_Board2_Group0_Channel8")
-        time_reference_channels.append("DRS_Board2_Group1_Channel8")
-        time_reference_channels.append("DRS_Board2_Group2_Channel8")
-        time_reference_channels.append("DRS_Board2_Group3_Channel8")
-        time_reference_channels.append("DRS_Board0_Group0_Channel8")
+        time_reference_channels.append(_drs(1, 0, 8, brg))
+        time_reference_channels.append(_drs(1, 1, 8, brg))
+        time_reference_channels.append(_drs(1, 2, 8, brg))
+        time_reference_channels.append(_drs(1, 3, 8, brg))
+        time_reference_channels.append(_drs(2, 0, 8, brg))
+        time_reference_channels.append(_drs(2, 1, 8, brg))
+        time_reference_channels.append(_drs(2, 2, 8, brg))
+        time_reference_channels.append(_drs(2, 3, 8, brg))
+        time_reference_channels.append(_drs(0, 0, 8, brg))
     else:
         raise ValueError(
             f"Unsupported run number {run} for time reference channels.")
@@ -741,12 +767,13 @@ def build_hodo_trigger_channels(run=316):
         # since no drs boards
         return hodo_trigger_channels
 
+    brg = 1 if run >= _DRS_BRG_RUN else None
     if run < 685:
-        hodo_trigger_channels.append("DRS_Board1_Group2_Channel0")
-        hodo_trigger_channels.append("DRS_Board1_Group2_Channel1")
+        hodo_trigger_channels.append(_drs(1, 2, 0))
+        hodo_trigger_channels.append(_drs(1, 2, 1))
     elif run >= 685:
-        hodo_trigger_channels.append("DRS_Board0_Group2_Channel0")
-        hodo_trigger_channels.append("DRS_Board0_Group2_Channel1")
+        hodo_trigger_channels.append(_drs(0, 2, 0, brg))
+        hodo_trigger_channels.append(_drs(0, 2, 1, brg))
     else:
         raise ValueError(
             f"Unsupported run number {run} for hodoscope trigger channels.")
@@ -764,82 +791,32 @@ def build_hodo_pos_channels(run=316):
         # since no drs boards
         return hodoscope_channels
 
-    hodoscope_channels["TopX"] = [
-        "DRS_Board1_Group0_Channel1",
-        "DRS_Board1_Group0_Channel2",
-    ]
-    hodoscope_channels["TopZ"] = [
-        "DRS_Board1_Group0_Channel3",
-        "DRS_Board1_Group0_Channel4",
-    ]
-    hodoscope_channels["BottomX"] = [
-        "DRS_Board1_Group0_Channel5",
-        "DRS_Board1_Group0_Channel6",
-    ]
+    brg = 1 if run >= _DRS_BRG_RUN else None
+    hodoscope_channels["TopX"] = [_drs(1, 0, 1), _drs(1, 0, 2)]
+    hodoscope_channels["TopZ"] = [_drs(1, 0, 3), _drs(1, 0, 4)]
+    hodoscope_channels["BottomX"] = [_drs(1, 0, 5), _drs(1, 0, 6)]
     if run < 583:
-        # bottom z seems to have flipped left and right
-        hodoscope_channels["BottomZ"] = [
-            "DRS_Board1_Group1_Channel0",
-            "DRS_Board1_Group0_Channel7",
-        ]
+        hodoscope_channels["BottomZ"] = [_drs(1, 1, 0), _drs(1, 0, 7)]
     elif run >= 583:
-        hodoscope_channels["BottomZ"] = [
-            "DRS_Board1_Group0_Channel7",
-            "DRS_Board1_Group1_Channel0",
-        ]
+        hodoscope_channels["BottomZ"] = [_drs(1, 0, 7), _drs(1, 1, 0)]
 
     if run >= 685 and run < 1170:
-        # For runs >= 685, board 0 is used for hodoscope position channels
-        hodoscope_channels["TopX"] = [
-            "DRS_Board0_Group0_Channel0",
-            "DRS_Board0_Group0_Channel1",
-        ]
-        hodoscope_channels["TopZ"] = [
-            "DRS_Board0_Group0_Channel2",
-            "DRS_Board0_Group0_Channel3",
-        ]
-        hodoscope_channels["BottomX"] = [
-            "DRS_Board0_Group0_Channel4",
-            "DRS_Board0_Group0_Channel5",
-        ]
-        hodoscope_channels["BottomZ"] = [
-            "DRS_Board0_Group0_Channel6",
-            "DRS_Board0_Group0_Channel7",
-        ]
+        hodoscope_channels["TopX"] = [_drs(0, 0, 0, brg), _drs(0, 0, 1, brg)]
+        hodoscope_channels["TopZ"] = [_drs(0, 0, 2, brg), _drs(0, 0, 3, brg)]
+        hodoscope_channels["BottomX"] = [_drs(0, 0, 4, brg), _drs(0, 0, 5, brg)]
+        hodoscope_channels["BottomZ"] = [_drs(0, 0, 6, brg), _drs(0, 0, 7, brg)]
 
     if run >= 1170 and run < 1327:
-        # test beam
-        # Left and right; top and bottom for Hodoscope2
-        # 1170 is not exactly the first run number
         hodoscope_channels = {}
-        hodoscope_channels["LR1"] = [
-            "DRS_Board7_Group0_Channel4",
-            "DRS_Board7_Group0_Channel5",
-        ]
-        hodoscope_channels["UD1"] = [
-            "DRS_Board7_Group0_Channel6",
-            "DRS_Board7_Group0_Channel7",
-        ]
+        hodoscope_channels["LR1"] = [_drs(7, 0, 4), _drs(7, 0, 5)]
+        hodoscope_channels["UD1"] = [_drs(7, 0, 6), _drs(7, 0, 7)]
 
     if run >= 1342:
-        # Left and right; top and bottom for Hodoscope2
         hodoscope_channels = {}
-        hodoscope_channels["LR1"] = [
-            "DRS_Board7_Group0_Channel0",
-            "DRS_Board7_Group0_Channel1",
-        ]
-        hodoscope_channels["UD1"] = [
-            "DRS_Board7_Group0_Channel2",
-            "DRS_Board7_Group0_Channel3",
-        ]
-        hodoscope_channels["LR2"] = [
-            "DRS_Board7_Group0_Channel4",
-            "DRS_Board7_Group0_Channel5",
-        ]
-        hodoscope_channels["UD2"] = [
-            "DRS_Board7_Group0_Channel6",
-            "DRS_Board7_Group0_Channel7",
-        ]
+        hodoscope_channels["LR1"] = [_drs(7, 0, 0, brg), _drs(7, 0, 1, brg)]
+        hodoscope_channels["UD1"] = [_drs(7, 0, 2, brg), _drs(7, 0, 3, brg)]
+        hodoscope_channels["LR2"] = [_drs(7, 0, 4, brg), _drs(7, 0, 5, brg)]
+        hodoscope_channels["UD2"] = [_drs(7, 0, 6, brg), _drs(7, 0, 7, brg)]
 
     return hodoscope_channels
 
@@ -861,21 +838,21 @@ def findDRSTriggerMap(channel, run=1040):
 
 
 def get_hole_veto_channel(run=1184):
+    brg = 1 if run >= _DRS_BRG_RUN else None
     if run < 1183:
         return None
     elif run < 1327:
-        return "DRS_Board7_Group1_Channel6"
+        return _drs(7, 1, 6)
     else:
         return get_service_drs_channels(run)["HoleVeto"]
 
 
 def get_downstream_muon_channel(run=1184):
+    brg = 1 if run >= _DRS_BRG_RUN else None
     if run < 1183:
         return None
-    elif run < 1327:
-        return "DRS_Board7_Group1_Channel0"
     else:
-        return "DRS_Board7_Group1_Channel0"
+        return _drs(7, 1, 0, brg)
 
 
 def get_downstream_ttu_muon_channel(run=1184):
@@ -894,7 +871,7 @@ def get_pre_shower_channel(run=1184):
     if run < 1183:
         return None
     elif run < 1327:
-        return "DRS_Board7_Group1_Channel1"
+        return _drs(7, 1, 1)
     else:
         return get_service_drs_channels(run)["PSD"]
 
@@ -903,40 +880,34 @@ def get_cerenkov_counters(run=1184):
     """
     Returns a list of Cerenkov counter channels.
     """
+    brg = 1 if run >= _DRS_BRG_RUN else None
     if run < 1183:
         return []
     elif run < 1327:
-        return [
-            "DRS_Board7_Group1_Channel2",
-            "DRS_Board7_Group1_Channel3",
-            "DRS_Board7_Group1_Channel4",
-            "DRS_Board7_Group1_Channel5",
-        ]
+        return [_drs(7, 1, 2), _drs(7, 1, 3), _drs(7, 1, 4), _drs(7, 1, 5)]
     else:
-        return [
-            "DRS_Board7_Group2_Channel5",
-            "DRS_Board7_Group2_Channel6",
-            "DRS_Board7_Group2_Channel7",
-        ]
+        return [_drs(7, 2, 5, brg), _drs(7, 2, 6, brg), _drs(7, 2, 7, brg)]
 
 
 def get_mcp_channels(run=1184):
     """
-    Returns a list of MCP channels.
+    Returns a dict of MCP detector name -> channel branch name.
     """
-    # todo: add MCP channels for August test beam
-    if run < 1342:
-        return []
+    brg = 1 if run >= _DRS_BRG_RUN else None
+    if run < 1342 or run >= _DRS_BRG_RUN:
+        # no MCP for runs before Sep 2024 test beam or 2025+ (all channels are signal)
+        return {}
     else:
+        # 4 calo boards, Sep 2024 test beam
         return {
-            "MCP_DS_0": "DRS_Board0_Group3_Channel6",
-            "MCP_DS_1": "DRS_Board1_Group3_Channel6",
-            "MCP_DS_2": "DRS_Board2_Group3_Channel6",
-            "MCP_DS_3": "DRS_Board3_Group3_Channel6",
-            "MCP_US_0": "DRS_Board0_Group3_Channel7",
-            "MCP_US_1": "DRS_Board1_Group3_Channel7",
-            "MCP_US_2": "DRS_Board2_Group3_Channel7",
-            "MCP_US_3": "DRS_Board3_Group3_Channel7",
+            "MCP_DS_0": _drs(0, 3, 6, brg),
+            "MCP_DS_1": _drs(1, 3, 6, brg),
+            "MCP_DS_2": _drs(2, 3, 6, brg),
+            "MCP_DS_3": _drs(3, 3, 6, brg),
+            "MCP_US_0": _drs(0, 3, 7, brg),
+            "MCP_US_1": _drs(1, 3, 7, brg),
+            "MCP_US_2": _drs(2, 3, 7, brg),
+            "MCP_US_3": _drs(3, 3, 7, brg),
         }
 
 
@@ -944,49 +915,33 @@ def get_service_drs_channels(run=1184):
     """
     Returns a list of service DRS channels.
     """
+    brg = 1 if run >= _DRS_BRG_RUN else None
     if run < 1183:
         return []
     elif run < 1260:
-        return [
-            "DRS_Board7_Group0_Channel0",
-            "DRS_Board7_Group0_Channel1",
-            "DRS_Board7_Group0_Channel2",
-            "DRS_Board7_Group0_Channel3",
-            "DRS_Board7_Group0_Channel4",
-            "DRS_Board7_Group0_Channel5",
-            "DRS_Board7_Group0_Channel6",
-            "DRS_Board7_Group0_Channel7",
-            "DRS_Board7_Group1_Channel0",
-            "DRS_Board7_Group1_Channel1",
-            "DRS_Board7_Group1_Channel2",
-            "DRS_Board7_Group1_Channel3",
-            "DRS_Board7_Group1_Channel4",
-            "DRS_Board7_Group1_Channel5",
-            "DRS_Board7_Group1_Channel6",
-            "DRS_Board7_Group1_Channel7",
-        ]
+        return [_drs(7, g, c) for g in range(2) for c in range(8)]
     else:
         return {
-            "DWC1Left": "DRS_Board7_Group0_Channel0",
-            "DWC1Right": "DRS_Board7_Group0_Channel1",
-            "DWC1Up": "DRS_Board7_Group0_Channel2",
-            "DWC1Down": "DRS_Board7_Group0_Channel3",
-            "DWC2Left": "DRS_Board7_Group0_Channel4",
-            "DWC2Right": "DRS_Board7_Group0_Channel5",
-            "DWC2Up": "DRS_Board7_Group0_Channel6",
-            "DWC2Down": "DRS_Board7_Group0_Channel7",
-            "MuonVeto": "DRS_Board7_Group1_Channel0",
-            "PSD": "DRS_Board7_Group1_Channel1",
-            "HoleVeto": "DRS_Board7_Group1_Channel6",
-            "NC": "DRS_Board7_Group1_Channel7",
-            "T3": "DRS_Board7_Group2_Channel0",
-            "T4": "DRS_Board7_Group2_Channel1",
-            "KT1": "DRS_Board7_Group2_Channel2",
-            "KT2": "DRS_Board7_Group2_Channel3",
-            "TTUMuonVeto": "DRS_Board7_Group2_Channel4",
-            "Cer474": "DRS_Board7_Group2_Channel5",
-            "Cer519": "DRS_Board7_Group2_Channel6",
-            "Cer537": "DRS_Board7_Group2_Channel7",
+            "DWC1Left":   _drs(7, 0, 0, brg),
+            "DWC1Right":  _drs(7, 0, 1, brg),
+            "DWC1Up":     _drs(7, 0, 2, brg),
+            "DWC1Down":   _drs(7, 0, 3, brg),
+            "DWC2Left":   _drs(7, 0, 4, brg),
+            "DWC2Right":  _drs(7, 0, 5, brg),
+            "DWC2Up":     _drs(7, 0, 6, brg),
+            "DWC2Down":   _drs(7, 0, 7, brg),
+            "MuonVeto":   _drs(7, 1, 0, brg),
+            "PSD":        _drs(7, 1, 1, brg),
+            "HoleVeto":   _drs(7, 1, 6, brg),
+            "NC":         _drs(7, 1, 7, brg),
+            "T3":         _drs(7, 2, 0, brg),
+            "T4":         _drs(7, 2, 1, brg),
+            "KT1":        _drs(7, 2, 2, brg),
+            "KT2":        _drs(7, 2, 3, brg),
+            "TTUMuonVeto":_drs(7, 2, 4, brg),
+            "Cer474":     _drs(7, 2, 5, brg),
+            "Cer519":     _drs(7, 2, 6, brg),
+            "Cer537":     _drs(7, 2, 7, brg),
         }
 
 
