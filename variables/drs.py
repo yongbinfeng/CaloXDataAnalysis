@@ -12,7 +12,8 @@ MCP_REF = "MCP_DS_0"
 # Column naming convention — uppercase prefix = scalar, lowercase prefix = RVec array:
 #   _ref_TS          scalar: LED discriminator crossing time slice of the reference channel (Channel8)
 #   _ref_TS_peak     scalar: peak position time slice of the reference channel
-#   _TS_cfd          scalar float: CFD crossing time slice from compute_cfd_integral
+#   _TS_cfd          scalar float: CFD crossing ti
+# me slice from compute_cfd_integral
 #   _TS_peak         scalar float: peak position time slice from compute_cfd_integral
 #   _TS_cfd_ref      scalar: _TS_cfd corrected for the reference channel timing
 #   _TS_peak_ref     scalar: _TS_peak corrected for the reference channel timing
@@ -194,7 +195,7 @@ def process_drs_channels(rdf, drs_channel_names, mcp_det="MCP_US_0"):
         channelName_blsub = channel_name + "_blsub"
 
         rdf = rdf.Define(f"{channel_name}_CFD",
-                         f"compute_cfd_integral({channelName_blsub})")
+                         f"compute_cfd_integral({channelName_blsub}, 1, 3.0, 200, 220, 3, 15)")
         rdf = rdf.Define(f"{channel_name}_energy",
                          f"{channel_name}_CFD.energy")
         rdf = rdf.Define(f"{channel_name}_TS_cfd",
