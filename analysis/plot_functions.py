@@ -14,9 +14,13 @@ from channels.channel_map import (
 from channels.validate_map import DrawDRSBoards, DrawFERSBoards
 from plotting.my_function import LHistos2Hist
 from configs.plot_config import (get_drs_plot_ranges, get_drs_cfd_finebins_range,
-                                  get_drs_prof_plot_ranges, get_drs_time_arr_ns_range,
-                                  get_drs_time_ns_finebins_range,
-                                  getRangesForFERSEnergySums, get_ttu_hodo_ranges)
+                                 get_drs_energy_range, get_drs_peak_value_range,
+                                 get_drs_sum_vs_fers_ranges, get_fers_vs_drs_xmax,
+                                 get_drs_prof_plot_ranges, get_drs_time_arr_ns_range,
+                                 get_drs_time_ns_finebins_range,
+                                 get_fers_1d_range, get_fers_max_range,
+                                 get_fers_2d_hg_lg_range, get_fers_2d_mix_lg_range,
+                                 getRangesForFERSEnergySums, get_ttu_hodo_ranges)
 from utils.colors import colors
 from core.plot_manager import PlotManager
 from configs.plot_style import PlotStyle, STYLE_CER, STYLE_SCI, STYLE_CER_SCI
@@ -24,9 +28,9 @@ from plotting.calox_plot_helper import BoardPlotHelper, create_pave_text, create
 from utils.utils import number_to_string, round_up_to_1eN, get_channel_var, get_hist_mpv
 from variables.drs import get_arr_name
 from utils.visualization import (visualizeFERSBoards, visualizeDRSBoards,
-                                  FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY,
-                                  FERS_YMIN_DISPLAY, FERS_YMAX_DISPLAY,
-                                  FERS_W_REF, FERS_H_REF)
+                                 FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY,
+                                 FERS_YMIN_DISPLAY, FERS_YMAX_DISPLAY,
+                                 FERS_W_REF, FERS_H_REF)
 
 
 # ---------------------------------------------------------------------------
@@ -217,7 +221,7 @@ def plot_fers_channels(ctx):
         pm.set_output_dir("FERS_1D")
         infile = pm._get_file("fers_all_channels_1d.root")
 
-        _xrange = {"HG": (0, 800), "LG": (0, 300)}
+        _xrange = {g: r[1:] for g, r in get_fers_1d_range().items()}
         for gain in ["HG", "LG"]:
             for fersboard in ctx.fersboards.values():
                 board_no = fersboard.board_no
@@ -232,10 +236,13 @@ def plot_fers_channels(ctx):
                         print(
                             f"Warning: Hists not found Board{board_no} Tower({i_tower_x},{i_tower_y}) {gain}")
                         continue
-                    cer_ch = fersboard.get_channel_by_tower(i_tower_x, i_tower_y, isCer=True).channel_no
-                    sci_ch = fersboard.get_channel_by_tower(i_tower_x, i_tower_y, isCer=False).channel_no
+                    cer_ch = fersboard.get_channel_by_tower(
+                        i_tower_x, i_tower_y, isCer=True).channel_no
+                    sci_ch = fersboard.get_channel_by_tower(
+                        i_tower_x, i_tower_y, isCer=False).channel_no
                     pave = create_pave_text(0.20, 0.65, 0.60, 0.90)
-                    pave.AddText(f"Board: {board_no}, Tower: ({i_tower_x}, {i_tower_y})")
+                    pave.AddText(
+                        f"Board: {board_no}, Tower: ({i_tower_x}, {i_tower_y})")
                     pave.AddText(f"Cer Ch: {cer_ch}")
                     pave.AddText(f"Sci Ch: {sci_ch}")
                     pm.plot_1d(
@@ -299,14 +306,18 @@ def plot_fers_stats(ctx, *, do_mean=True, do_max=True, do_satfreq=True, do_pedes
                 board_hists[f"{key}_Sci"] = sci_hists
 
         helper = BoardPlotHelper(pm,
-                                  xrange=(FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY),
-                                  yrange=(FERS_YMIN_DISPLAY, FERS_YMAX_DISPLAY),
-                                  W_ref=FERS_W_REF, H_ref=FERS_H_REF)
+                                 xrange=(FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY),
+                                 yrange=(FERS_YMIN_DISPLAY, FERS_YMAX_DISPLAY),
+                                 W_ref=FERS_W_REF, H_ref=FERS_H_REF)
         plot_configs = [
-            ("mean",     "FERS/Stat/Channel_Mean.html",     0,   8000, 0, "Mean ADC",          do_mean),
-            ("max",      "FERS/Stat/Channel_Max.html",      0,   8000, 0, "Max ADC",            do_max),
-            ("satfreq",  "FERS/Stat/Channel_SatFreq.html",  0,   1,    2, "Saturation Rate",    do_satfreq),
-            ("pedestal", "FERS/Stat/Channel_Pedestal.html", 100, 300,  0, "Pedestal [ADC]",     do_pedestal),
+            ("mean",     "FERS/Stat/Channel_Mean.html",
+             0,   8000, 0, "Mean ADC",          do_mean),
+            ("max",      "FERS/Stat/Channel_Max.html",
+             0,   8000, 0, "Max ADC",            do_max),
+            ("satfreq",  "FERS/Stat/Channel_SatFreq.html",
+             0,   1,    2, "Saturation Rate",    do_satfreq),
+            ("pedestal", "FERS/Stat/Channel_Pedestal.html",
+             100, 300,  0, "Pedestal [ADC]",     do_pedestal),
         ]
         for stat, html_path, zmin, zmax, digits, zlabel, do_run in plot_configs:
             if not do_run:
@@ -331,7 +342,7 @@ def plot_fers_max(ctx):
     with _pm(ctx) as pm:
         pm.set_output_dir("FERS_MaxValues")
         infile = pm._get_file("fers_max_values.root")
-        xmin, xmax = 7500, 8500
+        _, xmin, xmax = get_fers_max_range()
         board_hists = {"Cer_HG": [], "Sci_HG": [], "Cer_LG": [], "Sci_LG": []}
         legends = []
 
@@ -408,7 +419,8 @@ def plot_fers_2d(ctx):
                     pm.plot_2d(
                         hist,
                         f"FERS_Board{board_no}_{var}_{s_x}_{s_y}_hg_VS_lg",
-                        "HG [ADC]", (0, 9000), "LG [ADC]", (0, 1500),
+                        "HG [ADC]", get_fers_2d_hg_lg_range(
+                        )[1:3], "LG [ADC]", get_fers_2d_hg_lg_range()[4:6],
                         style=_STYLE_2D_LOG, extraToDraw=pave)
         return pm.generate_html("FERS/LG_vs_HG.html", plots_per_row=4)
 
@@ -507,7 +519,8 @@ def plot_fers_lg_vs_mix(ctx):
                     pm.plot_2d(
                         hist,
                         f"FERS_Board{board_no}_{var}_{s_x}_{s_y}_mix_VS_lg",
-                        "Mix [ADC]", (0, 40000), "LG [ADC]", (0, 2000),
+                        "Mix [ADC]", get_fers_2d_mix_lg_range(
+                        )[1:3], "LG [ADC]", get_fers_2d_mix_lg_range()[4:6],
                         style=_STYLE_2D_LOG, extraToDraw=pave)
         return pm.generate_html("FERS/LG_vs_Mix.html", plots_per_row=4)
 
@@ -521,8 +534,10 @@ def plot_fers_cer_vs_sci(ctx):
             cfg = getRangesForFERSEnergySums(
                 pdsub=True, calib=calib, clip=False, HE=HE,
                 run_number=ctx.run_number, beam_energy=ctx.beam_energy)
-            vc = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=True,  pdsub=True, calib=calib)
-            vs = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=False, pdsub=True, calib=calib)
+            vc = ctx.fersboards.get_energy_sum_name(
+                gain=gain, isCer=True,  pdsub=True, calib=calib)
+            vs = ctx.fersboards.get_energy_sum_name(
+                gain=gain, isCer=False, pdsub=True, calib=calib)
             hist = infile.Get(f"hist_{vc}_VS_{vs}")
             if not hist:
                 continue
@@ -532,14 +547,19 @@ def plot_fers_cer_vs_sci(ctx):
             if gain == "Mix":
                 for fn, col in [("x", ROOT.kRed), ("0.5*x", ROOT.kBlue)]:
                     f = ROOT.TF1(f"f_{fn}_{gain}", fn, 0, 200)
-                    f.SetLineColor(col); f.SetLineStyle(2); f.SetLineWidth(2)
+                    f.SetLineColor(col)
+                    f.SetLineStyle(2)
+                    f.SetLineWidth(2)
                     extra.append(f)
             pm.plot_2d(hist, f"FERS_Total_Cer_VS_Sci_{gain}",
                        f"Sci {gain_title}",
-                       (cfg["xmin_total"][f"{gain}_sci"], cfg["xmax_total"][f"{gain}_sci"]),
+                       (cfg["xmin_total"][f"{gain}_sci"],
+                        cfg["xmax_total"][f"{gain}_sci"]),
                        f"Cer {gain_title}",
-                       (cfg["xmin_total"][f"{gain}_cer"], cfg["xmax_total"][f"{gain}_cer"]),
-                       style=PlotStyle(dology=False, dologz=True, drawoptions="COLZ", zmin=1),
+                       (cfg["xmin_total"][f"{gain}_cer"],
+                        cfg["xmax_total"][f"{gain}_cer"]),
+                       style=PlotStyle(dology=False, dologz=True,
+                                       drawoptions="COLZ", zmin=1),
                        extraToDraw=extra or None, prepend=True, usePDF=True)
             if gain == "Mix":
                 pm.add_newline()
@@ -547,14 +567,16 @@ def plot_fers_cer_vs_sci(ctx):
                     h = infile.Get(f"hist_{vx}_VS_PSD_Sum")
                     if h:
                         pm.plot_2d(h, f"FERS_Total_{cat}_VS_PSD_{gain}",
-                                   "PSD Sum [ADC]", get_service_drs_processed_info_ranges("PSD", "sum"),
+                                   "PSD Sum [ADC]", get_service_drs_processed_info_ranges(
+                                       "PSD", "sum"),
                                    f"{cat} {gain_title}",
                                    (cfg[f"xmin_total"][f"{gain}_{cat.lower()}"],
                                     cfg[f"xmax_total"][f"{gain}_{cat.lower()}"]),
                                    style=PlotStyle(dology=False, dologz=True, drawoptions="COLZ", zmin=1))
                         prof = h.ProfileX(f"prof_{h.GetName()}", 1, -1)
                         pm.plot_1d(prof, f"FERS_Total_{cat}_VS_PSD_{gain}_Prof",
-                                   "PSD Sum [ADC]", get_service_drs_processed_info_ranges("PSD", "sum"),
+                                   "PSD Sum [ADC]", get_service_drs_processed_info_ranges(
+                                       "PSD", "sum"),
                                    f"{cat} {gain_title}",
                                    style=PlotStyle(dology=False, drawoptions="HIST", mycolors=[2 if cat == "Cer" else 4]))
         return pm.generate_html("FERS/Cer_VS_Sci.html", plots_per_row=3,
@@ -567,8 +589,10 @@ def plot_fers_dr(ctx):
     cfg = getRangesForFERSEnergySums(
         pdsub=True, calib=calib, clip=False, HE=HE,
         run_number=ctx.run_number, beam_energy=ctx.beam_energy)
-    vc = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=True,  pdsub=True, calib=calib)
-    vs = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=False, pdsub=True, calib=calib)
+    vc = ctx.fersboards.get_energy_sum_name(
+        gain=gain, isCer=True,  pdsub=True, calib=calib)
+    vs = ctx.fersboards.get_energy_sum_name(
+        gain=gain, isCer=False, pdsub=True, calib=calib)
     xlo, xhi = cfg["xmin_total"][f"{gain}_sci"], cfg["xmax_total"][f"{gain}_sci"]
 
     with _pm(ctx) as pm:
@@ -576,7 +600,7 @@ def plot_fers_dr(ctx):
         infile = pm._get_file("fers_dr.root")
 
         for var_sfx, xlabel, xrange in [("OuterRing", "Leakage Energy", (0, 20)),
-                                         ("LeakCorr",  f"Leak-corrected [{cfg[f'title_{gain}']}]", (xlo, xhi))]:
+                                        ("LeakCorr",  f"Leak-corrected [{cfg[f'title_{gain}']}]", (xlo, xhi))]:
             hl = [infile.Get(f"hist_{v}_{var_sfx}") for v in [vc, vs]]
             hl = [h for h in hl if h]
             if hl:
@@ -599,11 +623,12 @@ def plot_fers_dr(ctx):
                        style=PlotStyle(dology=False, drawoptions="HIST", mycolors=[6]))
         pm.add_newline()
 
-        hists_combined, legends_combined, tf1s, pave = [], [], [], create_pave_text(0.20, 0.65, 0.60, 0.90)
+        hists_combined, legends_combined, tf1s, pave = [], [
+        ], [], create_pave_text(0.20, 0.65, 0.60, 0.90)
         for label, vn in [("Cer", vc), ("Sci", vs),
-                           ("DR", vc.replace("Cer", "DR")),
-                           ("DR m2", vc.replace("Cer", "DR") + "_method2"),
-                           ("DR m3", vc.replace("Cer", "DR") + "_method3")]:
+                          ("DR", vc.replace("Cer", "DR")),
+                          ("DR m2", vc.replace("Cer", "DR") + "_method2"),
+                          ("DR m3", vc.replace("Cer", "DR") + "_method3")]:
             h = infile.Get(f"hist_{vn}" if label in ("DR", "DR m2", "DR m3") else
                            f"hist_{vn}")
             if h and h.Integral() > 0:
@@ -632,8 +657,9 @@ def plot_fers_dr(ctx):
                     pm.plot_2d(h, f"FERS_DR_{sfx}_VS_DR{method}",
                                f"DR{method}", (xlo, xhi),
                                f"[{cfg[f'title_{gain}']}]", (cfg[f"xmin_total"][f"{gain}_{cat}"],
-                                                                    cfg[f"xmax_total"][f"{gain}_{cat}"]),
-                               style=PlotStyle(dology=False, dologz=True, drawoptions="COLZ", zmin=1),
+                                                             cfg[f"xmax_total"][f"{gain}_{cat}"]),
+                               style=PlotStyle(
+                                   dology=False, dologz=True, drawoptions="COLZ", zmin=1),
                                extra_text=sfx)
 
         return pm.generate_html("FERS/DR.html", plots_per_row=4, title="FERS Dual Readout")
@@ -656,7 +682,8 @@ def plot_fers_ewc(ctx):
                 h = infile.Get(f"hist_{vn}")
                 if h:
                     pave = create_pave_text(0.20, 0.85, 0.60, 0.90)
-                    pave.AddText(f"Mean = {h.GetMean():.2f}, RMS = {h.GetRMS():.2f}")
+                    pave.AddText(
+                        f"Mean = {h.GetMean():.2f}, RMS = {h.GetRMS():.2f}")
                     pm.plot_1d(h, f"FERS_{cat.capitalize()}_EWC_{axis}",
                                f"EWC {axis} [cm]", (-15, 15),
                                style=style, extraToDraw=pave, extra_text=cat.capitalize())
@@ -779,7 +806,8 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_mcp_vs_ts=False):
     output_htmls = []
 
     if do_drs_vs_ts:
-        for mode in ["mcp"]:
+        # for mode in ["mcp"]:
+        for mode in ["raw"]:
             with _pm(ctx) as pm:
                 pm.set_output_dir("DRS_VS_TS")
                 infile = pm._get_file("drs_vs_ts.root")
@@ -791,7 +819,8 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_mcp_vs_ts=False):
                             subtractMedian=True,
                             is_amplified=chan.is_amplified,
                             is6mm=chan.is6mm,
-                            is_reference=chan.is_reference)
+                            is_reference=chan.is_reference,
+                            run_number=ctx.run_number)
                         pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
                         pave.AddText(
                             f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
@@ -812,7 +841,8 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_mcp_vs_ts=False):
             pm.set_output_dir("Service_DRS_VS_TS")
             infile = pm._get_file("drs_vs_ts.root")
             for channel_name in list_mcp_channels:
-                ymin, ymax = get_drs_plot_ranges(subtractMedian=True, is_mcp=True)
+                ymin, ymax = get_drs_plot_ranges(
+                    subtractMedian=True, is_mcp=True)
                 pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
                 pave.AddText(channel_name)
                 _plot_drs_channel_vs_ts(
@@ -825,7 +855,7 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_mcp_vs_ts=False):
     return output_htmls
 
 
-def plot_drs_profiles(ctx, *, do_ts=True, do_time=True, do_mcp_only=True):
+def plot_drs_profiles(ctx, *, do_ts=True, do_time=True, do_mcp_only=False):
     """Plot DRS waveform profiles vs ts and vs time [ns]. Returns list of HTML paths."""
     output_htmls = []
 
@@ -920,14 +950,16 @@ def plot_drs_profiles(ctx, *, do_ts=True, do_time=True, do_mcp_only=True):
                     pave.AddText(
                         f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
                     if not chan.is_reference:
-                        pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                        pave.AddText(
+                            f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
                     var = get_channel_var(chan)
 
                     if do_mcp_only:
                         hists_to_plot = [h for h in [hist_mcp] if h]
-                        legends_to_use = ["ts"] if hist_mcp else []
+                        legends_to_use = ["ts mcp"] if hist_mcp else []
                     else:
-                        pairs = [(hist, "raw ts"), (hist_ref, "ts_ref"), (hist_mcp, "ts")]
+                        pairs = [(hist, "ts raw"), (hist_ref,
+                                                    "ts ref"), (hist_mcp, "ts mcp")]
                         hists_to_plot = [h for h, _ in pairs if h]
                         legends_to_use = [lbl for h, lbl in pairs if h]
 
@@ -987,7 +1019,8 @@ def plot_drs_profiles(ctx, *, do_ts=True, do_time=True, do_mcp_only=True):
                     pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
                     pave.AddText(
                         f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pave.AddText(
+                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
                     var = get_channel_var(chan)
                     pm.plot_1d(
                         [hist_time_mcp],
@@ -1003,7 +1036,8 @@ def plot_drs_profiles(ctx, *, do_ts=True, do_time=True, do_mcp_only=True):
                 corr_entries = []
                 for size_tag in _SIZES:
                     for var in sorted(_VARS, key=lambda v: _VAR_ORDER[v]):
-                        h = corr_file.Get(f"combo_prof_corr_{size_tag}_{var}_mcp")
+                        h = corr_file.Get(
+                            f"combo_prof_corr_{size_tag}_{var}_mcp")
                         if h:
                             corr_entries.append((h, var, size_tag))
                 corr_grouped = {
@@ -1016,7 +1050,8 @@ def plot_drs_profiles(ctx, *, do_ts=True, do_time=True, do_mcp_only=True):
                                             ("all", corr_grouped["all"])]:
                     _combo_group_plots(
                         pm, entries, group_name, "time [ns]",
-                        lambda hs: (hs[0].GetXaxis().GetXmin(), hs[0].GetXaxis().GetXmax()),
+                        lambda hs: (hs[0].GetXaxis().GetXmin(),
+                                    hs[0].GetXaxis().GetXmax()),
                         "DRS_ADC_Prof_VS_corr_Combined")
             except FileNotFoundError:
                 pass
@@ -1058,7 +1093,8 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False,
                     var = get_channel_var(chan)
                     pm.plot_1d(
                         hist, f"DRS_PeakValue_{ch}_{var}",
-                        "DRS peak value", (0, 800), "Counts", (0.9, None),
+                        "DRS peak value", get_drs_peak_value_range()[
+                            1:], "Counts", (0.9, None),
                         style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
             output_htmls.append(pm.generate_html(
                 "DRS/DRS_Peak.html", plots_per_row=9))
@@ -1086,7 +1122,8 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False,
                     var = get_channel_var(chan)
                     pm.plot_1d(
                         hist, f"DRS_Energy_{ch}_{var}",
-                        "CFD Energy", (0, 6000), "Counts", (0.9, None),
+                        "CFD Energy", get_drs_energy_range(
+                            chan.is6mm)[1:], "Counts", (0.9, None),
                         style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
             output_htmls.append(pm.generate_html(
                 "DRS/DRS_Sum.html", plots_per_row=9))
@@ -1112,7 +1149,8 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False,
                     pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
                     pave.AddText(
                         f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pave.AddText(
+                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
                     pm.plot_1d(
                         [hp_ref, hc_ref, hp_mcp, hc_mcp],
                         f"DRS_Time_{ch}_{var}",
@@ -1125,15 +1163,15 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False,
                 "DRS/DRS_Time.html", plots_per_row=9))
 
     # shared constants for finebins pages
-    _VAR_ORDER_FB  = {"CerQuartz": 0, "CerPlastic": 1, "Sci": 2}
+    _VAR_ORDER_FB = {"CerQuartz": 0, "CerPlastic": 1, "Sci": 2}
     _SIZE_ORDER_FB = {"3mm": 0, "6mm": 1}
-    _VAR_IS_CER    = {"CerQuartz": True, "CerPlastic": True, "Sci": False}
-    _SIZES_FB      = ("3mm", "6mm")
-    _VARS_FB       = ("CerQuartz", "CerPlastic", "Sci")
-    _COLORS_3_FB   = [ROOT.kRed+1, ROOT.kMagenta+1, ROOT.kBlue+1]
-    _COLORS_6_FB   = [ROOT.kRed+1, ROOT.kMagenta+1, ROOT.kBlue+1,
-                      ROOT.kGreen+2, ROOT.kOrange+1, ROOT.kCyan+2]
-    _NS_WINDOW     = 1.2  # ±1.2 ns window for MPV fit
+    _VAR_IS_CER = {"CerQuartz": True, "CerPlastic": True, "Sci": False}
+    _SIZES_FB = ("3mm", "6mm")
+    _VARS_FB = ("CerQuartz", "CerPlastic", "Sci")
+    _COLORS_3_FB = [ROOT.kRed+1, ROOT.kMagenta+1, ROOT.kBlue+1]
+    _COLORS_6_FB = [ROOT.kRed+1, ROOT.kMagenta+1, ROOT.kBlue+1,
+                    ROOT.kGreen+2, ROOT.kOrange+1, ROOT.kCyan+2]
+    _NS_WINDOW = 1.2  # ±1.2 ns window for MPV fit
 
     if do_timing_finebins_ts:
         # -- fine-binned CFD TS (MCP-corrected) --
@@ -1207,7 +1245,8 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False,
                     pave = create_pave_text(0.15, 0.75, 0.70, 0.90)
                     pave.AddText(
                         f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    pave.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pave.AddText(
+                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
                     if hist.GetEntries() >= 5:
                         mpv, mpv_err = get_hist_mpv(hist)
                         pave.AddText(f"MPV: {mpv:.1f} #pm {mpv_err:.1f} TS")
@@ -1227,7 +1266,8 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False,
             infile = pm._get_file("drs_stats.root")
 
             try:
-                corr_combo_file = pm._get_file("drs_finebins_corr_combined.root")
+                corr_combo_file = pm._get_file(
+                    "drs_finebins_corr_combined.root")
             except FileNotFoundError:
                 corr_combo_file = None
 
@@ -1235,7 +1275,8 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False,
             if corr_combo_file:
                 for size_tag in _SIZES_FB:
                     for var in sorted(_VARS_FB, key=lambda v: _VAR_ORDER_FB[v]):
-                        h = corr_combo_file.Get(f"combo_finebins_corr_{size_tag}_{var}")
+                        h = corr_combo_file.Get(
+                            f"combo_finebins_corr_{size_tag}_{var}")
                         if h:
                             corr_entries.append((h, var, size_tag))
 
@@ -1292,10 +1333,13 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False,
                     pave_ns = create_pave_text(0.15, 0.75, 0.70, 0.90)
                     pave_ns.AddText(
                         f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    pave_ns.AddText(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pave_ns.AddText(
+                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
                     if hist_ns.GetEntries() >= 5:
-                        mpv_ns, mpv_err_ns = get_hist_mpv(hist_ns, window_ts=_NS_WINDOW)
-                        pave_ns.AddText(f"MPV: {mpv_ns:.2f} #pm {mpv_err_ns:.2f} ns")
+                        mpv_ns, mpv_err_ns = get_hist_mpv(
+                            hist_ns, window_ts=_NS_WINDOW)
+                        pave_ns.AddText(
+                            f"MPV: {mpv_ns:.2f} #pm {mpv_err_ns:.2f} ns")
                     pm.plot_1d(
                         hist_ns, f"DRS_Time_FineBins_ns_{ch}_{var}",
                         "Time [ns]", (tfb_lo, tfb_hi),
@@ -1320,8 +1364,8 @@ def plot_drs_cfd_mpv(ctx):
     mpv_map_cq = {}    # CerQuartz only
     mpv_map_cp = {}    # CerPlastic only
     ns_mpv_map = {}    # all channels: corrected Time [ns] MPV
-    ns_mpv_map_cq = {} # CerQuartz only
-    ns_mpv_map_cp = {} # CerPlastic only
+    ns_mpv_map_cq = {}  # CerQuartz only
+    ns_mpv_map_cp = {}  # CerPlastic only
 
     for _, board in ctx.drsboards.items():
         for chan in board:
@@ -1404,7 +1448,6 @@ def plot_drs_cfd_mpv(ctx):
             ))
 
 
-
 # ---------------------------------------------------------------------------
 # DRS: peak time-slice
 # ---------------------------------------------------------------------------
@@ -1479,7 +1522,8 @@ def plot_drs_peak_ts(ctx, *, do_peak_ts=True, do_cer_vs_sci=True):
                         pm.plot_2d(
                             hist,
                             f"DRSPeakTS_Cer_VS_Sci_{s_x}_{s_y}",
-                            "Sci Peak TS", (400, 600), "Cer Peak TS", (400, 600),
+                            "Sci Peak TS", (400,
+                                            600), "Cer Peak TS", (400, 600),
                             style=PlotStyle(dologz=True, drawoptions="COLZ",
                                             zmin=1, zmax=1e2, addOverflow=False),
                             extraToDraw=diagonal)
@@ -1502,10 +1546,9 @@ def plot_drs_peak_ts(ctx, *, do_peak_ts=True, do_cer_vs_sci=True):
 # ---------------------------------------------------------------------------
 
 def plot_drs_sum_vs_fers(ctx):
-    xymax     = {"Cer": (20000, 8500),  "Sci": (30000, 8500)}
-    xymax_LG  = {"Cer": (20000, 2000),  "Sci": (30000, 4000)}
-    xymax_Mix = {"Cer": (40000, 40000), "Sci": (60000, 40000)}
-    _ranges = {"FERS": xymax, "FERSLG": xymax_LG, "FERSMix": xymax_Mix}
+    _sum_ranges = get_drs_sum_vs_fers_ranges()
+    _ranges = {"FERS": _sum_ranges["HG"],
+               "FERSLG": _sum_ranges["LG"], "FERSMix": _sum_ranges["Mix"]}
 
     with _pm(ctx) as pm:
         pm.set_output_dir("DRSSum_VS_FERS")
@@ -1529,7 +1572,8 @@ def plot_drs_sum_vs_fers(ctx):
                             tmp = _ranges[gain_tag][var]
                             pm.plot_2d(
                                 hist, hname.replace("hist_", ""),
-                                f"{gain_tag} [ADC]", (0, tmp[1]), "DRS Sum [ADC]", (0, tmp[0]),
+                                f"{gain_tag} [ADC]", (0, tmp[1]
+                                                      ), "DRS Sum [ADC]", (0, tmp[0]),
                                 style=PlotStyle(dologz=True, drawoptions="COLZ",
                                                 zmin=1, zmax=zmax),
                                 extra_text=var)
@@ -1546,7 +1590,8 @@ def plot_drs_sum_vs_fers(ctx):
                     tmp = _ranges[gain_tag][var]
                     pm.plot_2d(
                         combined, f"DRSSum_VS_{gain_tag}_{var}_Combined",
-                        f"{gain_tag} [ADC]", (0, tmp[1]), "DRS Sum [ADC]", (0, tmp[0]),
+                        f"{gain_tag} [ADC]", (0, tmp[1]
+                                              ), "DRS Sum [ADC]", (0, tmp[0]),
                         style=PlotStyle(dologz=True, drawoptions="COLZ",
                                         zmin=1, zmax=zmax),
                         extra_text=var, prepend=True)
@@ -1572,7 +1617,7 @@ def plot_drs_peak_vs_fers(ctx):
                         subtractMedian=True,
                         is_amplified=chan.is_amplified,
                         is6mm=chan.is6mm)
-                    for gain_tag, xmax in [("FERS", 9000), ("FERSLG", 3000), ("FERSMix", 40000)]:
+                    for gain_tag, xmax in get_fers_vs_drs_xmax().items():
                         hname = f"hist_DRSPeak_VS_{gain_tag}_{var}_{s_x}_{s_y}"
                         hist = infile.Get(hname)
                         if not hist:
@@ -1580,7 +1625,8 @@ def plot_drs_peak_vs_fers(ctx):
                             continue
                         pm.plot_2d(
                             hist, hname.replace("hist_", ""),
-                            f"FERS {gain_tag} [ADC]", (0, xmax), "DRS Peak [ADC]", (0, ymax),
+                            f"FERS {gain_tag} [ADC]", (0,
+                                                       xmax), "DRS Peak [ADC]", (0, ymax),
                             style=PlotStyle(dologz=True, drawoptions="COLZ",
                                             zmin=1, zmax=None),
                             extra_text=var)
@@ -1726,7 +1772,8 @@ def _plot_pulse_correlations(channels, infile, pm, suffix, *, do_pid=True, do_tr
     det_list_notrigger = [d for d in det_list if d not in trigger_dets]
 
     output_htmls = []
-    corr_categories = [("PID", det_list_notrigger, do_pid), ("Trigger", trigger_dets, do_trigger)]
+    corr_categories = [("PID", det_list_notrigger, do_pid),
+                       ("Trigger", trigger_dets, do_trigger)]
 
     for cat, tmp_list, do_run in corr_categories:
         if not do_run:
@@ -1805,7 +1852,8 @@ def _plot_pulse(ctx, channels, suffix, include_correlations=True, *,
         pm.set_output_dir(f"drs_{suffix}")
         output_htmls = []
         if do_distributions:
-            output_htmls.append(_plot_pulse_distributions(channels, infile, pm, suffix))
+            output_htmls.append(_plot_pulse_distributions(
+                channels, infile, pm, suffix))
         if include_correlations:
             output_htmls += _plot_pulse_correlations(
                 channels, infile, pm, suffix,

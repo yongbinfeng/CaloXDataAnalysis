@@ -1,3 +1,6 @@
+from channels.channel_map import _DRS_6MM_RUN
+
+
 def getRangesForFERSEnergySums(pdsub=False, calib=False, clip=False, HE=False, run_number=1230, beam_energy=80) -> dict:
     if run_number >= 1350:
         scaleHG = 0.6
@@ -113,7 +116,7 @@ def get_fers_saturation_value():
     return 7500
 
 
-def get_drs_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, is_reference=False, is_mcp=False):
+def get_drs_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, is_reference=False, is_mcp=False, run_number=None):
     xmin = -50
     xmax = 50
     if subtractMedian:
@@ -123,6 +126,8 @@ def get_drs_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, i
         xmin = -1500
         xmax = 2500
     if is6mm and is_amplified:
+        if run_number is not None and run_number >= _DRS_6MM_RUN:
+            return -20, 40
         xmin = -100
         xmax = 300
     if is_reference:
@@ -132,6 +137,54 @@ def get_drs_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, i
         xmin = -500
         xmax = 2000
     return xmin, xmax
+
+
+def get_drs_energy_range(is6mm=False):
+    """DRS CFD energy integral histogram range: (nbins, xmin, xmax)."""
+    if is6mm:
+        return (180, -100, 800)
+    return (200, -500, 6000)
+
+
+def get_drs_peak_value_range():
+    """DRS CFD peak value histogram range: (nbins, xmin, xmax)."""
+    return (200, 0, 800)
+
+
+def get_drs_sum_vs_fers_ranges():
+    """DRS energy sum vs FERS 2D ranges by FERS gain.
+    Values are {var: (DRS_ymax, FERS_xmax)}.
+    """
+    return {
+        "HG":  {"Cer": (20000, 8500),  "Sci": (30000, 8500)},
+        "LG":  {"Cer": (20000, 2000),  "Sci": (30000, 4000)},
+        "Mix": {"Cer": (40000, 40000), "Sci": (60000, 40000)},
+    }
+
+
+def get_fers_vs_drs_xmax():
+    """FERS energy axis xmax for DRS-vs-FERS 2D correlation plots."""
+    return {"FERS": 9000, "FERSLG": 3000, "FERSMix": 40000}
+
+
+def get_fers_1d_range():
+    """FERS per-channel 1D histogram range: {gain: (nbins, xmin, xmax)}."""
+    return {"HG": (800, 0, 800), "LG": (300, 0, 300)}
+
+
+def get_fers_max_range():
+    """FERS max readout value histogram range: (nbins, xmin, xmax)."""
+    return (100, 7500, 8500)
+
+
+def get_fers_2d_hg_lg_range():
+    """FERS 2D HG-vs-LG correlation range: (nbins_x, 0, hg_max, nbins_y, 0, lg_max)."""
+    return (300, 0, 9000, 300, 0, 3000)
+
+
+def get_fers_2d_mix_lg_range():
+    """FERS 2D Mix-vs-LG correlation range: (nbins_x, 0, mix_max, nbins_y, 0, lg_max)."""
+    return (300, 0, 40000, 300, 0, 2000)
 
 
 def get_drs_cfd_finebins_range(is_cer):

@@ -5,6 +5,8 @@ from collections import OrderedDict
 
 # Run number at which DRS branches gained the "Brg{N}_" prefix.
 _DRS_BRG_RUN = 1700
+# Run number at which DRS boards switched from 3mm to 6mm crystals.
+_DRS_6MM_RUN = 1748
 
 
 def _drs(board, group, ch, brg=None):
@@ -355,8 +357,21 @@ def build_drs_boards(run=316):
         DRSBoards["Board4"] = buildDRSBoardTestBeam(board_no=4)
         DRSBoards["Board5"] = buildDRSBoardTestBeam(board_no=5)
         DRSBoards["Board6"] = buildDRSBoardTestBeam(board_no=6)
+    elif run >= _DRS_6MM_RUN:
+        # 6mm boards (run >= 1748): 2 calo boards (0, 1), all 6mm, no MCP
+        # All channels are amplified (inverted), so is_amplified=True on every channel.
+        DRSBoards["Board0"] = base_DRSBoard_6mm.copy(board_no=0)
+        DRSBoards["Board1"] = base_DRSBoard_6mm.copy(board_no=1)
+
+        DRSBoards["Board0"].move_to(-1.5, 1.875)
+        DRSBoards["Board1"].move_to(-1.5, -0.125)
+
+        for board in DRSBoards.values():
+            for channel in board:
+                channel.is_amplified = True
+
     elif run >= _DRS_BRG_RUN:
-        # 2025+ test beam: 3 calo boards (0, 1, 2), all channels are signal (no MCP)
+        # 3mm boards with bridge numbering (run 1700–1747): 3 calo boards, no MCP
         DRSBoards["Board0"] = base_DRSBoard_3mm.copy(board_no=0)
         DRSBoards["Board1"] = base_DRSBoard_3mm.copy(board_no=1)
         DRSBoards["Board2"] = base_DRSBoard_3mm.copy(board_no=2)
@@ -393,7 +408,10 @@ def build_drs_boards(run=316):
     else:
         raise ValueError(f"Unsupported run number {run} for DRS boards.")
 
-    if run >= _DRS_BRG_RUN:
+    if run >= _DRS_6MM_RUN:
+        for board in DRSBoards.values():
+            board.set_bridge_no(0)
+    elif run >= _DRS_BRG_RUN:
         for board in DRSBoards.values():
             board.set_bridge_no(1)
 
