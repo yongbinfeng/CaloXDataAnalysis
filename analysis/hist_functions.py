@@ -989,7 +989,14 @@ def _analyze_hodo_peak(rdf, run_number):
 # ---------------------------------------------------------------------------
 
 def book_service_drs_pid(ctx):
-    pid_channels = get_pid_channels(ctx.run_number)
+    # Keep only detectors that process_pid_channels actually defined columns for
+    # (non-None channel whose _blsub column exists for this run).
+    from collections import OrderedDict
+    existing = {str(c) for c in ctx.rdf.GetColumnNames()}
+    pid_channels = OrderedDict(
+        (det, channel)
+        for det, channel in get_pid_channels(ctx.run_number).items()
+        if channel is not None and f"{channel}_blsub" in existing)
     hists = _analyze_pulse(ctx.rdf, pid_channels)
     hists += _analyze_detector_pair_correlations(ctx.rdf, pid_channels)
     ctx.hbook.add("drs_services.root", hists)

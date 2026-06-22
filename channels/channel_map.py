@@ -915,8 +915,8 @@ def get_mcp_channels(run=1184):
     if run < 1342 or run >= _DRS_BRG_RUN:
         # no MCP for runs before Sep 2024 test beam or 2025+ (all channels are signal)
         return {}
-    else:
-        # 4 calo boards, Sep 2024 test beam
+    elif run < 1600:
+        # 4 calo boards, Sep 2025 test beam
         return {
             "MCP_DS_0": _drs(0, 3, 6, brg),
             "MCP_DS_1": _drs(1, 3, 6, brg),
@@ -927,6 +927,12 @@ def get_mcp_channels(run=1184):
             "MCP_US_2": _drs(2, 3, 7, brg),
             "MCP_US_3": _drs(3, 3, 7, brg),
         }
+    else:
+        return {
+            "MCP_1": _drs(3, 0, 5, brg),
+            "MCP_2": _drs(3, 0, 6, brg),
+        }
+        
 
 
 def get_service_drs_channels(run=1184):
@@ -938,7 +944,7 @@ def get_service_drs_channels(run=1184):
         return []
     elif run < 1260:
         return [_drs(7, g, c) for g in range(2) for c in range(8)]
-    else:
+    elif run < 1600:
         return {
             "DWC1Left":   _drs(7, 0, 0, brg),
             "DWC1Right":  _drs(7, 0, 1, brg),
@@ -961,6 +967,18 @@ def get_service_drs_channels(run=1184):
             "Cer519":     _drs(7, 2, 6, brg),
             "Cer537":     _drs(7, 2, 7, brg),
         }
+    else:
+        # tb 2026
+        return {
+            "TailCatcher": _drs(0, 0, 0, brg),
+            "TTUMuonVeto": _drs(0, 0, 1, brg),
+            "Cer474":      _drs(0, 0, 2, brg),
+            "Cer519":      _drs(0, 0, 3, brg),
+            "Cer537":      _drs(0, 0, 4, brg),
+            "MCP_1":       _drs(0, 0, 5, brg),
+            "MCP_2":       _drs(0, 0, 6, brg),
+            "HoleVeto":    _drs(0, 0, 7, brg),
+        }
 
 
 def get_pid_channels(run=1184):
@@ -971,6 +989,8 @@ def get_pid_channels(run=1184):
         "HoleVeto", "PSD", "TTUMuonVeto",
         "Cer474", "Cer519", "Cer537",
         "KT1", "KT2", "T3", "T4",
+        "MCP_1", "MCP_2",
+        "TailCatcher"
     ]
     return OrderedDict((det, service.get(det)) for det in pid_dets)
 
