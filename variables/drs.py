@@ -107,7 +107,7 @@ def process_mcp_channels(rdf, run_number):
         if channel_name_blsub not in existing:
             continue
         ts_begin, ts_end, window_pre, window_post, _, _ = get_service_drs_cut(
-            det)
+            det, run_number)
 
         rdf = rdf.Define(f"{det}_CFD",
                          f"compute_cfd_integral({channel_name_blsub}, 1, 10, {ts_begin}, {ts_end}, {window_pre}, {window_post})")
@@ -139,7 +139,7 @@ def process_pid_channels(rdf, run_number):
         if channel_blsub not in existing:
             continue
         ts_begin, ts_end, window_pre, window_post, _, _ = get_service_drs_cut(
-            det)
+            det, run_number)
 
         rdf = rdf.Define(f"{det}_CFD",
                          f"compute_cfd_integral({channel_blsub}, 1, 10.0, {ts_begin}, {ts_end}, {window_pre}, {window_post})")

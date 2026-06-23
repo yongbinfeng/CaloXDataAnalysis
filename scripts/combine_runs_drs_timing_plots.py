@@ -36,7 +36,7 @@ ROOT.gROOT.SetBatch(True)  # Disable interactive mode for batch processing
 ROOT.gSystem.Load("utils/functions_cc.so")  # Load the compiled C++ functions
 
 
-DRSBoards = build_drs_boards(run=run_number)
+DRSBoards = build_drs_boards(run_number=run_number)
 
 
 def collectDRSvsTSProfPlots(run_number):

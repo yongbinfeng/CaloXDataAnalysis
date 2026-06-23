@@ -29,7 +29,7 @@ ROOT.TH1.AddDirectory(False)
 args = get_args()
 run_number = args.run
 
-DRSBoards = build_drs_boards(run=run_number)
+DRSBoards = build_drs_boards(run_number=run_number)
 paths = get_run_paths(run_number)
 rootdir = paths["root"]
 plotdir = paths["plots"]

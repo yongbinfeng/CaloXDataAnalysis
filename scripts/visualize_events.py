@@ -36,8 +36,8 @@ rdf, rdf_org = loadRDF(run_number, firstEvent, lastEvent, jsonFile)
 rdf = preProcessDRSBoards(rdf, run_number=run_number)
 rdf, rdf_filterveto = applyUpstreamVeto(rdf, run_number)
 
-FERSBoards = build_fers_boards(run=run_number)
-DRSBoards = build_drs_boards(run=run_number)
+FERSBoards = build_fers_boards(run_number=run_number)
+DRSBoards = build_drs_boards(run_number=run_number)
 
 rdf = vectorizeFERS(rdf, FERSBoards)
 rdf = get_fers_energy_sum(rdf, FERSBoards, gain="HG")

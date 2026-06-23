@@ -606,7 +606,7 @@ def main():
         return float(raw.replace("mm", "").strip())
 
     run_x      = {r: _parse_x(r) for r in SCAN_RUNS if str(r) in runlist}
-    drsboards  = build_drs_boards(run=REFERENCE_RUN)
+    drsboards  = build_drs_boards(run_number=REFERENCE_RUN)
     mpv_data   = _collect_mpv_data(drsboards, run_x)
     channel_order = _build_channel_order(drsboards)
 

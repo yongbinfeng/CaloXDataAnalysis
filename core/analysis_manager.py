@@ -38,8 +38,8 @@ class CaloXAnalysisManager:
         register_manager(self)
 
         self.beam_type, self.beam_energy = getRunInfo(self.run_number)
-        self.fersboards = build_fers_boards(run=self.run_number)
-        self.drsboards = build_drs_boards(run=self.run_number)
+        self.fersboards = build_fers_boards(run_number=self.run_number)
+        self.drsboards = build_drs_boards(run_number=self.run_number)
 
         self.paths = get_run_paths(self.run_number)
         for path in self.paths.values():

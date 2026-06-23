@@ -911,7 +911,7 @@ def _analyze_mcp_timing_diff(rdf, channels_mcp):
 def _analyze_hodo_peak(rdf, run_number):
     """Book hodoscope peak timing histograms."""
     from channels.channel_map import build_hodo_pos_channels
-    hodo_pos_channels = build_hodo_pos_channels(run=run_number)
+    hodo_pos_channels = build_hodo_pos_channels(run_number=run_number)
 
     histos = {key: {} for key in [
         "diff", "diff_relative", "sum", "left", "right",

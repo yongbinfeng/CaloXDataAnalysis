@@ -24,6 +24,9 @@ def get_args():
     parser.add_argument(
         "--jsroot", action="store_true", default=False,
         help="Save canvases to ROOT file and generate JSROOT-powered HTML (no PNG files)")
+    parser.add_argument(
+        "--hole-veto", action="store_true", default=False,
+        help="Apply the hole veto selection before analysis.")
     args = parser.parse_args()
 
     print(f"Run number: {args.run}")

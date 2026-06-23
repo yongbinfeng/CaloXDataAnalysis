@@ -16,10 +16,10 @@ ROOT.gSystem.Load("utils/functions_cc.so")
 
 suffix = f"run{run_number}"
 
-DRSBoards = build_drs_boards(run=run_number)
-FERSBoards = build_fers_boards(run=run_number)
-time_reference_channels = build_time_reference_channels(run=run_number)
-hodo_trigger_channels = build_hodo_trigger_channels(run=run_number)
+DRSBoards = build_drs_boards(run_number=run_number)
+FERSBoards = build_fers_boards(run_number=run_number)
+time_reference_channels = build_time_reference_channels(run_number=run_number)
+hodo_trigger_channels = build_hodo_trigger_channels(run_number=run_number)
 
 FERS_min = 100
 FERS_max = 9e3

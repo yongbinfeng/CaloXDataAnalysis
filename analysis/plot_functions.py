@@ -205,11 +205,11 @@ def plot_fers_esum_vs_event(ctx):
 # ---------------------------------------------------------------------------
 
 def plot_fers_mapping(ctx):
-    return DrawFERSBoards(run=ctx.run_number)
+    return DrawFERSBoards(run_number=ctx.run_number)
 
 
 def plot_drs_mapping(ctx):
-    return DrawDRSBoards(run=ctx.run_number)
+    return DrawDRSBoards(run_number=ctx.run_number)
 
 
 # ---------------------------------------------------------------------------
@@ -1930,7 +1930,7 @@ def _plot_hodo_peak(ctx):
     if not infile or infile.IsZombie():
         raise RuntimeError("Failed to open hodoscope_peaks.root")
 
-    hodo_pos_channels = build_hodo_pos_channels(run=ctx.run_number)
+    hodo_pos_channels = build_hodo_pos_channels(run_number=ctx.run_number)
     style_compare = PlotStyle(
         dology=False, drawoptions="HIST", mycolors=[1, 1])
 

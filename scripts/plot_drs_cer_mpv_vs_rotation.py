@@ -223,7 +223,7 @@ def main():
     with open("data/Runlist.json") as f:
         runlist = json.load(f)
 
-    drsboards = build_drs_boards(run=REFERENCE_RUN)
+    drsboards = build_drs_boards(run_number=REFERENCE_RUN)
     os.makedirs(PLOTDIR, exist_ok=True)
     os.makedirs(HTMLDIR, exist_ok=True)
 

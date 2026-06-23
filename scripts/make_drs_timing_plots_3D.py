@@ -24,7 +24,7 @@ run_number = args.run
 ifilename = f"results/root/Run{run_number}/drs_vs_ts_calibrated.root"
 ifile = ROOT.TFile.Open(ifilename, "READ")
 
-drsboards = build_drs_boards(run=run_number)
+drsboards = build_drs_boards(run_number=run_number)
 
 beam_type, beam_energy = getRunInfo(run_number)
 

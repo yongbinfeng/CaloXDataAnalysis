@@ -24,14 +24,14 @@ with open(f_drstriggermap, 'r') as f:
     triggermap = json.load(f)
 
 
-def build_fers_boards(run=316):
+def build_fers_boards(run_number=316):
     """
     Build a map for ixy and FERS channels for both boards.
     """
     base_FERSBoard_6mm = FERSBoard(board_no=-1, is6mm=True)
     base_FERSBoard_3mm = FERSBoard(board_no=-1, is6mm=False)
     fersboards = FERSBoards()
-    if run == 316:
+    if run_number == 316:
         # 5 FERS board in 316
         fersboards["Board1"] = base_FERSBoard_6mm.copy(board_no=1)
         fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
@@ -46,7 +46,7 @@ def build_fers_boards(run=316):
         fersboards["Board4"].move_to(-5.5, -0.5)
         fersboards["Board5"].move_to(-9.5, -0.5)
 
-    elif run == 571:
+    elif run_number == 571:
         # 10 FERS boards in 571
         fersboards["Board0"] = base_FERSBoard_6mm.copy(board_no=0)
         fersboards["Board1"] = base_FERSBoard_6mm.copy(board_no=1)
@@ -72,7 +72,7 @@ def build_fers_boards(run=316):
         fersboards["Board11"].move_to(2.5, -0.5)
         # fersboards["Board12"].move_to(6.5, -0.5)
 
-    elif run >= 583 and run < 685:
+    elif run_number >= 583 and run_number < 685:
         # include 3mm FERS board in 583
         fersboards["Board0"] = base_FERSBoard_6mm.copy(board_no=0)
         fersboards["Board1"] = base_FERSBoard_6mm.copy(board_no=1)
@@ -99,7 +99,7 @@ def build_fers_boards(run=316):
         # fersboards["Board12"].move_to(6.5, -0.5)
         fersboards["Board5"].move_to(-1.5, 1.875)
 
-    elif run >= 685 and run < 895:
+    elif run_number >= 685 and run_number < 895:
         fersboards["Board0"] = base_FERSBoard_6mm.copy(board_no=0)
         fersboards["Board1"] = base_FERSBoard_6mm.copy(board_no=1)
         fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
@@ -120,7 +120,7 @@ def build_fers_boards(run=316):
         fersboards["Board3"].move_to(-1.5, 1.875)
         fersboards["Board7"].move_to(0.5, 1.875)
 
-    elif run >= 895 and run < 1100:
+    elif run_number >= 895 and run_number < 1100:
         fersboards["Board0"] = base_FERSBoard_6mm.copy(board_no=0)
         fersboards["Board1"] = base_FERSBoard_6mm.copy(board_no=1)
         fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
@@ -152,7 +152,7 @@ def build_fers_boards(run=316):
 
         fersboards["Board3"].move_to(-1.5, 1.875)
         fersboards["Board11"].move_to(0.5, 1.875)
-    elif run >= 1173 and run < 1327:
+    elif run_number >= 1173 and run_number < 1327:
         # test beam
         fersboards["Board0"] = base_FERSBoard_6mm.copy(board_no=0)
         fersboards["Board1"] = base_FERSBoard_6mm.copy(board_no=1)
@@ -186,7 +186,7 @@ def build_fers_boards(run=316):
         fersboards["Board7"].move_to(-1.5, 1.875)
         fersboards["Board8"].move_to(0.5, 1.875)
 
-    elif run >= 1342 and run < 1600:
+    elif run_number >= 1342 and run_number < 1600:
         fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
         fersboards["Board3"] = base_FERSBoard_6mm.copy(board_no=3)
         fersboards["Board4"] = base_FERSBoard_6mm.copy(board_no=4)
@@ -219,7 +219,7 @@ def build_fers_boards(run=316):
         # 3mm
         fersboards["Board9"].move_to(-1.5, 1.875)
         fersboards["Board10"].move_to(0.5, 1.875)
-    elif run >= 1720:
+    elif run_number >= 1720:
         fersboards["Board2"] = base_FERSBoard_6mm.copy(board_no=2)
         fersboards["Board3"] = base_FERSBoard_6mm.copy(board_no=3)
         fersboards["Board4"] = base_FERSBoard_6mm.copy(board_no=4)
@@ -254,12 +254,12 @@ def build_fers_boards(run=316):
         fersboards["Board7"].move_to(0.5, 1.875)
 
     else:
-        raise ValueError(f"Unsupported run number {run} for FERS boards.")
+        raise ValueError(f"Unsupported run_number {run_number} for FERS boards.")
     update_quartz_channels(fersboards)
     return fersboards
 
 
-def build_drs_boards(run=316):
+def build_drs_boards(run_number=316):
     """
     Build a map for ixy and DRS channels.
     DRS boards are the same for all runs for now.
@@ -267,12 +267,12 @@ def build_drs_boards(run=316):
     base_DRSBoard_6mm = DRSBoard(board_no=-1, is6mm=True)
     base_DRSBoard_3mm = DRSBoard(board_no=-1, is6mm=False)
     DRSBoards = {}
-    if is_scan_run(run):
+    if is_scan_run(run_number):
         # no DRS boards in scan runs
         # only FERS
         return DRSBoards
 
-    if run < 685:
+    if run_number < 685:
         DRSBoards["Board2"] = base_DRSBoard_6mm.copy(board_no=2)
         DRSBoards["Board2"].remove_channel_by_group_channel(3, 5)
         DRSBoards["Board2"].remove_channel_by_group_channel(3, 6)
@@ -313,7 +313,7 @@ def build_drs_boards(run=316):
         channel.isCer = prechannel_isCer
         DRSBoards["Board0"].remove_channel_by_group_channel(3, 7)
 
-    elif run >= 685 and run < 1003:
+    elif run_number >= 685 and run_number < 1003:
         DRSBoards["Board1"] = base_DRSBoard_6mm.copy(board_no=1)
         DRSBoards["Board2"] = base_DRSBoard_6mm.copy(board_no=2)
 
@@ -325,7 +325,7 @@ def build_drs_boards(run=316):
         DRSBoards["Board2"].remove_channel_by_group_channel(3, 5)
         DRSBoards["Board2"].remove_channel_by_group_channel(3, 6)
         DRSBoards["Board2"].remove_channel_by_group_channel(3, 7)
-    elif run >= 1003 and run < 1100:
+    elif run_number >= 1003 and run_number < 1100:
         # 3 DRS boards in 1003
         DRSBoards["Board1"] = base_DRSBoard_6mm.copy(board_no=1)
         DRSBoards["Board2"] = base_DRSBoard_6mm.copy(board_no=2)
@@ -336,13 +336,13 @@ def build_drs_boards(run=316):
         DRSBoards["Board3"].move_to(-1.5, -6.5)
         # all channels are connected.
         # no need to remove
-        if run >= 1033:
+        if run_number >= 1033:
             # two amplified channels in board 1
             channel = DRSBoards["Board1"].get_channel_by_group_channel(0, 0)
             channel.is_amplified = True
             channel = DRSBoards["Board1"].get_channel_by_group_channel(0, 1)
             channel.is_amplified = True
-    elif run >= 1173 and run < 1327:
+    elif run_number >= 1173 and run_number < 1327:
         # test beam
         DRSBoards["Board0"] = base_DRSBoard_3mm.copy(board_no=0)
         DRSBoards["Board1"] = base_DRSBoard_3mm.copy(board_no=1)
@@ -357,8 +357,8 @@ def build_drs_boards(run=316):
         DRSBoards["Board4"] = buildDRSBoardTestBeam(board_no=4)
         DRSBoards["Board5"] = buildDRSBoardTestBeam(board_no=5)
         DRSBoards["Board6"] = buildDRSBoardTestBeam(board_no=6)
-    elif run >= _DRS_6MM_RUN:
-        # 6mm boards (run >= 1748): 2 calo boards (0, 1), all 6mm, no MCP
+    elif run_number >= _DRS_6MM_RUN:
+        # 6mm boards (run_number >= 1748): 2 calo boards (0, 1), all 6mm, no MCP
         # All channels are amplified (inverted), so is_amplified=True on every channel.
         DRSBoards["Board0"] = base_DRSBoard_6mm.copy(board_no=0)
         DRSBoards["Board1"] = base_DRSBoard_6mm.copy(board_no=1)
@@ -370,8 +370,8 @@ def build_drs_boards(run=316):
             for channel in board:
                 channel.is_amplified = True
 
-    elif run >= _DRS_BRG_RUN:
-        # 3mm boards with bridge numbering (run 1700–1747): 3 calo boards, no MCP
+    elif run_number >= _DRS_BRG_RUN:
+        # 3mm boards with bridge numbering (run_number 1700–1747): 3 calo boards, no MCP
         DRSBoards["Board0"] = base_DRSBoard_3mm.copy(board_no=0)
         DRSBoards["Board1"] = base_DRSBoard_3mm.copy(board_no=1)
         DRSBoards["Board2"] = base_DRSBoard_3mm.copy(board_no=2)
@@ -380,7 +380,7 @@ def build_drs_boards(run=316):
         DRSBoards["Board1"].move_to(-1.5, -0.125)
         DRSBoards["Board2"].move_to(0.5, 1.875)
 
-    elif run >= 1342:
+    elif run_number >= 1342:
         # September 2024 test beam: 4 calo boards + 3 test beam boards
         DRSBoards["Board0"] = base_DRSBoard_3mm.copy(board_no=0)
         DRSBoards["Board1"] = base_DRSBoard_3mm.copy(board_no=1)
@@ -406,12 +406,12 @@ def build_drs_boards(run=316):
         DRSBoards["Board6"] = buildDRSBoardTestBeamSep(board_no=6)
 
     else:
-        raise ValueError(f"Unsupported run number {run} for DRS boards.")
+        raise ValueError(f"Unsupported run_number {run_number} for DRS boards.")
 
-    if run >= _DRS_6MM_RUN:
+    if run_number >= _DRS_6MM_RUN:
         for board in DRSBoards.values():
             board.set_bridge_no(0)
-    elif run >= _DRS_BRG_RUN:
+    elif run_number >= _DRS_BRG_RUN:
         for board in DRSBoards.values():
             board.set_bridge_no(1)
 
@@ -743,22 +743,22 @@ def buildDRSBoardTestBeamSep(board_no=4):
     return drsboard
 
 
-def build_time_reference_channels(run=316):
+def build_time_reference_channels(run_number=316):
     """
     Deprecated: use the reference channels in the DRS boards instead.
     """
     time_reference_channels = []
-    if is_scan_run(run):
+    if is_scan_run(run_number):
         # no time reference channels in scan runs
         # since no drs boards
         return time_reference_channels
 
-    brg = 1 if run >= _DRS_BRG_RUN else None
-    if run < 685:
+    brg = 1 if run_number >= _DRS_BRG_RUN else None
+    if run_number < 685:
         time_reference_channels.append(_drs(0, 3, 7))
         time_reference_channels.append(_drs(2, 3, 7))
         time_reference_channels.append(_drs(1, 0, 0))
-    elif run >= 685:
+    elif run_number >= 685:
         time_reference_channels.append(_drs(1, 0, 8, brg))
         time_reference_channels.append(_drs(1, 1, 8, brg))
         time_reference_channels.append(_drs(1, 2, 8, brg))
@@ -770,66 +770,66 @@ def build_time_reference_channels(run=316):
         time_reference_channels.append(_drs(0, 0, 8, brg))
     else:
         raise ValueError(
-            f"Unsupported run number {run} for time reference channels.")
+            f"Unsupported run_number {run_number} for time reference channels.")
 
     return time_reference_channels
 
 
-def build_hodo_trigger_channels(run=316):
+def build_hodo_trigger_channels(run_number=316):
     """
     Returns a list of hodoscope trigger channels.
     """
     hodo_trigger_channels = []
-    if is_scan_run(run):
+    if is_scan_run(run_number):
         # no hodoscope trigger channels in scan runs
         # since no drs boards
         return hodo_trigger_channels
 
-    brg = 1 if run >= _DRS_BRG_RUN else None
-    if run < 685:
+    brg = 1 if run_number >= _DRS_BRG_RUN else None
+    if run_number < 685:
         hodo_trigger_channels.append(_drs(1, 2, 0))
         hodo_trigger_channels.append(_drs(1, 2, 1))
-    elif run >= 685:
+    elif run_number >= 685:
         hodo_trigger_channels.append(_drs(0, 2, 0, brg))
         hodo_trigger_channels.append(_drs(0, 2, 1, brg))
     else:
         raise ValueError(
-            f"Unsupported run number {run} for hodoscope trigger channels.")
+            f"Unsupported run_number {run_number} for hodoscope trigger channels.")
 
     return hodo_trigger_channels
 
 
-def build_hodo_pos_channels(run=316):
+def build_hodo_pos_channels(run_number=316):
     """
     Returns a dictionary containing the hodoscope channels for the position measurements
     """
     hodoscope_channels = {}
-    if is_scan_run(run):
+    if is_scan_run(run_number):
         # no hodoscope position channels in scan runs
         # since no drs boards
         return hodoscope_channels
 
-    brg = 1 if run >= _DRS_BRG_RUN else None
+    brg = 1 if run_number >= _DRS_BRG_RUN else None
     hodoscope_channels["TopX"] = [_drs(1, 0, 1), _drs(1, 0, 2)]
     hodoscope_channels["TopZ"] = [_drs(1, 0, 3), _drs(1, 0, 4)]
     hodoscope_channels["BottomX"] = [_drs(1, 0, 5), _drs(1, 0, 6)]
-    if run < 583:
+    if run_number < 583:
         hodoscope_channels["BottomZ"] = [_drs(1, 1, 0), _drs(1, 0, 7)]
-    elif run >= 583:
+    elif run_number >= 583:
         hodoscope_channels["BottomZ"] = [_drs(1, 0, 7), _drs(1, 1, 0)]
 
-    if run >= 685 and run < 1170:
+    if run_number >= 685 and run_number < 1170:
         hodoscope_channels["TopX"] = [_drs(0, 0, 0, brg), _drs(0, 0, 1, brg)]
         hodoscope_channels["TopZ"] = [_drs(0, 0, 2, brg), _drs(0, 0, 3, brg)]
         hodoscope_channels["BottomX"] = [_drs(0, 0, 4, brg), _drs(0, 0, 5, brg)]
         hodoscope_channels["BottomZ"] = [_drs(0, 0, 6, brg), _drs(0, 0, 7, brg)]
 
-    if run >= 1170 and run < 1327:
+    if run_number >= 1170 and run_number < 1327:
         hodoscope_channels = {}
         hodoscope_channels["LR1"] = [_drs(7, 0, 4), _drs(7, 0, 5)]
         hodoscope_channels["UD1"] = [_drs(7, 0, 6), _drs(7, 0, 7)]
 
-    if run >= 1342:
+    if run_number >= 1342:
         hodoscope_channels = {}
         hodoscope_channels["LR1"] = [_drs(7, 0, 0, brg), _drs(7, 0, 1, brg)]
         hodoscope_channels["UD1"] = [_drs(7, 0, 2, brg), _drs(7, 0, 3, brg)]
@@ -839,83 +839,83 @@ def build_hodo_pos_channels(run=316):
     return hodoscope_channels
 
 
-def findFanoutTimeReferenceDelay(channel, run=1040):
-    if str(run) not in triggerdelay.keys():
+def findFanoutTimeReferenceDelay(channel, run_number=1040):
+    if str(run_number) not in triggerdelay.keys():
         return triggerdelay["default"][channel]
     else:
-        return triggerdelay[str(run)][channel]
+        return triggerdelay[str(run_number)][channel]
 
 
-def findDRSTriggerMap(channel, run=1040):
+def findDRSTriggerMap(channel, run_number=1040):
     result = "_".join(channel.split("_")[:3])
     # print(triggermap.keys())
-    if str(run) not in triggermap.keys():
+    if str(run_number) not in triggermap.keys():
         return triggermap["default"][result]
     else:
-        return triggermap[str(run)][result]
+        return triggermap[str(run_number)][result]
 
 
-def get_hole_veto_channel(run=1184):
-    brg = 1 if run >= _DRS_BRG_RUN else None
-    if run < 1183:
+def get_hole_veto_channel(run_number=1184):
+    brg = 1 if run_number >= _DRS_BRG_RUN else None
+    if run_number < 1183:
         return None
-    elif run < 1327:
+    elif run_number < 1327:
         return _drs(7, 1, 6)
     else:
-        return get_service_drs_channels(run)["HoleVeto"]
+        return get_service_drs_channels(run_number)["HoleVeto"]
 
 
-def get_downstream_muon_channel(run=1184):
-    brg = 1 if run >= _DRS_BRG_RUN else None
-    if run < 1183:
+def get_downstream_muon_channel(run_number=1184):
+    brg = 1 if run_number >= _DRS_BRG_RUN else None
+    if run_number < 1183:
         return None
     else:
         return _drs(7, 1, 0, brg)
 
 
-def get_downstream_ttu_muon_channel(run=1184):
-    if run < 1183:
+def get_downstream_ttu_muon_channel(run_number=1184):
+    if run_number < 1183:
         return None
-    elif run < 1327:
+    elif run_number < 1327:
         return None
     else:
-        return get_service_drs_channels(run)["TTUMuonVeto"]
+        return get_service_drs_channels(run_number)["TTUMuonVeto"]
 
 
-def get_pre_shower_channel(run=1184):
+def get_pre_shower_channel(run_number=1184):
     """
     Returns the pre-shower channel.
     """
-    if run < 1183:
+    if run_number < 1183:
         return None
-    elif run < 1327:
+    elif run_number < 1327:
         return _drs(7, 1, 1)
     else:
-        return get_service_drs_channels(run)["PSD"]
+        return get_service_drs_channels(run_number)["PSD"]
 
 
-def get_cerenkov_counters(run=1184):
+def get_cerenkov_counters(run_number=1184):
     """
     Returns a list of Cerenkov counter channels.
     """
-    brg = 1 if run >= _DRS_BRG_RUN else None
-    if run < 1183:
+    brg = 1 if run_number >= _DRS_BRG_RUN else None
+    if run_number < 1183:
         return []
-    elif run < 1327:
+    elif run_number < 1327:
         return [_drs(7, 1, 2), _drs(7, 1, 3), _drs(7, 1, 4), _drs(7, 1, 5)]
     else:
         return [_drs(7, 2, 5, brg), _drs(7, 2, 6, brg), _drs(7, 2, 7, brg)]
 
 
-def get_mcp_channels(run=1184):
+def get_mcp_channels(run_number=1184):
     """
     Returns a dict of MCP detector name -> channel branch name.
     """
-    brg = 1 if run >= _DRS_BRG_RUN else None
-    if run < 1342 or run >= _DRS_BRG_RUN:
+    brg = 1 if run_number >= _DRS_BRG_RUN else None
+    if run_number < 1342 or run_number >= _DRS_BRG_RUN:
         # no MCP for runs before Sep 2024 test beam or 2025+ (all channels are signal)
         return {}
-    elif run < 1600:
+    elif run_number < 1600:
         # 4 calo boards, Sep 2025 test beam
         return {
             "MCP_DS_0": _drs(0, 3, 6, brg),
@@ -935,16 +935,16 @@ def get_mcp_channels(run=1184):
         
 
 
-def get_service_drs_channels(run=1184):
+def get_service_drs_channels(run_number=1184):
     """
     Returns a list of service DRS channels.
     """
-    brg = 1 if run >= _DRS_BRG_RUN else None
-    if run < 1183:
+    brg = 1 if run_number >= _DRS_BRG_RUN else None
+    if run_number < 1183:
         return []
-    elif run < 1260:
+    elif run_number < 1260:
         return [_drs(7, g, c) for g in range(2) for c in range(8)]
-    elif run < 1600:
+    elif run_number < 1600:
         return {
             "DWC1Left":   _drs(7, 0, 0, brg),
             "DWC1Right":  _drs(7, 0, 1, brg),
@@ -981,10 +981,10 @@ def get_service_drs_channels(run=1184):
         }
 
 
-def get_pid_channels(run=1184):
+def get_pid_channels(run_number=1184):
     """Return an OrderedDict of PID detector name -> channel name for service DRS analysis."""
     from collections import OrderedDict
-    service = get_service_drs_channels(run=run)
+    service = get_service_drs_channels(run_number=run_number)
     pid_dets = [
         "HoleVeto", "PSD", "TTUMuonVeto",
         "Cer474", "Cer519", "Cer537",
@@ -1046,8 +1046,8 @@ def update_quartz_channels(boards):
 if __name__ == "__main__":
     # Example usage
     run_number = 583
-    fers_boards = build_fers_boards(run=run_number)
-    drs_boards = build_drs_boards(run=run_number)
+    fers_boards = build_fers_boards(run_number=run_number)
+    drs_boards = build_drs_boards(run_number=run_number)
 
     print("FERS Boards:")
     for board_name, board in fers_boards.items():
@@ -1058,6 +1058,6 @@ if __name__ == "__main__":
         print(f"{board_name}: {board}")
 
     print("\nHodoscope Position Channels:")
-    hodo_channels = build_hodo_pos_channels(run=run_number)
+    hodo_channels = build_hodo_pos_channels(run_number=run_number)
     for hodo_type, channels in hodo_channels.items():
         print(f"{hodo_type}: {channels}")

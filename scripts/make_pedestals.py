@@ -23,7 +23,7 @@ lastEvent = -1
 
 rdf, rdf_org = loadRDF(run_number, firstEvent, lastEvent)
 
-fersboards = build_fers_boards(run=run_number)
+fersboards = build_fers_boards(run_number=run_number)
 rdf = vectorizeFERS(rdf, fersboards)
 
 

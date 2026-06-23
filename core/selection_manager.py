@@ -53,7 +53,8 @@ class SelectionManager:
             raise ValueError(
                 f"Channel for {det} not found for run {self.run_number}.")
 
-        ts_min, ts_max, _, _, val_cut, method = get_service_drs_cut(det)
+        ts_min, ts_max, _, _, val_cut, method = get_service_drs_cut(
+            det, self.run_number)
 
         # 1. Define Calculation
         calc_col = f"{det}_firingVal"
