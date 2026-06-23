@@ -912,7 +912,7 @@ def get_mcp_channels(run_number=1184):
     Returns a dict of MCP detector name -> channel branch name.
     """
     brg = 1 if run_number >= _DRS_BRG_RUN else None
-    if run_number < 1342 or run_number >= _DRS_BRG_RUN:
+    if run_number < 1342 or (run_number >= _DRS_BRG_RUN and run_number < 1764):
         # no MCP for runs before Sep 2024 test beam or 2025+ (all channels are signal)
         return {}
     elif run_number < 1600:
@@ -929,8 +929,8 @@ def get_mcp_channels(run_number=1184):
         }
     else:
         return {
-            "MCP_1": _drs(3, 0, 5, brg),
-            "MCP_2": _drs(3, 0, 6, brg),
+            "MCP_1": _drs(0, 0, 5, brg),
+            "MCP_2": _drs(0, 0, 6, brg),
         }
         
 

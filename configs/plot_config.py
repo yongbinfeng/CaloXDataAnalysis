@@ -479,6 +479,11 @@ def get_service_drs_processed_info_ranges(channel, cat):
             "sum": (-500, 1000),
             "waveform": (-500, 1000)
         },
+        "TailCatcher": {
+            "peak_value": (-50, 1200),
+            "sum": (-2e3, 1.2e4),
+            "waveform": (-200, 3500)
+        },
     }
     waveform_default = (-150, 3000)
     if channel.startswith("MCP"):

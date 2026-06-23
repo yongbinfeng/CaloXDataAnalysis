@@ -1680,7 +1680,9 @@ def _plot_pulse_distributions(channels, infile, pm, suffix):
         if hist_pv:
             if cut_method == "PeakValue":
                 nhad = hist_pv.Integral(hist_pv.FindBin(value_cut), 10000)
-                nele = hist_pv.Integral(0, hist_pv.FindBin(value_cut))
+                # fail = below the cut bin; the cut bin itself goes to pass
+                # (matches the 2D correlation convention; avoids double-count)
+                nele = hist_pv.Integral(0, hist_pv.FindBin(value_cut) - 1)
                 ntot = nhad + nele + 1e-6
                 pave = create_pave_text(0.23, 0.75, 0.55, 0.85)
                 pave.SetFillColor(0)
@@ -1718,7 +1720,9 @@ def _plot_pulse_distributions(channels, infile, pm, suffix):
         if hist_en:
             if cut_method != "PeakValue":
                 nhad = hist_en.Integral(hist_en.FindBin(value_cut), 10000)
-                nele = hist_en.Integral(0, hist_en.FindBin(value_cut))
+                # fail = below the cut bin; the cut bin itself goes to pass
+                # (matches the 2D correlation convention; avoids double-count)
+                nele = hist_en.Integral(0, hist_en.FindBin(value_cut) - 1)
                 ntot = nhad + nele + 1e-6
                 pave = create_pave_text(0.23, 0.75, 0.55, 0.85)
                 pave.SetFillColor(0)
@@ -1843,6 +1847,11 @@ def _plot_pulse_correlations(channels, infile, pm, suffix, *, do_pid=True, do_tr
 def _plot_pulse(ctx, channels, suffix, include_correlations=True, *,
                 do_distributions=True, do_pid_correlations=True, do_trigger_correlations=True):
     """Combined plot runner: distributions + (optionally) correlations."""
+    if not channels:
+        print(f"No drs_{suffix} channels for run {ctx.run_number}; "
+              f"nothing to plot.")
+        return []
+
     infile_name = f"{ctx.paths['root']}/drs_{suffix}.root"
     infile = ROOT.TFile(infile_name, "READ")
     if not infile or infile.IsZombie():
@@ -1900,12 +1909,11 @@ def _plot_mcp_timing_diff(ctx, channels_mcp):
                 pave.AddText(f"Sigma: {sigma:.2f} TS")
                 pave.AddText(f"N (Gaussian): {n_gauss:.0f}")
                 pave.AddText(f"N (total): {n_total:.0f}")
-                fitted_mean = fit.GetParameter(1)
                 ymax = hist.GetMaximum() * 1.4
                 pm.plot_1d(
                     hist, f"{det1}_cfd_diff_vs_{det2}",
                     f"#Delta t_{{CFD,ref}} ({det1} - {det2}) [TS]",
-                    (fitted_mean - 2, fitted_mean + 2),
+                    (-30, 30),
                     yrange=(0.9, ymax), ylabel="Counts", style=_STYLE_SVC_1D,
                     extraToDraw=[fit, pave])
             pm.add_newline()

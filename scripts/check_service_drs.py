@@ -44,6 +44,11 @@ manager = (
     .apply_mcp_selection(flag_only=True)
 )
 
+# Optionally require the mcp_clean selection (all MCPs fire, from
+# get_particle_selection) as a filter applied globally to all sequences.
+if args.mcp_clean:
+    manager.apply_beam_pid_selection(flag_only=False, particle="mcp_clean")
+
 # ------------------------------------------------------------------
 # Select sequences
 # ------------------------------------------------------------------

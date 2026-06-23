@@ -28,6 +28,9 @@ def get_service_drs_cut(service_drs: str, run_number: int = None) -> tuple:
         "MCP_DS_1":    (500, 650,  5, 45, 20,     "PeakValue"),
         "MCP_DS_2":    (500, 650,  5, 45, 20,     "PeakValue"),
         "MCP_DS_3":    (500, 650,  5, 45, 20,     "PeakValue"),
+        "MCP_1":       (150, 250,  5, 45, 200,     "PeakValue"),
+        "MCP_2":       (150, 250,  5, 45, 200,     "PeakValue"),
+        "TailCatcher":  (0,   1000, 5, 45, 1e3,    "Sum"),
     }
     return cuts.get(service_drs, cut_default)
 
@@ -61,5 +64,9 @@ def get_particle_selection(particle_type: str) -> dict:
             "PSD": False,
             "Cer474": False, "Cer519": False, "Cer537": False
         },
+        # for timing studies: MCPs fire
+        "mcp_clean": {
+            "MCP_1": True, "MCP_2": True,
+        }
     }
     return selections.get(particle_type.lower(), {})

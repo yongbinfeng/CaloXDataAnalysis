@@ -869,7 +869,6 @@ def _analyze_detector_pair_correlations(rdf, channels):
             special_dets = {"KT1", "KT2", "T3", "T4"}
             if (det1 in special_dets) ^ (det2 in special_dets):
                 continue
-            channel1, channel2 = channels[det1], channels[det2]
             _, _, _, _, _, method1 = get_service_drs_cut(det1)
             _, _, _, _, _, method2 = get_service_drs_cut(det2)
             var1 = "peak_value" if method1 == "PeakValue" else "energy"
@@ -878,11 +877,15 @@ def _analyze_detector_pair_correlations(rdf, channels):
                 det1, "peak_value" if method1 == "PeakValue" else "sum")
             ymin, ymax = get_service_drs_processed_info_ranges(
                 det2, "peak_value" if method2 == "PeakValue" else "sum")
+            # Fill with the per-detector PID columns ({det}_energy / {det}_peak_value),
+            # the same variables used by _analyze_pulse for the 1D distributions.
+            # NOT the raw per-channel columns ({channel}_energy), which are a
+            # different (generic DRS) energy computation and give inconsistent counts.
             hists[f"{det1}_vs_{det2}"] = rdf.Histo2D(
                 (f"{det1}_{var1}_vs_{det2}_{var2}",
                  f"{det1} vs {det2};{det1} {var1};{det2} {var2};Counts",
                  500, xmin, xmax, 500, ymin, ymax),
-                f"{channel1}_{var1}", f"{channel2}_{var2}")
+                f"{det1}_{var1}", f"{det2}_{var2}")
 
     return list(hists.values())
 
@@ -899,10 +902,11 @@ def _analyze_mcp_timing_diff(rdf, channels_mcp):
             diff_col = f"{col1}_minus_{col2}_cfd_diff"
             rdf = rdf.Define(
                 diff_col, f"{col1}_TS_cfd_ref - {col2}_TS_cfd_ref")
+            
             hists.append(rdf.Histo1D(
                 (f"{det1}_cfd_diff_vs_{det2}",
                  f"{det1} - {det2};#Delta t_{{CFD,ref}} [TS];Counts",
-                 800, -10, 10),
+                 800, -30, 30),
                 diff_col))
 
     return hists

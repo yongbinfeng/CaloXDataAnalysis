@@ -57,9 +57,12 @@ class SelectionManager:
             det, self.run_number)
 
         # 1. Define Calculation
+        # Map the cut method to the corresponding waveform reducer in
+        # functions.cc: "Sum" -> SumRange, "PeakValue" -> MaxRange (peak).
+        range_func = "MaxRange" if method == "PeakValue" else f"{method}Range"
         calc_col = f"{det}_firingVal"
         self._apply_define(
-            calc_col, f"{method}Range({channel}_blsub, {ts_min}, {ts_max})")
+            calc_col, f"{range_func}({channel}_blsub, {ts_min}, {ts_max})")
 
         # 2. Define Boolean Label (Is the detector firing?)
         firing_label = f"is{det}Fired"

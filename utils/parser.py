@@ -27,6 +27,9 @@ def get_args():
     parser.add_argument(
         "--hole-veto", action="store_true", default=False,
         help="Apply the hole veto selection before analysis.")
+    parser.add_argument(
+        "--mcp-clean", action="store_true", default=False,
+        help="Require the mcp_clean selection (all MCPs fire) before analysis.")
     args = parser.parse_args()
 
     print(f"Run number: {args.run}")

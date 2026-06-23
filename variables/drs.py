@@ -138,6 +138,11 @@ def process_pid_channels(rdf, run_number):
         channel_blsub = channel + "_blsub"
         if channel_blsub not in existing:
             continue
+        # Skip detectors already processed elsewhere: when MCP is enabled,
+        # MCP_1/MCP_2 are defined by process_mcp_channels (which runs first)
+        # and also appear in the PID list, so their CFD columns already exist.
+        if f"{det}_CFD" in existing:
+            continue
         ts_begin, ts_end, window_pre, window_post, _, _ = get_service_drs_cut(
             det, run_number)
 
