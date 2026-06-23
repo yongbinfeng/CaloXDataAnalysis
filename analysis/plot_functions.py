@@ -496,6 +496,35 @@ def plot_fers_energy_sum(ctx):
                                 title="FERS Energy Sums")
 
 
+def plot_fers_energy_sum_board(ctx):
+    """Plot per-board FERS energy sum 1D distributions (separate from the total)."""
+    HE = ctx.beam_energy >= 50
+    with _pm(ctx) as pm:
+        pm.set_output_dir("FERS_EnergySum_Board")
+        infile = pm._get_file("fers_energy_sum_board.root")
+        for gain, calib in _FERS_GAIN_CALIBS:
+            cfg = getRangesForFERSEnergySums(
+                pdsub=True, calib=calib, clip=False, HE=HE,
+                run_number=ctx.run_number, beam_energy=ctx.beam_energy)
+            gain_unit = cfg[f"title_{gain}"]
+            gain_title = f"[{gain_unit}]" if gain == "Mix" else f"{gain} {gain_unit}"
+            for cat in ["cer", "sci"]:
+                is_cer = (cat == "cer")
+                style = STYLE_CER if is_cer else STYLE_SCI
+                for fb in ctx.fersboards.values():
+                    vname = fb.get_energy_sum_name(
+                        gain=gain, isCer=is_cer, pdsub=True, calib=calib)
+                    h = infile.Get(f"hist_{vname}")
+                    if h:
+                        pm.plot_1d(h, f"FERS_ESum_Board{fb.board_no}_{gain}_{cat}",
+                                   f"Board {fb.board_no} {cat.capitalize()} {gain_title}",
+                                   (cfg["xmin_board"][f"{gain}_{cat}"],
+                                    cfg["xmax_board"][f"{gain}_{cat}"]),
+                                   style=style, prepend=(cat == "cer"))
+        return pm.generate_html("FERS/ESum_Board.html", plots_per_row=6,
+                                title="FERS Energy Sums (per board)")
+
+
 def plot_fers_lg_vs_mix(ctx):
     """Plot FERS LG vs Mix 2D histograms per channel (requires Mix variables defined)."""
     with _pm(ctx) as pm:

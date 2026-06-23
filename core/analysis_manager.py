@@ -134,12 +134,16 @@ class CaloXAnalysisManager:
 
     def _get_calibration_paths(self, version="Sep", pedestal_run=None):
         """Helper to centralize calibration file path logic."""
-        # Logic moved from calibrate_fers to a central helper
-        p_run = pedestal_run if pedestal_run else (
-            1425 if self.run_number >= 1350 else 1259)
+        # tb2026 (run_number > 1700): use zero pedestals.
+        if pedestal_run is None and self.run_number > 1700:
+            pedestal_path = "data/fers/FERS_pedestals_zero.json"
+        else:
+            p_run = pedestal_run if pedestal_run else (
+                1425 if self.run_number >= 1350 else 1259)
+            pedestal_path = f"data/fers/FERS_pedestals_run{p_run}.json"
 
         return {
-            "pedestal": f"data/fers/FERS_pedestals_run{p_run}.json",
+            "pedestal": pedestal_path,
             "response": f"data/fers/FERS_response_{version}.json",
             "mixing": f"data/fers/FERS_HG2LG_{version}.json"
         }

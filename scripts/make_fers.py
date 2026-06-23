@@ -8,14 +8,15 @@ then generates HTML plot pages.
 
 Usage
 -----
-  python scripts/make_fers.py                            # all FERS_SEQUENCES, inclusive
+  python scripts/make_fers.py                            # default FERS_SEQUENCES, inclusive
   python scripts/make_fers.py --particle pion            # pion-selected sample
   python scripts/make_fers.py --sequences fers_cer_vs_sci fers_dr
   python scripts/make_fers.py --particle pion --sequences fers_energy_sum fers_dr
 
 Available sequences (see analysis/registry.py  FERS_SEQUENCES):
-  fers_energy_sum    — 1D energy sum distributions (per-board + total, all gains)
-  fers_lg_vs_mix     — LG vs Mix 2D per-channel correlations
+  fers_energy_sum    — 1D total (all-boards) energy sum distributions (all gains)
+  fers_energy_sum_board — 1D per-board energy sum distributions (opt-in; not run by default)
+  fers_lg_vs_mix     — LG vs Mix 2D per-channel correlations (opt-in; not run by default)
   fers_stats         — per-channel mean / max / saturation maps
   fers_cer_vs_sci    — Cer vs Sci 2D correlations (all gains)
   fers_dr            — dual-readout histograms (Mix, calibrated)
@@ -44,8 +45,8 @@ manager = (
     CaloXAnalysisManager(args)
     .prepare()
     .calibrate_fers()
-    .apply_hole_veto(flag_only=False)
-    .apply_beam_pid_selection(particle=args.particle or None)
+    .apply_hole_veto(flag_only=True)
+    #.apply_beam_pid_selection(particle=args.particle or None)
     .define_physics_variables(gain="HG",  calib=False, pdsub=True)
     .define_physics_variables(gain="LG",  calib=False, pdsub=True)
     .define_physics_variables(gain="Mix", calib=True,  pdsub=True)

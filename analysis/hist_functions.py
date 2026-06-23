@@ -1031,7 +1031,25 @@ _FERS_GAIN_CALIBS = [("HG", False), ("LG", False), ("Mix", True)]
 
 
 def book_fers_energy_sum(ctx):
-    """Book FERS energy sum 1D distributions (per-board and total, all gains, pdsub)."""
+    """Book FERS total (all-boards) energy sum 1D distributions (all gains, pdsub)."""
+    HE = ctx.beam_energy >= 50
+    hists = []
+    for gain, calib in _FERS_GAIN_CALIBS:
+        cfg = getRangesForFERSEnergySums(
+            pdsub=True, calib=calib, clip=False, HE=HE,
+            run_number=ctx.run_number, beam_energy=ctx.beam_energy)
+        for cat in ["cer", "sci"]:
+            is_cer = (cat == "cer")
+            vname = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=is_cer, pdsub=True, calib=calib)
+            hists.append(ctx.rdf.Histo1D((
+                f"hist_{vname}", f"hist_{vname}",
+                100, cfg["xmin_total"][f"{gain}_{cat}"], cfg["xmax_total"][f"{gain}_{cat}"]),
+                vname))
+    ctx.hbook.add("fers_energy_sum.root", hists)
+
+
+def book_fers_energy_sum_board(ctx):
+    """Book per-board FERS energy sum 1D distributions (all gains, pdsub)."""
     HE = ctx.beam_energy >= 50
     hists = []
     for gain, calib in _FERS_GAIN_CALIBS:
@@ -1046,12 +1064,7 @@ def book_fers_energy_sum(ctx):
                     f"hist_{vname}", f"hist_{vname}",
                     500, cfg["xmin_board"][f"{gain}_{cat}"], cfg["xmax_board"][f"{gain}_{cat}"]),
                     vname))
-            vname = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=is_cer, pdsub=True, calib=calib)
-            hists.append(ctx.rdf.Histo1D((
-                f"hist_{vname}", f"hist_{vname}",
-                100, cfg["xmin_total"][f"{gain}_{cat}"], cfg["xmax_total"][f"{gain}_{cat}"]),
-                vname))
-    ctx.hbook.add("fers_energy_sum.root", hists)
+    ctx.hbook.add("fers_energy_sum_board.root", hists)
 
 
 def book_fers_lg_vs_mix(ctx):
@@ -1106,14 +1119,14 @@ def book_fers_cer_vs_sci(ctx):
             500, cfg["xmin_total"][f"{gain}_sci"], cfg["xmax_total"][f"{gain}_sci"],
             500, cfg["xmin_total"][f"{gain}_cer"], cfg["xmax_total"][f"{gain}_cer"]),
             vs, vc))
-        if gain == "Mix":
-            for is_cer, vx in [(True, vc), (False, vs)]:
-                hists.append(ctx.rdf.Histo2D((
-                    f"hist_{vx}_VS_PSD_Sum", f"hist_{vx}_VS_PSD_Sum",
-                    500, *get_service_drs_processed_info_ranges("PSD", "sum"),
-                    500, cfg[f"xmin_total"][f"{gain}_{'cer' if is_cer else 'sci'}"],
-                    cfg[f"xmax_total"][f"{gain}_{'cer' if is_cer else 'sci'}"]),
-                    "PSD_Sum", vx))
+        #if gain == "Mix":
+        #    for is_cer, vx in [(True, vc), (False, vs)]:
+        #        hists.append(ctx.rdf.Histo2D((
+        #            f"hist_{vx}_VS_PSD_Sum", f"hist_{vx}_VS_PSD_Sum",
+        #            500, *get_service_drs_processed_info_ranges("PSD", "sum"),
+        #            500, cfg[f"xmin_total"][f"{gain}_{'cer' if is_cer else 'sci'}"],
+        #            cfg[f"xmax_total"][f"{gain}_{'cer' if is_cer else 'sci'}"]),
+        #            "PSD_Sum", vx))
     ctx.hbook.add("fers_cer_vs_sci.root", hists)
 
 

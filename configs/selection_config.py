@@ -35,38 +35,80 @@ def get_service_drs_cut(service_drs: str, run_number: int = None) -> tuple:
     return cuts.get(service_drs, cut_default)
 
 
-def get_particle_selection(particle_type: str) -> dict:
+# Detector requirements per particle type.
+# Requirement: True means 'Fired' (Pass), False means 'Vetoed' (Not Fired).
+#
+# Selections are split by detector era so each setup reads top-to-bottom
+# without any patching logic. Pick the right table with get_particle_selection().
+
+# tb2025 setup (run_number <= 1700): PSD and three Cherenkovs available.
+PARTICLE_SELECTIONS_TB2025 = {
+    # Muon: PSD veto + TTUMuon passing
+    "muon": {
+        "TTUMuonVeto": True,
+        "PSD": False,
+    },
+    # Pion: PSD veto + TTUMuon veto + Cherenkovs passing
+    "pion": {
+        "TTUMuonVeto": False,
+        "PSD": False,
+        "Cer474": True, "Cer519": True, "Cer537": True,
+    },
+    # Electron: PSD pass + TTUMuon veto + Cherenkovs passing
+    "electron": {
+        "TTUMuonVeto": False,
+        "PSD": True,
+        "Cer474": True, "Cer519": True, "Cer537": True,
+    },
+    # Proton: PSD veto + TTUMuon veto + Cherenkovs veto
+    "proton": {
+        "TTUMuonVeto": False,
+        "PSD": False,
+        "Cer474": False, "Cer519": False, "Cer537": False,
+    },
+    # Timing studies: MCPs fire
+    "mcp_clean": {
+        "MCP_1": True, "MCP_2": True,
+    },
+}
+
+# tb2026 setup (run_number > 1700): no PSD, no Cer537. Only Cer474/Cer519 left.
+PARTICLE_SELECTIONS_TB2026 = {
+    # Muon: TTUMuon passing
+    "muon": {
+        "TTUMuonVeto": True,
+    },
+    # Pion: TTUMuon veto + Cer519 fired but Cer474 NOT fired
+    "pion": {
+        "TTUMuonVeto": False,
+        "Cer474": False, "Cer519": True,
+    },
+    # Electron: TTUMuon veto + both Cherenkovs fired
+    "electron": {
+        "TTUMuonVeto": False,
+        "Cer474": True, "Cer519": True,
+    },
+    # Proton: TTUMuon veto + both Cherenkovs veto
+    "proton": {
+        "TTUMuonVeto": False,
+        "Cer474": False, "Cer519": False,
+    },
+    # Timing studies: MCPs fire
+    "mcp_clean": {
+        "MCP_1": True, "MCP_2": True,
+    },
+}
+
+
+def get_particle_selection(particle_type: str, run_number: int = None) -> dict:
     """
     Returns a dictionary of detector requirements for a given particle.
     Requirement: True means 'Fired' (Pass), False means 'Vetoed' (Not Fired).
+
+    tb2026 runs (run_number > 1700) use PARTICLE_SELECTIONS_TB2026; all other
+    runs use PARTICLE_SELECTIONS_TB2025.
     """
-    selections = {
-        # Muon: PSD veto + TTUMuon passing
-        "muon": {
-            "TTUMuonVeto": True,
-            "PSD": False,
-        },
-        # Pions: PSD veto + TTUMuon veto + Cherenkov passing
-        "pion": {
-            "TTUMuonVeto": False,
-            "PSD": False,
-            "Cer474": True, "Cer519": True, "Cer537": True
-        },
-        # Electrons: PSD pass + TTUMuon veto + Cherenkov passing
-        "electron": {
-            "TTUMuonVeto": False,
-            "PSD": True,
-            "Cer474": True, "Cer519": True, "Cer537": True
-        },
-        # Protons: PSD veto + TTUMuon veto + Cherenkov veto
-        "proton": {
-            "TTUMuonVeto": False,
-            "PSD": False,
-            "Cer474": False, "Cer519": False, "Cer537": False
-        },
-        # for timing studies: MCPs fire
-        "mcp_clean": {
-            "MCP_1": True, "MCP_2": True,
-        }
-    }
-    return selections.get(particle_type.lower(), {})
+    selections = (PARTICLE_SELECTIONS_TB2026
+                  if (run_number is not None and run_number > 1700)
+                  else PARTICLE_SELECTIONS_TB2025)
+    return dict(selections.get(particle_type.lower(), {}))

@@ -31,6 +31,7 @@ from analysis.hist_functions import (
     book_fers_2d,
     book_fers_track,
     book_fers_energy_sum,
+    book_fers_energy_sum_board,
     book_fers_lg_vs_mix,
     book_fers_cer_vs_sci,
     book_fers_dr,
@@ -63,6 +64,7 @@ from analysis.plot_functions import (
     plot_fers_2d,
     plot_fers_track,
     plot_fers_energy_sum,
+    plot_fers_energy_sum_board,
     plot_fers_lg_vs_mix,
     plot_fers_cer_vs_sci,
     plot_fers_dr,
@@ -300,9 +302,16 @@ FERS_SEQUENCES: list[CaloXSequence] = [
         make_plots=plot_fers_energy_sum,
     ),
     CaloXSequence(
+        name="fers_energy_sum_board",
+        book_hists=book_fers_energy_sum_board,
+        make_plots=plot_fers_energy_sum_board,
+        enabled_by_default=False,  # opt-in via --sequences fers_energy_sum_board
+    ),
+    CaloXSequence(
         name="fers_lg_vs_mix",
         book_hists=book_fers_lg_vs_mix,
         make_plots=plot_fers_lg_vs_mix,
+        enabled_by_default=False,  # opt-in via --sequences fers_lg_vs_mix
     ),
     #CaloXSequence(
     #    name="fers_stats",
@@ -386,7 +395,7 @@ def default_drs_mcp_sequences() -> list[CaloXSequence]:
 
 def default_fers_sequences() -> list[CaloXSequence]:
     """FERS physics sequences (require define_physics_variables)."""
-    return list(FERS_SEQUENCES)
+    return [s for s in FERS_SEQUENCES if s.enabled_by_default]
 
 
 def select_sequences(names: list[str],

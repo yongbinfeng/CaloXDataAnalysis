@@ -132,7 +132,7 @@ class SelectionManager:
 
     def apply_particle_selection(self, particle_type, flag_only=False):
         """Applies a suite of cuts to select a specific particle type."""
-        requirements = get_particle_selection(particle_type)
+        requirements = get_particle_selection(particle_type, self.run_number)
         if not requirements:
             raise ValueError(f"Unknown particle type: {particle_type}")
 
