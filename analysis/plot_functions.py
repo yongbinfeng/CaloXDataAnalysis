@@ -2067,3 +2067,60 @@ def plot_service_drs_mcp_timing(ctx):
 
 def plot_service_drs_hodo(ctx):
     return _plot_hodo_peak(ctx)
+
+
+def _print_ttu_hodo_table(ctx, counts):
+    """Print a table of event counts after each TTU-hodo requirement combination."""
+    total = counts.get("all", 0)
+    width = max((len(l) for l in counts), default=12)
+    print(f"\n{'='*(width+30)}")
+    print(f"{'TTU Hodo selection counts (Run ' + str(ctx.run_number) + ')':^{width+30}}")
+    print(f"{'='*(width+30)}")
+    print(f"{'Requirement':<{width}} | {'Events':>10} | {'Frac.':>8}")
+    print(f"{'-'*(width+30)}")
+    for label, n in counts.items():
+        frac = (100.0 * n / total) if total else 0.0
+        print(f"{label.replace('_', ' '):<{width}} | {n:>10} | {frac:>7.2f}%")
+    print(f"{'='*(width+30)}\n")
+
+
+def _ttu_hodo_table_html(counts):
+    """Build a single-line HTML table of TTU-hodo counts/fractions for the page."""
+    total = counts.get("all", 0)
+    th = ("padding:3px 14px;border:1px solid #ccc;text-align:right")
+    th_l = ("padding:3px 14px;border:1px solid #ccc;text-align:left")
+    rows = (f"<tr><th style='{th_l}'>Requirement</th>"
+            f"<th style='{th}'>Events</th><th style='{th}'>Fraction</th></tr>")
+    for label, n in counts.items():
+        frac = (100.0 * n / total) if total else 0.0
+        rows += (f"<tr><td style='{th_l}'>{label.replace('_', ' ')}</td>"
+                 f"<td style='{th}'>{n}</td><td style='{th}'>{frac:.2f}%</td></tr>")
+    return f"<table style='border-collapse:collapse;font-size:13px'>{rows}</table>"
+
+
+def plot_service_ttu_hodo(ctx):
+    """Plot TTU hodoscope XY over all detector requirement combinations + table."""
+    from analysis.hist_functions import _ttu_hodo_labels
+    hodo_min, hodo_max, _ = get_ttu_hodo_ranges()
+    labels = _ttu_hodo_labels(ctx.run_number)
+    counts = {}
+    with _pm(ctx) as pm:
+        pm.set_output_dir("TTU_Hodo")
+        infile = pm._get_file("ttu_hodo.root")
+        for label in labels:
+            h = infile.Get(f"TTU_Hodo_XY_{label}")
+            if not h:
+                continue
+            # weighted integral (incl. overflow) = #events passing the requirement
+            counts[label] = int(round(
+                h.Integral(0, h.GetNbinsX() + 1, 0, h.GetNbinsY() + 1)))
+            pave = create_pave_text(0.18, 0.82, 0.70, 0.90)
+            pave.AddText(label.replace("_", " "))
+            pm.plot_2d(h, f"TTU_Hodo_XY_{label}",
+                       "Hodo X [cm]", (hodo_min, hodo_max),
+                       "Hodo Y [cm]", (hodo_min, hodo_max),
+                       style=_STYLE_2D_LOG, extraToDraw=pave)
+        _print_ttu_hodo_table(ctx, counts)
+        return pm.generate_html("ServiceDRS/TTU_Hodo.html", plots_per_row=4,
+                                title="TTU Hodoscope XY by requirement combination",
+                                intro_text=_ttu_hodo_table_html(counts))

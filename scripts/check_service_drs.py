@@ -14,6 +14,7 @@ Available sequences (see analysis/registry.py  SERVICE_DRS_SEQUENCES):
   service_drs_mcp        — MCP pulse analysis
   service_drs_mcp_timing — MCP CFD timing differences
   service_drs_hodo       — hodoscope peak positions (off by default)
+  service_ttu_hodo       — TTU hodo XY before/after HoleVeto veto & each MCP hit
 """
 
 from core.analysis_manager import CaloXAnalysisManager

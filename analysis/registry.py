@@ -52,6 +52,7 @@ from analysis.hist_functions import (
     book_service_drs_mcp,
     book_service_drs_mcp_timing,
     book_service_drs_hodo,
+    book_service_ttu_hodo,
 )
 from analysis.plot_functions import (
     plot_monitor_conditions,
@@ -82,6 +83,7 @@ from analysis.plot_functions import (
     plot_service_drs_mcp,
     plot_service_drs_mcp_timing,
     plot_service_drs_hodo,
+    plot_service_ttu_hodo,
 )
 
 # ---------------------------------------------------------------------------
@@ -224,6 +226,12 @@ SERVICE_DRS_SEQUENCES: list[CaloXSequence] = [
         book_hists=book_service_drs_hodo,
         make_plots=plot_service_drs_hodo,
         enabled_by_default=False,
+    ),
+    CaloXSequence(
+        name="service_ttu_hodo",
+        book_hists=book_service_ttu_hodo,
+        make_plots=plot_service_ttu_hodo,
+        enabled_by_default=True,
     ),
 ]
 

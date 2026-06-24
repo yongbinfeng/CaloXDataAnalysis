@@ -1023,6 +1023,83 @@ def book_service_drs_hodo(ctx):
     ctx.hbook.add("hodoscope_peaks.root", hists)
 
 
+def _ttu_hodo_selections(ctx):
+    """Build the TTU-hodo selection list over all detector combinations.
+
+    Returns (rdf, [(selection_column, label)]). 'all' is the unselected sample;
+    the rest are every non-empty combination (1-, 2-, 3-fold, ...) of the base
+    detectors [HoleVeto, MCP_1, MCP_2, ...]. HoleVeto uses is_HoleVeto_vetoed;
+    each MCP uses a 'has signal' flag from the get_service_drs_cut firing
+    threshold (MaxRange/SumRange over the pulse window > val_cut).
+    """
+    import itertools
+    rdf = ctx.rdf
+    existing = {str(c) for c in rdf.GetColumnNames()}
+
+    # base single-detector requirements: (name, flag_column)
+    base = []
+    # hodoscope hit: a position is only meaningful when both planes have a hit
+    if "TTU_Hodo_nHitX" in existing and "TTU_Hodo_nHitY" in existing:
+        flag = "has_hodo_hit"
+        if flag not in existing:
+            rdf = rdf.Define(flag, "TTU_Hodo_nHitX > 0 && TTU_Hodo_nHitY > 0")
+            existing.add(flag)
+        base.append(("hodo", flag))
+    if "is_HoleVeto_vetoed" in existing:
+        base.append(("HoleVeto", "is_HoleVeto_vetoed"))
+    for det, channel in get_mcp_channels(ctx.run_number).items():
+        if channel is None or f"{channel}_blsub" not in existing:
+            continue
+        ts_min, ts_max, _, _, val_cut, method = get_service_drs_cut(det, ctx.run_number)
+        range_func = "MaxRange" if method == "PeakValue" else f"{method}Range"
+        flag = f"has_{det}_signal"
+        if flag not in existing:
+            rdf = rdf.Define(
+                flag, f"{range_func}({channel}_blsub, {ts_min}, {ts_max}) > {val_cut}")
+            existing.add(flag)
+        base.append((det, flag))
+
+    sels = [("passNone", "all")]
+    for r in range(1, len(base) + 1):
+        for combo in itertools.combinations(base, r):
+            label = "_and_".join(name for name, _ in combo)
+            if len(combo) == 1:
+                col = combo[0][1]  # reuse the single flag directly
+            else:
+                col = f"pass_{label}"
+                if col not in existing:
+                    rdf = rdf.Define(col, " && ".join(f for _, f in combo))
+                    existing.add(col)
+            sels.append((col, label))
+
+    return rdf, sels
+
+
+def _ttu_hodo_labels(run_number):
+    """Labels matching _ttu_hodo_selections (for the plot phase, no rdf needed)."""
+    import itertools
+    base = ["hodo", "HoleVeto"] + list(get_mcp_channels(run_number).keys())
+    labels = ["all"]
+    for r in range(1, len(base) + 1):
+        for combo in itertools.combinations(base, r):
+            labels.append("_and_".join(combo))
+    return labels
+
+
+def book_service_ttu_hodo(ctx):
+    """Book TTU hodoscope XY before/after HoleVeto veto and MCP signal selections."""
+    hodo_min, hodo_max, hodo_nbins = get_ttu_hodo_ranges()
+    rdf, selections = _ttu_hodo_selections(ctx)
+    hists = []
+    for sel_col, label in selections:
+        hists.append(rdf.Histo2D(
+            (f"TTU_Hodo_XY_{label}",
+             f"TTU Hodo XY ({label});Hodo X [cm];Hodo Y [cm]",
+             hodo_nbins, hodo_min, hodo_max, hodo_nbins, hodo_min, hodo_max),
+            "TTU_Hodo_X", "TTU_Hodo_Y", sel_col))
+    ctx.hbook.add("ttu_hodo.root", hists)
+
+
 # ---------------------------------------------------------------------------
 # FERS: advanced physics sequences (require define_physics_variables first)
 # ---------------------------------------------------------------------------
