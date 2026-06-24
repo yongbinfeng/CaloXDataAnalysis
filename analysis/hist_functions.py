@@ -1299,13 +1299,14 @@ def book_fers_ewc_vs_hodo(ctx):
             gain=gain, isCer=is_cer, pdsub=True, calib=calib, isX=False)
         ve = ctx.fersboards.get_energy_sum_name(gain=gain, isCer=is_cer, pdsub=True, calib=calib)
         for ewc_v, hodo_v in [(vx, "TTU_Hodo_X"), (vy, "TTU_Hodo_Y")]:
+            hodo_ax = "Hodo" + hodo_v.split('_')[-1]  # HodoX / HodoY (match plotter)
             hists += [
-                ctx.rdf.Histo2D((f"hist_{ewc_v}_VS_{hodo_v.split('_')[-1]}",
-                                 f"hist_{ewc_v}_VS_{hodo_v.split('_')[-1]}",
+                ctx.rdf.Histo2D((f"hist_{ewc_v}_VS_{hodo_ax}",
+                                 f"hist_{ewc_v}_VS_{hodo_ax}",
                                  hodo_nbins, hodo_min, hodo_max, 300, -15, 15),
                                 hodo_v, ewc_v),
-                ctx.rdf.Profile2D((f"hprof_{ewc_v}_VS_{hodo_v.split('_')[-1]}_WithEnergy",
-                                   f"hprof_{ewc_v}_VS_{hodo_v.split('_')[-1]}_WithEnergy",
+                ctx.rdf.Profile2D((f"hprof_{ewc_v}_VS_{hodo_ax}_WithEnergy",
+                                   f"hprof_{ewc_v}_VS_{hodo_ax}_WithEnergy",
                                    hodo_nbins, hodo_min, hodo_max, 300, -15, 15),
                                   hodo_v, ewc_v, ve),
             ]
