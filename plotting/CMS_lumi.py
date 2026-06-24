@@ -35,6 +35,10 @@ lumi_sqrtS = ""
 
 draw_logo = False
 
+# Prepend "Run <run_number>: " to the top-right beam-type/energy label
+# (e.g. "Run 1776: e^{+}, 60 GeV"). Set False to omit the run number.
+show_run_number = True
+
 extra_text_x_offset = 0.13
 
 

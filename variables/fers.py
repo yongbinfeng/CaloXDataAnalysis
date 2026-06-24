@@ -127,7 +127,8 @@ def calibrateFERSChannels(rdf, fersboards, file_calibrations: str, gain="HG", fi
             if f"{channelNamePDSubCal}" in rdf.GetColumnNames():
                 # already defined
                 continue
-            if str(fersboard.board_no) in deadchannels and str(channel.channel_no) in deadchannels[str(fersboard.board_no)]:
+            board_dead = {str(c) for c in deadchannels.get(str(fersboard.board_no), [])}
+            if str(channel.channel_no) in board_dead:
                 print(
                     f"\033[93mChannel {channelNamePDSub} is marked as dead. Channel Masked.\033[0m")
                 rdf = rdf.Define(channelNamePDSubCal, "0.")

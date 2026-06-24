@@ -114,11 +114,18 @@ class CaloXAnalysisManager:
         ROOT.RDF.Experimental.AddProgressBar(self.rdf_org)
         return self.rdf_org.Filter(f"event_n >= {first_event} && event_n < {last_event}")
 
-    def prepare(self, do_drs=True, do_fers=True, do_hodo=True, do_mcp=True):
-        """Initializes standard baseline subtractions and vectorization."""
+    def prepare(self, do_drs=True, do_fers=True, do_hodo=True, do_mcp=True,
+                linear_baseline=False):
+        """Initializes standard baseline subtractions and vectorization.
+
+        linear_baseline=True switches DRS baseline subtraction to the two-anchor
+        linear method (removes post-pulse pedestal droop); default is the
+        constant median(0,200) baseline.
+        """
         if do_drs and "drs_init" not in self._steps_applied:
             self.rdf = process_drs_data(
-                self.rdf, self.run_number, drsboards=self.drsboards, do_mcp=do_mcp)
+                self.rdf, self.run_number, drsboards=self.drsboards,
+                do_mcp=do_mcp, linear_baseline=linear_baseline)
             if do_mcp:
                 self.rdf = get_psd_energy_deposit(self.rdf, self.run_number)
             self._steps_applied.add("drs_init")
@@ -134,18 +141,25 @@ class CaloXAnalysisManager:
 
     def _get_calibration_paths(self, version="Sep", pedestal_run=None):
         """Helper to centralize calibration file path logic."""
-        # tb2026 (run_number > 1700): use zero pedestals.
-        if pedestal_run is None and self.run_number > 1700:
-            pedestal_path = "data/fers/FERS_pedestals_zero.json"
-        else:
-            p_run = pedestal_run if pedestal_run else (
-                1425 if self.run_number >= 1350 else 1259)
-            pedestal_path = f"data/fers/FERS_pedestals_run{p_run}.json"
+        # tb2026 (run_number > 1700): dedicated calibration set.
+        if self.run_number > 1700:
+            pedestal_path = (f"data/fers/FERS_pedestals_run{pedestal_run}.json"
+                             if pedestal_run else
+                             "data/fers/FERS_pedestals_tb2026.json")
+            return {
+                "pedestal": pedestal_path,
+                "response": "data/fers/FERS_response_tb2026.json",
+                "mixing": "data/fers/FERS_HG2LG_tb2026.json",
+                "deadchannels": "data/fers/deadchannels_tb2026.json",
+            }
 
+        p_run = pedestal_run if pedestal_run else (
+            1425 if self.run_number >= 1350 else 1259)
         return {
-            "pedestal": pedestal_path,
+            "pedestal": f"data/fers/FERS_pedestals_run{p_run}.json",
             "response": f"data/fers/FERS_response_{version}.json",
-            "mixing": f"data/fers/FERS_HG2LG_{version}.json"
+            "mixing": f"data/fers/FERS_HG2LG_{version}.json",
+            "deadchannels": "data/fers/deadchannels.json",
         }
 
     def calibrate_fers(self, pedestal_run=None, version="Sep"):
@@ -155,6 +169,12 @@ class CaloXAnalysisManager:
 
         paths = self._get_calibration_paths(version, pedestal_run)
 
+        print("\033[92mFERS calibration files:\033[0m")
+        print(f"  pedestal     : {paths['pedestal']}")
+        print(f"  HG->LG mixing: {paths['mixing']}")
+        print(f"  calibration  : {paths['response']}")
+        print(f"  dead channels: {paths['deadchannels']}")
+
         # The updated functions in variables/fers.py now check for existing columns internally
         self.rdf = subtractFERSPedestal(
             self.rdf, self.fersboards, gain="HG", file_pedestals=paths["pedestal"])
@@ -163,7 +183,8 @@ class CaloXAnalysisManager:
         self.rdf = mixFERSHGLG(self.rdf, self.fersboards,
                                file_HG2LG=paths["mixing"])
         self.rdf = calibrateFERSChannels(
-            self.rdf, self.fersboards, file_calibrations=paths["response"], gain="Mix")
+            self.rdf, self.fersboards, file_calibrations=paths["response"], gain="Mix",
+            file_deadchannels=paths["deadchannels"])
 
         self._steps_applied.add(f"fers_calib_{version}")
         return self

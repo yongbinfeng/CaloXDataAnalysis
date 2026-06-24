@@ -57,26 +57,58 @@ def get_ref_ts_name(drs_channel_name, use_peak=False):
     return f"{board_group_name}_ref_TS_peak" if use_peak else f"{board_group_name}_ref_TS"
 
 
-def subtract_baseline(rdf, drs_branches, drs_channels_to_flip=None):
+def subtract_baseline(rdf, drs_branches, drs_channels_to_flip=None,
+                      linear=False, pre_window=(0, 120), post_window=(800, 1000)):
+    """Define {ch}_bl and {ch}_blsub for each DRS branch.
+
+    By default (linear=False) the baseline is a single constant — the median of
+    time slices [0, 200) — subtracted from the whole record.
+
+    With linear=True a two-anchor *linear* baseline is used instead: the medians
+    of a clean pre-pulse window and a clean post-pulse window define a line that
+    is subtracted sample-by-sample. This removes the post-pulse pedestal droop
+    seen on large pulses (e.g. service-DRS HoleVeto), at the cost of one extra
+    median per channel. pre_window/post_window must straddle the pulse region.
+    """
+    if drs_channels_to_flip is None:
+        drs_channels_to_flip = []
     existing = [str(c) for c in rdf.GetColumnNames()]
     if "ts" not in existing:
         rdf = rdf.Define("ts", "FillIndices(1024)")
 
+    pre_c = 0.5 * (pre_window[0] + pre_window[1])
+    post_c = 0.5 * (post_window[0] + post_window[1])
+
     for channel_name in drs_branches:
-        rdf = rdf.Define(
-            f"{channel_name}_bl",
-            f"compute_baseline_median({channel_name}, 0, 200)"
-        )
+        if linear:
+            rdf = rdf.Define(
+                f"{channel_name}_bl_pre",
+                f"compute_baseline_median({channel_name}, {pre_window[0]}, {pre_window[1]})")
+            rdf = rdf.Define(
+                f"{channel_name}_bl_post",
+                f"compute_baseline_median({channel_name}, {post_window[0]}, {post_window[1]})")
+            # constant scalar kept for downstream code (pre-pulse level)
+            rdf = rdf.Define(f"{channel_name}_bl", f"{channel_name}_bl_pre")
+            # per-sample baseline line straddling the pulse
+            rdf = rdf.Define(
+                f"{channel_name}_bl_line",
+                f"{channel_name}_bl_pre + (({channel_name}_bl_post - {channel_name}_bl_pre)"
+                f" / double({post_c} - {pre_c})) * (ts - {pre_c})")
+            baseline_expr = f"{channel_name}_bl_line"
+        else:
+            rdf = rdf.Define(
+                f"{channel_name}_bl",
+                f"compute_baseline_median({channel_name}, 0, 200)")
+            baseline_expr = f"{channel_name}_bl"
+
         if channel_name in drs_channels_to_flip:
             rdf = rdf.Define(
                 f"{channel_name}_blsub",
-                f"-({channel_name} - {channel_name}_bl)"
-            )
+                f"-({channel_name} - {baseline_expr})")
         else:
             rdf = rdf.Define(
                 f"{channel_name}_blsub",
-                f"{channel_name} - {channel_name}_bl"
-            )
+                f"{channel_name} - {baseline_expr}")
 
     return rdf
 
@@ -248,7 +280,10 @@ def get_psd_energy_deposit(rdf, run_number, TS_start=100, TS_end=400):
     return rdf
 
 
-def process_drs_data(rdf, run_number, drsboards, do_mcp=True):
+def process_drs_data(rdf, run_number, drsboards, do_mcp=True,
+                     linear_baseline=False,
+                     baseline_pre_window=(0, 120),
+                     baseline_post_window=(800, 1000)):
     drs_branches = get_drs_branches(rdf)
     drs_channels_ref = [ch for ch in drs_branches if ch.endswith("Channel8")]
     drs_branches_to_flip = get_drs_branches_to_flip(
@@ -260,7 +295,9 @@ def process_drs_data(rdf, run_number, drsboards, do_mcp=True):
     mcp_det = MCP_REF if (do_mcp and mcp_available) else None
 
     rdf = subtract_baseline(
-        rdf, drs_branches, drs_channels_to_flip=drs_branches_to_flip)
+        rdf, drs_branches, drs_channels_to_flip=drs_branches_to_flip,
+        linear=linear_baseline, pre_window=baseline_pre_window,
+        post_window=baseline_post_window)
     rdf = process_reference_channels(rdf, drs_channels_ref)
     if do_mcp:
         rdf = process_mcp_channels(rdf, run_number)

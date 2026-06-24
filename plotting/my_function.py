@@ -613,7 +613,10 @@ def DrawHistos(myhistos, mylabels, xmin, xmax, xlabel, ymin, ymax, ylabel, outpu
             "e+": "e^{+}",
             "mu+": "#mu+",
         }
-        CMS_lumi.lumi_13TeV = f"{btypes.get(btype.lower(), btype.lower())}, {benergy} GeV"
+        beam_label = f"{btypes.get(btype.lower(), btype.lower())}, {benergy} GeV"
+        if CMS_lumi.show_run_number:
+            beam_label = f"Run {run_number}: {beam_label}"
+        CMS_lumi.lumi_13TeV = beam_label
     else:
         CMS_lumi.lumi_13TeV = ""
 
