@@ -969,7 +969,7 @@ def get_service_drs_channels(run_number=1184):
         }
     else:
         # tb 2026
-        return {
+        channels = {
             "TailCatcher": _drs(0, 0, 0, brg),
             "TTUMuonVeto": _drs(0, 0, 1, brg),
             "Cer474":      _drs(0, 0, 2, brg),
@@ -979,6 +979,10 @@ def get_service_drs_channels(run_number=1184):
             "MCP_2":       _drs(0, 0, 6, brg),
             "HoleVeto":    _drs(0, 0, 7, brg),
         }
+        if run_number >= 1824:
+            channels["ST1"] = _drs(0, 1, 0, brg)
+            channels["ST3"] = _drs(0, 1, 1, brg)
+        return channels
 
 
 def get_pid_channels(run_number=1184):
@@ -990,6 +994,7 @@ def get_pid_channels(run_number=1184):
         "Cer474", "Cer519", "Cer537",
         "KT1", "KT2", "T3", "T4",
         "MCP_1", "MCP_2",
+        "ST1", "ST3",
         "TailCatcher"
     ]
     return OrderedDict((det, service.get(det)) for det in pid_dets)

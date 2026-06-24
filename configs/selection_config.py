@@ -20,6 +20,8 @@ def get_service_drs_cut(service_drs: str, run_number: int = None) -> tuple:
         "KT2":         (0,   1000, 5, 45, 1e3,    "Sum"),
         "T3":          (0,   1000, 5, 45, 1e3,    "Sum"),
         "T4":          (0,   1000, 5, 45, 1e3,    "Sum"),
+        "ST1":         (0,   1000, 5, 45, 5e3,    "Sum"),
+        "ST3":         (0,   1000, 5, 45, 5e3,    "Sum"),
         "MCP_US_0":    (500, 650,  5, 45, 20,     "PeakValue"),
         "MCP_US_1":    (500, 650,  5, 45, 20,     "PeakValue"),
         "MCP_US_2":    (500, 650,  5, 45, 20,     "PeakValue"),

@@ -474,6 +474,14 @@ def get_service_drs_processed_info_ranges(channel, cat):
             "peak_value": (-50, 1200),
             "sum": (-2e3, 1.2e4)
         },
+        "ST1": {
+            "peak_value": (-50, 1200),
+            "sum": (-2e3, 1.2e4)
+        },
+        "ST3": {
+            "peak_value": (-50, 1200),
+            "sum": (-2e3, 1.2e4)
+        },
         "MCP": {
             "peak_value": (0, 400),
             "sum": (-500, 1000),

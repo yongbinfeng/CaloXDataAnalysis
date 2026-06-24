@@ -24,7 +24,7 @@ from configs.plot_config import (get_drs_plot_ranges, get_drs_cfd_finebins_range
 from utils.utils import number_to_string, get_channel_var
 from utils.plot_helper import save_hists_to_file
 from variables.drs import get_arr_name
-from channels.channel_map import get_mcp_channels, get_pid_channels
+from channels.channel_map import get_mcp_channels, get_pid_channels, get_service_drs_channels
 
 _COMBO_VARS = ("CerQuartz", "CerPlastic", "Sci")
 
@@ -1023,41 +1023,56 @@ def book_service_drs_hodo(ctx):
     ctx.hbook.add("hodoscope_peaks.root", hists)
 
 
-def _ttu_hodo_selections(ctx):
+# Detectors included in the TTU-hodo before/after combinatorics, in order.
+# "hodo" -> hodoscope hit; "HoleVeto" -> veto pass; everything else ->
+# a get_service_drs_cut "has signal" flag. Edit this one list to add/remove.
+_TTU_HODO_DETS = ["hodo", "HoleVeto", "MCP_1", "MCP_2", "ST1"]
+
+
+def _ttu_hodo_flag(rdf, existing, det, run_number):
+    """Resolve a TTU-hodo detector to (rdf, flag_column), defining it if needed.
+
+    Returns flag_column=None when the detector is unavailable for this run.
+    """
+    if det == "hodo":
+        if "TTU_Hodo_nHitX" not in existing or "TTU_Hodo_nHitY" not in existing:
+            return rdf, None
+        flag = "has_hodo_hit"
+        if flag not in existing:
+            rdf = rdf.Define(flag, "TTU_Hodo_nHitX > 0 && TTU_Hodo_nHitY > 0")
+            existing.add(flag)
+        return rdf, flag
+    if det == "HoleVeto":
+        return rdf, ("is_HoleVeto_vetoed" if "is_HoleVeto_vetoed" in existing else None)
+    # generic service-DRS "has signal": firing threshold from get_service_drs_cut
+    channel = get_service_drs_channels(run_number).get(det)
+    if channel is None or f"{channel}_blsub" not in existing:
+        return rdf, None
+    ts_min, ts_max, _, _, val_cut, method = get_service_drs_cut(det, run_number)
+    range_func = "MaxRange" if method == "PeakValue" else f"{method}Range"
+    flag = f"has_{det}_signal"
+    if flag not in existing:
+        rdf = rdf.Define(
+            flag, f"{range_func}({channel}_blsub, {ts_min}, {ts_max}) > {val_cut}")
+        existing.add(flag)
+    return rdf, flag
+
+
+def _ttu_hodo_selections(ctx, dets=_TTU_HODO_DETS):
     """Build the TTU-hodo selection list over all detector combinations.
 
     Returns (rdf, [(selection_column, label)]). 'all' is the unselected sample;
-    the rest are every non-empty combination (1-, 2-, 3-fold, ...) of the base
-    detectors [HoleVeto, MCP_1, MCP_2, ...]. HoleVeto uses is_HoleVeto_vetoed;
-    each MCP uses a 'has signal' flag from the get_service_drs_cut firing
-    threshold (MaxRange/SumRange over the pulse window > val_cut).
+    the rest are every non-empty combination of the available *dets*.
     """
     import itertools
     rdf = ctx.rdf
     existing = {str(c) for c in rdf.GetColumnNames()}
 
-    # base single-detector requirements: (name, flag_column)
-    base = []
-    # hodoscope hit: a position is only meaningful when both planes have a hit
-    if "TTU_Hodo_nHitX" in existing and "TTU_Hodo_nHitY" in existing:
-        flag = "has_hodo_hit"
-        if flag not in existing:
-            rdf = rdf.Define(flag, "TTU_Hodo_nHitX > 0 && TTU_Hodo_nHitY > 0")
-            existing.add(flag)
-        base.append(("hodo", flag))
-    if "is_HoleVeto_vetoed" in existing:
-        base.append(("HoleVeto", "is_HoleVeto_vetoed"))
-    for det, channel in get_mcp_channels(ctx.run_number).items():
-        if channel is None or f"{channel}_blsub" not in existing:
-            continue
-        ts_min, ts_max, _, _, val_cut, method = get_service_drs_cut(det, ctx.run_number)
-        range_func = "MaxRange" if method == "PeakValue" else f"{method}Range"
-        flag = f"has_{det}_signal"
-        if flag not in existing:
-            rdf = rdf.Define(
-                flag, f"{range_func}({channel}_blsub, {ts_min}, {ts_max}) > {val_cut}")
-            existing.add(flag)
-        base.append((det, flag))
+    base = []  # (name, flag_column) for detectors available this run
+    for det in dets:
+        rdf, flag = _ttu_hodo_flag(rdf, existing, det, ctx.run_number)
+        if flag is not None:
+            base.append((det, flag))
 
     sels = [("passNone", "all")]
     for r in range(1, len(base) + 1):
@@ -1075,13 +1090,15 @@ def _ttu_hodo_selections(ctx):
     return rdf, sels
 
 
-def _ttu_hodo_labels(run_number):
-    """Labels matching _ttu_hodo_selections (for the plot phase, no rdf needed)."""
+def _ttu_hodo_labels(dets=_TTU_HODO_DETS):
+    """Candidate labels matching _ttu_hodo_selections (plot phase, no rdf needed).
+
+    Includes every combination; the plotter skips ones whose histogram is absent.
+    """
     import itertools
-    base = ["hodo", "HoleVeto"] + list(get_mcp_channels(run_number).keys())
     labels = ["all"]
-    for r in range(1, len(base) + 1):
-        for combo in itertools.combinations(base, r):
+    for r in range(1, len(dets) + 1):
+        for combo in itertools.combinations(dets, r):
             labels.append("_and_".join(combo))
     return labels
 

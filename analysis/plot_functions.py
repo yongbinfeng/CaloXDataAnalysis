@@ -2102,7 +2102,7 @@ def plot_service_ttu_hodo(ctx):
     """Plot TTU hodoscope XY over all detector requirement combinations + table."""
     from analysis.hist_functions import _ttu_hodo_labels
     hodo_min, hodo_max, _ = get_ttu_hodo_ranges()
-    labels = _ttu_hodo_labels(ctx.run_number)
+    labels = _ttu_hodo_labels()
     counts = {}
     with _pm(ctx) as pm:
         pm.set_output_dir("TTU_Hodo")

@@ -9,16 +9,26 @@ def vectorizeFERS(rdf, fersboards):
     FRES board outputs
     define variables as RDF does not support reading vectors
     with indices directly
+
+    Boards whose energy branches are absent from the input tree (e.g. a board
+    not read out for this run) are skipped with a warning instead of crashing.
     """
+    existing = {str(c) for c in rdf.GetColumnNames()}
     for fersboard in fersboards.values():
         board_no = fersboard.board_no
+        hg = f"FERS_Board{board_no}_energyHG"
+        lg = f"FERS_Board{board_no}_energyLG"
+        if hg not in existing or lg not in existing:
+            print(f"\033[93mFERS_Board{board_no} energy branches not found in tree;"
+                  f" skipping board.\033[0m")
+            continue
         for channel in fersboard:
             rdf = rdf.Define(
                 channel.get_channel_name(gain="HG"),
-                f"FERS_Board{board_no}_energyHG[{channel.channel_no}]")
+                f"{hg}[{channel.channel_no}]")
             rdf = rdf.Define(
                 channel.get_channel_name(gain="LG"),
-                f"FERS_Board{board_no}_energyLG[{channel.channel_no}]"
+                f"{lg}[{channel.channel_no}]"
             )
     return rdf
 
@@ -291,9 +301,17 @@ def getFERSEnergyWeightedCenter(rdf, fersboards, gain="HG", pdsub=False, calib=F
 def buildTTUHodo(rdf, val_cut=4000):
     """
     Build TTU Hodoscope hit information in RDF.
+
+    No-op if the TTU hodoscope FERS boards are absent from the input tree.
     """
     ttuhodo_x_name = "FERS_Board1_energyHG"
     ttuhodo_y_name = "FERS_Board0_energyHG"
+
+    existing = {str(c) for c in rdf.GetColumnNames()}
+    if ttuhodo_x_name not in existing or ttuhodo_y_name not in existing:
+        print(f"\033[93mTTU hodoscope boards ({ttuhodo_x_name}, {ttuhodo_y_name})"
+              f" not found in tree; skipping TTU hodo build.\033[0m")
+        return rdf
 
     # by summing boolean array where energy deposit > threshold
     hit_x_expr = f"ROOT::VecOps::Sum( ( {ttuhodo_x_name} > {val_cut} ) )"
