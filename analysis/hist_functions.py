@@ -604,15 +604,21 @@ def book_drs_stats(ctx, do_finebins=True):
     # Fine-binned CFD-time histograms are needed by drs_cfd_mpv (and the optional
     # DRS_Time_FineBins distribution plots, which are off by default).
     hists = []
-    energy_stats = {}  # channel_name -> (Mean, Max) of DRS sum, for board maps
+    # channel_name -> (Mean, Max, SatFrac) of DRS sum, for board maps.
+    # Saturated event: any baseline-subtracted sample exceeds 2200 ADC.
+    energy_stats = {}
     for _, board in ctx.drsboards.items():
         for chan in board:
             if chan.is_reference:
                 continue
             channel_name = chan.get_channel_name(blsub=False)
+            sat = ctx.rdf.Define(
+                f"{channel_name}_issat",
+                f"ROOT::VecOps::Max({channel_name}_blsub) > 2200")
             energy_stats[channel_name] = (
                 ctx.rdf.Mean(f"{channel_name}_energy"),
                 ctx.rdf.Max(f"{channel_name}_energy"),
+                sat.Mean(f"{channel_name}_issat"),
             )
             hists.append(ctx.rdf.Histo1D((
                 f"hist_{channel_name}_peak_value",
@@ -667,13 +673,13 @@ def book_drs_stats(ctx, do_finebins=True):
 
     ctx.hbook.add("drs_stats.root", hists)
 
-    # DRS sum (energy) mean/max per channel -> JSON for the board-location maps
-    energy_lazy = [p for pair in energy_stats.values() for p in pair]
+    # DRS sum mean/max + saturation fraction per channel -> JSON for board maps
+    energy_lazy = [p for triple in energy_stats.values() for p in triple]
 
     def _save_energy_stats():
         import os
-        results = {ch: (mean.GetValue(), vmax.GetValue())
-                   for ch, (mean, vmax) in energy_stats.items()}
+        results = {ch: (mean.GetValue(), vmax.GetValue(), satfrac.GetValue())
+                   for ch, (mean, vmax, satfrac) in energy_stats.items()}
         os.makedirs(ctx.paths["root"], exist_ok=True)
         with open(f"{ctx.paths['root']}/drs_energy_stats.json", "w") as f:
             json.dump(results, f, indent=4)

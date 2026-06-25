@@ -972,7 +972,8 @@ def plot_drs_profiles(ctx, *, do_ts=True, do_time=False, do_mcp_only=False):
                         is_amplified=chan.is_amplified,
                         is6mm=chan.is6mm,
                         is_reference=chan.is_reference,
-                        is_cer=chan.isCer)
+                        is_cer=chan.isCer,
+                        run_number=ctx.run_number)
                     pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
                     pave.AddText(
                         f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
@@ -1042,7 +1043,8 @@ def plot_drs_profiles(ctx, *, do_ts=True, do_time=False, do_mcp_only=False):
                         is_amplified=chan.is_amplified,
                         is6mm=chan.is6mm,
                         is_reference=False,
-                        is_cer=chan.isCer)
+                        is_cer=chan.isCer,
+                        run_number=ctx.run_number)
                     pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
                     pave.AddText(
                         f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
@@ -1156,26 +1158,41 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
                 "DRS/DRS_Sum.html", plots_per_row=9))
 
     if do_energy_map:
-        # -- average / max DRS sum vs channel location (board maps) --
+        # -- DRS sum mean/max + saturation fraction vs channel location (maps) --
         import json
         with open(f"{ctx.paths['root']}/drs_energy_stats.json") as f:
             estats = json.load(f)
         mean_map = {ch: vals[0] for ch, vals in estats.items()}
         max_map = {ch: vals[1] for ch, vals in estats.items()}
-        with _pm(ctx) as pm:
-            pm.set_output_dir("DRS_Stats")
+        # saturation fraction may be absent in older JSON (len 2)
+        sat_map = {ch: vals[2] for ch, vals in estats.items() if len(vals) > 2}
+        def _draw_maps(pm, configs):
             helper = BoardPlotHelper(pm)
-            for stat, vmap, zlabel in [("Mean", mean_map, "Mean DRS Sum [ADC]"),
-                                       ("Max", max_map, "Max DRS Sum [ADC]")]:
+            for stat, vmap, zlabel, digits in configs:
                 cer_hists, sci_hists = visualizeDRSBoards(
                     ctx.drsboards, valuemaps=vmap,
                     suffix=f"Sum{stat}_Run{ctx.run_number}")
                 helper.plot_cer_sci_pair(
                     cer_hists, sci_hists,
                     f"DRS_Sum{stat}_Run{ctx.run_number}",
-                    nTextDigits=0, zlabel=zlabel)
+                    nTextDigits=digits, zlabel=zlabel)
+
+        with _pm(ctx) as pm:
+            pm.set_output_dir("DRS_Stats")
+            _draw_maps(pm, [
+                ("Mean", mean_map, "Mean DRS Sum [ADC]", 0),
+                ("Max", max_map, "Max DRS Sum [ADC]", 0),
+            ])
             output_htmls.append(pm.generate_html(
                 "DRS/DRS_Sum_Map.html", plots_per_row=2))
+
+        if sat_map:
+            with _pm(ctx) as pm:
+                pm.set_output_dir("DRS_Stats")
+                _draw_maps(pm, [
+                    ("SatFrac", sat_map, "Saturation Fraction", 3)])
+                output_htmls.append(pm.generate_html(
+                    "DRS/DRS_Saturation_Map.html", plots_per_row=2))
 
     if do_timing:
         # -- timing --

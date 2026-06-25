@@ -213,7 +213,7 @@ def get_drs_time_arr_ns_range():
     return (0, 100)
 
 
-def get_drs_prof_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, is_reference=False, is_cer=False):
+def get_drs_prof_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, is_reference=False, is_cer=False, run_number=None):
     xmin, xmax = get_drs_plot_ranges(
         subtractMedian, is_amplified, is6mm, is_reference)
     if not is_reference:
@@ -222,6 +222,9 @@ def get_drs_prof_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=Fal
     if is_cer:
         xmax = xmax / 2.0
         xmin = xmin / 2.0
+    # tb2026 (run_number > 1828): larger pulses -> double the upper range.
+    if run_number is not None and run_number > 1828:
+        xmax = xmax * 2.0
     return xmin, xmax
 
 
