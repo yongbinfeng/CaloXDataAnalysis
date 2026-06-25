@@ -240,8 +240,10 @@ def process_drs_channels(rdf, drs_channel_names, mcp_det="MCP_US_0"):
     for channel_name in drs_channel_names:
         channelName_blsub = channel_name + "_blsub"
 
+        #rdf = rdf.Define(f"{channel_name}_CFD",
+        #                 f"compute_cfd_integral({channelName_blsub}, 1, 3.0, 200, 220, 3, 15)")
         rdf = rdf.Define(f"{channel_name}_CFD",
-                         f"compute_cfd_integral({channelName_blsub}, 1, 3.0, 200, 220, 3, 15)")
+                         f"compute_cfd_integral({channelName_blsub})")
         rdf = rdf.Define(f"{channel_name}_energy",
                          f"{channel_name}_CFD.energy")
         rdf = rdf.Define(f"{channel_name}_TS_cfd",

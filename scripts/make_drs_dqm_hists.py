@@ -11,8 +11,14 @@ Usage
   python scripts/make_drs_dqm_hists.py --sequences drs_stats drs_waveforms
   python scripts/make_drs_dqm_hists.py --sequences drs_peak_ts
 
-Available sequences (see analysis/registry.py):
-  drs_mapping  drs_waveforms  drs_profiles  drs_stats  drs_peak_ts
+Available sequences (see analysis/registry.py  DRS_DQM_SEQUENCES):
+  drs_mapping            — channel layout map (plot-only)
+  drs_waveforms          — per-channel DRS waveform 2D (vs TS)
+  drs_profiles           — per-channel DRS waveform profiles
+  drs_prof_combined      — combined waveform profiles (book-only)
+  drs_stats              — per-channel stats maps
+  drs_finebins_combined  — fine-binned combined profiles (off by default)
+  drs_peak_ts            — peak time-slice distributions (off by default)
 """
 
 from core.analysis_manager import CaloXAnalysisManager

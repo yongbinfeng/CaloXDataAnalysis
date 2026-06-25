@@ -884,7 +884,7 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_mcp_vs_ts=False):
     return output_htmls
 
 
-def plot_drs_profiles(ctx, *, do_ts=True, do_time=True, do_mcp_only=False):
+def plot_drs_profiles(ctx, *, do_ts=True, do_time=False, do_mcp_only=False):
     """Plot DRS waveform profiles vs ts and vs time [ns]. Returns list of HTML paths."""
     output_htmls = []
 
@@ -959,13 +959,11 @@ def plot_drs_profiles(ctx, *, do_ts=True, do_time=True, do_mcp_only=False):
                 for chan in board:
                     ch_blsub = chan.get_channel_name(blsub=True)
 
-                    def _get_proj(name):
-                        h = infile.Get(name)
-                        return h.ProjectionX() if h else None
-
-                    hist = _get_proj(f"prof_{ch_blsub}_VS_ts")
-                    hist_ref = _get_proj(f"prof_{ch_blsub}_VS_ts_ref")
-                    hist_mcp = _get_proj(f"prof_{ch_blsub}_VS_ts_mcp")
+                    # TProfile draws its per-bin means directly; ProjectionX is
+                    # unnecessary and ~40x slower when interleaved with DrawHistos.
+                    hist = infile.Get(f"prof_{ch_blsub}_VS_ts")
+                    hist_ref = infile.Get(f"prof_{ch_blsub}_VS_ts_ref")
+                    hist_mcp = infile.Get(f"prof_{ch_blsub}_VS_ts_mcp")
                     if not hist:
                         print(f"Warning: prof_{ch_blsub}_VS_ts not found")
                         continue
@@ -1095,8 +1093,8 @@ def plot_drs_profiles(ctx, *, do_ts=True, do_time=True, do_mcp_only=False):
 # DRS: pulse statistics (peak, energy, timing)
 # ---------------------------------------------------------------------------
 
-def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False,
-                   do_timing_finebins_ts=True, do_timing_finebins_time=True):
+def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
+                   do_timing=True, do_finebins=False):
     """Plot DRS peak, energy, and timing distributions. Returns list of HTML paths."""
     output_htmls = []
 
@@ -1157,6 +1155,28 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False,
             output_htmls.append(pm.generate_html(
                 "DRS/DRS_Sum.html", plots_per_row=9))
 
+    if do_energy_map:
+        # -- average / max DRS sum vs channel location (board maps) --
+        import json
+        with open(f"{ctx.paths['root']}/drs_energy_stats.json") as f:
+            estats = json.load(f)
+        mean_map = {ch: vals[0] for ch, vals in estats.items()}
+        max_map = {ch: vals[1] for ch, vals in estats.items()}
+        with _pm(ctx) as pm:
+            pm.set_output_dir("DRS_Stats")
+            helper = BoardPlotHelper(pm)
+            for stat, vmap, zlabel in [("Mean", mean_map, "Mean DRS Sum [ADC]"),
+                                       ("Max", max_map, "Max DRS Sum [ADC]")]:
+                cer_hists, sci_hists = visualizeDRSBoards(
+                    ctx.drsboards, valuemaps=vmap,
+                    suffix=f"Sum{stat}_Run{ctx.run_number}")
+                helper.plot_cer_sci_pair(
+                    cer_hists, sci_hists,
+                    f"DRS_Sum{stat}_Run{ctx.run_number}",
+                    nTextDigits=0, zlabel=zlabel)
+            output_htmls.append(pm.generate_html(
+                "DRS/DRS_Sum_Map.html", plots_per_row=2))
+
     if do_timing:
         # -- timing --
         with _pm(ctx) as pm:
@@ -1202,7 +1222,7 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False,
                     ROOT.kGreen+2, ROOT.kOrange+1, ROOT.kCyan+2]
     _NS_WINDOW = 1.2  # ±1.2 ns window for MPV fit
 
-    if do_timing_finebins_ts:
+    if do_finebins:
         # -- fine-binned CFD TS (MCP-corrected) --
         with _pm(ctx) as pm:
             pm.set_output_dir("DRS_Stats")
@@ -1288,7 +1308,7 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_timing=False,
             output_htmls.append(pm.generate_html(
                 "DRS/DRS_Time_FineBins_TS.html", plots_per_row=9))
 
-    if do_timing_finebins_time:
+    if do_finebins:
         # -- fine-binned CFD time [ns] (MCP + MPV corrected) --
         with _pm(ctx) as pm:
             pm.set_output_dir("DRS_Stats")
@@ -1689,8 +1709,8 @@ def _plot_pulse_distributions(channels, infile, pm, suffix):
                        "ADC Counts", (wf_ymin, wf_ymax), style=_STYLE_SVC_2D_LOG)
         prof = infile.Get(f"{det}_ADC_vs_TS_prof")
         if prof:
-            prof_px = prof.ProjectionX()
-            pm.plot_1d(prof_px, f"{det}_ADC_vs_TS_prof", "Time Slice", (0, 1024),
+            # TProfile draws its per-bin means directly (ProjectionX is slow).
+            pm.plot_1d(prof, f"{det}_ADC_vs_TS_prof", "Time Slice", (0, 1024),
                        "Mean ADC Counts", (wf_ymin / 10.0, wf_ymax / 5.0),
                        style=_STYLE_SVC_1D)
 

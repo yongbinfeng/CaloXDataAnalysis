@@ -1,12 +1,23 @@
-from channels.calox_channel import FERSBoard, DRSBoard, DRSChannel, drs_map, FERSBoards, add_drs_reference_channel
+from channels.calox_channel import FERSBoard, DRSBoard, DRSChannel, drs_map, FERSBoards, add_drs_reference_channel, A5202_map, A5205_map_3mm
 from utils.data_loader import is_scan_run
 import json
+import os
+import csv
+import re
 from collections import OrderedDict
 
 # Run number at which DRS branches gained the "Brg{N}_" prefix.
 _DRS_BRG_RUN = 1700
-# Run number at which DRS boards switched from 3mm to 6mm crystals.
+# Run number at which DRS boards switched from 3mm to 6mm fibers.
 _DRS_6MM_RUN = 1748
+_DRS_FULL_RUN_TB2026 = 1828
+
+# CSV mapping each DRS readout channel (DRS_ROOT_Bridge_Mapping) to its FERS
+# channel (fers_root_board, Physical-1). For runs >= _DRS_6MM_RUN the DRS channel
+# positions are taken from those FERS channels (see build_drs_boards_from_fers).
+_DRS_FERS_CSV = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "data", "channel_maps", "drs_channel_map_final.csv")
 
 
 def _drs(board, group, ch, brg=None):
@@ -259,6 +270,116 @@ def build_fers_boards(run_number=316):
     return fersboards
 
 
+def physical_to_fers_channel(physical, is6mm):
+    """Map a FERS 'Physical' position (1-64) to the FERS readout channel number.
+
+    The A5202_map (6mm) / A5205_map_3mm (3mm) arrays store, at [ix, iy], the
+    readout channel number. Within each group of 4, the physical positions fill
+    ix right-to-left: physical 1,2,3,4 -> ix 2,3,0,1 (i.e. ix = ((p-1)+2) % 4),
+    iy = (p-1)//4. With this ordering the CSV materials (Cer/Sci and
+    quartz/plastic) agree exactly with the FERS map. Same convention for 6mm
+    and 3mm.
+    """
+    fers_map = A5202_map if is6mm else A5205_map_3mm
+    p = int(physical) - 1
+    return int(fers_map[(p + 2) % 4, p // 4])
+
+
+def load_drs_fers_lookup(csv_path=_DRS_FERS_CSV):
+    """Parse the DRS->FERS mapping CSV.
+
+    Returns a list of dicts, one per signal DRS readout channel:
+        bridge, board, group, channel : from the DRS_ROOT_Bridge_Mapping column
+                                        (DRS_Bridge{b}_Board{B}_Group{G}_Channel{C},
+                                         which equals the data branch DRS_Brg{b}_...)
+        fers_board : FERS ROOT board number  (fers_root_board column)
+        physical   : FERS physical position  (Physical column, 1-64); converted to
+                     a FERS channel number with physical_to_fers_channel()
+        isCer      : True for Plastic/Quartz (Cherenkov), False for Scintillation
+        isQuartz   : True for Quartz
+    Service-DRS rows (channels not wired to the calorimeter readout) are simply
+    absent from the CSV, so they are naturally excluded.
+    """
+    entries = []
+    with open(csv_path) as f:
+        reader = csv.reader(f)
+        next(reader)  # header
+        for row in reader:
+            if len(row) < 11:
+                continue
+            m = re.match(
+                r"DRS_Bridge(\d+)_Board(\d+)_Group(\d+)_Channel(\d+)", row[10])
+            if not m:
+                continue
+            brg, bd, gr, ch = (int(m.group(i)) for i in range(1, 5))
+            typ = row[2].strip()
+            entries.append({
+                "bridge": brg, "board": bd, "group": gr, "channel": ch,
+                "fers_board": int(row[8]), "physical": int(row[5]),
+                "isCer": typ in ("Plastic", "Quartz"),
+                "isQuartz": typ == "Quartz",
+            })
+    return entries
+
+
+def build_drs_boards_from_fers(fersboards, csv_path=_DRS_FERS_CSV):
+    """Build DRS boards whose channel (x, y) positions come from the FERS map.
+
+    Each DRS readout channel is matched, via the CSV, to a FERS channel:
+    fers_root_board + the FERS 'Physical' position, mapped through the
+    A5202_map/A5205_map_3mm arrays (physical_to_fers_channel) to a FERS channel
+    number. The DRS channel inherits that FERS channel's tower position AND its
+    Cer/Sci + quartz/plastic type, so the DRS map matches the FERS map exactly
+    (the FERS map already encodes the special quartz/plastic pattern of the few
+    core channels that differ from the regular 3mm layout). The CSV material
+    column agrees with the FERS type and is kept only as a cross-check.
+
+    All channels are amplified. The 6mm/3mm flag is inherited from the matched
+    FERS channel (the core DRS boards read the 3mm region, the outer ones the
+    6mm region), so the channels land in the correct granularity map. A reference
+    channel (Channel8, position (-999,-999)) is added per group, as the old
+    builder did. Boards are keyed "Brg{bridge}_Board{board}". FERS maps are not
+    modified.
+    """
+    fers_by = {(board.board_no, ch.channel_no): ch
+               for board in fersboards.values() for ch in board}
+    # Granularity is a board-level property; the per-channel FERSChannel.is6mm
+    # flag is unreliable (build_fers_base does not set it), so take it from the
+    # FERS board.
+    fers_board_is6mm = {board.board_no: board.is6mm
+                        for board in fersboards.values()}
+
+    grouped = OrderedDict()
+    for e in load_drs_fers_lookup(csv_path):
+        is6mm = fers_board_is6mm[e["fers_board"]]
+        fers_channel = physical_to_fers_channel(e["physical"], is6mm)
+        fers_ch = fers_by.get((e["fers_board"], fers_channel))
+        if fers_ch is None:
+            raise ValueError(
+                f"DRS_Brg{e['bridge']}_Board{e['board']}_Group{e['group']}_"
+                f"Channel{e['channel']} maps to FERS board {e['fers_board']} "
+                f"physical {e['physical']} (channel {fers_channel}), "
+                f"which does not exist.")
+        chan = DRSChannel(
+            fers_ch.i_tower_x, fers_ch.i_tower_y, fers_ch.isCer,
+            e["channel"], e["group"], e["board"],
+            is_amplified=True, is6mm=is6mm,
+            isQuartz=fers_ch.isQuartz, bridge_no=e["bridge"])
+        grouped.setdefault((e["bridge"], e["board"]), []).append(chan)
+
+    DRSBoards = {}
+    for (brg, bd), channels in sorted(grouped.items()):
+        # All signal channels of a board share one granularity; the reference
+        # channel inherits it.
+        board_is6mm = channels[0].is6mm
+        for group_no in sorted({c.group_no for c in channels}):
+            channels.append(add_drs_reference_channel(
+                group_no, bd, is6mm=board_is6mm, bridge_no=brg))
+        DRSBoards[f"Brg{brg}_Board{bd}"] = DRSBoard(
+            board_no=bd, channels=channels, bridge_no=brg)
+    return DRSBoards
+
+
 def build_drs_boards(run_number=316):
     """
     Build a map for ixy and DRS channels.
@@ -357,6 +478,14 @@ def build_drs_boards(run_number=316):
         DRSBoards["Board4"] = buildDRSBoardTestBeam(board_no=4)
         DRSBoards["Board5"] = buildDRSBoardTestBeam(board_no=5)
         DRSBoards["Board6"] = buildDRSBoardTestBeam(board_no=6)
+    elif run_number >= _DRS_FULL_RUN_TB2026:
+        # 6mm boards (run_number >= 1748): the DRS channel positions are taken
+        # from the corresponding FERS channels via the DRS->FERS CSV mapping
+        # (build_drs_boards_from_fers). FERS maps are unchanged. The per-channel
+        # bridge numbering and quartz/plastic flags come from the CSV, so we skip
+        # the set_bridge_no / update_quartz_channels post-processing below.
+        fersboards = build_fers_boards(run_number=run_number)
+        return build_drs_boards_from_fers(fersboards)
     elif run_number >= _DRS_6MM_RUN:
         # 6mm boards (run_number >= 1748): 2 calo boards (0, 1), all 6mm, no MCP
         # All channels are amplified (inverted), so is_amplified=True on every channel.
@@ -926,7 +1055,7 @@ def get_mcp_channels(run_number=1184):
             "MCP_US_2": _drs(2, 3, 7, None),
             "MCP_US_3": _drs(3, 3, 7, None),
         }
-    elif run_number > 1700 and run_number < 1828:
+    elif run_number > 1700 and run_number < _DRS_FULL_RUN_TB2026:
         # only going to server drs
         return {
             "MCP_1": _drs(0, 0, 5, 1),
@@ -988,7 +1117,7 @@ def get_service_drs_channels(run_number=1184):
         if run_number >= 1824:
             channels["ST1"] = _drs(0, 1, 0, 1)
             channels["ST3"] = _drs(0, 1, 1, 1)
-        if run_number >= 1828:
+        if run_number >= _DRS_FULL_RUN_TB2026:
             # drop MCP_1 and MCP_2, add MCP_DS_0/1 and MCP_US_0/1
             channels.pop("MCP_1")
             channels.pop("MCP_2")

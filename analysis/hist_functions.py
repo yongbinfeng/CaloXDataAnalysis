@@ -386,7 +386,9 @@ def book_drs_waveforms(ctx):
     ctx.hbook.add("drs_vs_ts.root", hists)
 
 
-def book_drs_profiles(ctx):
+def book_drs_profiles(ctx, do_time_ns=False):
+    # do_time_ns temporarily off: the per-channel VS_time_mcp profiles feed the
+    # (also-disabled) DRS_Prof_vs_time plots and drs_prof_corr_combined.
     hists = []
     for _, board in ctx.drsboards.items():
         for chan in board:
@@ -394,7 +396,7 @@ def book_drs_profiles(ctx):
                 continue
             hists.extend(_book_drs_channel_profiles(
                 ctx, chan.get_channel_name(blsub=False),
-                with_time_ns=not chan.is_reference))
+                with_time_ns=do_time_ns and not chan.is_reference))
 
     existing = [str(c) for c in ctx.rdf.GetColumnNames()]
     for _, mcp_channel in get_mcp_channels(ctx.run_number).items():
@@ -598,13 +600,20 @@ def book_drs_finebins_corr_combined(ctx):
 # DRS: pulse statistics (peak value, energy, timing)
 # ---------------------------------------------------------------------------
 
-def book_drs_stats(ctx):
+def book_drs_stats(ctx, do_finebins=True):
+    # Fine-binned CFD-time histograms are needed by drs_cfd_mpv (and the optional
+    # DRS_Time_FineBins distribution plots, which are off by default).
     hists = []
+    energy_stats = {}  # channel_name -> (Mean, Max) of DRS sum, for board maps
     for _, board in ctx.drsboards.items():
         for chan in board:
             if chan.is_reference:
                 continue
             channel_name = chan.get_channel_name(blsub=False)
+            energy_stats[channel_name] = (
+                ctx.rdf.Mean(f"{channel_name}_energy"),
+                ctx.rdf.Max(f"{channel_name}_energy"),
+            )
             hists.append(ctx.rdf.Histo1D((
                 f"hist_{channel_name}_peak_value",
                 "DRS peak value;Peak value;Counts",
@@ -635,26 +644,41 @@ def book_drs_stats(ctx):
                 "DRS CFD TS (ref+MCP-corrected);TS_cfd_mcp;Counts",
                 1024, 0, 1024),
                 f"{channel_name}_TS_cfd_mcp"))
-            fb_min, fb_max = get_drs_cfd_finebins_range(chan.isCer)
-            hists.append(ctx.rdf.Histo1D((
-                f"hist_{channel_name}_TS_cfd_mcp_finebins",
-                "DRS CFD TS (ref+MCP-corrected);TS_cfd_mcp;Counts",
-                500, fb_min, fb_max),
-                f"{channel_name}_TS_cfd_mcp"))
+            if do_finebins:
+                fb_min, fb_max = get_drs_cfd_finebins_range(chan.isCer)
+                hists.append(ctx.rdf.Histo1D((
+                    f"hist_{channel_name}_TS_cfd_mcp_finebins",
+                    "DRS CFD TS (ref+MCP-corrected);TS_cfd_mcp;Counts",
+                    500, fb_min, fb_max),
+                    f"{channel_name}_TS_cfd_mcp"))
             t_lo, t_hi = get_drs_time_ns_range()
             hists.append(ctx.rdf.Histo1D((
                 f"hist_{channel_name}_Time_cfd_mcp",
                 "DRS CFD time (MCP-corrected);Time_cfd_mcp [ns];Counts",
                 200, t_lo, t_hi),
                 f"{channel_name}_Time_cfd_mcp"))
-            tfb_lo, tfb_hi = get_drs_time_ns_finebins_range(chan.isCer)
-            hists.append(ctx.rdf.Histo1D((
-                f"hist_{channel_name}_Time_cfd_mcp_finebins",
-                "DRS CFD time (MCP-corrected);Time_cfd_mcp [ns];Counts",
-                300, tfb_lo, tfb_hi),
-                f"{channel_name}_Time_cfd_mcp"))
+            if do_finebins:
+                tfb_lo, tfb_hi = get_drs_time_ns_finebins_range(chan.isCer)
+                hists.append(ctx.rdf.Histo1D((
+                    f"hist_{channel_name}_Time_cfd_mcp_finebins",
+                    "DRS CFD time (MCP-corrected);Time_cfd_mcp [ns];Counts",
+                    300, tfb_lo, tfb_hi),
+                    f"{channel_name}_Time_cfd_mcp"))
 
     ctx.hbook.add("drs_stats.root", hists)
+
+    # DRS sum (energy) mean/max per channel -> JSON for the board-location maps
+    energy_lazy = [p for pair in energy_stats.values() for p in pair]
+
+    def _save_energy_stats():
+        import os
+        results = {ch: (mean.GetValue(), vmax.GetValue())
+                   for ch, (mean, vmax) in energy_stats.items()}
+        os.makedirs(ctx.paths["root"], exist_ok=True)
+        with open(f"{ctx.paths['root']}/drs_energy_stats.json", "w") as f:
+            json.dump(results, f, indent=4)
+
+    ctx.hbook.add(None, energy_lazy, _save_energy_stats)
 
 
 # ---------------------------------------------------------------------------
@@ -1036,7 +1060,8 @@ def book_service_drs_hodo(ctx):
 # Detectors included in the TTU-hodo before/after combinatorics, in order.
 # "hodo" -> hodoscope hit; "HoleVeto" -> veto pass; everything else ->
 # a get_service_drs_cut "has signal" flag. Edit this one list to add/remove.
-_TTU_HODO_DETS = ["hodo", "HoleVeto", "MCP_1", "MCP_2", "ST1", "ST3"]
+_TTU_HODO_DETS = ["hodo", "HoleVeto", "MCP_1", "MCP_2",
+                  "MCP_US_0", "MCP_DS_0", "ST1", "ST3"]
 
 
 def _ttu_hodo_flag(rdf, existing, det, run_number):

@@ -184,7 +184,7 @@ DRS_DQM_SEQUENCES: list[CaloXSequence] = [
         name="drs_finebins_combined",
         book_hists=book_drs_finebins_combined,
         make_plots=None,
-        enabled_by_default=True,
+        enabled_by_default=False,  # temporarily off by default
     ),
     CaloXSequence(
         name="drs_peak_ts",
@@ -259,6 +259,7 @@ DRS_MCP_SEQUENCES: list[CaloXSequence] = [
         name="drs_prof_corr_combined",
         book_hists=book_drs_prof_corr_combined,
         make_plots=None,
+        enabled_by_default=False,  # temporarily off (DRS_Prof_vs_time dropped)
     ),
     CaloXSequence(
         name="drs_stats",
@@ -269,11 +270,13 @@ DRS_MCP_SEQUENCES: list[CaloXSequence] = [
         name="drs_finebins_combined",
         book_hists=book_drs_finebins_combined,
         make_plots=None,
+        enabled_by_default=False,  # temporarily off by default
     ),
     CaloXSequence(
         name="drs_finebins_corr_combined",
         book_hists=book_drs_finebins_corr_combined,
         make_plots=None,
+        enabled_by_default=False,  # temporarily off by default
     ),
     CaloXSequence(
         name="drs_cfd_mpv",
@@ -398,7 +401,7 @@ def default_service_drs_sequences() -> list[CaloXSequence]:
 
 def default_drs_mcp_sequences() -> list[CaloXSequence]:
     """DRS-only sequences run under MCP timing selection."""
-    return list(DRS_MCP_SEQUENCES)
+    return [s for s in DRS_MCP_SEQUENCES if s.enabled_by_default]
 
 
 def default_fers_sequences() -> list[CaloXSequence]:

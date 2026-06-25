@@ -37,8 +37,11 @@ manager = (
     CaloXAnalysisManager(args)
     .prepare(do_fers=False)
     #.apply_hole_veto(flag_only=True)
-    .apply_mcp_diff_selection()
+    #.apply_mcp_diff_selection()
 )
+
+if args.mcp_clean:
+    manager.apply_beam_pid_selection(flag_only=False, particle="mcp_clean")
 
 sequences = default_drs_mcp_sequences()
 

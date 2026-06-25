@@ -122,10 +122,17 @@ def get_drs_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, i
     if subtractMedian:
         xmin = -20
         xmax = 40
+    # tb2026 calo layout (run_number > 1828): wider amplified range, and a
+    # dedicated range for 6mm channels.
+    tb2026_calo = run_number is not None and run_number > 1828
     if is_amplified:
-        xmin = -1500
-        xmax = 2500
+        if tb2026_calo:
+            xmin, xmax = -500, 3500
+        else:
+            xmin, xmax = -1500, 2500
     if is6mm and is_amplified:
+        if tb2026_calo:
+            return -100, 1000
         if run_number is not None and run_number >= _DRS_6MM_RUN:
             return -20, 40
         xmin = -100

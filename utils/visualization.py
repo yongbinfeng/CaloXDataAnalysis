@@ -83,6 +83,21 @@ def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", gain="HG", quartz
     return [h2_Cer, h2_Cer_3mm], [h2_Sci, h2_Sci_3mm]
 
 
+def _drs_label(channel):
+    """Numeric label drawn in a DRS channel-map cell.
+
+    For bridge-numbered runs the digits encode bridge | board | channel, where
+    the last two digits are the channel index on the board (group * 8 + channel,
+    i.e. 0-31): e.g. Brg1 Board3 Group3 Channel7 -> 1331. Pre-bridge runs keep
+    the old board * 100 + group * 10 + channel encoding.
+    """
+    if channel.bridge_no is not None:
+        return (channel.bridge_no * 1000 + channel.board_no * 100
+                + channel.group_no * 8 + channel.channel_no)
+    return (channel.board_no * 100 + channel.group_no * 10
+            + channel.channel_no)
+
+
 def visualizeDRSBoards(drs_boards, valuemaps=None, suffix="", quartzOnly=0):
     h2_DRS_Cer = ROOT.TH2D(f"h_DRSBoards_Cer_{suffix}", f"DRS Board Channels for {suffix}",
                            _NX, _XMIN, _XMAX, _NY, _YMIN, _YMAX)
@@ -102,8 +117,7 @@ def visualizeDRSBoards(drs_boards, valuemaps=None, suffix="", quartzOnly=0):
                     continue
                 sci_encoded = valuemaps[ch_name]
             else:
-                sci_encoded = channel_Sci.board_no * 100 + \
-                    channel_Sci.group_no * 10 + channel_Sci.channel_no
+                sci_encoded = _drs_label(channel_Sci)
                 if sci_encoded == 0:
                     sci_encoded = 0.001
             if not channel_Sci.is6mm:
@@ -123,8 +137,7 @@ def visualizeDRSBoards(drs_boards, valuemaps=None, suffix="", quartzOnly=0):
                     continue
                 cer_encoded = valuemaps[ch_name]
             else:
-                cer_encoded = channel_Cer.board_no * 100 + \
-                    channel_Cer.group_no * 10 + channel_Cer.channel_no
+                cer_encoded = _drs_label(channel_Cer)
                 if cer_encoded == 0:
                     cer_encoded = 0.001
             if not channel_Cer.is6mm:
