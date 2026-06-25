@@ -158,6 +158,11 @@ def get_drs_peak_value_range():
     return (200, 0, 800)
 
 
+def get_drs_noise_range():
+    """DRS per-event baseline noise (RMS) histogram range: (nbins, xmin, xmax)."""
+    return (200, 0, 30)
+
+
 def get_drs_sum_vs_fers_ranges():
     """DRS energy sum vs FERS 2D ranges by FERS gain.
     Values are {var: (DRS_ymax, FERS_xmax)}.

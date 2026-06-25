@@ -15,6 +15,7 @@ import os
 import ROOT
 from configs.plot_config import (get_drs_plot_ranges, get_drs_cfd_finebins_range,
                                   get_drs_energy_range, get_drs_peak_value_range,
+                                  get_drs_noise_range,
                                   get_drs_sum_vs_fers_ranges, get_fers_vs_drs_xmax,
                                   get_drs_time_ns_range, get_drs_time_ns_finebins_range,
                                   get_drs_time_arr_ns_range, get_fers_saturation_value,
@@ -604,8 +605,10 @@ def book_drs_stats(ctx, do_finebins=True):
     # Fine-binned CFD-time histograms are needed by drs_cfd_mpv (and the optional
     # DRS_Time_FineBins distribution plots, which are off by default).
     hists = []
-    # channel_name -> (Mean, Max, SatFrac) of DRS sum, for board maps.
+    # channel_name -> (Mean, Max, SatFrac, MeanNoise) for board maps.
     # Saturated event: any baseline-subtracted sample exceeds 2200 ADC.
+    # Noise maps: peak of hist_{ch}_blrms (pure noise, computed at plot time) and
+    # MeanNoise = column mean of {ch}_blrms (includes dark-count tail).
     energy_stats = {}
     for _, board in ctx.drsboards.items():
         for chan in board:
@@ -619,6 +622,7 @@ def book_drs_stats(ctx, do_finebins=True):
                 ctx.rdf.Mean(f"{channel_name}_energy"),
                 ctx.rdf.Max(f"{channel_name}_energy"),
                 sat.Mean(f"{channel_name}_issat"),
+                ctx.rdf.Mean(f"{channel_name}_blrms"),
             )
             hists.append(ctx.rdf.Histo1D((
                 f"hist_{channel_name}_peak_value",
@@ -630,6 +634,11 @@ def book_drs_stats(ctx, do_finebins=True):
                 "DRS CFD energy integral;CFD energy;Counts",
                 *get_drs_energy_range(chan.is6mm)),
                 f"{channel_name}_energy"))
+            hists.append(ctx.rdf.Histo1D((
+                f"hist_{channel_name}_blrms",
+                "DRS baseline noise (RMS);Baseline RMS [ADC];Counts",
+                *get_drs_noise_range()),
+                f"{channel_name}_blrms"))
             hists.append(ctx.rdf.Histo1D((
                 f"hist_{channel_name}_TS_peak_ref",
                 "DRS peak TS (ref-corrected);TS_peak_ref;Counts",
@@ -673,13 +682,14 @@ def book_drs_stats(ctx, do_finebins=True):
 
     ctx.hbook.add("drs_stats.root", hists)
 
-    # DRS sum mean/max + saturation fraction per channel -> JSON for board maps
-    energy_lazy = [p for triple in energy_stats.values() for p in triple]
+    # DRS sum mean/max + saturation fraction + mean noise per channel -> JSON
+    energy_lazy = [p for vals in energy_stats.values() for p in vals]
 
     def _save_energy_stats():
         import os
-        results = {ch: (mean.GetValue(), vmax.GetValue(), satfrac.GetValue())
-                   for ch, (mean, vmax, satfrac) in energy_stats.items()}
+        results = {ch: (mean.GetValue(), vmax.GetValue(),
+                        satfrac.GetValue(), noise.GetValue())
+                   for ch, (mean, vmax, satfrac, noise) in energy_stats.items()}
         os.makedirs(ctx.paths["root"], exist_ok=True)
         with open(f"{ctx.paths['root']}/drs_energy_stats.json", "w") as f:
             json.dump(results, f, indent=4)

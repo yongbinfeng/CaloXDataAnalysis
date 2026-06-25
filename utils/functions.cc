@@ -35,6 +35,31 @@ float compute_baseline_median(const ROOT::RVec<float> &vec,
     return slice[mid];
 }
 
+// Standard deviation (RMS about the mean) of vec[ibegin, iend) — used to
+// quantify the per-event DRS baseline noise level.
+float compute_baseline_rms(const ROOT::RVec<float> &vec,
+                           size_t ibegin = 0,
+                           size_t iend = -1)
+{
+    if (vec.empty())
+        return -9999.0f;
+    if (iend > vec.size())
+        iend = vec.size();
+    if (ibegin >= iend)
+        return -9999.0f;
+
+    size_t n = iend - ibegin;
+    double sum = 0.0, sum2 = 0.0;
+    for (size_t i = ibegin; i < iend; ++i)
+    {
+        sum += vec[i];
+        sum2 += double(vec[i]) * vec[i];
+    }
+    double mean = sum / n;
+    double var = sum2 / n - mean * mean;
+    return var > 0.0 ? std::sqrt(var) : 0.0f;
+}
+
 float compute_baseline_average(const ROOT::RVec<float> &waveform, size_t baseline_start = 0, size_t baseline_end = 300)
 {
     if (waveform.size() < baseline_end)

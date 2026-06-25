@@ -101,6 +101,7 @@ def subtract_baseline(rdf, drs_branches, drs_channels_to_flip=None,
                 f"compute_baseline_median({channel_name}, {post_window[0]}, {post_window[1]})")
             # constant scalar kept for downstream code (pre-pulse level)
             rdf = rdf.Define(f"{channel_name}_bl", f"{channel_name}_bl_pre")
+            bl_lo, bl_hi = pre_window
             # per-sample baseline line straddling the pulse
             rdf = rdf.Define(
                 f"{channel_name}_bl_line",
@@ -111,7 +112,13 @@ def subtract_baseline(rdf, drs_branches, drs_channels_to_flip=None,
             rdf = rdf.Define(
                 f"{channel_name}_bl",
                 f"compute_baseline_median({channel_name}, 0, 200)")
+            bl_lo, bl_hi = 0, 200
             baseline_expr = f"{channel_name}_bl"
+
+        # per-event baseline noise (RMS over the baseline window)
+        rdf = rdf.Define(
+            f"{channel_name}_blrms",
+            f"compute_baseline_rms({channel_name}, {bl_lo}, {bl_hi})")
 
         if channel_name in drs_channels_to_flip:
             rdf = rdf.Define(

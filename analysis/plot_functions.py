@@ -1096,7 +1096,7 @@ def plot_drs_profiles(ctx, *, do_ts=True, do_time=False, do_mcp_only=False):
 # ---------------------------------------------------------------------------
 
 def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
-                   do_timing=True, do_finebins=False):
+                   do_noise=True, do_timing=True, do_finebins=False):
     """Plot DRS peak, energy, and timing distributions. Returns list of HTML paths."""
     output_htmls = []
 
@@ -1157,6 +1157,34 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
             output_htmls.append(pm.generate_html(
                 "DRS/DRS_Sum.html", plots_per_row=9))
 
+    if do_noise:
+        # -- per-event baseline noise (RMS over the baseline window) --
+        from configs.plot_config import get_drs_noise_range
+        nbins, nmin, nmax = get_drs_noise_range()
+        with _pm(ctx) as pm:
+            pm.set_output_dir("DRS_Stats")
+            infile = pm._get_file("drs_stats.root")
+            for _, board in ctx.drsboards.items():
+                for chan in board:
+                    if chan.is_reference:
+                        continue
+                    ch = chan.get_channel_name(blsub=False)
+                    hist = infile.Get(f"hist_{ch}_blrms")
+                    if not hist:
+                        continue
+                    pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
+                    pave.AddText(
+                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
+                    pave.AddText(
+                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    var = get_channel_var(chan)
+                    pm.plot_1d(
+                        hist, f"DRS_Noise_{ch}_{var}",
+                        "Baseline RMS [ADC]", (nmin, nmax), "Counts", (0.9, None),
+                        style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
+            output_htmls.append(pm.generate_html(
+                "DRS/DRS_Noise.html", plots_per_row=9))
+
     if do_energy_map:
         # -- DRS sum mean/max + saturation fraction vs channel location (maps) --
         import json
@@ -1164,25 +1192,48 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
             estats = json.load(f)
         mean_map = {ch: vals[0] for ch, vals in estats.items()}
         max_map = {ch: vals[1] for ch, vals in estats.items()}
-        # saturation fraction may be absent in older JSON (len 2)
+        # saturation fraction / mean noise may be absent in older JSON
         sat_map = {ch: vals[2] for ch, vals in estats.items() if len(vals) > 2}
-        def _draw_maps(pm, configs):
+        # column mean of the baseline RMS (noise + dark-count tail)
+        noise_mean_map = {ch: vals[3] for ch, vals in estats.items() if len(vals) > 3}
+        # peak (most probable value) of each channel's blrms dist (pure noise)
+        noise_map = {}
+        _nf = ROOT.TFile.Open(f"{ctx.paths['root']}/drs_stats.root", "READ")
+        if _nf and not _nf.IsZombie():
+            for _, board in ctx.drsboards.items():
+                for chan in board:
+                    if chan.is_reference:
+                        continue
+                    ch = chan.get_channel_name(blsub=False)
+                    h = _nf.Get(f"hist_{ch}_blrms")
+                    if h and h.GetEntries() > 0:
+                        noise_map[ch] = h.GetBinCenter(h.GetMaximumBin())
+            _nf.Close()
+
+        def _draw_maps(pm, configs, also_6mm=False):
             helper = BoardPlotHelper(pm)
-            for stat, vmap, zlabel, digits in configs:
+            for stat, vmap, zlabel, digits, zmin, zmax in configs:
                 cer_hists, sci_hists = visualizeDRSBoards(
                     ctx.drsboards, valuemaps=vmap,
                     suffix=f"Sum{stat}_Run{ctx.run_number}")
                 helper.plot_cer_sci_pair(
                     cer_hists, sci_hists,
                     f"DRS_Sum{stat}_Run{ctx.run_number}",
-                    nTextDigits=digits, zlabel=zlabel)
+                    nTextDigits=digits, zlabel=zlabel, zmin=zmin, zmax=zmax)
+                if also_6mm:
+                    # visualizeDRSBoards returns [6mm, 3mm]; draw only the 6mm Cer map
+                    helper.plot_board_map(
+                        cer_hists[:1],
+                        f"DRS_Sum{stat}_6mm_Cer_Run{ctx.run_number}",
+                        extra_text="Cer", nTextDigits=digits,
+                        zlabel=zlabel, zmin=zmin, zmax=zmax)
 
         with _pm(ctx) as pm:
             pm.set_output_dir("DRS_Stats")
             _draw_maps(pm, [
-                ("Mean", mean_map, "Mean DRS Sum [ADC]", 0),
-                ("Max", max_map, "Max DRS Sum [ADC]", 0),
-            ])
+                ("Mean", mean_map, "Mean DRS Sum [ADC]", 0, None, None),
+                ("Max", max_map, "Max DRS Sum [ADC]", 0, None, None),
+            ], also_6mm=True)
             output_htmls.append(pm.generate_html(
                 "DRS/DRS_Sum_Map.html", plots_per_row=2))
 
@@ -1190,9 +1241,24 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
             with _pm(ctx) as pm:
                 pm.set_output_dir("DRS_Stats")
                 _draw_maps(pm, [
-                    ("SatFrac", sat_map, "Saturation Fraction", 3)])
+                    ("SatFrac", sat_map, "Saturation Fraction", 3, None, None)])
                 output_htmls.append(pm.generate_html(
                     "DRS/DRS_Saturation_Map.html", plots_per_row=2))
+
+        if noise_map or noise_mean_map:
+            with _pm(ctx) as pm:
+                pm.set_output_dir("DRS_Stats")
+                noise_cfgs = []
+                if noise_map:
+                    noise_cfgs.append(
+                        ("Noise", noise_map, "Peak Baseline RMS [ADC]", 1, 2, 11))
+                if noise_mean_map:
+                    noise_cfgs.append(
+                        ("NoiseMean", noise_mean_map,
+                         "Mean Baseline RMS [ADC]", 1, 2, 14))
+                _draw_maps(pm, noise_cfgs)
+                output_htmls.append(pm.generate_html(
+                    "DRS/DRS_Noise_Map.html", plots_per_row=2))
 
     if do_timing:
         # -- timing --
