@@ -38,13 +38,17 @@ def get_drs_branches_to_flip(run_number, drs_channels_ref=None, drsboards=None):
     channels_mcp = list(get_mcp_channels(run_number).values())
 
     # Service and MCP channels on bridge 0 are not inverted (opposite readout
-    # polarity). This bridge-0 exception applies ONLY to service/MCP channels;
-    # the calo ("real") channels below still need to be double-checked.
+    # polarity) — EXCEPT for runs > 1839, where all service/MCP channels are
+    # flipped. This exception applies ONLY to service/MCP channels; the calo
+    # ("real") channels below still need to be double-checked.
     def _bridge_no(name):
         m = re.search(r"_Brg(\d+)_", name)
         return int(m.group(1)) if m else None
-    drs_channels_to_flip = [c for c in channels_services + channels_mcp
-                            if _bridge_no(c) != 0]
+    if run_number is not None and run_number >= 1839:
+        drs_channels_to_flip = list(channels_services + channels_mcp)
+    else:
+        drs_channels_to_flip = [c for c in channels_services + channels_mcp
+                                if _bridge_no(c) != 0]
 
     if drs_channels_ref is not None:
         drs_channels_to_flip += drs_channels_ref
