@@ -1681,7 +1681,7 @@ def _plot_pulse_distributions(channels, infile, pm, suffix):
         pv_xmin, pv_xmax = get_service_drs_processed_info_ranges(
             det, "peak_value")
         en_xmin, en_xmax = get_service_drs_processed_info_ranges(det, "sum")
-        _, _, _, _, value_cut, cut_method = get_service_drs_cut(det)
+        _, _, _, _, value_cut, cut_method = get_service_drs_cut(det, pm.run_number)
 
         hist = infile.Get(f"{det}_ADC_vs_TS")
         if hist:
@@ -1816,8 +1816,8 @@ def _plot_pulse_correlations(channels, infile, pm, suffix, *, do_pid=True, do_tr
             for idx2, det2 in enumerate(tmp_list):
                 if idx2 <= idx1:
                     continue
-                _, _, _, _, value_cut1, method1 = get_service_drs_cut(det1)
-                _, _, _, _, value_cut2, method2 = get_service_drs_cut(det2)
+                _, _, _, _, value_cut1, method1 = get_service_drs_cut(det1, pm.run_number)
+                _, _, _, _, value_cut2, method2 = get_service_drs_cut(det2, pm.run_number)
                 var1 = "peak_value" if method1 == "PeakValue" else "energy"
                 var2 = "peak_value" if method2 == "PeakValue" else "energy"
                 xmin, xmax = get_service_drs_processed_info_ranges(
@@ -1912,6 +1912,24 @@ def _plot_mcp_timing_diff(ctx, channels_mcp):
 
     with _pm(ctx) as pm:
         pm.set_output_dir("drs_mcp_timing_diff")
+
+        # absolute CFD (ref-corrected) time per MCP (auto-zoom around the mean)
+        for det in dets:
+            hist = infile.Get(f"{det}_cfd_ref")
+            if not hist:
+                continue
+            peak_pos = hist.GetBinCenter(hist.GetMaximumBin())
+            pave = create_pave_text(0.55, 0.78, 0.90, 0.88)
+            pave.AddText(f"Peak: {peak_pos:.2f} TS")
+            pm.plot_1d(
+                hist, f"{det}_cfd_ref",
+                f"t_{{CFD,ref}} ({det}) [TS]", (420, 480),
+                yrange=(0.9, hist.GetMaximum() * 1.4), ylabel="Counts",
+                style=PlotStyle(dology=False, drawoptions="HIST", mycolors=[1],
+                                addOverflow=True, addUnderflow=True),
+                extraToDraw=[pave])
+        pm.add_newline()
+
         for i, det1 in enumerate(dets):
             for det2 in dets[i + 1:]:
                 hist = infile.Get(f"{det1}_cfd_diff_vs_{det2}")
@@ -1942,7 +1960,7 @@ def _plot_mcp_timing_diff(ctx, channels_mcp):
                 pm.plot_1d(
                     hist, f"{det1}_cfd_diff_vs_{det2}",
                     f"#Delta t_{{CFD,ref}} ({det1} - {det2}) [TS]",
-                    (-30, 30),
+                    (-10, 10),
                     yrange=(0.9, ymax), ylabel="Counts", style=_STYLE_SVC_1D,
                     extraToDraw=[fit, pave])
             pm.add_newline()

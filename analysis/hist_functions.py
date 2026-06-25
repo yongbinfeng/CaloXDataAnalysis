@@ -858,7 +858,7 @@ def _analyze_pulse(rdf, channels):
     return [h for hmap in hists.values() for h in hmap.values()]
 
 
-def _analyze_detector_pair_correlations(rdf, channels):
+def _analyze_detector_pair_correlations(rdf, channels, run_number=None):
     """Book 2D detector-pair correlation histograms for all valid channel pairs."""
     hists = {}
     det_list = list(channels.keys())
@@ -869,8 +869,8 @@ def _analyze_detector_pair_correlations(rdf, channels):
             special_dets = {"KT1", "KT2", "T3", "T4"}
             if (det1 in special_dets) ^ (det2 in special_dets):
                 continue
-            _, _, _, _, _, method1 = get_service_drs_cut(det1)
-            _, _, _, _, _, method2 = get_service_drs_cut(det2)
+            _, _, _, _, _, method1 = get_service_drs_cut(det1, run_number)
+            _, _, _, _, _, method2 = get_service_drs_cut(det2, run_number)
             var1 = "peak_value" if method1 == "PeakValue" else "energy"
             var2 = "peak_value" if method2 == "PeakValue" else "energy"
             xmin, xmax = get_service_drs_processed_info_ranges(
@@ -891,10 +891,20 @@ def _analyze_detector_pair_correlations(rdf, channels):
 
 
 def _analyze_mcp_timing_diff(rdf, channels_mcp):
-    """Book MCP CFD timing-difference histograms for all unique pairs."""
+    """Book MCP CFD timing histograms: per-detector absolute time + pair diffs."""
     hists = []
     dets = list(channels_mcp.keys())
 
+    # absolute CFD (ref-corrected) time per MCP. Use the det-named column from
+    # process_mcp_channels (correct MCP pulse window), not the channel-named one.
+    for det in dets:
+        hists.append(rdf.Histo1D(
+            (f"{det}_cfd_ref",
+             f"{det};t_{{CFD,ref}} [TS];Counts",
+             600, 420, 480),  # 0.1 TS bins; out-of-range -> under/overflow
+            f"{det}_TS_cfd_ref"))
+
+    # pairwise CFD time differences
     for i, det1 in enumerate(dets):
         col1 = channels_mcp[det1]
         for det2 in dets[i + 1:]:
@@ -902,11 +912,11 @@ def _analyze_mcp_timing_diff(rdf, channels_mcp):
             diff_col = f"{col1}_minus_{col2}_cfd_diff"
             rdf = rdf.Define(
                 diff_col, f"{col1}_TS_cfd_ref - {col2}_TS_cfd_ref")
-            
+
             hists.append(rdf.Histo1D(
                 (f"{det1}_cfd_diff_vs_{det2}",
                  f"{det1} - {det2};#Delta t_{{CFD,ref}} [TS];Counts",
-                 800, -30, 30),
+                 800, -10, 10),
                 diff_col))
 
     return hists
@@ -1002,7 +1012,7 @@ def book_service_drs_pid(ctx):
         for det, channel in get_pid_channels(ctx.run_number).items()
         if channel is not None and f"{channel}_blsub" in existing)
     hists = _analyze_pulse(ctx.rdf, pid_channels)
-    hists += _analyze_detector_pair_correlations(ctx.rdf, pid_channels)
+    hists += _analyze_detector_pair_correlations(ctx.rdf, pid_channels, ctx.run_number)
     ctx.hbook.add("drs_services.root", hists)
 
 
@@ -1012,7 +1022,7 @@ def book_service_drs_mcp(ctx):
 
 
 def book_service_drs_mcp_timing(ctx):
-    # ctx.rdf is already the MCP-filtered view (set by define_selection in registry)
+    # No event selection here: timing diffs are booked for all events.
     channels_mcp = get_mcp_channels(ctx.run_number)
     hists = _analyze_mcp_timing_diff(ctx.rdf, channels_mcp)
     ctx.hbook.add("drs_mcp_timing_diff.root", hists)
@@ -1026,7 +1036,7 @@ def book_service_drs_hodo(ctx):
 # Detectors included in the TTU-hodo before/after combinatorics, in order.
 # "hodo" -> hodoscope hit; "HoleVeto" -> veto pass; everything else ->
 # a get_service_drs_cut "has signal" flag. Edit this one list to add/remove.
-_TTU_HODO_DETS = ["hodo", "HoleVeto", "MCP_1", "MCP_2", "ST1"]
+_TTU_HODO_DETS = ["hodo", "HoleVeto", "MCP_1", "MCP_2", "ST1", "ST3"]
 
 
 def _ttu_hodo_flag(rdf, existing, det, run_number):

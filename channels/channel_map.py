@@ -911,26 +911,33 @@ def get_mcp_channels(run_number=1184):
     """
     Returns a dict of MCP detector name -> channel branch name.
     """
-    brg = 1 if run_number >= _DRS_BRG_RUN else None
     if run_number < 1342 or (run_number >= _DRS_BRG_RUN and run_number < 1764):
         # no MCP for runs before Sep 2024 test beam or 2025+ (all channels are signal)
         return {}
     elif run_number < 1600:
         # 4 calo boards, Sep 2025 test beam
         return {
-            "MCP_DS_0": _drs(0, 3, 6, brg),
-            "MCP_DS_1": _drs(1, 3, 6, brg),
-            "MCP_DS_2": _drs(2, 3, 6, brg),
-            "MCP_DS_3": _drs(3, 3, 6, brg),
-            "MCP_US_0": _drs(0, 3, 7, brg),
-            "MCP_US_1": _drs(1, 3, 7, brg),
-            "MCP_US_2": _drs(2, 3, 7, brg),
-            "MCP_US_3": _drs(3, 3, 7, brg),
+            "MCP_DS_0": _drs(0, 3, 6, None),
+            "MCP_DS_1": _drs(1, 3, 6, None),
+            "MCP_DS_2": _drs(2, 3, 6, None),
+            "MCP_DS_3": _drs(3, 3, 6, None),
+            "MCP_US_0": _drs(0, 3, 7, None),
+            "MCP_US_1": _drs(1, 3, 7, None),
+            "MCP_US_2": _drs(2, 3, 7, None),
+            "MCP_US_3": _drs(3, 3, 7, None),
+        }
+    elif run_number > 1700 and run_number < 1828:
+        # only going to server drs
+        return {
+            "MCP_1": _drs(0, 0, 5, 1),
+            "MCP_2": _drs(0, 0, 6, 1),
         }
     else:
         return {
-            "MCP_1": _drs(0, 0, 5, brg),
-            "MCP_2": _drs(0, 0, 6, brg),
+            "MCP_DS_0": _drs(3, 3, 7, 1),
+            "MCP_US_0": _drs(3, 3, 6, 1),
+            "MCP_DS_1": _drs(3, 3, 7, 0),
+            "MCP_US_1": _drs(3, 3, 6, 0),
         }
         
 
@@ -939,49 +946,56 @@ def get_service_drs_channels(run_number=1184):
     """
     Returns a list of service DRS channels.
     """
-    brg = 1 if run_number >= _DRS_BRG_RUN else None
     if run_number < 1183:
         return []
     elif run_number < 1260:
         return [_drs(7, g, c) for g in range(2) for c in range(8)]
     elif run_number < 1600:
         return {
-            "DWC1Left":   _drs(7, 0, 0, brg),
-            "DWC1Right":  _drs(7, 0, 1, brg),
-            "DWC1Up":     _drs(7, 0, 2, brg),
-            "DWC1Down":   _drs(7, 0, 3, brg),
-            "DWC2Left":   _drs(7, 0, 4, brg),
-            "DWC2Right":  _drs(7, 0, 5, brg),
-            "DWC2Up":     _drs(7, 0, 6, brg),
-            "DWC2Down":   _drs(7, 0, 7, brg),
-            "MuonVeto":   _drs(7, 1, 0, brg),
-            "PSD":        _drs(7, 1, 1, brg),
-            "HoleVeto":   _drs(7, 1, 6, brg),
-            "NC":         _drs(7, 1, 7, brg),
-            "T3":         _drs(7, 2, 0, brg),
-            "T4":         _drs(7, 2, 1, brg),
-            "KT1":        _drs(7, 2, 2, brg),
-            "KT2":        _drs(7, 2, 3, brg),
-            "TTUMuonVeto":_drs(7, 2, 4, brg),
-            "Cer474":     _drs(7, 2, 5, brg),
-            "Cer519":     _drs(7, 2, 6, brg),
-            "Cer537":     _drs(7, 2, 7, brg),
+            "DWC1Left":   _drs(7, 0, 0, None),
+            "DWC1Right":  _drs(7, 0, 1, None),
+            "DWC1Up":     _drs(7, 0, 2, None),
+            "DWC1Down":   _drs(7, 0, 3, None),
+            "DWC2Left":   _drs(7, 0, 4, None),
+            "DWC2Right":  _drs(7, 0, 5, None),
+            "DWC2Up":     _drs(7, 0, 6, None),
+            "DWC2Down":   _drs(7, 0, 7, None),
+            "MuonVeto":   _drs(7, 1, 0, None),
+            "PSD":        _drs(7, 1, 1, None),
+            "HoleVeto":   _drs(7, 1, 6, None),
+            "NC":         _drs(7, 1, 7, None),
+            "T3":         _drs(7, 2, 0, None),
+            "T4":         _drs(7, 2, 1, None),
+            "KT1":        _drs(7, 2, 2, None),
+            "KT2":        _drs(7, 2, 3, None),
+            "TTUMuonVeto":_drs(7, 2, 4, None),
+            "Cer474":     _drs(7, 2, 5, None),
+            "Cer519":     _drs(7, 2, 6, None),
+            "Cer537":     _drs(7, 2, 7, None),
         }
     else:
         # tb 2026
         channels = {
-            "TailCatcher": _drs(0, 0, 0, brg),
-            "TTUMuonVeto": _drs(0, 0, 1, brg),
-            "Cer474":      _drs(0, 0, 2, brg),
-            "Cer519":      _drs(0, 0, 3, brg),
-            "Cer537":      _drs(0, 0, 4, brg),
-            "MCP_1":       _drs(0, 0, 5, brg),
-            "MCP_2":       _drs(0, 0, 6, brg),
-            "HoleVeto":    _drs(0, 0, 7, brg),
+            "TailCatcher": _drs(0, 0, 0, 1),
+            "TTUMuonVeto": _drs(0, 0, 1, 1),
+            "Cer474":      _drs(0, 0, 2, 1),
+            "Cer519":      _drs(0, 0, 3, 1),
+            "Cer537":      _drs(0, 0, 4, 1),
+            "MCP_1":       _drs(0, 0, 5, 1),
+            "MCP_2":       _drs(0, 0, 6, 1),
+            "HoleVeto":    _drs(0, 0, 7, 1),
         }
         if run_number >= 1824:
-            channels["ST1"] = _drs(0, 1, 0, brg)
-            channels["ST3"] = _drs(0, 1, 1, brg)
+            channels["ST1"] = _drs(0, 1, 0, 1)
+            channels["ST3"] = _drs(0, 1, 1, 1)
+        if run_number >= 1828:
+            # drop MCP_1 and MCP_2, add MCP_DS_0/1 and MCP_US_0/1
+            channels.pop("MCP_1")
+            channels.pop("MCP_2")
+            channels["MCP_DS_0"] = _drs(3, 3, 7, 1)
+            channels["MCP_US_0"] = _drs(3, 3, 6, 1)
+            channels["MCP_DS_1"] = _drs(3, 3, 7, 0)
+            channels["MCP_US_1"] = _drs(3, 3, 6, 0)
         return channels
 
 
@@ -994,6 +1008,7 @@ def get_pid_channels(run_number=1184):
         "Cer474", "Cer519", "Cer537",
         "KT1", "KT2", "T3", "T4",
         "MCP_1", "MCP_2",
+        "MCP_DS_0", "MCP_US_0", "MCP_DS_1", "MCP_US_1",
         "ST1", "ST3",
         "TailCatcher"
     ]
