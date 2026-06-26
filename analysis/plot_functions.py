@@ -30,7 +30,7 @@ from variables.drs import get_arr_name
 from utils.visualization import (visualizeFERSBoards, visualizeDRSBoards,
                                  FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY,
                                  FERS_YMIN_DISPLAY, FERS_YMAX_DISPLAY,
-                                 FERS_W_REF, FERS_H_REF)
+                                 FERS_W_REF, FERS_H_REF, get_drs_display_x)
 
 
 # ---------------------------------------------------------------------------
@@ -1210,8 +1210,11 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
                         noise_map[ch] = h.GetBinCenter(h.GetMaximumBin())
             _nf.Close()
 
+        drs_xmin, drs_xmax, drs_wref = get_drs_display_x(ctx.run_number)
+
         def _draw_maps(pm, configs, also_6mm=False):
-            helper = BoardPlotHelper(pm)
+            helper = BoardPlotHelper(pm, xrange=(drs_xmin, drs_xmax),
+                                     W_ref=drs_wref)
             for stat, vmap, zlabel, digits, zmin, zmax in configs:
                 cer_hists, sci_hists = visualizeDRSBoards(
                     ctx.drsboards, valuemaps=vmap,
@@ -1536,7 +1539,8 @@ def plot_drs_cfd_mpv(ctx):
 
     with _pm(ctx) as pm:
         pm.set_output_dir("DRS_CFD_MPV")
-        helper = BoardPlotHelper(pm)
+        _dx0, _dx1, _dwref = get_drs_display_x(ctx.run_number)
+        helper = BoardPlotHelper(pm, xrange=(_dx0, _dx1), W_ref=_dwref)
 
         helper.plot_cer_sci_pair(
             cer_hists, sci_hists,

@@ -13,11 +13,24 @@ _DRS_6MM_RUN = 1748
 _DRS_FULL_RUN_TB2026 = 1828
 
 # CSV mapping each DRS readout channel (DRS_ROOT_Bridge_Mapping) to its FERS
-# channel (fers_root_board, Physical-1). For runs >= _DRS_6MM_RUN the DRS channel
-# positions are taken from those FERS channels (see build_drs_boards_from_fers).
-_DRS_FERS_CSV = os.path.join(
+# channel (fers_root_board, Physical-1). Used only for the from-FERS era
+# (run >= _DRS_FULL_RUN_TB2026); earlier runs use the function-based board maps.
+# The mapping was rewired between phases, so the CSV is run-dependent:
+#   1828 <= run < 1896  : DRS_PHASE_1.csv
+#   run >= 1896         : DRS_PHASE_2.csv
+_CHANNEL_MAP_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data", "channel_maps", "drs_channel_map_final.csv")
+    "data", "channel_maps")
+_DRS_FERS_CSV_PHASE1 = os.path.join(_CHANNEL_MAP_DIR, "DRS_PHASE_1.csv")
+_DRS_FERS_CSV_PHASE2 = os.path.join(_CHANNEL_MAP_DIR, "DRS_PHASE_2.csv")
+_DRS_PHASE2_RUN = 1896
+
+
+def _drs_fers_csv(run_number):
+    """DRS->FERS channel-map CSV for a run (see ranges above)."""
+    if run_number is not None and run_number >= _DRS_PHASE2_RUN:
+        return _DRS_FERS_CSV_PHASE2
+    return _DRS_FERS_CSV_PHASE1
 
 
 def _drs(board, group, ch, brg=None):
@@ -285,7 +298,7 @@ def physical_to_fers_channel(physical, is6mm):
     return int(fers_map[(p + 2) % 4, p // 4])
 
 
-def load_drs_fers_lookup(csv_path=_DRS_FERS_CSV):
+def load_drs_fers_lookup(csv_path=_DRS_FERS_CSV_PHASE1):
     """Parse the DRS->FERS mapping CSV.
 
     Returns a list of dicts, one per signal DRS readout channel:
@@ -302,27 +315,28 @@ def load_drs_fers_lookup(csv_path=_DRS_FERS_CSV):
     """
     entries = []
     with open(csv_path) as f:
-        reader = csv.reader(f)
-        next(reader)  # header
+        # Parse by column name (layout differs between phases, e.g. PHASE_2 has
+        # no MCP/blank columns) rather than by fixed position.
+        reader = csv.DictReader(f)
         for row in reader:
-            if len(row) < 11:
-                continue
+            mapping = (row.get("DRS_ROOT_Bridge_Mapping") or "").strip()
             m = re.match(
-                r"DRS_Bridge(\d+)_Board(\d+)_Group(\d+)_Channel(\d+)", row[10])
+                r"DRS_Bridge(\d+)_Board(\d+)_Group(\d+)_Channel(\d+)", mapping)
             if not m:
                 continue
             brg, bd, gr, ch = (int(m.group(i)) for i in range(1, 5))
-            typ = row[2].strip()
+            typ = (row.get("type") or "").strip()
             entries.append({
                 "bridge": brg, "board": bd, "group": gr, "channel": ch,
-                "fers_board": int(row[8]), "physical": int(row[5]),
+                "fers_board": int(row["fers_root_board"]),
+                "physical": int(row["Physical"]),
                 "isCer": typ in ("Plastic", "Quartz"),
                 "isQuartz": typ == "Quartz",
             })
     return entries
 
 
-def build_drs_boards_from_fers(fersboards, csv_path=_DRS_FERS_CSV):
+def build_drs_boards_from_fers(fersboards, csv_path=_DRS_FERS_CSV_PHASE1):
     """Build DRS boards whose channel (x, y) positions come from the FERS map.
 
     Each DRS readout channel is matched, via the CSV, to a FERS channel:
@@ -485,7 +499,8 @@ def build_drs_boards(run_number=316):
         # bridge numbering and quartz/plastic flags come from the CSV, so we skip
         # the set_bridge_no / update_quartz_channels post-processing below.
         fersboards = build_fers_boards(run_number=run_number)
-        return build_drs_boards_from_fers(fersboards)
+        return build_drs_boards_from_fers(
+            fersboards, csv_path=_drs_fers_csv(run_number))
     elif run_number >= _DRS_6MM_RUN:
         # 6mm boards (run_number >= 1748): 2 calo boards (0, 1), all 6mm, no MCP
         # All channels are amplified (inverted), so is_amplified=True on every channel.

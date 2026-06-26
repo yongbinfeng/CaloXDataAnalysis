@@ -26,6 +26,23 @@ DRS_XMAX_DISPLAY =  10.0
 DRS_W_REF = round(FERS_W_REF * (DRS_XMAX_DISPLAY - DRS_XMIN_DISPLAY) / (FERS_XMAX_DISPLAY - FERS_XMIN_DISPLAY))  # 454
 
 
+def get_drs_display_x(run_number=None):
+    """DRS board-map X display range and canvas W_ref (run-dependent).
+
+    For run >= 1896 (PHASE_2 layout) the calorimeter extends further in -X, so
+    widen X to [-18, 10] and scale W_ref proportionally so the cm-per-pixel
+    (and thus the drawn cell size) stays the same as the default range.
+    Returns (xmin, xmax, W_ref).
+    """
+    if run_number is not None and run_number >= 1896:
+        xmin, xmax = -18.0, 10.0
+    else:
+        xmin, xmax = DRS_XMIN_DISPLAY, DRS_XMAX_DISPLAY
+    w_ref = round(DRS_W_REF * (xmax - xmin)
+                  / (DRS_XMAX_DISPLAY - DRS_XMIN_DISPLAY))
+    return xmin, xmax, w_ref
+
+
 def visualizeFERSBoards(fersboards, valuemaps=None, suffix="", gain="HG", quartzOnly=0):
     # quartzOnly: 0 use both quartz and plastic channels; 1 use only quartz channels; 2 use only plastic channels
     h2_Cer = ROOT.TH2D(f"h_FERSBoards_Cer_{suffix}", f"FERS Board Cer Channels for {suffix}",
