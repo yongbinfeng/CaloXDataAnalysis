@@ -163,6 +163,13 @@ def get_drs_noise_range():
     return (200, 0, 30)
 
 
+def get_drs_energy_sum_range(is6mm=False):
+    """Per-event DRS energy-sum (over a fiber category) range: (nbins, xmin, xmax)."""
+    if is6mm:
+        return (300, -1000, 40000)
+    return (300, -2000, 60000)
+
+
 def get_drs_sum_vs_fers_ranges():
     """DRS energy sum vs FERS 2D ranges by FERS gain.
     Values are {var: (DRS_ymax, FERS_xmax)}.

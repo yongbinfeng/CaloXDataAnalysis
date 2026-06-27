@@ -3,7 +3,8 @@ from typing import Optional, Union, List, Dict, Tuple, Any
 from plotting.my_function import DrawHistos
 from core.plot_manager import PlotManager
 from utils.visualization import (DRS_XMIN_DISPLAY, DRS_XMAX_DISPLAY, DRS_W_REF,
-                                  FERS_YMIN_DISPLAY, FERS_YMAX_DISPLAY, FERS_H_REF)
+                                  FERS_YMIN_DISPLAY, FERS_YMAX_DISPLAY, FERS_H_REF,
+                                  get_drs_display_x)
 
 
 def create_pave_text(
@@ -85,11 +86,24 @@ class BoardPlotHelper:
     def __init__(
         self,
         manager: PlotManager,
-        xrange: Tuple[float, float] = (DRS_XMIN_DISPLAY, DRS_XMAX_DISPLAY),
+        xrange: Optional[Tuple[float, float]] = None,
         yrange: Tuple[float, float] = (FERS_YMIN_DISPLAY, FERS_YMAX_DISPLAY),
-        W_ref: int = DRS_W_REF,
-        H_ref: int = FERS_H_REF
+        W_ref: Optional[int] = None,
+        H_ref: int = FERS_H_REF,
+        run_number: Optional[int] = None,
     ):
+        # If a run number is given, take the run-dependent DRS X range / W_ref
+        # (e.g. widened to [-18, 10] for run >= 1896) unless explicitly overridden.
+        if run_number is not None:
+            rx0, rx1, rwref = get_drs_display_x(run_number)
+            if xrange is None:
+                xrange = (rx0, rx1)
+            if W_ref is None:
+                W_ref = rwref
+        if xrange is None:
+            xrange = (DRS_XMIN_DISPLAY, DRS_XMAX_DISPLAY)
+        if W_ref is None:
+            W_ref = DRS_W_REF
         self.manager = manager
         self.xrange = xrange
         self.yrange = yrange

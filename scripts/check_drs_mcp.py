@@ -1,18 +1,23 @@
 """
 DRS analysis under MCP timing selection.
 
-Books all lazy DRS histograms (waveforms, pulse stats, peak TS) using only
-events that pass the MCP clean-pulse filter, triggers ROOT.RDF.RunGraphs once,
-saves output files, then generates HTML plot pages.
+Books all lazy DRS histograms (waveform profiles, pulse stats, CFD timing) using
+only events that pass the MCP clean-pulse filter, triggers ROOT.RDF.RunGraphs
+once, saves output files, then generates HTML plot pages.
 
 Usage
 -----
-  python scripts/check_drs_mcp.py                   # all DRS_MCP_SEQUENCES
+  python scripts/check_drs_mcp.py                              # default DRS_MCP_SEQUENCES
+  python scripts/check_drs_mcp.py --sequences drs_stats drs_cfd_mpv
 
 Available sequences (see analysis/registry.py  DRS_MCP_SEQUENCES):
-  drs_waveforms  — DRS waveform 2D histograms vs TS
-  drs_stats      — pulse peak, energy, and timing distributions
-  drs_peak_ts    — peak time-slice distributions
+  drs_profiles               — per-channel DRS waveform profiles vs TS
+  drs_prof_combined          — combined waveform profiles per fiber size/type (book-only)
+  drs_prof_corr_combined     — combined waveform profiles vs time [ns] (book-only, off by default)
+  drs_stats                  — peak/energy/timing/noise distributions + sum/saturation/noise board maps
+  drs_finebins_combined      — fine-binned CFD-TS combined distributions (book-only, off by default)
+  drs_finebins_corr_combined — fine-binned CFD-time [ns] combined distributions (book-only, off by default)
+  drs_cfd_mpv                — CFD MPV board maps (plot-only; needs drs_stats finebins)
 """
 
 from core.analysis_manager import CaloXAnalysisManager
@@ -42,6 +47,8 @@ manager = (
 
 if args.mcp_clean:
     manager.apply_beam_pid_selection(flag_only=False, particle="mcp_clean")
+if args.particle:
+    manager.apply_beam_pid_selection(flag_only=False, particle=args.particle)
 
 sequences = default_drs_mcp_sequences()
 

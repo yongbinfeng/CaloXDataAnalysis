@@ -127,6 +127,7 @@ PARTICLE_SELECTIONS_TB2026 = {
 PARTICLE_SELECTIONS_CALO_MCP = {
     "mcp_clean": {
         "MCP_US_0": True, "MCP_DS_0": True,
+        #"MCP_DS_0": True
     },
 }
 

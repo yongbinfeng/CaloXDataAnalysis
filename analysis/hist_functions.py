@@ -15,7 +15,7 @@ import os
 import ROOT
 from configs.plot_config import (get_drs_plot_ranges, get_drs_cfd_finebins_range,
                                   get_drs_energy_range, get_drs_peak_value_range,
-                                  get_drs_noise_range,
+                                  get_drs_noise_range, get_drs_energy_sum_range,
                                   get_drs_sum_vs_fers_ranges, get_fers_vs_drs_xmax,
                                   get_drs_time_ns_range, get_drs_time_ns_finebins_range,
                                   get_drs_time_arr_ns_range, get_fers_saturation_value,
@@ -679,6 +679,33 @@ def book_drs_stats(ctx, do_finebins=True):
                     "DRS CFD time (MCP-corrected);Time_cfd_mcp [ns];Counts",
                     300, tfb_lo, tfb_hi),
                     f"{channel_name}_Time_cfd_mcp"))
+
+    # Per-event DRS energy sum by fiber category: var x size (6 histograms).
+    # var in {CerQuartz, CerPlastic, Sci}, size in {3mm, 6mm}; each event fills
+    # one entry = sum of {ch}_energy over all channels in that category.
+    cat_cols = {}  # (var, size_tag) -> list of "{ch}_energy" columns
+    for _, board in ctx.drsboards.items():
+        for chan in board:
+            if chan.is_reference:
+                continue
+            var = get_channel_var(chan)
+            if var not in _COMBO_VARS:
+                continue
+            size_tag = "6mm" if chan.is6mm else "3mm"
+            cat_cols.setdefault((var, size_tag), []).append(
+                f"{chan.get_channel_name(blsub=False)}_energy")
+    for var in _COMBO_VARS:
+        for size_tag in ("3mm", "6mm"):
+            cols = cat_cols.get((var, size_tag))
+            if not cols:
+                continue
+            sum_col = f"DRS_EnergySum_{var}_{size_tag}"
+            nb, lo, hi = get_drs_energy_sum_range(size_tag == "6mm")
+            hists.append(ctx.rdf.Define(sum_col, " + ".join(cols)).Histo1D((
+                f"hist_{sum_col}",
+                f"DRS energy sum ({var} {size_tag});DRS energy sum;Counts",
+                nb, lo, hi),
+                sum_col))
 
     ctx.hbook.add("drs_stats.root", hists)
 

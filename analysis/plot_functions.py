@@ -30,7 +30,7 @@ from variables.drs import get_arr_name
 from utils.visualization import (visualizeFERSBoards, visualizeDRSBoards,
                                  FERS_XMIN_DISPLAY, FERS_XMAX_DISPLAY,
                                  FERS_YMIN_DISPLAY, FERS_YMAX_DISPLAY,
-                                 FERS_W_REF, FERS_H_REF, get_drs_display_x)
+                                 FERS_W_REF, FERS_H_REF)
 
 
 # ---------------------------------------------------------------------------
@@ -1096,7 +1096,8 @@ def plot_drs_profiles(ctx, *, do_ts=True, do_time=False, do_mcp_only=False):
 # ---------------------------------------------------------------------------
 
 def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
-                   do_noise=True, do_timing=True, do_finebins=False):
+                   do_energy_sum=True, do_noise=True, do_timing=True,
+                   do_finebins=False):
     """Plot DRS peak, energy, and timing distributions. Returns list of HTML paths."""
     output_htmls = []
 
@@ -1185,6 +1186,26 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
             output_htmls.append(pm.generate_html(
                 "DRS/DRS_Noise.html", plots_per_row=9))
 
+    if do_energy_sum:
+        # -- per-event DRS energy sum by fiber category (var x size) --
+        from configs.plot_config import get_drs_energy_sum_range
+        with _pm(ctx) as pm:
+            pm.set_output_dir("DRS_Stats")
+            infile = pm._get_file("drs_stats.root")
+            for var in ("CerQuartz", "CerPlastic", "Sci"):
+                for size_tag in ("3mm", "6mm"):
+                    name = f"DRS_EnergySum_{var}_{size_tag}"
+                    hist = infile.Get(f"hist_{name}")
+                    if not hist or hist.GetEntries() == 0:
+                        continue
+                    nb, lo, hi = get_drs_energy_sum_range(size_tag == "6mm")
+                    pm.plot_1d(
+                        hist, name, "DRS energy sum", (lo, hi),
+                        "Counts", (0.9, None), style=_STYLE_1D_LOG,
+                        extra_text=f"{var} {size_tag}")
+            output_htmls.append(pm.generate_html(
+                "DRS/DRS_EnergySum.html", plots_per_row=2))
+
     if do_energy_map:
         # -- DRS sum mean/max + saturation fraction vs channel location (maps) --
         import json
@@ -1210,11 +1231,8 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
                         noise_map[ch] = h.GetBinCenter(h.GetMaximumBin())
             _nf.Close()
 
-        drs_xmin, drs_xmax, drs_wref = get_drs_display_x(ctx.run_number)
-
         def _draw_maps(pm, configs, also_6mm=False):
-            helper = BoardPlotHelper(pm, xrange=(drs_xmin, drs_xmax),
-                                     W_ref=drs_wref)
+            helper = BoardPlotHelper(pm, run_number=ctx.run_number)
             for stat, vmap, zlabel, digits, zmin, zmax in configs:
                 cer_hists, sci_hists = visualizeDRSBoards(
                     ctx.drsboards, valuemaps=vmap,
@@ -1539,8 +1557,7 @@ def plot_drs_cfd_mpv(ctx):
 
     with _pm(ctx) as pm:
         pm.set_output_dir("DRS_CFD_MPV")
-        _dx0, _dx1, _dwref = get_drs_display_x(ctx.run_number)
-        helper = BoardPlotHelper(pm, xrange=(_dx0, _dx1), W_ref=_dwref)
+        helper = BoardPlotHelper(pm, run_number=ctx.run_number)
 
         helper.plot_cer_sci_pair(
             cer_hists, sci_hists,

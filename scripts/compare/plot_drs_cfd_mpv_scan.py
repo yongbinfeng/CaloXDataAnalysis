@@ -31,6 +31,13 @@ setup_root(batch_mode=True, load_functions=True)
 SCAN_RUNS = [1501, 1507, 1511, 1513, 15130]
 REFERENCE_RUN = 1501   # used only for DRS board map
 
+#SCAN_RUNS = [1897, 1898, 1899, 1900, 1902, 1903, 1904, 1905, 1907,1908, 1910, 1911, 1912,1913, 1914,1915, 1917,1918, 1919, 1920, 1922,1923,1924, 1925, 1927]
+SCAN_RUNS = []
+#for run_number in range(1897, 1928):
+#    SCAN_RUNS.append(run_number)
+SCAN_RUNS = [1897, 1902, 1907, 1912, 1917, 1922, 1927]  # reduced set for faster testing
+REFERENCE_RUN = 1897 
+
 PLOTDIR = "results/plots/PositionScan"
 HTMLDIR = "results/html/PositionScan"
 
@@ -231,7 +238,7 @@ def _plot_fit_params_page(drsboards, p0_map, p1_map, channel_order, lumi):
     p1_inv_map = {ch: 0.5 / abs(v)     for ch, v in p1_map.items() if v != 0}
 
     pm_map = _new_pm()
-    helper = BoardPlotHelper(pm_map)
+    helper = BoardPlotHelper(pm_map, run_number=REFERENCE_RUN)
 
     cer_hists, sci_hists = visualizeDRSBoards(drsboards, valuemaps=p0_shifted, suffix="MPV_scan_p0")
     helper.plot_cer_sci_pair(cer_hists, sci_hists, "DRS_CFD_MPV_Scan_p0",
@@ -308,7 +315,7 @@ def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
     y_map = {ch: p0_map[ch] + p1_map[ch] * x_eval - shift for ch in p0_map}
 
     pm_y = _new_pm()
-    helper_y = BoardPlotHelper(pm_y)
+    helper_y = BoardPlotHelper(pm_y, run_number=REFERENCE_RUN)
 
     cer_hists, sci_hists = visualizeDRSBoards(
         drsboards, valuemaps=y_map, suffix=f"MPV_scan_y{x_eval}")
@@ -512,7 +519,7 @@ def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
         return vs[max(0, int(0.12 * n))], vs[min(n - 1, int(0.95 * n))]
 
     pm2 = _new_pm()
-    helper = BoardPlotHelper(pm2)
+    helper = BoardPlotHelper(pm2, run_number=REFERENCE_RUN)
 
     # One board per type
     for tname in _TYPE_ORDER:
