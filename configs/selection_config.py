@@ -126,8 +126,8 @@ PARTICLE_SELECTIONS_TB2026 = {
 # top of the era table (e.g. mcp_clean uses the US/DS MCPs instead of MCP_1/2).
 PARTICLE_SELECTIONS_CALO_MCP = {
     "mcp_clean": {
-        "MCP_US_0": True, "MCP_DS_0": True,
-        #"MCP_DS_0": True
+        #"MCP_US_0": True, "MCP_DS_0": True,
+        "MCP_DS_0": True
     },
 }
 

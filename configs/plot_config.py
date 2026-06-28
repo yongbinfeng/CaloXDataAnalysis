@@ -207,7 +207,8 @@ def get_fers_2d_mix_lg_range():
 
 
 def get_drs_cfd_finebins_range(is_cer):
-    return (410, 450) if is_cer else (420, 490)
+    #return (410, 450) if is_cer else (420, 490)
+    return (410, 490) if is_cer else (420, 490)
 
 
 def get_drs_time_ns_range():
@@ -217,7 +218,7 @@ def get_drs_time_ns_range():
 
 def get_drs_time_ns_finebins_range(is_cer):
     """Fine-binned range [ns] for time_cfd_mcp_finebins histograms."""
-    return (6.5, 12.5) if is_cer else (7.5, 16.5)
+    return (6.5, 16.5) if is_cer else (7.5, 16.5)
 
 
 def get_drs_time_arr_ns_range():

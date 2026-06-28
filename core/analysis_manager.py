@@ -238,18 +238,21 @@ class CaloXAnalysisManager:
         Pass particle= to override the beam-type lookup (e.g. select protons
         from a pion run).
         """
-        if "beam_pid_applied" in self._steps_applied:
-            return self
-
         particle = particle or _BEAM_TO_PARTICLE.get((self.beam_type or "").lower())
         if particle is None:
+            return self
+
+        # Per-particle guard so distinct selections stack (e.g. mcp_clean +
+        # electron), while re-applying the same particle stays idempotent.
+        step_key = f"beam_pid_applied_{particle.lower()}"
+        if step_key in self._steps_applied:
             return self
 
         self.rdf = (self._get_or_create_sel_mgr()
                     .apply_particle_selection(particle, flag_only=flag_only)
                     .get_rdf())
 
-        self._steps_applied.add("beam_pid_applied")
+        self._steps_applied.add(step_key)
         return self
 
     def apply_mcp_selection(self, flag_only=False,
