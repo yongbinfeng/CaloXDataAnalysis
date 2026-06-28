@@ -1,15 +1,16 @@
 """
-DRS CFD MPV position scan.
+DRS MPV / Energy position scan.
 
-For each DRS channel, plots the MPV of the fine-binned TS_cfd_mcp histogram
-versus table position X across a fixed set of scan runs, one graph per channel.
-A linear fit is overlaid and its parameters displayed on the plot.
+Combines two complementary position scans:
+  - Time scan  : MPV of TS_cfd_mcp histogram vs table position X per channel.
+  - Energy scan: DRS_SumMean (mean energy) vs table position X per channel.
 
 Usage
 -----
-  python scripts/plot_drs_cfd_mpv_scan.py
+  python scripts/compare/plot_drs_mpv_scan.py [--mode {time,energy,both}] [--jsroot]
 """
 
+import argparse
 import os
 import json
 import ROOT
@@ -26,36 +27,57 @@ from utils.utils import get_channel_var, get_hist_mpv
 from variables.drs import subtract_type_mpv
 
 auto_timer("Total Execution Time")
-setup_root(batch_mode=True, load_functions=True)
 
-SCAN_RUNS = [1501, 1507, 1511, 1513, 15130]
-REFERENCE_RUN = 1501   # used only for DRS board map
-
-#SCAN_RUNS = [1897, 1898, 1899, 1900, 1902, 1903, 1904, 1905, 1907,1908, 1910, 1911, 1912,1913, 1914,1915, 1917,1918, 1919, 1920, 1922,1923,1924, 1925, 1927]
-SCAN_RUNS = []
-#for run_number in range(1897, 1928):
-#    SCAN_RUNS.append(run_number)
-SCAN_RUNS = [1897, 1902, 1907, 1912, 1917, 1922, 1927]  # reduced set for faster testing
-REFERENCE_RUN = 1897 
+SCAN_RUNS = list(range(1897, 1932))
+REFERENCE_RUN = 1897
 
 PLOTDIR = "results/plots/PositionScan"
 HTMLDIR = "results/html/PositionScan"
 
-# True  → one shared slope per category (CerQuartz/CerPlastic/Sci);
-#          each channel keeps its own intercept.
-# False → independent linear fit per channel (original behaviour).
 FIT_SHARED_SLOPE = True
-SAVE_T0_JSON = True        # save MPV(1500mm) per channel to data/drs/drs_cfd_t0.json
+SAVE_T0_JSON = True
 
-Y1500_EVAL  = 1500         # table position [mm] at which t0 is evaluated
-Y1500_SHIFT = 300          # display offset subtracted when plotting (add back for raw values)
+Y1500_EVAL  = 1500
+Y1500_SHIFT = 300
 
 _TYPE_ORDER  = ["CerQuartz", "CerPlastic", "Sci"]
 _TYPE_COLORS = [ROOT.kBlue + 1, ROOT.kRed + 1, ROOT.kGreen + 2]
 
 
 # ---------------------------------------------------------------------------
-# Data collection
+# Shared helpers
+# ---------------------------------------------------------------------------
+
+def _build_channel_order(drsboards):
+    """Return list of (ch, board_no, group_no, chan_no, var, tower_x, tower_y, is6mm)."""
+    order = []
+    for _, board in drsboards.items():
+        for chan in board:
+            if chan.is_reference:
+                continue
+            order.append((
+                chan.get_channel_name(blsub=False),
+                board.board_no, chan.group_no, chan.channel_no,
+                get_channel_var(chan),
+                chan.i_tower_x, chan.i_tower_y,
+                chan.is6mm,
+            ))
+    return order
+
+
+def _make_pm(outdir, use_jsroot=False):
+    pm = PlotManager(
+        rootdir=f"results/root/Run{REFERENCE_RUN}",
+        plotdir=PLOTDIR,
+        htmldir=HTMLDIR,
+        use_jsroot=use_jsroot,
+    )
+    pm.set_output_dir(outdir)
+    return pm
+
+
+# ---------------------------------------------------------------------------
+# Time scan — data collection
 # ---------------------------------------------------------------------------
 
 def _collect_mpv_data(drsboards, run_x):
@@ -80,25 +102,8 @@ def _collect_mpv_data(drsboards, run_x):
     return mpv_data
 
 
-def _build_channel_order(drsboards):
-    """Return list of (ch, board_no, group_no, chan_no, var, tower_x, tower_y, is6mm)."""
-    channel_order = []
-    for _, board in drsboards.items():
-        for chan in board:
-            if chan.is_reference:
-                continue
-            channel_order.append((
-                chan.get_channel_name(blsub=False),
-                board.board_no, chan.group_no, chan.channel_no,
-                get_channel_var(chan),
-                chan.i_tower_x, chan.i_tower_y,
-                chan.is6mm,
-            ))
-    return channel_order
-
-
 # ---------------------------------------------------------------------------
-# Fitting
+# Time scan — fitting
 # ---------------------------------------------------------------------------
 
 def _compute_shared_slopes(channel_order, mpv_data):
@@ -149,10 +154,10 @@ def _fit_channel(pts, var, shared_fit):
 
 
 # ---------------------------------------------------------------------------
-# Per-channel scan plots
+# Time scan — per-channel plots
 # ---------------------------------------------------------------------------
 
-def _plot_scan_channels(channel_order, mpv_data, shared_fit, pm, lumi, xmin, xmax):
+def _plot_time_channels(channel_order, mpv_data, shared_fit, pm, lumi, xmin, xmax):
     """Draw one MPV-vs-X TGraph per channel. Returns (p0_map, p1_map, plots_by_type)."""
     plots_by_type = {}
     p0_map, p1_map = {}, {}
@@ -217,27 +222,16 @@ def _plot_scan_channels(channel_order, mpv_data, shared_fit, pm, lumi, xmin, xma
 
 
 # ---------------------------------------------------------------------------
-# Board-map HTML pages
+# Time scan — summary pages
 # ---------------------------------------------------------------------------
 
-def _new_pm(use_jsroot=False):
-    pm = PlotManager(
-        rootdir=f"results/root/Run{REFERENCE_RUN}",
-        plotdir=PLOTDIR,
-        htmldir=HTMLDIR,
-        use_jsroot=use_jsroot,
-    )
-    pm.set_output_dir("DRS_CFD_MPV_Scan")
-    return pm
-
-
-def _plot_fit_params_page(drsboards, p0_map, p1_map, channel_order, lumi):
+def _plot_fit_params_page(drsboards, p0_map, p1_map, channel_order, lumi, use_jsroot=False):
     """Board maps of p0, |p1|×100, 1/|p1| [cm/ns], plus speed 1D histogram."""
     p0_shifted = {ch: v - 400          for ch, v in p0_map.items()}
     p1_abs_map = {ch: abs(v) * 100     for ch, v in p1_map.items()}
     p1_inv_map = {ch: 0.5 / abs(v)     for ch, v in p1_map.items() if v != 0}
 
-    pm_map = _new_pm()
+    pm_map = _make_pm("DRS_CFD_MPV_Scan", use_jsroot)
     helper = BoardPlotHelper(pm_map, run_number=REFERENCE_RUN)
 
     cer_hists, sci_hists = visualizeDRSBoards(drsboards, valuemaps=p0_shifted, suffix="MPV_scan_p0")
@@ -256,7 +250,6 @@ def _plot_fit_params_page(drsboards, p0_map, p1_map, channel_order, lumi):
     helper.plot_cer_sci_pair(cer_hists, sci_hists, "DRS_CFD_MPV_Scan_p1_inv",
                              zmin=p5, zmax=p95, nTextDigits=1, lumitext=lumi, usePDF=False)
 
-    # Speed distribution (1/|p1| cm/ns) by channel type
     speed_by_type = {var: [] for var in _TYPE_ORDER}
     for ch, _b, _g, _c, var, _tx, _ty, _is6mm in channel_order:
         if ch in p1_inv_map:
@@ -310,11 +303,11 @@ def _plot_fit_params_page(drsboards, p0_map, p1_map, channel_order, lumi):
 
 
 def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
-                      x_eval=Y1500_EVAL, shift=Y1500_SHIFT):
+                      x_eval=Y1500_EVAL, shift=Y1500_SHIFT, use_jsroot=False):
     """Board maps + 1D distribution of MPV evaluated at x_eval mm."""
     y_map = {ch: p0_map[ch] + p1_map[ch] * x_eval - shift for ch in p0_map}
 
-    pm_y = _new_pm()
+    pm_y = _make_pm("DRS_CFD_MPV_Scan", use_jsroot)
     helper_y = BoardPlotHelper(pm_y, run_number=REFERENCE_RUN)
 
     cer_hists, sci_hists = visualizeDRSBoards(
@@ -323,7 +316,6 @@ def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
         cer_hists, sci_hists, f"DRS_CFD_MPV_Scan_y{x_eval}",
         zmin=None, zmax=None, nTextDigits=1, lumitext=lumi, usePDF=False)
 
-    # 1D distributions by (size, type) combination
     _size_order = ["3mm", "6mm"]
     _size_type_colors = {
         ("3mm", "CerQuartz"):  ROOT.kBlue + 1,
@@ -356,7 +348,7 @@ def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
             for v in vals:
                 h.Fill(v)
             mpv, _ = get_hist_mpv(h, window_ts=3.0)
-            group_mpv[f"{size}_{tname}"] = mpv + shift  # add shift back: store unshifted MPV
+            group_mpv[f"{size}_{tname}"] = mpv + shift
             hists_y.append(h)
             y_labels.append(f"{size} {tname} (MPV = {mpv:.1f})")
             y_cols.append(_size_type_colors[(size, tname)])
@@ -371,7 +363,6 @@ def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
         hists_y.append(h_b5)
         y_labels.append(f"3mm CerQuartz B5 (MPV = {mpv_b5:.1f})")
         y_cols.append(ROOT.kViolet + 1)
-
 
     if hists_y:
         DrawHistos(
@@ -390,7 +381,6 @@ def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
         )
         pm_y.add_plot(f"drs_cfd_mpv_at_{x_eval}mm")
 
-    # ── Merged-Cer plot: CerQuartz+CerPlastic combined per size ──────────────
     _cer_merged_colors = {
         ("3mm", "Cer"): ROOT.kBlue + 1,
         ("3mm", "Sci"): ROOT.kGreen + 2,
@@ -468,16 +458,8 @@ def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
     )
 
 
-# ---------------------------------------------------------------------------
-# T0 JSON export
-# ---------------------------------------------------------------------------
-
 def _save_t0_json(p0_map, p1_map, x_eval=Y1500_EVAL, shift=Y1500_SHIFT):
-    """Save raw MPV(x_eval) per channel to data/drs_cfd_t0.json.
-
-    The plot subtracts `shift` for display; we add it back here so the JSON
-    stores the unmodified physical value: t0 = p0 + p1 * x_eval.
-    """
+    """Save raw MPV(x_eval) per channel to data/drs/drs_cfd_t0.json."""
     t0_map = {ch: (p0_map[ch] + p1_map[ch] * x_eval - shift) + shift for ch in p0_map}
     out_path = "data/drs/drs_cfd_t0.json"
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
@@ -486,16 +468,8 @@ def _save_t0_json(p0_map, p1_map, x_eval=Y1500_EVAL, shift=Y1500_SHIFT):
     print(f"Saved {len(t0_map)} t0 values to {out_path}")
 
 
-# ---------------------------------------------------------------------------
-# p0 corrected board maps (one per type)
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
-# (p0 − JSON) − 1500/p1 board maps
-# ---------------------------------------------------------------------------
-
-def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
-    """Four board maps of (p0 − group_MPV) − 1500×p1: CerQuartz, CerPlastic, Cer, Sci."""
+def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi, use_jsroot=False):
+    """Board maps of (p0 − group_MPV) − 1500×p1: CerQuartz, CerPlastic, Cer, Sci."""
     base_corr_map = subtract_type_mpv(drsboards, p0_map)
     if base_corr_map is None:
         print("Skipping p0-corrected2 page: MPV JSON not found")
@@ -518,10 +492,9 @@ def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
         n = len(vs)
         return vs[max(0, int(0.12 * n))], vs[min(n - 1, int(0.95 * n))]
 
-    pm2 = _new_pm()
+    pm2 = _make_pm("DRS_CFD_MPV_Scan", use_jsroot)
     helper = BoardPlotHelper(pm2, run_number=REFERENCE_RUN)
 
-    # One board per type
     for tname in _TYPE_ORDER:
         filtered = {
             ch: _corrected2(ch)
@@ -543,7 +516,6 @@ def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
             extra_text=tname, zmin=zmin_val, zmax=zmax_val, nTextDigits=1,
             zlabel="Time [ns]", lumitext=lumi, usePDF=False)
 
-    # Combined Cer (CerQuartz + CerPlastic together, excluding 6mm CerPlastic)
     cer_combined = {
         ch: _corrected2(ch)
         for ch, (var, is6mm) in ch_meta.items()
@@ -552,15 +524,13 @@ def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
     }
     if cer_combined:
         zmin_val, zmax_val = _zrange(list(cer_combined.values()))
-        # Zero out 6mm CerPlastic so visualizeDRSBoards doesn't fill them with channel IDs
         for ch, (var, is6mm) in ch_meta.items():
             if is6mm and var == "CerPlastic":
                 cer_combined[ch] = 0.0
         cer_hists, _ = visualizeDRSBoards(
             drsboards, valuemaps=cer_combined, suffix="MPV_scan_p0c2_Cer")
-        # Beam arrow — coordinates in the zoomed [-10,10] x [-11,11] frame
-        _aw = 1.2  # arrowhead length (cm)
-        _ah = 0.55  # arrowhead half-height (cm)
+        _aw = 1.2
+        _ah = 0.55
         _tip_x, _tip_y = -6.5, -1.0
         beam_shaft = ROOT.TLine(-9.2, _tip_y, _tip_x, _tip_y)
         beam_top   = ROOT.TLine(_tip_x, _tip_y, _tip_x - _aw, _tip_y + _ah)
@@ -571,8 +541,6 @@ def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
         beam_label = ROOT.TLatex(-7.85, -0.05, "e^{+}, 40 GeV")
         beam_label.SetTextAlign(22)
         beam_label.SetTextSize(0.030)
-        # Custom helper: zoomed range + 1:1 physical aspect ratio
-        # Δx=20, Δy=22; H/W = (22×0.67)/(20×0.81) ≈ 0.91
         from plotting.calox_plot_helper import BoardPlotHelper as _BPH
         helper_cer = _BPH(pm2, xrange=(-10, 10), yrange=(-11, 11),
                           W_ref=1100, H_ref=1000)
@@ -601,41 +569,78 @@ def _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi):
 
 
 # ---------------------------------------------------------------------------
-# Entry point
+# Energy scan — data collection and plotting
 # ---------------------------------------------------------------------------
 
-def main():
-    with open("data/Runlist.json") as f:
-        runlist = json.load(f)
+def _collect_summean(run_x):
+    """Read DRS_SumMean (mean energy, vals[0]) per channel from each run's JSON."""
+    data = {}
+    for run, x_val in sorted(run_x.items(), key=lambda kv: kv[1]):
+        path = f"results/root/Run{run}/drs_energy_stats.json"
+        if not os.path.exists(path):
+            print(f"Warning: {path} not found, skipping run {run}")
+            continue
+        with open(path) as f:
+            stats = json.load(f)
+        for ch, vals in stats.items():
+            data.setdefault(ch, []).append((x_val, vals[0]))
+    return data
 
-    def _parse_x(run):
-        raw = runlist[str(run)]["Table position X"]
-        return float(raw.replace("mm", "").strip())
 
-    run_x      = {r: _parse_x(r) for r in SCAN_RUNS if str(r) in runlist}
-    drsboards  = build_drs_boards(run_number=REFERENCE_RUN)
+def _plot_energy_channels(channel_order, data, pm, xmin, xmax):
+    """Draw one SumMean-vs-position TGraph per channel. Returns plots grouped by type."""
+    plots_by_type = {}
+    for ch, b, g, c, var, tx, ty, _is6mm in channel_order:
+        pts = sorted(data.get(ch, []))
+        if not pts:
+            continue
+
+        gr = ROOT.TGraph(len(pts))
+        gr.SetName(f"gr_summean_{ch}")
+        gr.SetTitle("")
+        for i, (x, mean) in enumerate(pts):
+            gr.SetPoint(i, x, mean)
+        gr.SetLineWidth(2)
+
+        ys = [m for _, m in pts]
+        ymid = (max(ys) + min(ys)) / 2
+        yhalf = max(50.0, (max(ys) - min(ys)) / 2 * 1.4 + 20)
+
+        pave = create_pave_text(0.18, 0.77, 0.60, 0.87)
+        pave.AddText(f"B: {b}, G: {g}, C: {c}")
+        pave.AddText(f"Tower: ({tx}, {ty})")
+
+        plot_name = f"drs_summean_scan_{ch}_{var}"
+        DrawHistos(
+            [gr], [],
+            xmin, xmax, "Table position X [mm]",
+            ymid - yhalf, ymid + yhalf, "Mean DRS Sum [ADC]",
+            plot_name,
+            outdir=pm.get_output_dir(),
+            drawoptions="EPL",
+            markerstyles=[20],
+            mycolors=[ROOT.kBlue + 1],
+            dology=False,
+            usePDF=False,
+            extra_text=var,
+            extraToDraw=[pave],
+        )
+        plots_by_type.setdefault(var, []).append(plot_name)
+    return plots_by_type
+
+
+# ---------------------------------------------------------------------------
+# Top-level scan runners
+# ---------------------------------------------------------------------------
+
+def run_time_scan(drsboards, run_x, channel_order, lumi, xmin, xmax, use_jsroot=False):
     mpv_data   = _collect_mpv_data(drsboards, run_x)
-    channel_order = _build_channel_order(drsboards)
+    shared_fit = _compute_shared_slopes(channel_order, mpv_data) if FIT_SHARED_SLOPE else {}
 
-    xs_all = list(run_x.values())
-    xmin, xmax = min(xs_all) - 20, max(xs_all) + 20
-
-    _btypes = {"pion": "#pi^{+}", "pions": "#pi^{+}", "pi+": "#pi^{+}",
-               "positron": "e^{+}", "positrons": "e^{+}", "e+": "e^{+}",
-               "mu+": "#mu^{+}"}
-    btype, benergy = getRunInfo(REFERENCE_RUN)
-    lumi = f"{_btypes.get(btype.lower(), btype.lower())}, {benergy} GeV, 90^{{#circ}}"
-
-    pm = PlotManager(
-        rootdir=f"results/root/Run{REFERENCE_RUN}",
-        plotdir=PLOTDIR,
-        htmldir=HTMLDIR,
-    )
-    pm.set_output_dir("DRS_CFD_MPV_Scan")
+    pm = _make_pm("DRS_CFD_MPV_Scan", use_jsroot)
     os.makedirs(pm.get_output_dir(), exist_ok=True)
 
-    shared_fit = _compute_shared_slopes(channel_order, mpv_data) if FIT_SHARED_SLOPE else {}
-    p0_map, p1_map, plots_by_type = _plot_scan_channels(
+    p0_map, p1_map, plots_by_type = _plot_time_channels(
         channel_order, mpv_data, shared_fit, pm, lumi, xmin, xmax)
 
     for type_name, plot_names in plots_by_type.items():
@@ -649,11 +654,92 @@ def main():
         )
 
     if p0_map and p1_map:
-        _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi)
+        _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi, use_jsroot=use_jsroot)
         if SAVE_T0_JSON:
             _save_t0_json(p0_map, p1_map)
-        _plot_fit_params_page(drsboards, p0_map, p1_map, channel_order, lumi)
-        _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi)
+        _plot_fit_params_page(drsboards, p0_map, p1_map, channel_order, lumi, use_jsroot=use_jsroot)
+        _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi, use_jsroot=use_jsroot)
+
+
+def run_energy_scan(drsboards, run_x, channel_order, lumi, xmin, xmax, use_jsroot=False):
+    data = _collect_summean(run_x)
+    if not any(data.values()):
+        print("No drs_energy_stats.json data found for any scan run.")
+        return
+
+    pm = _make_pm("DRS_SumMean_Scan", use_jsroot)
+    os.makedirs(pm.get_output_dir(), exist_ok=True)
+
+    plots_by_type = _plot_energy_channels(channel_order, data, pm, xmin, xmax)
+
+    run_list = ", ".join(str(r) for r in sorted(run_x))
+    for type_name, plot_names in plots_by_type.items():
+        pm.reset_plots()
+        for name in plot_names:
+            pm.add_plot(name)
+        pm.generate_html(
+            f"DRS_SumMean_Scan_{type_name}.html",
+            plots_per_row=4,
+            title=f"DRS SumMean Scan — {type_name}",
+            intro_text=(
+                "Per-channel mean DRS CFD energy (DRS_SumMean) vs table "
+                f"position X [mm] (runs {run_list})."
+            ),
+        )
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def _parse_args():
+    parser = argparse.ArgumentParser(
+        description="DRS MPV / Energy position scan",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--mode", choices=["time", "energy", "both"], default="both",
+        help="Which scan to run: time (CFD MPV), energy (SumMean), or both",
+    )
+    parser.add_argument(
+        "--jsroot", action="store_true",
+        help="Embed interactive JSROOT canvases in HTML output",
+    )
+    return parser.parse_args()
+
+
+def main():
+    args = _parse_args()
+    setup_root(batch_mode=True, load_functions=(args.mode != "energy"))
+
+    with open("data/Runlist.json") as f:
+        runlist = json.load(f)
+
+    def _parse_x(run):
+        raw = runlist[str(run)]["Table position X"]
+        return float(raw.replace("mm", "").strip())
+
+    run_x = {r: _parse_x(r) for r in SCAN_RUNS if str(r) in runlist}
+    if not run_x:
+        print("No table positions found for the scan runs in data/Runlist.json.")
+        return
+
+    drsboards     = build_drs_boards(run_number=REFERENCE_RUN)
+    channel_order = _build_channel_order(drsboards)
+
+    xs_all = list(run_x.values())
+    xmin, xmax = min(xs_all) - 20, max(xs_all) + 20
+
+    _btypes = {"pion": "#pi^{+}", "pions": "#pi^{+}", "pi+": "#pi^{+}",
+               "positron": "e^{+}", "positrons": "e^{+}", "e+": "e^{+}",
+               "mu+": "#mu^{+}"}
+    btype, benergy = getRunInfo(REFERENCE_RUN)
+    lumi = f"{_btypes.get(btype.lower(), btype.lower())}, {benergy} GeV, 90^{{#circ}}"
+
+    if args.mode in ("time", "both"):
+        run_time_scan(drsboards, run_x, channel_order, lumi, xmin, xmax, use_jsroot=args.jsroot)
+    if args.mode in ("energy", "both"):
+        run_energy_scan(drsboards, run_x, channel_order, lumi, xmin, xmax, use_jsroot=args.jsroot)
 
     PlotManager.print_html_summary()
 

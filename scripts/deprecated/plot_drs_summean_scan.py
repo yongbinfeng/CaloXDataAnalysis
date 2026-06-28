@@ -31,7 +31,7 @@ auto_timer("Total Execution Time")
 setup_root(batch_mode=True, load_functions=False)
 
 SCAN_RUNS = []
-for run_number in range(1897, 1928):
+for run_number in range(1897, 1932):
     SCAN_RUNS.append(run_number)
 REFERENCE_RUN = 1897   # used to build the DRS board/channel list
 
