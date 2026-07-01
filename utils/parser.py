@@ -30,6 +30,11 @@ def get_args():
     parser.add_argument(
         "--mcp-clean", action="store_true", default=False,
         help="Require the mcp_clean selection (all MCPs fire) before analysis.")
+    parser.add_argument(
+        "--channels", default=None, type=str, metavar="FILE",
+        help="JSON file mapping labels to channel names "
+             "(e.g. data/channel_maps/testingfibers.json). "
+             "When given, only the listed channels are histogrammed.")
     args = parser.parse_args()
 
     print(f"Run number: {args.run}")

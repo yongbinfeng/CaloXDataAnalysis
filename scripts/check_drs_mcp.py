@@ -9,6 +9,10 @@ Usage
 -----
   python scripts/check_drs_mcp.py                              # default DRS_MCP_SEQUENCES
   python scripts/check_drs_mcp.py --sequences drs_stats drs_cfd_mpv
+  python scripts/check_drs_mcp.py --channels data/channel_maps/testingfibers.json
+
+  --channels FILE  JSON file mapping labels to channel names; only those channels
+                   are histogrammed (reference channels are always kept).
 
 Available sequences (see analysis/registry.py  DRS_MCP_SEQUENCES):
   drs_profiles               — per-channel DRS waveform profiles vs TS
@@ -19,6 +23,8 @@ Available sequences (see analysis/registry.py  DRS_MCP_SEQUENCES):
   drs_finebins_corr_combined — fine-binned CFD-time [ns] combined distributions (book-only, off by default)
   drs_cfd_mpv                — CFD MPV board maps (plot-only; needs drs_stats finebins)
 """
+
+import json
 
 from core.analysis_manager import CaloXAnalysisManager
 from core.sequence import run_hist_phase, run_plot_phase
@@ -38,12 +44,22 @@ args.jsroot = True  # default to JSROOT for this script; pass --no-jsroot is not
 # Build RDataFrame: DRS baseline subtraction + MCP clean-pulse +
 # timing-difference selection applied globally to all sequences
 # ------------------------------------------------------------------
-manager = (
-    CaloXAnalysisManager(args)
-    .prepare(do_fers=False)
-    #.apply_hole_veto(flag_only=True)
-    #.apply_mcp_diff_selection()
-)
+manager = CaloXAnalysisManager(args)
+
+if args.channels:
+    with open(args.channels) as f:
+        ch_map = json.load(f)
+    allowed = set(ch_map.values())
+    for board in manager.drsboards.values():
+        board.channels = [
+            ch for ch in board.channels
+            if ch.is_reference or ch.get_channel_name(blsub=False) in allowed
+        ]
+    print(f"Channel filter: {len(allowed)} channels from {args.channels}")
+
+manager.prepare(do_fers=False)
+#manager.apply_hole_veto(flag_only=True)
+#manager.apply_mcp_diff_selection()
 
 if args.mcp_clean:
     manager.apply_beam_pid_selection(flag_only=False, particle="mcp_clean")

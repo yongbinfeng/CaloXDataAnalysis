@@ -11,6 +11,7 @@ _DRS_BRG_RUN = 1700
 # Run number at which DRS boards switched from 3mm to 6mm fibers.
 _DRS_6MM_RUN = 1748
 _DRS_FULL_RUN_TB2026 = 1828
+_DRS_TESTFIBER_RUN_TB2026 = 1994
 
 # CSV mapping each DRS readout channel (DRS_ROOT_Bridge_Mapping) to its FERS
 # channel (fers_root_board, Physical-1). Used only for the from-FERS era
@@ -1076,14 +1077,20 @@ def get_mcp_channels(run_number=1184):
             "MCP_1": _drs(0, 0, 5, 1),
             "MCP_2": _drs(0, 0, 6, 1),
         }
-    else:
+    elif run_number < _DRS_TESTFIBER_RUN_TB2026:
         return {
             "MCP_DS_0": _drs(3, 3, 7, 1),
             "MCP_US_0": _drs(3, 3, 6, 1),
             "MCP_DS_1": _drs(3, 3, 7, 0),
             "MCP_US_1": _drs(3, 3, 6, 0),
         }
-        
+    else:
+        return {
+            "MCP_DS_0": _drs(2, 3, 7, 0),
+            "MCP_US_0": _drs(2, 3, 6, 0),
+            "MCP_DS_1": _drs(0, 3, 7, 0),
+            "MCP_US_1": _drs(0, 3, 6, 0),
+        }
 
 
 def get_service_drs_channels(run_number=1184):
@@ -1125,21 +1132,12 @@ def get_service_drs_channels(run_number=1184):
             "Cer474":      _drs(0, 0, 2, 1),
             "Cer519":      _drs(0, 0, 3, 1),
             "Cer537":      _drs(0, 0, 4, 1),
-            "MCP_1":       _drs(0, 0, 5, 1),
-            "MCP_2":       _drs(0, 0, 6, 1),
             "HoleVeto":    _drs(0, 0, 7, 1),
         }
         if run_number >= 1824:
             channels["ST1"] = _drs(0, 1, 0, 1)
             channels["ST3"] = _drs(0, 1, 1, 1)
-        if run_number >= _DRS_FULL_RUN_TB2026:
-            # drop MCP_1 and MCP_2, add MCP_DS_0/1 and MCP_US_0/1
-            channels.pop("MCP_1")
-            channels.pop("MCP_2")
-            channels["MCP_DS_0"] = _drs(3, 3, 7, 1)
-            channels["MCP_US_0"] = _drs(3, 3, 6, 1)
-            channels["MCP_DS_1"] = _drs(3, 3, 7, 0)
-            channels["MCP_US_1"] = _drs(3, 3, 6, 0)
+        channels.update(get_mcp_channels(run_number))
         return channels
 
 

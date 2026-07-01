@@ -1,0 +1,22 @@
+{
+    "Scintillating_0": "DRS_Brg0_Board0_Group0_Channel3",
+    "Scintillating_1": "DRS_Brg0_Board0_Group0_Channel7",
+    "Sapphire": "DRS_Brg0_Board2_Group1_Channel7",
+    "GradedIndex_0": "DRS_Brg0_Board2_Group2_Channel7",
+    "GradedIndex_1": "DRS_Brg0_Board2_Group3_Channel3",
+    "Quartz700_0": "DRS_Brg0_Board0_Group0_Channel2",
+    "Quartz700_1": "DRS_Brg0_Board0_Group0_Channel6",
+    "Quartz700_2": "DRS_Brg0_Board0_Group1_Channel2",
+    "Quartz400_0": "DRS_Brg0_Board0_Group1_Channel6",
+    "Quartz400_1": "DRS_Brg0_Board0_Group2_Channel2",
+    "Quartz400_2": "DRS_Brg0_Board0_Group2_Channel6",
+    "Quartz_0": "DRS_Brg0_Board0_Group3_Channel2",
+    "Quartz_1": "DRS_Brg0_Board0_Group3_Channel6",
+    "Quartz_2": "DRS_Brg0_Board2_Group0_Channel2",
+    "Multiclad_0": "DRS_Brg0_Board2_Group0_Channel6",
+    "Multiclad_1": "DRS_Brg0_Board2_Group1_Channel2",
+    "Multiclad_2": "DRS_Brg0_Board2_Group1_Channel6",
+    "Singleclad_0": "DRS_Brg0_Board2_Group2_Channel2",
+    "Singleclad_1": "DRS_Brg0_Board2_Group2_Channel6",
+    "Singleclad_2": "DRS_Brg0_Board2_Group3_Channel2"
+}
