@@ -1,6 +1,8 @@
+import json
 import os
 import re
 from datetime import datetime
+from html import escape as html_escape
 from zoneinfo import ZoneInfo
 
 JSROOT_CDN = "https://root.cern/js/latest/modules/main.mjs"
@@ -777,3 +779,306 @@ def generate_jsroot_html(canvas_keys, canvas_jsons, plots_per_row=4, output_html
     with open(output_html, "w") as f:
         f.write(html)
     return os.path.abspath(output_html)
+
+
+PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js"
+
+
+def generate_plotly_picker_html(spec, output_html="picker.html", title="",
+                                intro_text=""):
+    """Overlay page whose curves can be switched on and off, drawn with Plotly.
+
+    The page is just y-vs-x line series, so it carries the arrays rather than a
+    serialised ROOT canvas. Plotly is loaded from a CDN exactly as the JSROOT
+    pages load JSROOT -- nothing extra to install on the analysis machines.
+
+    Args:
+        spec: dict with
+                x0, dx      first bin centre and bin width (uniform grid, so
+                            the x values are never stored)
+                xlabel      x axis title
+                ylabel      y axis title
+                yrange      [lo, hi] used when auto-scaling is off
+                filename    basename offered by the "download as PNG" button
+                series      [{"name": str, "color": "#rrggbb", "y": [...]}, ...]
+        output_html: output path
+        title:       page title
+        intro_text:  optional text shown above the plot
+    """
+    if not title:
+        title = os.path.splitext(os.path.basename(output_html))[0].replace('_', ' ')
+    timestamp = datetime.now(ZoneInfo("Europe/Zurich")).strftime(
+        "%B %d, %Y, %I:%M %p %Z")
+
+    rows = ""
+    for i, s in enumerate(spec["series"]):
+        rows += (
+            f'      <label class="pick"><input type="checkbox" data-trace="{i}" '
+            f'checked onchange="applyVisibility()">'
+            f'<span class="swatch" style="background:{s["color"]}"></span>'
+            f'<span class="pick-label">{html_escape(str(s["name"]))}</span></label>\n')
+
+    data_json = json.dumps(spec, separators=(",", ":")).replace("</script>", "<\\/script>")
+    intro_block = (f'  <div class="intro-text">{html_escape(intro_text)}</div>\n'
+                   if intro_text else "")
+
+    page = _PLOTLY_PICKER_TEMPLATE
+    for placeholder, value in [
+            ("__TITLE__", html_escape(title)),
+            ("__TIMESTAMP__", timestamp),
+            ("__INTRO__", intro_block),
+            ("__ROWS__", rows),
+            ("__CDN__", PLOTLY_CDN),
+            ("__DATA__", data_json)]:
+        page = page.replace(placeholder, value)
+
+    os.makedirs(os.path.dirname(os.path.abspath(output_html)), exist_ok=True)
+    with open(output_html, "w", encoding="utf-8") as f:
+        f.write(page)
+    print(f"Generated {output_html}")
+    return output_html
+
+
+_PLOTLY_PICKER_TEMPLATE = """<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>__TITLE__</title>
+  <script src="__CDN__" charset="utf-8"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+           padding: 10px 20px; margin: 0; line-height: 1.4; color: #333; }
+    .top-bar { padding: 10px 0 8px; border-bottom: 1px solid #eee; margin-bottom: 12px; }
+    h1 { font-size: 20px; margin: 0; color: #1a1a1a; }
+    .timestamp { font-size: 11px; color: #888; }
+    .intro-text { background: #f8f9fa; border-left: 4px solid #007bff; padding: 10px 16px;
+                  margin-bottom: 12px; font-size: 14px; border-radius: 0 4px 4px 0; }
+    .layout { display: flex; gap: 18px; align-items: flex-start; }
+    .side { flex: 0 0 240px; border: 1px solid #e1e4e8; border-radius: 6px; padding: 10px;
+            background: #fff; max-height: 80vh; overflow-y: auto; }
+    .side h2 { font-size: 13px; margin: 0 0 8px; color: #444; text-transform: uppercase;
+               letter-spacing: 0.04em; }
+    .side-btns { display: flex; gap: 6px; margin-bottom: 8px; }
+    .side-btns button { padding: 3px 10px; font-size: 12px; cursor: pointer;
+                        border: 1px solid #bbb; border-radius: 3px; background: #f5f5f5; }
+    .side-btns button:hover { background: #e0e0e0; }
+    label.pick { display: flex; align-items: center; gap: 6px; font-size: 13px;
+                 padding: 2px 0; cursor: pointer; }
+    .swatch { width: 12px; height: 12px; border-radius: 2px; flex: 0 0 12px;
+              border: 1px solid rgba(0,0,0,0.25); }
+    .pick-label { word-break: break-all; }
+    .opts { border-top: 1px solid #eee; margin-top: 10px; padding-top: 8px;
+            font-size: 12px; color: #555; }
+    .canvas-wrap { flex: 1 1 auto; border: 1px solid #e1e4e8; border-radius: 6px;
+                   padding: 8px; background: #fff; }
+    #plot { width: 100%; height: 74vh; }
+    .mode { display: flex; gap: 12px; margin-bottom: 8px; font-size: 13px; }
+    .mode label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    .axis-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+                padding: 6px 2px 8px; font-size: 12px; color: #555;
+                border-bottom: 1px solid #eee; margin-bottom: 8px; }
+    .axis-bar input[type="number"] { width: 84px; padding: 2px 4px; font-size: 12px;
+                border: 1px solid #ccc; border-radius: 3px; }
+    .axis-bar input:disabled { background: #f0f0f0; color: #999; }
+    .axis-bar button { padding: 2px 10px; font-size: 12px; cursor: pointer;
+                border: 1px solid #bbb; border-radius: 3px; background: #f5f5f5; }
+    .axis-bar button:hover { background: #e0e0e0; }
+    .axis-bar .grp { display: flex; align-items: center; gap: 4px; }
+  </style>
+  <script type="application/json" id="plotdata">__DATA__</script>
+</head>
+<body>
+  <div class="top-bar">
+    <h1>__TITLE__</h1>
+    <div class="timestamp">__TIMESTAMP__</div>
+  </div>
+__INTRO__  <div class="layout">
+    <div class="side">
+      <h2>Curves</h2>
+      <div class="mode">
+        <label><input type="radio" name="mode" value="raw" checked
+               onchange="setMode()"> Raw</label>
+        <label><input type="radio" name="mode" value="norm"
+               onchange="setMode()"> Peak = 1</label>
+      </div>
+      <div class="side-btns">
+        <button onclick="setAll(true)">All</button>
+        <button onclick="setAll(false)">None</button>
+      </div>
+__ROWS__      <div class="opts">
+        <label><input type="checkbox" id="autoscale" onchange="applyYRange()">
+          Auto-scale Y to selection</label>
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <div class="axis-bar">
+        <span class="grp">X <input type="number" id="xmin" step="any">
+          to <input type="number" id="xmax" step="any"></span>
+        <span class="grp">Y <input type="number" id="ymin" step="any">
+          to <input type="number" id="ymax" step="any"></span>
+        <button onclick="applyRanges()">Apply</button>
+        <button onclick="resetRanges()">Reset</button>
+        <label><input type="checkbox" id="autoscale" onchange="onAutoToggle()">
+          Auto-scale Y to selection</label>
+      </div>
+      <div id="plot"></div>
+    </div>
+  </div>
+
+<script>
+const spec = JSON.parse(document.getElementById('plotdata').textContent);
+const GD = document.getElementById('plot');
+
+// Peak-normalised copies are made here rather than shipped, using the same
+// peak the page was given, so the two never disagree. A peak of 0 means the
+// curve could not be normalised and is left as it is.
+const Y_RAW  = spec.series.map(s => s.y);
+const Y_NORM = spec.series.map(s => (s.peak ? s.y.map(v => v / s.peak) : s.y.slice()));
+
+const mode = () => document.querySelector('input[name="mode"]:checked').value;
+const defaultY = () => (mode() === 'norm' ? spec.yrangeNorm : spec.yrange).slice();
+const ylabel = () => (mode() === 'norm'
+                      ? spec.ylabel + ' (peak = 1)' : spec.ylabel);
+
+const traces = spec.series.map(s => ({
+  type: 'scatter', mode: 'lines', name: s.name,
+  y: s.y, x0: spec.x0, dx: spec.dx,
+  line: { color: s.color, width: 1.5 },
+  hovertemplate: '%{fullData.name}<br>' + spec.xlabel + ' = %{x:.1f}<br>' +
+                 '%{y:.4g}<extra></extra>'
+}));
+
+const layout = {
+  margin: { l: 70, r: 20, t: 20, b: 55 },
+  xaxis: { title: { text: spec.xlabel }, zeroline: false, showline: true,
+           mirror: true, ticks: 'inside', range: spec.xrange.slice(), autorange: false },
+  yaxis: { title: { text: spec.ylabel }, zeroline: false, showline: true,
+           mirror: true, ticks: 'inside', range: spec.yrange.slice(), autorange: false },
+  hovermode: 'closest',
+  showlegend: true,
+  legend: { font: { size: 11 } },
+  plot_bgcolor: '#fff', paper_bgcolor: '#fff'
+};
+
+let syncing = false;   // guard against relayout events we caused ourselves
+
+Plotly.newPlot(GD, traces, layout, {
+  responsive: true, displaylogo: false,
+  toImageButtonOptions: { format: 'png', filename: spec.filename, scale: 2 }
+}).then(() => {
+  writeBoxes(spec.xrange, spec.yrange);
+  // Route legend clicks through the checkboxes so there is one source of truth
+  GD.on('plotly_legendclick', ev => {
+    const cb = document.querySelector('input[data-trace="' + ev.curveNumber + '"]');
+    if (cb) { cb.checked = !cb.checked; applyVisibility(); }
+    return false;
+  });
+  GD.on('plotly_legenddoubleclick', () => false);
+  // Keep the boxes honest when the reader zooms or pans with the mouse
+  GD.on('plotly_relayout', () => {
+    if (syncing) return;
+    const ax = GD._fullLayout;
+    writeBoxes(ax.xaxis.range, ax.yaxis.range);
+  });
+});
+
+function writeBoxes(xr, yr) {
+  const r = v => Math.abs(v) >= 1e-4 && Math.abs(v) < 1e6
+                 ? +(+v).toFixed(4) : +(+v).toPrecision(4);
+  document.getElementById('xmin').value = r(xr[0]);
+  document.getElementById('xmax').value = r(xr[1]);
+  document.getElementById('ymin').value = r(yr[0]);
+  document.getElementById('ymax').value = r(yr[1]);
+}
+
+function num(id) {
+  const v = parseFloat(document.getElementById(id).value);
+  return Number.isFinite(v) ? v : null;
+}
+
+function applyRanges() {
+  const xmin = num('xmin'), xmax = num('xmax');
+  const ymin = num('ymin'), ymax = num('ymax');
+  const up = {};
+  if (xmin !== null && xmax !== null && xmin !== xmax) {
+    up['xaxis.range'] = [xmin, xmax];
+    up['xaxis.autorange'] = false;
+  }
+  if (!document.getElementById('autoscale').checked &&
+      ymin !== null && ymax !== null && ymin !== ymax) {
+    up['yaxis.range'] = [ymin, ymax];
+    up['yaxis.autorange'] = false;
+  }
+  syncing = true;
+  Plotly.relayout(GD, up).then(() => { syncing = false; });
+}
+
+function resetRanges() {
+  document.getElementById('autoscale').checked = false;
+  const yr = defaultY();
+  syncing = true;
+  Plotly.relayout(GD, { 'xaxis.autorange': false, 'xaxis.range': spec.xrange.slice(),
+                        'yaxis.autorange': false, 'yaxis.range': yr })
+        .then(() => { syncing = false; writeBoxes(spec.xrange, yr); });
+  setYBoxesEnabled(true);
+}
+
+function setYBoxesEnabled(on) {
+  document.getElementById('ymin').disabled = !on;
+  document.getElementById('ymax').disabled = !on;
+}
+
+function onAutoToggle() {
+  setYBoxesEnabled(!document.getElementById('autoscale').checked);
+  applyYRange();
+}
+
+function applyYRange() {
+  syncing = true;
+  if (document.getElementById('autoscale').checked) {
+    Plotly.relayout(GD, { 'yaxis.autorange': true }).then(() => {
+      syncing = false;
+      writeBoxes(GD._fullLayout.xaxis.range, GD._fullLayout.yaxis.range);
+    });
+  } else {
+    const ymin = num('ymin'), ymax = num('ymax');
+    const yr = (ymin !== null && ymax !== null && ymin !== ymax)
+               ? [ymin, ymax] : defaultY();
+    Plotly.relayout(GD, { 'yaxis.autorange': false, 'yaxis.range': yr })
+          .then(() => { syncing = false; });
+  }
+}
+
+function setMode() {
+  const ys = mode() === 'norm' ? Y_NORM : Y_RAW;
+  const yr = defaultY();
+  syncing = true;
+  Plotly.restyle(GD, { y: ys })
+    .then(() => Plotly.relayout(GD, { 'yaxis.title.text': ylabel() }))
+    .then(() => {
+      syncing = false;
+      document.getElementById('autoscale').checked = false;
+      setYBoxesEnabled(true);
+      return Plotly.relayout(GD, { 'yaxis.autorange': false, 'yaxis.range': yr });
+    })
+    .then(() => writeBoxes(GD._fullLayout.xaxis.range, yr));
+}
+
+function applyVisibility() {
+  const vis = [];
+  document.querySelectorAll('input[data-trace]').forEach(cb => {
+    vis[+cb.dataset.trace] = cb.checked ? true : 'legendonly';
+  });
+  // 'legendonly' keeps a trace out of the autorange calculation, so hiding a
+  // curve also drops it from the auto-scaled Y range
+  Plotly.restyle(GD, { visible: vis }).then(applyYRange);
+}
+
+function setAll(state) {
+  document.querySelectorAll('input[data-trace]').forEach(cb => { cb.checked = state; });
+  applyVisibility();
+}
+</script>
+</body>
+</html>
+"""
