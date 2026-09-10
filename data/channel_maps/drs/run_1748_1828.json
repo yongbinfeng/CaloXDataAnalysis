@@ -1,0 +1,743 @@
+{
+ "run_range": [
+  1748,
+  1828
+ ],
+ "note": "Extracted from the build_drs_boards code. 6mm boards, all amplified, no MCP",
+ "boards": [
+  {
+   "key": "Board0",
+   "board_no": 0,
+   "bridge_no": 0,
+   "channels": [
+    {
+     "group": 0,
+     "channel": 3,
+     "x": -1.5,
+     "y": 1.875,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 0,
+     "channel": 7,
+     "x": -1.5,
+     "y": 1.875,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 3,
+     "x": -1.5,
+     "y": 0.875,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 7,
+     "x": -1.5,
+     "y": 0.875,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 3,
+     "x": -1.5,
+     "y": -0.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 7,
+     "x": -1.5,
+     "y": -0.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 3,
+     "x": -1.5,
+     "y": -1.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 7,
+     "x": -1.5,
+     "y": -1.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 0,
+     "channel": 8,
+     "x": -1000.5,
+     "y": -997.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": true
+    },
+    {
+     "group": 0,
+     "channel": 2,
+     "x": -0.5,
+     "y": 1.875,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 0,
+     "channel": 6,
+     "x": -0.5,
+     "y": 1.875,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 2,
+     "x": -0.5,
+     "y": 0.875,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 6,
+     "x": -0.5,
+     "y": 0.875,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 2,
+     "x": -0.5,
+     "y": -0.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 6,
+     "x": -0.5,
+     "y": -0.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 2,
+     "x": -0.5,
+     "y": -1.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 6,
+     "x": -0.5,
+     "y": -1.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 8,
+     "x": -1000.5,
+     "y": -997.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": true
+    },
+    {
+     "group": 0,
+     "channel": 1,
+     "x": 0.5,
+     "y": 1.875,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 0,
+     "channel": 5,
+     "x": 0.5,
+     "y": 1.875,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 1,
+     "x": 0.5,
+     "y": 0.875,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 5,
+     "x": 0.5,
+     "y": 0.875,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 1,
+     "x": 0.5,
+     "y": -0.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 5,
+     "x": 0.5,
+     "y": -0.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 1,
+     "x": 0.5,
+     "y": -1.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 5,
+     "x": 0.5,
+     "y": -1.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 8,
+     "x": -1000.5,
+     "y": -997.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": true
+    },
+    {
+     "group": 0,
+     "channel": 0,
+     "x": 1.5,
+     "y": 1.875,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 0,
+     "channel": 4,
+     "x": 1.5,
+     "y": 1.875,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 0,
+     "x": 1.5,
+     "y": 0.875,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 4,
+     "x": 1.5,
+     "y": 0.875,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 0,
+     "x": 1.5,
+     "y": -0.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 4,
+     "x": 1.5,
+     "y": -0.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 0,
+     "x": 1.5,
+     "y": -1.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 4,
+     "x": 1.5,
+     "y": -1.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 8,
+     "x": -1000.5,
+     "y": -997.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": true
+    }
+   ]
+  },
+  {
+   "key": "Board1",
+   "board_no": 1,
+   "bridge_no": 0,
+   "channels": [
+    {
+     "group": 0,
+     "channel": 3,
+     "x": -1.5,
+     "y": -0.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 0,
+     "channel": 7,
+     "x": -1.5,
+     "y": -0.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 3,
+     "x": -1.5,
+     "y": -1.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 7,
+     "x": -1.5,
+     "y": -1.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 3,
+     "x": -1.5,
+     "y": -2.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 7,
+     "x": -1.5,
+     "y": -2.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 3,
+     "x": -1.5,
+     "y": -3.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 7,
+     "x": -1.5,
+     "y": -3.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 0,
+     "channel": 8,
+     "x": -1000.5,
+     "y": -999.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": true
+    },
+    {
+     "group": 0,
+     "channel": 2,
+     "x": -0.5,
+     "y": -0.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 0,
+     "channel": 6,
+     "x": -0.5,
+     "y": -0.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 2,
+     "x": -0.5,
+     "y": -1.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 6,
+     "x": -0.5,
+     "y": -1.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 2,
+     "x": -0.5,
+     "y": -2.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 6,
+     "x": -0.5,
+     "y": -2.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 2,
+     "x": -0.5,
+     "y": -3.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 6,
+     "x": -0.5,
+     "y": -3.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 8,
+     "x": -1000.5,
+     "y": -999.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": true
+    },
+    {
+     "group": 0,
+     "channel": 1,
+     "x": 0.5,
+     "y": -0.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 0,
+     "channel": 5,
+     "x": 0.5,
+     "y": -0.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 1,
+     "x": 0.5,
+     "y": -1.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 5,
+     "x": 0.5,
+     "y": -1.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 1,
+     "x": 0.5,
+     "y": -2.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 5,
+     "x": 0.5,
+     "y": -2.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 1,
+     "x": 0.5,
+     "y": -3.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 5,
+     "x": 0.5,
+     "y": -3.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 8,
+     "x": -1000.5,
+     "y": -999.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": true
+    },
+    {
+     "group": 0,
+     "channel": 0,
+     "x": 1.5,
+     "y": -0.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 0,
+     "channel": 4,
+     "x": 1.5,
+     "y": -0.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 0,
+     "x": 1.5,
+     "y": -1.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 1,
+     "channel": 4,
+     "x": 1.5,
+     "y": -1.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 0,
+     "x": 1.5,
+     "y": -2.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 2,
+     "channel": 4,
+     "x": 1.5,
+     "y": -2.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 0,
+     "x": 1.5,
+     "y": -3.125,
+     "cer": true,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 4,
+     "x": 1.5,
+     "y": -3.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": false
+    },
+    {
+     "group": 3,
+     "channel": 8,
+     "x": -1000.5,
+     "y": -999.125,
+     "cer": false,
+     "amplified": true,
+     "is6mm": true,
+     "reference": true
+    }
+   ]
+  }
+ ]
+}

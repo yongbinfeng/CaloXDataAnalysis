@@ -16,3 +16,4 @@ backup*
 *log
 *.ipynb_checkpoints
 *egg-info*
+*.swp
