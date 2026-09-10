@@ -55,6 +55,9 @@ if args.channels:
             ch for ch in board.channels
             if ch.is_reference or ch.get_channel_name(blsub=False) in allowed
         ]
+    # channel name -> label, so the per-channel plots can show which fibre
+    # each channel is rather than just its board/group/channel numbers
+    manager.channel_labels = {name: label for label, name in ch_map.items()}
     print(f"Channel filter: {len(allowed)} channels from {args.channels}")
 
 manager.prepare(do_fers=False)

@@ -33,6 +33,28 @@ from utils.visualization import (visualizeFERSBoards, visualizeDRSBoards,
                                  FERS_W_REF, FERS_H_REF)
 
 
+def _channel_pave(ctx, board, chan, x1, y1, x2, y2, with_tower=True):
+    """Identification box for a single DRS channel plot.
+
+    Shows board/group/channel and the tower position. When the run was
+    filtered with --channels, the label that file gives the channel (e.g.
+    "Quartz700_0") is added on top, and the box grows by one line so the
+    existing lines keep their spacing.
+    """
+    lines = [f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}"]
+    if with_tower:
+        lines.append(f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+    labels = getattr(ctx, "channel_labels", None) or {}
+    label = labels.get(chan.get_channel_name(blsub=False))
+    if label:
+        y1 -= (y2 - y1) / len(lines)
+        lines.insert(0, label)
+    pave = create_pave_text(x1, y1, x2, y2)
+    for line in lines:
+        pave.AddText(line)
+    return pave
+
+
 # ---------------------------------------------------------------------------
 # Shared styles (module-level, cheap to define)
 # ---------------------------------------------------------------------------
@@ -850,12 +872,8 @@ def plot_drs_waveforms(ctx, *, do_drs_vs_ts=True, do_mcp_vs_ts=False):
                             is6mm=chan.is6mm,
                             is_reference=chan.is_reference,
                             run_number=ctx.run_number)
-                        pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-                        pave.AddText(
-                            f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                        if not chan.is_reference:
-                            pave.AddText(
-                                f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                        pave = _channel_pave(ctx, board, chan, 0.20, 0.80, 0.60, 0.90,
+                                with_tower=not chan.is_reference)
                         var = get_channel_var(chan)
                         _plot_drs_channel_vs_ts(
                             pm, infile, ch, mode, ymin, ymax, pave,
@@ -974,12 +992,8 @@ def plot_drs_profiles(ctx, *, do_ts=True, do_time=False, do_mcp_only=False):
                         is_reference=chan.is_reference,
                         is_cer=chan.isCer,
                         run_number=ctx.run_number)
-                    pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-                    pave.AddText(
-                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    if not chan.is_reference:
-                        pave.AddText(
-                            f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pave = _channel_pave(ctx, board, chan, 0.20, 0.80, 0.60, 0.90,
+                            with_tower=not chan.is_reference)
                     var = get_channel_var(chan)
 
                     if do_mcp_only:
@@ -1045,11 +1059,7 @@ def plot_drs_profiles(ctx, *, do_ts=True, do_time=False, do_mcp_only=False):
                         is_reference=False,
                         is_cer=chan.isCer,
                         run_number=ctx.run_number)
-                    pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-                    pave.AddText(
-                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    pave.AddText(
-                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pave = _channel_pave(ctx, board, chan, 0.20, 0.80, 0.60, 0.90)
                     var = get_channel_var(chan)
                     pm.plot_1d(
                         [hist_time_mcp],
@@ -1115,11 +1125,7 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
                     if not hist:
                         print(f"Warning: hist_{ch}_peak_value not found")
                         continue
-                    pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-                    pave.AddText(
-                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    pave.AddText(
-                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pave = _channel_pave(ctx, board, chan, 0.20, 0.80, 0.60, 0.90)
                     var = get_channel_var(chan)
                     pm.plot_1d(
                         hist, f"DRS_PeakValue_{ch}_{var}",
@@ -1143,12 +1149,8 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
                     if not hist:
                         print(f"Warning: hist_{ch}_energy not found")
                         continue
-                    pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-                    pave.AddText(
-                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    if not chan.is_reference:
-                        pave.AddText(
-                            f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pave = _channel_pave(ctx, board, chan, 0.20, 0.80, 0.60, 0.90,
+                            with_tower=not chan.is_reference)
                     var = get_channel_var(chan)
                     pm.plot_1d(
                         hist, f"DRS_Energy_{ch}_{var}",
@@ -1173,11 +1175,7 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
                     hist = infile.Get(f"hist_{ch}_blrms")
                     if not hist:
                         continue
-                    pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-                    pave.AddText(
-                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    pave.AddText(
-                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pave = _channel_pave(ctx, board, chan, 0.20, 0.80, 0.60, 0.90)
                     var = get_channel_var(chan)
                     pm.plot_1d(
                         hist, f"DRS_Noise_{ch}_{var}",
@@ -1299,11 +1297,7 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
                         print(f"Warning: TS histograms for {ch} not found")
                         continue
                     var = get_channel_var(chan)
-                    pave = create_pave_text(0.20, 0.80, 0.60, 0.90)
-                    pave.AddText(
-                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    pave.AddText(
-                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pave = _channel_pave(ctx, board, chan, 0.20, 0.80, 0.60, 0.90)
                     pm.plot_1d(
                         [hp_ref, hc_ref, hp_mcp, hc_mcp],
                         f"DRS_Time_{ch}_{var}",
@@ -1395,11 +1389,7 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
                     hist = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
                     if not hist:
                         continue
-                    pave = create_pave_text(0.15, 0.75, 0.70, 0.90)
-                    pave.AddText(
-                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    pave.AddText(
-                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pave = _channel_pave(ctx, board, chan, 0.15, 0.75, 0.70, 0.90)
                     if hist.GetEntries() >= 5:
                         mpv, mpv_err = get_hist_mpv(hist)
                         pave.AddText(f"MPV: {mpv:.1f} #pm {mpv_err:.1f} TS")
@@ -1483,11 +1473,7 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
                     if not hist_ns:
                         continue
                     tfb_lo, tfb_hi = get_drs_time_ns_finebins_range(chan.isCer)
-                    pave_ns = create_pave_text(0.15, 0.75, 0.70, 0.90)
-                    pave_ns.AddText(
-                        f"B: {board.board_no}, G: {chan.group_no}, C: {chan.channel_no}")
-                    pave_ns.AddText(
-                        f"Tower: ({chan.i_tower_x}, {chan.i_tower_y})")
+                    pave_ns = _channel_pave(ctx, board, chan, 0.15, 0.75, 0.70, 0.90)
                     if hist_ns.GetEntries() >= 5:
                         mpv_ns, mpv_err_ns = get_hist_mpv(
                             hist_ns, window_ts=_NS_WINDOW)
