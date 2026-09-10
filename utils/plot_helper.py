@@ -44,6 +44,10 @@ def save_hists_to_file(hist_list, filename):
         # Handle cases where h is a pointer from RDataFrame
         if hasattr(h, 'GetPtr'):
             h = h.GetPtr()
-        h.SetDirectory(outfile)
-        h.Write()
+        # WriteTObject writes without attaching the histogram to the file.
+        # SetDirectory(outfile) would hand ownership to the TFile, and since
+        # setup_root() disables TH1::AddDirectory the histogram is then freed
+        # by TFile::Close() while the RDataFrame result still points at it,
+        # which segfaults in TH1::~TH1() at interpreter shutdown.
+        outfile.WriteTObject(h, h.GetName())
     outfile.Close()
