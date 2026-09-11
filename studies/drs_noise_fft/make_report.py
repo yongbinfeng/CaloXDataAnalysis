@@ -23,7 +23,86 @@ def pct(x):
     return f"{100 * x:.0f}%"
 
 
-def build(res):
+CLEANING_PLOTS = ["summary_noise_sigma", "summary_peak_snr", "summary_peak_ratio",
+                  "summary_dt_core_sigma", "summary_ringing_coherence", "example_waveform_Sapphire"]
+
+
+def harvest_cleaning(run):
+    """Copy the cleaning study's summary and key plots from results/ next to
+    this script, so the report (and the repo) carry them. Returns the summary
+    or None if the cleaning study has not been run."""
+    import shutil
+    root = os.path.join("results", "root", f"Run{run}")
+    src = os.path.join(root, "drs_cleaning_summary.json")
+    if not os.path.exists(src):
+        return None
+    shutil.copy(src, os.path.join(HERE, "cleaning_summary.json"))
+    for name in CLEANING_PLOTS:
+        fn = os.path.join("results", "plots", f"Run{run}", "DRS_Cleaning", f"{name}.png")
+        if os.path.exists(fn):
+            shutil.copy(fn, os.path.join(HERE, f"cleaning_{name}.png"))
+    with open(src) as f:
+        return json.load(f)
+
+
+def cleaning_section(cl):
+    if cl is None:
+        return ""
+    ch = cl["channels"]
+    amp = [k for k in ch if k != "Quartz_1" and ch[k]["n_selected"] >= 30]
+    med = lambda key, v: sorted(ch[k][v][key] for k in amp)[len(amp) // 2]
+    sig = [med("noise_sigma", v) for v in ("raw", "cell", "cell+LP")]
+    snr = [med("peak_snr", v) for v in ("raw", "cell", "cell+LP")]
+    cher = [k for k in amp if k.split("_")[0] in ("Singleclad", "Multiclad", "Quartz", "Sapphire")]
+    peak_cost = sorted(ch[k]["cell+LP"]["peak_median"] / ch[k]["raw"]["peak_median"] for k in cher)
+    integ = sorted(ch[k]["cell+LP"]["integral_median"] / ch[k]["raw"]["integral_median"] for k in cher)
+    gain = sorted(ch[k]["ringing_extrapolation_gain"] for k in amp)[len(amp) // 2]
+    fiqr = sorted(ch[k]["ringing_fit_iqr_MHz"] for k in amp)[len(amp) // 2]
+    rows = "".join(
+        f"<tr><th>{k}</th><td>{ch[k]['n_selected']}</td>"
+        + "".join(f"<td>{ch[k][v]['noise_sigma']:.2f}</td>" for v in ("raw", "cell", "cell+LP"))
+        + "".join(f"<td>{ch[k][v]['peak_snr']:.0f}</td>" for v in ("raw", "cell", "cell+LP"))
+        + "".join(f"<td>{ch[k][v]['dt_core_sigma_ns']:.2f}</td>" if ch[k][v]['dt_core_sigma_ns'] == ch[k][v]['dt_core_sigma_ns']
+                  else "<td>–</td>" for v in ("raw", "cell", "cell+LP"))
+        + f"<td>{100 * ch[k]['ringing_extrapolation_gain']:+.0f}%</td></tr>"
+        for k in ch if ch[k]["n_selected"] >= 30)
+    return f"""
+<h2>4. Cleaning: what it buys and what it cannot</h2>
+<p>Two corrections were applied to the raw waveforms and every pulse feature recomputed on the <em>same</em> events (MCP present, raw amplitude above {cl['min_amp_raw']:.0f} ADC), the cell pattern coming from a disjoint half of the run so it cannot flatter itself. <code>cell</code> subtracts the per-cell offsets; <code>cell+LP</code> adds a zero-phase low-pass at {cl['lowpass_MHz']:.0f} MHz aimed at the amplifier resonance.</p>
+</div>
+<figure>
+  <img src="{img('cleaning_example_waveform_Sapphire.png')}" alt="One event of the Sapphire channel: raw, cell-corrected and low-passed waveforms overlaid. A 2 ns wide double pulse of 200 ADC sits on a visible 300 MHz ringing of about 15 ADC that continues before and after the pulse.">
+  <figcaption><b>One event, three treatments.</b> The Sapphire Cherenkov pulse is ~2 ns wide. The ~300 MHz ringing is present before and after it with the same amplitude — it is the noise of part 1 seen in the time domain, and its period is about the width of the pulse.</figcaption>
+</figure>
+<div class="col">
+<p>Noise σ falls from {sig[0]:.1f} to {sig[1]:.1f} ADC with the cell correction and to {sig[2]:.1f} with the low-pass (medians over the amplified channels). The cell correction costs nothing. The low-pass costs {100 * (1 - peak_cost[-1]):.0f}–{100 * (1 - peak_cost[0]):.0f}% of the Cherenkov peak amplitude — those pulses have real content at the cut-off — while leaving the integral within {100 * (1 - min(integ)):.0f}% and the rise time unchanged at the 0.2 ns sample granularity. Net, the median peak-to-noise ratio goes {snr[0]:.0f} → {snr[1]:.0f} → {snr[2]:.0f}.</p>
+<p>Timing does not move. With amplitude above {cl['min_amp_raw']:.0f} ADC the core σ against the MCP is the same to two decimals across all three treatments; at these amplitudes the CFD is not noise-limited, and where noise would matter the events are mostly not in-time pulses (part 3).</p>
+</div>
+<figure>
+  <img src="{img('cleaning_summary_peak_snr.png')}" alt="Bar chart per channel of median peak amplitude divided by noise sigma, for raw, cell-corrected and low-passed waveforms; the corrected versions sit 15 to 25 percent above raw for every channel.">
+  <figcaption><b>Peak-to-noise per channel.</b> The scintillating channels start near 140 and the Cherenkov fibres near 35; both gain 15–25% from <code>cell+LP</code>.</figcaption>
+</figure>
+<div class="col">
+<div class="tbl"><table>
+<thead><tr><th>channel</th><th>events</th><th>σ raw</th><th>σ cell</th><th>σ cell+LP</th><th>SNR raw</th><th>SNR cell</th><th>SNR cell+LP</th><th>σ<sub>t</sub> raw</th><th>σ<sub>t</sub> cell</th><th>σ<sub>t</sub> cell+LP</th><th>ringing extrap.</th></tr></thead>
+<tbody>{rows}</tbody>
+<caption>Pre-pulse noise σ [ADC], median peak / σ, and core timing σ [ns] for each treatment; channels with fewer than 30 selected events omitted. Last column: change in post-pulse variance when the pre-pulse sinusoid fit is extrapolated under it.</caption>
+</table></div>
+<div class="callout">
+  <div class="h">The ringing cannot be subtracted, only filtered</div>
+  If the 300 MHz ringing kept its phase across the 205 ns record, one could fit it on the pulse-free samples and remove it from under the pulse without touching the signal. It does not: extrapolating a sinusoid fitted on samples 20–380 into samples 620–990 makes the residual <em>worse</em> (median {100 * gain:+.0f}%), and the best-fit frequency scatters by {fiqr:.0f} MHz from event to event. It is a narrow-band random process with a coherence time of a few cycles. That leaves filtering, and the filter band is the signal band — so the real fix for this noise is the amplifier, not the analysis.
+</div>
+</div>
+<figure>
+  <img src="{img('cleaning_summary_ringing_coherence.png')}" alt="Bar chart per channel of the post-pulse variance removed by extrapolating the pre-pulse sinusoid fit; every bar is negative, between minus 5 and minus 25 percent.">
+  <figcaption><b>Extrapolation test.</b> Negative everywhere: the fitted sinusoid predicts the later samples worse than assuming nothing.</figcaption>
+</figure>
+<div class="col">
+<p>Per-channel distributions of every feature under the three treatments are in <code>results/html/Run{cl['run']}/DRS/DRS_Cleaning_Channels.html</code>, with the summary bars in <code>DRS_Cleaning.html</code> alongside the other DQM pages.</p>
+"""
+
+
+def build(res, cl=None):
     noise, cell, coh = res["noise"], res["cell_pattern"], res["coherence"]
     timing = {k: v for k, v in res["timing"].items() if not k.startswith("_")}
     n_mcp, mcp_spread = res["timing"]["_mcp_events"], res["timing"]["_mcp_spread_ns"]
@@ -253,19 +332,21 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
   The first pass claimed a 3.3 ns matched-filter resolution for <code>GradedIndex_1</code> even on pure noise. Its profile has no pulse, so the "template" was noise, the correlation peaked at a constant lag, and the "resolution" was exactly the {mcp_spread:.1f} ns MCP arrival spread. A matched filter fails silently on a bad template. The study now rejects any template whose peak is under 5σ of its own baseline — which excludes {', '.join(f'<code>{k}</code>' for k in skipped)} — and drops events whose correlation peaks at a window edge.
 </div>
 
+{cleaning_section(cl)}
 <h2>What to do with this</h2>
 <ul class="next">
-  <li><b>Correct the cell pattern.</b> Cheap, real, and a calibration task rather than a physics one. Measure it from pedestal runs per channel and subtract, or redo the DRS voltage calibration.</li>
+  <li><b>Correct the cell pattern in the pipeline.</b> It is free — no signal cost — and worth ~1 ADC of σ. Measure per channel from pedestal or pre-pulse samples and subtract by cell, or redo the DRS voltage calibration.</li>
+  <li><b>Treat the 300 MHz noise as a hardware problem.</b> It cannot be subtracted and sits on the Cherenkov signal band; a low-pass buys 15–25% in peak SNR at the cost of 7–10% of the peak, and nothing in timing. Look at the amplifier's stability and bandwidth.</li>
   <li><b>Check <code>Quartz_1</code>'s amplifier.</b> Its noise says it is not there.</li>
-  <li><b>If timing still matters at low amplitude, try the whitened filter.</b> Dividing by the measured noise PSD before correlating is the one version with a chance to beat CFD in the 160–400 ADC bin, given how coloured the noise is. Plain matched filtering has been tried and does not.</li>
-  <li><b>Understand the out-of-core population</b> before spending more on estimators. Split it by the scintillator channels' amplitude in the same event.</li>
+  <li><b>Understand the out-of-core population</b> before spending more on timing estimators. Split it by the scintillator channels' amplitude in the same event.</li>
 </ul>
 
 <h2>Reproduce</h2>
 <pre>python3 scripts/check_drs_mcp.py --run {res['run']} --channels {res['channels']}   # profiles as templates
 python3 studies/drs_noise_fft/drs_noise_fft.py --run {res['run']} --channels {res['channels']}
+python3 studies/drs_noise_fft/drs_noise_cleaning.py --run {res['run']} --channels {res['channels']}
 python3 studies/drs_noise_fft/make_report.py</pre>
-<p>The first step is only needed for part 3; without <code>drs_profiles.root</code> the study writes parts 1 and 2 and says why it stopped. Every number on this page comes from <code>results.json</code> written by the second step.</p>
+<p>The first step is only needed for part 3; without <code>drs_profiles.root</code> the study writes parts 1 and 2 and says why it stopped. Parts 1–3 come from <code>results.json</code>, part 4 from <code>drs_cleaning_summary.json</code>; the report harvests both.</p>
 </div>
 </div>
 """
@@ -290,7 +371,7 @@ def main():
     args = p.parse_args()
     with open(os.path.join(HERE, "results.json")) as f:
         res = json.load(f)
-    body = build(res)
+    body = build(res, harvest_cleaning(res["run"]))
     # the standalone file wants the <title>/<link>/<style> inside <head>
     head_end = body.index("</style>") + len("</style>")
     page = SKELETON.format(body=body[:head_end] + "\n</head>\n<body>" + body[head_end:])

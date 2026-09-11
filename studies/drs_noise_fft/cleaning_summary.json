@@ -1,0 +1,668 @@
+{
+ "run": 1994,
+ "nevents": 6000,
+ "lowpass_MHz": 500.0,
+ "min_amp_raw": 160.0,
+ "channels": {
+  "Scintillating_0": {
+   "n_selected": 462,
+   "ringing_extrapolation_gain": -0.13208018320655357,
+   "ringing_fit_MHz": 318.0,
+   "ringing_fit_iqr_MHz": 76.0,
+   "raw": {
+    "noise_sigma": 7.996219635009766,
+    "peak_median": 1124.5,
+    "integral_median": 23511.5,
+    "rise_median_ns": 1.4000000000000001,
+    "dt_core_sigma_ns": 1.4367890716552736,
+    "dt_core_fraction": 0.3246753246753247,
+    "peak_snr": 140.62895359659873
+   },
+   "cell": {
+    "noise_sigma": 6.933183670043945,
+    "peak_median": 1119.0616455078125,
+    "integral_median": 23475.1357421875,
+    "rise_median_ns": 1.4000000000000001,
+    "dt_core_sigma_ns": 1.4272287268066404,
+    "dt_core_fraction": 0.3268398268398268,
+    "peak_snr": 161.4066060795299
+   },
+   "cell+LP": {
+    "noise_sigma": 6.061748504638672,
+    "peak_median": 1099.66455078125,
+    "integral_median": 23664.955078125,
+    "rise_median_ns": 1.4000000000000001,
+    "dt_core_sigma_ns": 1.439815986328125,
+    "dt_core_fraction": 0.33116883116883117,
+    "peak_snr": 181.41045441587463
+   }
+  },
+  "Scintillating_1": {
+   "n_selected": 533,
+   "ringing_extrapolation_gain": -0.13228339346970097,
+   "ringing_fit_MHz": 308.0,
+   "ringing_fit_iqr_MHz": 65.0,
+   "raw": {
+    "noise_sigma": 7.588863372802734,
+    "peak_median": 978.0,
+    "integral_median": 17833.0,
+    "rise_median_ns": 1.4000000000000001,
+    "dt_core_sigma_ns": 1.4572230079650879,
+    "dt_core_fraction": 0.33771106941838647,
+    "peak_snr": 128.87305409990574
+   },
+   "cell": {
+    "noise_sigma": 6.427989959716797,
+    "peak_median": 976.4135131835938,
+    "integral_median": 17823.98828125,
+    "rise_median_ns": 1.4000000000000001,
+    "dt_core_sigma_ns": 1.4398080683898926,
+    "dt_core_fraction": 0.33771106941838647,
+    "peak_snr": 151.9002859840516
+   },
+   "cell+LP": {
+    "noise_sigma": 5.642853736877441,
+    "peak_median": 955.56103515625,
+    "integral_median": 17933.03125,
+    "rise_median_ns": 1.4000000000000001,
+    "dt_core_sigma_ns": 1.5194421665954594,
+    "dt_core_fraction": 0.34146341463414637,
+    "peak_snr": 169.3400324930315
+   }
+  },
+  "Sapphire": {
+   "n_selected": 188,
+   "ringing_extrapolation_gain": -0.13944928220983077,
+   "ringing_fit_MHz": 312.0,
+   "ringing_fit_iqr_MHz": 64.0,
+   "raw": {
+    "noise_sigma": 7.761237144470215,
+    "peak_median": 250.5,
+    "integral_median": 2057.0,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": 0.7441798672485351,
+    "dt_core_fraction": 0.526595744680851,
+    "peak_snr": 32.27578224155644
+   },
+   "cell": {
+    "noise_sigma": 7.147574424743652,
+    "peak_median": 250.48199462890625,
+    "integral_median": 2057.112060546875,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": 0.7824619674682617,
+    "dt_core_fraction": 0.526595744680851,
+    "peak_snr": 35.04433528691655
+   },
+   "cell+LP": {
+    "noise_sigma": 6.079451560974121,
+    "peak_median": 231.84703063964844,
+    "integral_median": 2057.6129150390625,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": 0.7621490624999998,
+    "dt_core_fraction": 0.526595744680851,
+    "peak_snr": 38.13617533001598
+   }
+  },
+  "GradedIndex_0": {
+   "n_selected": 54,
+   "ringing_extrapolation_gain": -0.11613675412463509,
+   "ringing_fit_MHz": 314.0,
+   "ringing_fit_iqr_MHz": 76.0,
+   "raw": {
+    "noise_sigma": 7.354513645172119,
+    "peak_median": 252.0,
+    "integral_median": 1642.5,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.037037037037037035,
+    "peak_snr": 34.26467230303199
+   },
+   "cell": {
+    "noise_sigma": 6.939636707305908,
+    "peak_median": 253.24581909179688,
+    "integral_median": 1578.076416015625,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.037037037037037035,
+    "peak_snr": 36.49266233565005
+   },
+   "cell+LP": {
+    "noise_sigma": 5.896068572998047,
+    "peak_median": 232.96251678466797,
+    "integral_median": 1584.224365234375,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.037037037037037035,
+    "peak_snr": 39.511500570321665
+   }
+  },
+  "GradedIndex_1": {
+   "n_selected": 80,
+   "ringing_extrapolation_gain": -0.1612924893437062,
+   "ringing_fit_MHz": 312.0,
+   "ringing_fit_iqr_MHz": 60.0,
+   "raw": {
+    "noise_sigma": 7.592246055603027,
+    "peak_median": 247.0,
+    "integral_median": 1528.5,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.025,
+    "peak_snr": 32.533192179370374
+   },
+   "cell": {
+    "noise_sigma": 6.968541145324707,
+    "peak_median": 248.83773803710938,
+    "integral_median": 1502.0780029296875,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.025,
+    "peak_snr": 35.70872767308809
+   },
+   "cell+LP": {
+    "noise_sigma": 6.04892635345459,
+    "peak_median": 231.1820297241211,
+    "integral_median": 1500.4323120117188,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.025,
+    "peak_snr": 38.218688113485
+   }
+  },
+  "Quartz700_0": {
+   "n_selected": 180,
+   "ringing_extrapolation_gain": -0.1331847674976705,
+   "ringing_fit_MHz": 332.0,
+   "ringing_fit_iqr_MHz": 93.0,
+   "raw": {
+    "noise_sigma": 7.925174236297607,
+    "peak_median": 295.25,
+    "integral_median": 2203.5,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 1.608341383666992,
+    "dt_core_fraction": 0.16111111111111112,
+    "peak_snr": 37.25470143580484
+   },
+   "cell": {
+    "noise_sigma": 6.852866172790527,
+    "peak_median": 299.27435302734375,
+    "integral_median": 2228.901611328125,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 1.6051244384765628,
+    "dt_core_fraction": 0.16111111111111112,
+    "peak_snr": 43.67141360729032
+   },
+   "cell+LP": {
+    "noise_sigma": 5.779007911682129,
+    "peak_median": 271.6167297363281,
+    "integral_median": 2200.8206787109375,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": 1.5330531024169924,
+    "dt_core_fraction": 0.16111111111111112,
+    "peak_snr": 47.00058104908652
+   }
+  },
+  "Quartz700_1": {
+   "n_selected": 209,
+   "ringing_extrapolation_gain": -0.13561891393120062,
+   "ringing_fit_MHz": 320.0,
+   "ringing_fit_iqr_MHz": 108.0,
+   "raw": {
+    "noise_sigma": 7.695110321044922,
+    "peak_median": 304.0,
+    "integral_median": 2304.0,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.9495938076782229,
+    "dt_core_fraction": 0.19230769230769232,
+    "peak_snr": 39.50560645876741
+   },
+   "cell": {
+    "noise_sigma": 6.548916339874268,
+    "peak_median": 302.8760986328125,
+    "integral_median": 2336.4736328125,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 1.0627094732666018,
+    "dt_core_fraction": 0.1971153846153846,
+    "peak_snr": 46.248277259047626
+   },
+   "cell+LP": {
+    "noise_sigma": 5.56256103515625,
+    "peak_median": 291.7026672363281,
+    "integral_median": 2328.998291015625,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": 1.3162441177368165,
+    "dt_core_fraction": 0.20673076923076922,
+    "peak_snr": 52.44035353369104
+   }
+  },
+  "Quartz700_2": {
+   "n_selected": 160,
+   "ringing_extrapolation_gain": -0.12649244474268062,
+   "ringing_fit_MHz": 356.0,
+   "ringing_fit_iqr_MHz": 156.0,
+   "raw": {
+    "noise_sigma": 7.725150108337402,
+    "peak_median": 270.0,
+    "integral_median": 1971.5,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 1.3483321279907226,
+    "dt_core_fraction": 0.24375,
+    "peak_snr": 34.95077716465358
+   },
+   "cell": {
+    "noise_sigma": 6.765955924987793,
+    "peak_median": 269.72283935546875,
+    "integral_median": 1966.7926635742188,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 1.3586865289306636,
+    "dt_core_fraction": 0.24375,
+    "peak_snr": 39.86470534922312
+   },
+   "cell+LP": {
+    "noise_sigma": 5.626866817474365,
+    "peak_median": 242.21062469482422,
+    "integral_median": 1957.1754760742188,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": 1.3921070150756834,
+    "dt_core_fraction": 0.24375,
+    "peak_snr": 43.04538076903358
+   }
+  },
+  "Quartz400_0": {
+   "n_selected": 47,
+   "ringing_extrapolation_gain": -0.1188722907449512,
+   "ringing_fit_MHz": 334.0,
+   "ringing_fit_iqr_MHz": 136.0,
+   "raw": {
+    "noise_sigma": 8.080429077148438,
+    "peak_median": 247.5,
+    "integral_median": 1638.0,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.02127659574468085,
+    "peak_snr": 30.62956157859653
+   },
+   "cell": {
+    "noise_sigma": 6.9989800453186035,
+    "peak_median": 249.2977294921875,
+    "integral_median": 1603.5474853515625,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.02127659574468085,
+    "peak_snr": 35.61915134462126
+   },
+   "cell+LP": {
+    "noise_sigma": 5.8383002281188965,
+    "peak_median": 228.51133728027344,
+    "integral_median": 1594.8087158203125,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.02127659574468085,
+    "peak_snr": 39.14004562144621
+   }
+  },
+  "Quartz400_1": {
+   "n_selected": 49,
+   "ringing_extrapolation_gain": -0.11145178060024485,
+   "ringing_fit_MHz": 356.0,
+   "ringing_fit_iqr_MHz": 152.0,
+   "raw": {
+    "noise_sigma": 7.91108512878418,
+    "peak_median": 243.0,
+    "integral_median": 1445.0,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.041666666666666664,
+    "peak_snr": 30.716393016155752
+   },
+   "cell": {
+    "noise_sigma": 6.940038681030273,
+    "peak_median": 245.72998046875,
+    "integral_median": 1446.4881591796875,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.041666666666666664,
+    "peak_snr": 35.407580816577024
+   },
+   "cell+LP": {
+    "noise_sigma": 5.777012348175049,
+    "peak_median": 222.29026794433594,
+    "integral_median": 1459.4122314453125,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.041666666666666664,
+    "peak_snr": 38.47841315668248
+   }
+  },
+  "Quartz400_2": {
+   "n_selected": 64,
+   "ringing_extrapolation_gain": -0.1289306392702918,
+   "ringing_fit_MHz": 336.0,
+   "ringing_fit_iqr_MHz": 116.0,
+   "raw": {
+    "noise_sigma": 7.720663070678711,
+    "peak_median": 246.0,
+    "integral_median": 1623.5,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.031746031746031744,
+    "peak_snr": 31.86254830032034
+   },
+   "cell": {
+    "noise_sigma": 6.7422075271606445,
+    "peak_median": 245.78831481933594,
+    "integral_median": 1573.565673828125,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.031746031746031744,
+    "peak_snr": 36.45516899757091
+   },
+   "cell+LP": {
+    "noise_sigma": 5.64518928527832,
+    "peak_median": 225.5626983642578,
+    "integral_median": 1580.15673828125,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": 0.031746031746031744,
+    "peak_snr": 39.956622703951915
+   }
+  },
+  "Quartz_0": {
+   "n_selected": 96,
+   "ringing_extrapolation_gain": -0.12723501760476674,
+   "ringing_fit_MHz": 360.0,
+   "ringing_fit_iqr_MHz": 153.0,
+   "raw": {
+    "noise_sigma": 7.929224014282227,
+    "peak_median": 257.75,
+    "integral_median": 1681.5,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.9599979785156251,
+    "dt_core_fraction": 0.07291666666666667,
+    "peak_snr": 32.50633347421351
+   },
+   "cell": {
+    "noise_sigma": 6.8090972900390625,
+    "peak_median": 255.72921752929688,
+    "integral_median": 1642.2160034179688,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.9491933862304688,
+    "dt_core_fraction": 0.07291666666666667,
+    "peak_snr": 37.55699274607219
+   },
+   "cell+LP": {
+    "noise_sigma": 5.815110206604004,
+    "peak_median": 231.6544647216797,
+    "integral_median": 1639.433349609375,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": 0.9413885614013673,
+    "dt_core_fraction": 0.07291666666666667,
+    "peak_snr": 39.83664221162969
+   }
+  },
+  "Quartz_1": {
+   "n_selected": 0,
+   "ringing_extrapolation_gain": -0.05162037023490185,
+   "ringing_fit_MHz": 354.0,
+   "ringing_fit_iqr_MHz": 116.0,
+   "raw": {
+    "noise_sigma": 4.43357515335083,
+    "peak_median": NaN,
+    "integral_median": NaN,
+    "rise_median_ns": NaN,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": NaN,
+    "peak_snr": NaN
+   },
+   "cell": {
+    "noise_sigma": 1.43939208984375,
+    "peak_median": NaN,
+    "integral_median": NaN,
+    "rise_median_ns": NaN,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": NaN,
+    "peak_snr": NaN
+   },
+   "cell+LP": {
+    "noise_sigma": 1.0025396347045898,
+    "peak_median": NaN,
+    "integral_median": NaN,
+    "rise_median_ns": NaN,
+    "dt_core_sigma_ns": NaN,
+    "dt_core_fraction": NaN,
+    "peak_snr": NaN
+   }
+  },
+  "Quartz_2": {
+   "n_selected": 108,
+   "ringing_extrapolation_gain": -0.16238696683748877,
+   "ringing_fit_MHz": 348.0,
+   "ringing_fit_iqr_MHz": 152.0,
+   "raw": {
+    "noise_sigma": 8.082746505737305,
+    "peak_median": 257.5,
+    "integral_median": 1711.5,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.5635128771972655,
+    "dt_core_fraction": 0.046296296296296294,
+    "peak_snr": 31.857982904353246
+   },
+   "cell": {
+    "noise_sigma": 7.427913665771484,
+    "peak_median": 258.8261413574219,
+    "integral_median": 1681.460693359375,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.5131593145751954,
+    "dt_core_fraction": 0.046296296296296294,
+    "peak_snr": 34.845065923439144
+   },
+   "cell+LP": {
+    "noise_sigma": 6.258820533752441,
+    "peak_median": 238.84495544433594,
+    "integral_median": 1689.0126342773438,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": 0.513503179321289,
+    "dt_core_fraction": 0.046296296296296294,
+    "peak_snr": 38.161336334265805
+   }
+  },
+  "Multiclad_0": {
+   "n_selected": 194,
+   "ringing_extrapolation_gain": -0.1586989238596901,
+   "ringing_fit_MHz": 324.0,
+   "ringing_fit_iqr_MHz": 92.0,
+   "raw": {
+    "noise_sigma": 8.010669708251953,
+    "peak_median": 275.5,
+    "integral_median": 2176.5,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.22993805740356452,
+    "dt_core_fraction": 0.5979381443298969,
+    "peak_snr": 34.39163141581057
+   },
+   "cell": {
+    "noise_sigma": 7.189251899719238,
+    "peak_median": 275.29412841796875,
+    "integral_median": 2170.6387939453125,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.22322364578247036,
+    "dt_core_fraction": 0.5979381443298969,
+    "peak_snr": 38.29245827771312
+   },
+   "cell+LP": {
+    "noise_sigma": 6.1395158767700195,
+    "peak_median": 251.13111877441406,
+    "integral_median": 2174.7713623046875,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": 0.24568457427978527,
+    "dt_core_fraction": 0.5979381443298969,
+    "peak_snr": 40.90405885659724
+   }
+  },
+  "Multiclad_1": {
+   "n_selected": 175,
+   "ringing_extrapolation_gain": -0.14246623334978004,
+   "ringing_fit_MHz": 348.0,
+   "ringing_fit_iqr_MHz": 144.0,
+   "raw": {
+    "noise_sigma": 8.414884567260742,
+    "peak_median": 279.0,
+    "integral_median": 2112.0,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.18830666931152348,
+    "dt_core_fraction": 0.6171428571428571,
+    "peak_snr": 33.15553502486387
+   },
+   "cell": {
+    "noise_sigma": 7.838519096374512,
+    "peak_median": 279.23907470703125,
+    "integral_median": 2156.298583984375,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.1868486375427244,
+    "dt_core_fraction": 0.6171428571428571,
+    "peak_snr": 35.62395795351006
+   },
+   "cell+LP": {
+    "noise_sigma": 6.3843770027160645,
+    "peak_median": 251.4866485595703,
+    "integral_median": 2142.2431640625,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": 0.19948001129150383,
+    "dt_core_fraction": 0.6285714285714286,
+    "peak_snr": 39.39094581234504
+   }
+  },
+  "Multiclad_2": {
+   "n_selected": 189,
+   "ringing_extrapolation_gain": -0.16191111234679323,
+   "ringing_fit_MHz": 328.0,
+   "ringing_fit_iqr_MHz": 145.0,
+   "raw": {
+    "noise_sigma": 8.359277725219727,
+    "peak_median": 329.0,
+    "integral_median": 2264.0,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.26316059509277356,
+    "dt_core_fraction": 0.6825396825396826,
+    "peak_snr": 39.357467333261994
+   },
+   "cell": {
+    "noise_sigma": 7.815030097961426,
+    "peak_median": 329.4000244140625,
+    "integral_median": 2253.8876953125,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.26822355102539047,
+    "dt_core_fraction": 0.6825396825396826,
+    "peak_snr": 42.14955288527776
+   },
+   "cell+LP": {
+    "noise_sigma": 6.389440536499023,
+    "peak_median": 307.9607238769531,
+    "integral_median": 2256.500244140625,
+    "rise_median_ns": 1.0,
+    "dt_core_sigma_ns": 0.2601879748535155,
+    "dt_core_fraction": 0.6825396825396826,
+    "peak_snr": 48.198386402965816
+   }
+  },
+  "Singleclad_0": {
+   "n_selected": 211,
+   "ringing_extrapolation_gain": -0.17713981113173072,
+   "ringing_fit_MHz": 328.0,
+   "ringing_fit_iqr_MHz": 146.0,
+   "raw": {
+    "noise_sigma": 8.383431434631348,
+    "peak_median": 275.0,
+    "integral_median": 1727.0,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.2183665562438962,
+    "dt_core_fraction": 0.5971563981042654,
+    "peak_snr": 32.80279705801552
+   },
+   "cell": {
+    "noise_sigma": 8.099632263183594,
+    "peak_median": 274.75274658203125,
+    "integral_median": 1713.0694580078125,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.2248920684814453,
+    "dt_core_fraction": 0.6018957345971564,
+    "peak_snr": 33.921632199390565
+   },
+   "cell+LP": {
+    "noise_sigma": 6.684606075286865,
+    "peak_median": 248.3536376953125,
+    "integral_median": 1721.3446044921875,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.22688286437988314,
+    "dt_core_fraction": 0.6018957345971564,
+    "peak_snr": 37.15307003855939
+   }
+  },
+  "Singleclad_1": {
+   "n_selected": 140,
+   "ringing_extrapolation_gain": -0.12458879308530346,
+   "ringing_fit_MHz": 334.0,
+   "ringing_fit_iqr_MHz": 101.0,
+   "raw": {
+    "noise_sigma": 8.085199356079102,
+    "peak_median": 271.5,
+    "integral_median": 1903.0,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.37768112915039065,
+    "dt_core_fraction": 0.6115107913669064,
+    "peak_snr": 33.57987701266321
+   },
+   "cell": {
+    "noise_sigma": 7.707079887390137,
+    "peak_median": 271.1698913574219,
+    "integral_median": 1917.4114990234375,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.37597990356445293,
+    "dt_core_fraction": 0.6115107913669064,
+    "peak_snr": 35.18451804309098
+   },
+   "cell+LP": {
+    "noise_sigma": 6.379549026489258,
+    "peak_median": 248.27561950683594,
+    "integral_median": 1935.645751953125,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.39881071289062503,
+    "dt_core_fraction": 0.6115107913669064,
+    "peak_snr": 38.91742480165012
+   }
+  },
+  "Singleclad_2": {
+   "n_selected": 185,
+   "ringing_extrapolation_gain": -0.15581786572711287,
+   "ringing_fit_MHz": 356.0,
+   "ringing_fit_iqr_MHz": 138.0,
+   "raw": {
+    "noise_sigma": 8.030548095703125,
+    "peak_median": 295.0,
+    "integral_median": 2151.0,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.260346333618164,
+    "dt_core_fraction": 0.6756756756756757,
+    "peak_snr": 36.73472800167208
+   },
+   "cell": {
+    "noise_sigma": 7.557953834533691,
+    "peak_median": 293.53271484375,
+    "integral_median": 2124.14794921875,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.2630791534423828,
+    "dt_core_fraction": 0.6756756756756757,
+    "peak_snr": 38.837590341256735
+   },
+   "cell+LP": {
+    "noise_sigma": 6.323822021484375,
+    "peak_median": 274.3253173828125,
+    "integral_median": 2145.0419921875,
+    "rise_median_ns": 0.8,
+    "dt_core_sigma_ns": 0.2651016210937502,
+    "dt_core_fraction": 0.6756756756756757,
+    "peak_snr": 43.37967078308456
+   }
+  }
+ }
+}
