@@ -17,3 +17,6 @@ backup*
 *.ipynb_checkpoints
 *egg-info*
 *.swp
+
+# studies keep their plots and report next to the code that made them
+!studies/**/*.png
