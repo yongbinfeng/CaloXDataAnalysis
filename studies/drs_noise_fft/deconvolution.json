@@ -25,6 +25,7 @@
    "kind": "target",
    "board": "DRS_Brg0_Board0",
    "peak_adc": 600.8221923335575,
+   "peak_time_ns": 99.4,
    "fit": {
     "t0_ns": -3.5444677098663666,
     "t0_err": 0.029066275915489142,
@@ -36,7 +37,9 @@
     "baseline_adc": 18.5111368894989,
     "baseline_slope_adc_per_ns": 2.2611304382207127,
     "chi2": 36.75793528570733,
-    "ndf": 84
+    "ndf": 84,
+    "light_onset_ns": 95.85553229013364,
+    "area_adc_ns": 3852.37991185942
    },
    "two_components": false,
    "nnls": {
@@ -44,13 +47,17 @@
     "chi2_ndf": 0.998039638714215,
     "tau_decay_ns": 5.686210336412536,
     "rms_width_ns": 3.5243901623144125,
-    "fwhm_ns": 5.2
+    "fwhm_ns": 5.2,
+    "area_adc_ns": 4141.423314137734,
+    "peak_time_ns": 97.2,
+    "mean_time_ns": 100.41180187700365
    }
   },
   "Scintillating_1": {
    "kind": "target",
    "board": "DRS_Brg0_Board0",
    "peak_adc": 536.8486213853396,
+   "peak_time_ns": 99.4,
    "fit": {
     "t0_ns": -3.5359158311127645,
     "t0_err": 0.02489190969472775,
@@ -62,7 +69,9 @@
     "baseline_adc": 18.81209420277263,
     "baseline_slope_adc_per_ns": 2.314181428867958,
     "chi2": 34.188698176024026,
-    "ndf": 84
+    "ndf": 84,
+    "light_onset_ns": 95.86408416888725,
+    "area_adc_ns": 3092.2534320138825
    },
    "two_components": false,
    "nnls": {
@@ -70,13 +79,17 @@
     "chi2_ndf": 0.9957314561490872,
     "tau_decay_ns": 5.680607613413239,
     "rms_width_ns": 3.488933382192812,
-    "fwhm_ns": 4.6000000000000005
+    "fwhm_ns": 4.6000000000000005,
+    "area_adc_ns": 3414.0105177313144,
+    "peak_time_ns": 97.2,
+    "mean_time_ns": 100.20776831849474
    }
   },
   "Sapphire": {
    "kind": "target",
    "board": "DRS_Brg0_Board2",
    "peak_adc": 28.390585070611973,
+   "peak_time_ns": 98.60000000000001,
    "fit": {
     "t0_ns": -2.603624667676145,
     "t0_err": 0.004358477125127929,
@@ -88,7 +101,9 @@
     "baseline_adc": 0.03220576053701103,
     "baseline_slope_adc_per_ns": -0.029832389149340756,
     "chi2": 72.09927905707237,
-    "ndf": 84
+    "ndf": 84,
+    "light_onset_ns": 95.99637533232386,
+    "area_adc_ns": 102.08087620182118
    },
    "two_components": false,
    "nnls": {
@@ -96,13 +111,17 @@
     "chi2_ndf": 0.9450905268584218,
     "tau_decay_ns": 2.1185534392904657,
     "rms_width_ns": 1.8218694175742236,
-    "fwhm_ns": 2.2
+    "fwhm_ns": 2.2,
+    "area_adc_ns": 100.06285926874712,
+    "peak_time_ns": 96.80000000000001,
+    "mean_time_ns": 97.89558557777761
    }
   },
   "Quartz700_2": {
    "kind": "control",
    "board": "DRS_Brg0_Board0",
    "peak_adc": 48.04989912575655,
+   "peak_time_ns": 97.60000000000001,
    "fit": {
     "t0_ns": -2.2073281366338566,
     "t0_err": 0.004617056316305193,
@@ -114,7 +133,9 @@
     "baseline_adc": -0.07646954961262228,
     "baseline_slope_adc_per_ns": 0.012371947712553927,
     "chi2": 148.46501005158086,
-    "ndf": 84
+    "ndf": 84,
+    "light_onset_ns": 95.39267186336615,
+    "area_adc_ns": 77.266396459989
    },
    "two_components": false,
    "nnls": {
@@ -122,13 +143,17 @@
     "chi2_ndf": 1.6898625756105239,
     "tau_decay_ns": NaN,
     "rms_width_ns": 2.125177814701254,
-    "fwhm_ns": 0.6000000000000001
+    "fwhm_ns": 0.6000000000000001,
+    "area_adc_ns": 79.9274040503764,
+    "peak_time_ns": 95.60000000000001,
+    "mean_time_ns": 95.99632680714322
    }
   },
   "Quartz_0": {
    "kind": "target",
    "board": "DRS_Brg0_Board0",
    "peak_adc": 24.078211163416274,
+   "peak_time_ns": 97.4,
    "fit": {
     "t0_ns": -2.1889814380832884,
     "t0_err": NaN,
@@ -140,7 +165,9 @@
     "baseline_adc": 0.024694538115655845,
     "baseline_slope_adc_per_ns": 0.02761916917604297,
     "chi2": 141.42780639469865,
-    "ndf": 84
+    "ndf": 84,
+    "light_onset_ns": 95.21101856191672,
+    "area_adc_ns": 37.171927474912316
    },
    "two_components": false,
    "nnls": {
@@ -148,13 +175,17 @@
     "chi2_ndf": 1.4149277703563414,
     "tau_decay_ns": NaN,
     "rms_width_ns": 3.3577750340033377,
-    "fwhm_ns": 0.2
+    "fwhm_ns": 0.2,
+    "area_adc_ns": 41.71568761628086,
+    "peak_time_ns": 95.4,
+    "mean_time_ns": 96.4482576161603
    }
   },
   "Quartz_2": {
    "kind": "target",
    "board": "DRS_Brg0_Board2",
    "peak_adc": 20.704034969737727,
+   "peak_time_ns": 97.4,
    "fit": {
     "t0_ns": -2.0000008621255723,
     "t0_err": 0.0002080323920776891,
@@ -166,7 +197,9 @@
     "baseline_adc": -0.17032428592651644,
     "baseline_slope_adc_per_ns": -0.013050311889364069,
     "chi2": 30.910630778799113,
-    "ndf": 84
+    "ndf": 84,
+    "light_onset_ns": 95.39999913787443,
+    "area_adc_ns": 34.678382771127296
    },
    "two_components": false,
    "nnls": {
@@ -174,13 +207,17 @@
     "chi2_ndf": 0.9998761188908747,
     "tau_decay_ns": NaN,
     "rms_width_ns": 0.3234996450305626,
-    "fwhm_ns": 0.8
+    "fwhm_ns": 0.8,
+    "area_adc_ns": 33.892545758208286,
+    "peak_time_ns": 95.4,
+    "mean_time_ns": 95.46182396762542
    }
   },
   "Singleclad_1": {
    "kind": "target",
    "board": "DRS_Brg0_Board2",
    "peak_adc": 37.94122394082044,
+   "peak_time_ns": 97.80000000000001,
    "fit": {
     "t0_ns": -2.000000070378869,
     "t0_err": 0.00013625416149031866,
@@ -192,7 +229,9 @@
     "baseline_adc": 0.20595235328804712,
     "baseline_slope_adc_per_ns": 0.02119164612589843,
     "chi2": 43.28290985041067,
-    "ndf": 84
+    "ndf": 84,
+    "light_onset_ns": 95.79999992962114,
+    "area_adc_ns": 64.57487876920668
    },
    "two_components": false,
    "nnls": {
@@ -200,13 +239,17 @@
     "chi2_ndf": 0.9993210959644641,
     "tau_decay_ns": NaN,
     "rms_width_ns": 1.726134373108047,
-    "fwhm_ns": 0.8
+    "fwhm_ns": 0.8,
+    "area_adc_ns": 67.98670537222209,
+    "peak_time_ns": 96.00000000000001,
+    "mean_time_ns": 96.28381575136768
    }
   },
   "Singleclad_2": {
    "kind": "control",
    "board": "DRS_Brg0_Board2",
    "peak_adc": 64.05803631472764,
+   "peak_time_ns": 97.80000000000001,
    "fit": {
     "t0_ns": -1.8000037993209521,
     "t0_err": 9.288324656530684e-05,
@@ -218,7 +261,9 @@
     "baseline_adc": -0.0506432756633851,
     "baseline_slope_adc_per_ns": -0.01918807970622026,
     "chi2": 171.70334349986993,
-    "ndf": 84
+    "ndf": 84,
+    "light_onset_ns": 95.99999620067906,
+    "area_adc_ns": 103.97478302398584
    },
    "two_components": false,
    "nnls": {
@@ -226,7 +271,10 @@
     "chi2_ndf": 1.5209241201687735,
     "tau_decay_ns": NaN,
     "rms_width_ns": 0.47415517863279105,
-    "fwhm_ns": 0.2
+    "fwhm_ns": 0.2,
+    "area_adc_ns": 104.82565003047556,
+    "peak_time_ns": 96.00000000000001,
+    "mean_time_ns": 96.01372863604011
    }
   }
  }

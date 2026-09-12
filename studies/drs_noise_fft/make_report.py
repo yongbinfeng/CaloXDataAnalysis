@@ -46,7 +46,8 @@ def harvest_cleaning(run):
 
 
 DECONV_PLOTS = ["response_h", "Scintillating_0_pulse_fit", "Scintillating_0_unfolded",
-                "Sapphire_unfolded", "Singleclad_2_unfolded"]
+                "Sapphire_unfolded", "Singleclad_2_unfolded",
+                "summary_unfolded_nnls_absolute", "summary_unfolded_nnls_peak1"]
 
 
 def harvest_deconvolution(run):
@@ -89,6 +90,38 @@ def deconvolution_section(dc):
     floor = max(v["nnls"]["fwhm_ns"] for v in controls) if controls else float("nan")
     sc_txt = " and ".join(f"<code>{k}</code> {v['fit']['tau_decay_ns']:.2f} ± {v['fit']['tau_decay_err']:.2f} ns"
                           for k, v in sc.items())
+    # absolute time and scale: Cherenkov arrival times (NNLS spike), scintillator onset (fit), areas
+    cher = {k: v for k, v in ch.items() if k.split("_")[0] in ("Quartz700", "Quartz", "Singleclad", "Multiclad")}
+    arrivals = sorted((v["nnls"]["peak_time_ns"], k) for k, v in cher.items())
+    cher_area = sorted(v["nnls"]["area_adc_ns"] for v in cher.values())
+    cher_med = cher_area[len(cher_area) // 2]
+    sc_on = " and ".join(f"<code>{k}</code> {v['fit']['light_onset_ns']:.2f}" for k, v in sc.items())
+    sc_ratio = " and ".join(f"{v['nnls']['area_adc_ns'] / cher_med:.0f}×" for v in sc.values())
+    rows2 = ""
+    for lab, r in ch.items():
+        f, n = r["fit"], r["nnls"]
+        rows2 += (f"<tr{' class=odd' if r['kind'] == 'control' else ''}><th>{lab}</th>"
+                  f"<td>{num(f['light_onset_ns'])}</td><td>{n['peak_time_ns']:.1f}</td>"
+                  f"<td>{num(n['mean_time_ns'])}</td><td>{f['area_adc_ns']:.0f}</td>"
+                  f"<td>{n['area_adc_ns']:.0f}</td><td>{n['area_adc_ns'] / cher_med:.1f}</td></tr>")
+    summary_block = f"""
+<div class="col">
+<p><b>Time and scale are kept absolute.</b> Nothing above is peak-aligned or normalised: n(t) sits on the analysis's <code>ts_mcp</code> axis (each group's reference channel, then the MCP, as in <code>check_drs_mcp</code>), and h(t) has unit area, so n(t) is in ADC per 0.2 ns and its integral is the pulse area. Two things then become comparable across fibres. <b>When the light arrives.</b> The Cherenkov fibres unfold to spikes between {arrivals[0][0]:.1f} ns (<code>{arrivals[0][1]}</code>) and {arrivals[-1][0]:.1f} ns (<code>{arrivals[-1][1]}</code>); the {arrivals[-1][0] - arrivals[0][0]:.1f} ns between them is the light path and cabling of each channel, not the pulse shape. The scintillating light starts at {sc_on} ns — with the Cherenkov light — and peaks at {next(iter(sc.values()))['nnls']['peak_time_ns']:.1f} ns; its mean arrival is {next(iter(sc.values()))['nnls']['mean_time_ns'] - next(iter(sc.values()))['fit']['light_onset_ns']:.1f} ns after onset. <b>How much light.</b> With a constant ADC per photon, the areas are relative photon counts: the scintillating fibres collect {sc_ratio} the median Cherenkov fibre ({cher_med:.0f} ADC·ns), <code>Sapphire</code> {sa['nnls']['area_adc_ns'] / cher_med:.1f}×. The interactive overlays <code>DRS_Unfolded_overlay.html</code> (NNLS) and <code>DRS_Unfolded_fit_overlay.html</code> under <code>results/html/Run{dc['run']}/DRS/</code> switch between the absolute scale and peak = 1, with pickable channels.</p>
+<div class="tbl"><table>
+<thead><tr><th>channel</th><th>light onset [ns]</th><th>NNLS peak [ns]</th><th>NNLS mean [ns]</th><th>area, fit [ADC·ns]</th><th>area, NNLS</th><th>÷ Cherenkov median</th></tr></thead>
+<tbody>{rows2}</tbody>
+<caption>Absolute times on the ts_mcp axis (the MCP's CFD time is at 100 ns by construction) and areas of the unfolded n(t). Light onset is the fit's t<sub>0</sub>; for the spikes it coincides with the NNLS peak. Mean is the area-weighted mean arrival time.</caption>
+</table></div>
+</div>
+<figure>
+  <img src="{img('deconvolution_summary_unfolded_nnls_absolute.png')}" alt="Unfolded photon arrival profiles of all eight channels on one absolute time axis and one ADC scale: the two scintillating fibres are broad 600 ADC pulses from 96 to 111 ns, the Cherenkov fibres narrow spikes of 50 to 400 ADC between 95 and 96 ns, Sapphire a small 2 ns tail.">
+  <figcaption><b>All channels, absolute.</b> NNLS n(t) on the ts_mcp axis in ADC per 0.2 ns. The Cherenkov fibres are spikes at 95–96 ns; the scintillating light starts with them and carries {sc_ratio.replace(' and ', '–')} the area.</figcaption>
+</figure>
+<figure>
+  <img src="{img('deconvolution_summary_unfolded_nnls_peak1.png')}" alt="The same profiles each scaled to a peak of 1: the Cherenkov spikes line up between 95 and 96 ns, the scintillating fibres rise with them and decay over 15 ns, Sapphire decays in about 2 ns.">
+  <figcaption><b>Peak = 1.</b> The same curves scaled to their peak, for shape: the two scintillators share one rise and nearly one decay, and Sapphire sits between them and the Cherenkov spikes.</figcaption>
+</figure>
+"""
     return f"""
 <h2>5. Unfolding the light: n(t) from the pulses</h2>
 <p>The measured pulse is the photon arrival profile n(t) convolved with the response h(t) of SiPM, amplifier and DRS. The Cherenkov fibres see prompt light, so their mean pulse <em>is</em> h(t); it was taken from them and used to unfold the others, two ways. <b>fit</b>: a parametric n(t) — exponential rise into an exponential decay — convolved with h(t) and fitted to the profile with χ² on the profile errors (plus a 2% shape systematic, the channel-to-channel spread of h). Nothing is divided, so noise is never amplified. <b>NNLS</b>: n(t) as a free histogram of arrival times constrained only to be non-negative, projected-gradient least squares stopped at χ²/ndf = 1 — non-parametric, so it can show what the exponential misses. Both work in a −6…+12 ns window around the peak, because the bright scintillating pulses droop beyond that (−13% of the peak at +40 ns) in a way the 60 ADC Cherenkov pulses do not. Responses: {resp}; one Cherenkov channel per board is held out and unfolded as a control.</p>
@@ -99,7 +132,7 @@ def deconvolution_section(dc):
 </figure>
 <figure>
   <img src="{img('deconvolution_Scintillating_0_unfolded.png')}" alt="Unfolded photon arrival profile for Scintillating_0 from the fit model and from NNLS: a fast rise into a roughly 4 ns exponential decay, the two methods agreeing.">
-  <figcaption><b>The light.</b> n(t) for <code>Scintillating_0</code> from the fit (red) and from NNLS (blue): a ~0.5 ns rise into a {sc['Scintillating_0']['fit']['tau_decay_ns']:.1f} ns decay. NNLS also shows a faint bump at +8–10 ns — at the edge of the window, where the droop begins, so not something to read physics into yet.</figcaption>
+  <figcaption><b>The light.</b> n(t) for <code>Scintillating_0</code> from the fit (red) and from NNLS (blue): a ~0.5 ns rise into a {sc['Scintillating_0']['fit']['tau_decay_ns']:.1f} ns decay. NNLS also shows a faint bump near 109 ns — the edge of the fit window, where the droop begins, so not something to read physics into yet.</figcaption>
 </figure>
 <div class="col">
 <div class="tbl"><table>
@@ -113,12 +146,12 @@ def deconvolution_section(dc):
   <img src="{img('deconvolution_Sapphire_unfolded.png')}" alt="Unfolded light profile of the Sapphire channel: a prompt rise and a roughly 2 ns decay, wider than the Cherenkov controls.">
   <figcaption><b>Sapphire.</b> Prompt, then a ~2 ns tail: a slow component the quartz and clad fibres do not have.</figcaption>
 </figure>
-<div class="col">
+{summary_block}<div class="col">
 <div class="callout">
   <div class="h">Three things that had to be right, or nothing fits</div>
   <b>The response must come from the same DRS board.</b> With h(t) from Board 2 the Board 0 scintillators sat at χ²/ndf 3 and τ<sub>decay</sub> came out 20% short; the residual inter-board jitter after the reference correction (~0.3 ns) is enough to blur a 1.4 ns edge. <b>The pedestal before the pulse must be removed first.</b> The profiles sit 1–5% of the peak above their far baseline in the 10 ns before the pulse; left in, it sets the onset of h(t) instead of the pulse and the fits fail at χ²/ndf ≈ 50. <b>The window must stop before the droop.</b> Beyond +12 ns the bright pulses are not in the regime the Cherenkov response describes. The first two were found the hard way; the script now enforces all three.
 </div>
-<p>What these numbers are and are not: the shape of n(t) in relative units — absolute photon numbers would need the single-photoelectron gain per channel and a SiPM saturation correction. The Cherenkov light is taken as prompt; chromatic dispersion in a metre of fibre spreads it by a few hundred ps, so h(t) is very slightly too wide and τ correspondingly slightly under. The +3 ns shoulder in h(t) is present in every Cherenkov channel on both boards and is treated as instrumental; if it is in fact optical, the scintillator τ moves by a fraction of that.</p>
+<p>What these numbers are and are not: the times are on the ts_mcp axis and so include each channel's cable and electronics delay — a fibre-to-fibre difference is optical only where the cables match, and the onset itself is defined by the 2% threshold of each board's h(t). The scale is ADC per sample: the areas compare photons captured under a constant ADC per photon, not absolute photon numbers, which would need the single-photoelectron gain per channel and a SiPM saturation correction — and the scintillating channels, at 600 ADC peak, are the ones saturation would raise, so their ratio to the Cherenkov fibres is a lower bound. The Cherenkov light is taken as prompt; chromatic dispersion in a metre of fibre spreads it by a few hundred ps, so h(t) is very slightly too wide and τ correspondingly slightly under. The +3 ns shoulder in h(t) is present in every Cherenkov channel on both boards and is treated as instrumental; if it is in fact optical, the scintillator τ moves by a fraction of that.</p>
 """
 
 

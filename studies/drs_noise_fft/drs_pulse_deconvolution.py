@@ -26,11 +26,20 @@ On each board one Cherenkov channel is held out of h(t) and unfolded as a
 control: it should come back as a spike, whose width is the method's
 resolution floor.
 
+Time and scale are kept absolute. The profiles are already on one time
+axis (group reference + MCP alignment, ts_mcp), so n(t) stays on it and
+differences between channels are light-propagation and path differences.
+h(t) has unit area, so n(t) is in ADC per sample and its integral is the
+pulse area: with a constant ADC-per-photon, the areas compare the number
+of photons captured.
+
 Reads prof_<ch>_blsub_VS_ts_mcp from results/root/Run<N>/drs_profiles.root
 (book them with scripts/check_drs_mcp.py --mcp-clean). Writes
-results/root/Run<N>/drs_deconvolution.json, plots under
-results/plots/Run<N>/DRS_Deconvolution/ and results/html/Run<N>/DRS/
-DRS_Deconvolution.html.
+results/root/Run<N>/drs_deconvolution.json and .root (the unfolded n(t) as
+histograms on the ts_mcp axis), plots under
+results/plots/Run<N>/DRS_Deconvolution/, results/html/Run<N>/DRS/
+DRS_Deconvolution.html, and the overlay pages DRS_Unfolded_overlay.html
+(NNLS) and DRS_Unfolded_fit_overlay.html with absolute and peak = 1 views.
 
     python3 studies/drs_noise_fft/drs_pulse_deconvolution.py --run 1994 \\
         --channels data/channel_maps/testingfibers.json
@@ -45,7 +54,8 @@ import ROOT
 
 from configs.plot_style import PlotStyle
 from core.plot_manager import PlotManager
-from utils.plot_helper import get_run_paths
+from utils.overlay import build_channel_overlay
+from utils.plot_helper import get_run_paths, save_hists_to_file
 
 ROOT.gROOT.SetBatch(True)
 ROOT.gStyle.SetOptStat(0)
@@ -62,6 +72,8 @@ H_PEDESTAL = (0, 30)                      # samples of the h window (-8..-2 ns) 
 H_LENGTH = 150                            # samples of h(t) kept after the onset (30 ns)
 SHAPE_SYS = 0.02                          # channel-to-channel spread of h(t), as a fraction of the pulse
 MAX_NNLS_ITER = 20000
+NBINS = 1024                              # the ts_mcp axis of the profiles
+OVERLAY_COLOURS = [633, 601, 418, 617, 807, 434, 881, 829, 861, 909, 843, 403]   # predefined ROOT
 
 
 def parse_args():
@@ -350,7 +362,8 @@ def main():
         lo, hi = pk - WIN_PRE, pk + WIN_POST
         y, e = y_full[lo:hi].copy(), error_model(e_full[lo:hi], y_full[lo:hi], noise)
         y -= np.median(y[:12])                        # baseline: the -6..-3.6 ns samples
-        t = (np.arange(len(y)) - WIN_PRE) * DT                # 0 = profile peak
+        t = (np.arange(len(y)) - WIN_PRE) * DT                # 0 = profile peak (fit coordinate)
+        t_abs = t + pk * DT                                   # the same samples on the ts_mcp axis
         kind = "control" if lab == controls[b] else "target"
         fit1, m1, n1 = fit_profile(t, y, e, h, two_components=False)
         fit2, m2, n2 = fit_profile(t, y, e, h, two_components=True)
@@ -360,13 +373,18 @@ def main():
         n_rl, iters, chi2ndf_rl = nnls_unfold(t, y, e, h)
         tau_rl = decay_time_from_curve(t, n_rl)
         w_rl = width_rms(t, n_rl)
-        res = {"kind": kind, "board": b, "peak_adc": float(y.max()), "fit": fit,
-               "two_components": bool(use2),
+        fit["light_onset_ns"] = float(fit["t0_ns"] + pk * DT)          # absolute, ts_mcp axis
+        fit["area_adc_ns"] = float(fit["amplitude"] * DT)             # sum of n(t) = pulse area
+        res = {"kind": kind, "board": b, "peak_adc": float(y.max()),
+               "peak_time_ns": float(pk * DT), "fit": fit, "two_components": bool(use2),
                "nnls": {"iterations": int(iters), "chi2_ndf": float(chi2ndf_rl),
                         "tau_decay_ns": tau_rl, "rms_width_ns": w_rl,
-                        "fwhm_ns": float((n_rl > n_rl.max() / 2).sum() * DT)}}
+                        "fwhm_ns": float((n_rl > n_rl.max() / 2).sum() * DT),
+                        "area_adc_ns": float(n_rl.sum() * DT),
+                        "peak_time_ns": float(t_abs[int(n_rl.argmax())]),
+                        "mean_time_ns": float((t_abs * n_rl).sum() / n_rl.sum()) if n_rl.sum() > 0 else None}}
         results["channels"][lab] = res
-        curves[lab] = (t, y, e, model, n_fit, n_rl)
+        curves[lab] = (t_abs, y, e, model, n_fit, n_rl)
         slow = (f"{fit['slow_fraction']:.0%} at {fit['tau_slow_ns']:.1f}±{fit['tau_slow_err']:.1f}"
                 if use2 else "-")
         print(f"{lab:16s} {kind:8s} {fit['tau_rise_ns']:5.2f}±{min(fit['tau_rise_err'], 99):4.2f} "
@@ -374,6 +392,24 @@ def main():
               f"{fit['chi2'] / fit['ndf']:9.2f}  {iters:8d} {chi2ndf_rl:5.2f} {tau_rl:6.2f} "
               f"{res['nnls']['fwhm_ns']:5.2f}")
     print("  (tau in ns; NNLS tau from an exponential fit to the unfolded tail; controls should be spikes)")
+    print(f"\n{'channel':16s} {'light onset':>11s} {'NNLS peak':>9s} {'NNLS mean':>9s}   {'area fit':>9s} {'area NNLS':>9s}   [ns on the ts_mcp axis; area in ADC·ns]")
+    for lab, r in results["channels"].items():
+        print(f"{lab:16s} {r['fit']['light_onset_ns']:11.2f} {r['nnls']['peak_time_ns']:9.2f} "
+              f"{r['nnls']['mean_time_ns'] or float('nan'):9.2f}   {r['fit']['area_adc_ns']:9.0f} {r['nnls']['area_adc_ns']:9.0f}")
+
+    # the unfolded n(t) on the ts_mcp axis, as histograms: the overlay pages and
+    # anything else that compares channels read these
+    unfolded = {"fit": [], "nnls": []}
+    for lab, (t_abs, y, e, model, n_fit, n_rl) in curves.items():
+        for key, n in (("fit", n_fit), ("nnls", n_rl)):
+            hh = ROOT.TH1D(f"unfolded_{key}_{chmap[lab]}", f"{lab} unfolded ({key});t_{{mcp}} [ns];n(t) [ADC / 0.2 ns]",
+                           NBINS, 0.0, NBINS * DT)
+            hh.SetDirectory(0)
+            for i, v in enumerate(n):
+                hh.SetBinContent(int(round(t_abs[i] / DT)) + 1, float(v))
+            unfolded[key].append((hh, lab))
+    save_hists_to_file([hh for key in unfolded for hh, _ in unfolded[key]],
+                       os.path.join(paths["root"], "drs_deconvolution.root"))
 
     with open(os.path.join(paths["root"], "drs_deconvolution.json"), "w") as fo:
         json.dump(results, fo, indent=1)
@@ -397,7 +433,7 @@ def main():
                          f"channel per board is kept out of h(t) as a control: it should unfold to "
                          f"a spike."))
     pm.set_output_dir("DRS_Deconvolution")
-    STYLE = PlotStyle(dology=False, drawoptions="HIST", mycolors=[1, ROOT.kRed + 1, ROOT.kAzure + 1],
+    STYLE = PlotStyle(W_ref=900, H_ref=600, dology=False, drawoptions="HIST", mycolors=[1, ROOT.kRed + 1, ROOT.kAzure + 1],
                       addOverflow=False, addUnderflow=False, legendPos=[0.50, 0.70, 0.90, 0.90],
                       legendoptions="L")
     keep = []
@@ -414,7 +450,7 @@ def main():
                legends=[f"{b}: FWHM {results['responses'][b]['fwhm_ns']:.2f} ns" for b in responses], style=STYLE)
     pm.add_newline()
     for lab, (t, y, e, model, n_fit, n_rl) in curves.items():
-        nb = len(t); x0, x1 = t[0] - DT / 2, t[-1] + DT / 2
+        nb = len(t); x0, x1 = t[0] - DT / 2, t[-1] + DT / 2      # t is absolute here
         hy = ROOT.TH1D(f"y_{lab}", "", nb, x0, x1); hm = ROOT.TH1D(f"m_{lab}", "", nb, x0, x1)
         for i in range(nb):
             hy.SetBinContent(i + 1, y[i]); hy.SetBinError(i + 1, e[i]); hm.SetBinContent(i + 1, model[i])
@@ -423,29 +459,69 @@ def main():
         keep += [hy, hm]
         ymax = max(y.max(), model.max()) * 1.25
         r = results["channels"][lab]
-        pm.plot_1d([hy, hm], f"{lab}_pulse_fit", "t - t_{peak} [ns]", (-6, 12), "mean ADC",
+        pm.plot_1d([hy, hm], f"{lab}_pulse_fit", "t_{mcp} [ns]", (x0, x1), "mean ADC",
                    (-0.1 * ymax, ymax), legends=["profile", "fit: n(t) #otimes h(t)"],
                    style=STYLE, extra_text=f"{lab} ({r['kind']}, #chi^{{2}}/ndf {r['fit']['chi2'] / r['fit']['ndf']:.1f})")
         hf = ROOT.TH1D(f"nf_{lab}", "", nb, x0, x1); hr = ROOT.TH1D(f"nr_{lab}", "", nb, x0, x1)
-        sc = max(n_fit.max(), n_rl.max()) or 1
         for i in range(nb):
-            hf.SetBinContent(i + 1, n_fit[i] / sc); hr.SetBinContent(i + 1, n_rl[i] / sc)
+            hf.SetBinContent(i + 1, n_fit[i]); hr.SetBinContent(i + 1, n_rl[i])
+        nmax = max(n_fit.max(), n_rl.max()) or 1
         for hh_ in (hf, hr):
             hh_.SetDirectory(0)
         keep += [hf, hr]
         r = results["channels"][lab]
         txt = (f"#tau_{{d}} = {r['fit']['tau_decay_ns']:.2f} ns (fit), {r['nnls']['tau_decay_ns']:.2f} (NNLS)"
                if np.isfinite(r["nnls"]["tau_decay_ns"]) else f"#tau_{{d}} = {r['fit']['tau_decay_ns']:.2f} ns (fit)")
-        pm.plot_1d([hf, hr], f"{lab}_unfolded", "t - t_{peak} [ns]", (-6, 12), "n(t), arbitrary units",
-                   (-0.1, 1.25), legends=["fit model", "NNLS"],
-                   style=PlotStyle(dology=False, drawoptions="HIST", mycolors=[ROOT.kRed + 1, ROOT.kAzure + 1],
+        pm.plot_1d([hf, hr], f"{lab}_unfolded", "t_{mcp} [ns]", (x0, x1), "n(t) [ADC / 0.2 ns]",
+                   (-0.1 * nmax, 1.25 * nmax), legends=["fit model", "NNLS"],
+                   style=PlotStyle(W_ref=900, H_ref=600, dology=False, drawoptions="HIST", mycolors=[ROOT.kRed + 1, ROOT.kAzure + 1],
                                    addOverflow=False, addUnderflow=False,
                                    legendPos=[0.50, 0.74, 0.90, 0.90], legendoptions="L"),
                    extra_text=lab)
         pm.add_newline()
+    # summary: every channel's n(t) on the common time axis, absolute and peak = 1
+    xr = {}
+    for key in ("nnls", "fit"):
+        hs = [hh for hh, _ in unfolded[key]]
+        labs = [lab for _, lab in unfolded[key]]
+        lo = min(hh.GetBinLowEdge(hh.FindFirstBinAbove(0)) for hh in hs) - 2
+        hi = max(hh.GetBinLowEdge(hh.FindLastBinAbove(0) + 1) for hh in hs) + 2
+        xr[key] = (lo, hi)
+        pal = OVERLAY_COLOURS[:len(hs)]
+        style = PlotStyle(dology=False, drawoptions="HIST", mycolors=pal, addOverflow=False,
+                          addUnderflow=False, legendPos=[0.55, 0.50, 0.90, 0.90], legendoptions="L",
+                          W_ref=900, H_ref=600)
+        ymax = max(hh.GetMaximum() for hh in hs) * 1.2
+        pm.plot_1d(hs, f"summary_unfolded_{key}_absolute", "t_{mcp} [ns]", (lo, hi),
+                   "n(t) [ADC / 0.2 ns]", (-0.05 * ymax, ymax), legends=labs, style=style,
+                   extra_text=f"{key.upper()}, absolute scale", prepend=True)
+        hn = []
+        for hh in hs:
+            c = hh.Clone(hh.GetName() + "_norm"); c.SetDirectory(0)
+            if c.GetMaximum() > 0:
+                c.Scale(1.0 / c.GetMaximum())
+            hn.append(c)
+        keep += hn
+        pm.plot_1d(hn, f"summary_unfolded_{key}_peak1", "t_{mcp} [ns]", (lo, hi),
+                   "n(t) / peak", (-0.05, 1.25), legends=labs, style=style,
+                   extra_text=f"{key.upper()}, peak = 1", prepend=True)
     html = pm.generate_html("DRS/DRS_Deconvolution.html", plots_per_row=2,
                             title=f"DRS pulse unfolding, run {args.run}")
     print(f"\n{html}")
+    for key, page in (("nnls", "DRS/DRS_Unfolded_overlay.html"), ("fit", "DRS/DRS_Unfolded_fit_overlay.html")):
+        out = build_channel_overlay(
+            unfolded[key], output_html=os.path.join(paths["html"], page),
+            xlabel="t_mcp [ns]", ylabel="n(t) [ADC / 0.2 ns]",
+            title=f"Unfolded light n(t), {key.upper()} — Run {args.run}",
+            intro_text=("Photon arrival profiles unfolded from the mcp_clean profiles with the "
+                        "Cherenkov response of the same DRS board. Time is the analysis's ts_mcp "
+                        "axis (group reference + MCP aligned), so offsets between channels are "
+                        "light-propagation and path differences; the scale is ADC per 0.2 ns with "
+                        "h(t) of unit area, so areas compare photons captured. Use Peak = 1 to "
+                        "compare shapes."),
+            filename=f"DRS_unfolded_{key}_Run{args.run}", xrange=xr[key])
+        if out:
+            print(out)
 
 
 if __name__ == "__main__":

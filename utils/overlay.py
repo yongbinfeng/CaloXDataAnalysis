@@ -22,11 +22,12 @@ OVERLAY_COLOURS = [
 
 
 def build_channel_overlay(entries, output_html, xlabel, ylabel, title,
-                          intro_text, filename, y_pad=0.15):
+                          intro_text, filename, y_pad=0.15, xrange=None):
     """Write an overlay page for [(hist, label), ...].
 
     All histograms must share one uniform x binning; the x values are then
-    implied by (first bin centre, bin width) and never stored. Returns the
+    implied by (first bin centre, bin width) and never stored. xrange sets
+    the initial x view (default: the full histogram range). Returns the
     path written, or None if there was nothing worth plotting.
     """
     if len(entries) < 2:
@@ -93,7 +94,8 @@ def build_channel_overlay(entries, output_html, xlabel, ylabel, title,
     pad_n = (hi_n - lo_n) * y_pad or 1.0
 
     spec = {"x0": x0, "dx": dx, "xlabel": xlabel, "ylabel": ylabel,
-            "xrange": [x0 - dx / 2.0, x0 + (nbins - 0.5) * dx],
+            "xrange": [float(xrange[0]), float(xrange[1])] if xrange is not None
+                      else [x0 - dx / 2.0, x0 + (nbins - 0.5) * dx],
             "yrange": [lo - pad, hi + pad],
             "yrangeNorm": [lo_n - pad_n, hi_n + pad_n],
             "filename": filename,
