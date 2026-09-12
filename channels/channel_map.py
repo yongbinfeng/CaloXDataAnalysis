@@ -26,7 +26,7 @@ from channels.maps.services import (  # noqa: F401
     build_time_reference_channels, findDRSTriggerMap,
     findFanoutTimeReferenceDelay, get_cerenkov_counters,
     get_downstream_muon_channel, get_downstream_ttu_muon_channel,
-    get_hole_veto_channel, get_mcp_channels, get_pid_channels,
+    get_hole_veto_channel, get_mcp_channels, get_mcp_reference, get_pid_channels,
     get_pre_shower_channel, get_service_drs_channels,
     _MCP_CHANNELS, _SERVICE_DRS_CHANNELS, _drs, triggerdelay, triggermap,
 )

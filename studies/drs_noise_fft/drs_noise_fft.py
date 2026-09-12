@@ -25,7 +25,7 @@ import sys
 import numpy as np
 import ROOT
 
-from channels.channel_map import get_mcp_channels
+from channels.channel_map import get_mcp_channels, get_mcp_reference
 from utils.plot_helper import get_run_paths
 
 ROOT.gROOT.SetBatch(True)
@@ -50,8 +50,8 @@ def parse_args():
     p.add_argument("--json-file", default=jsonFile, help="run -> ROOT file map")
     p.add_argument("--nevents", type=int, default=4000)
     p.add_argument("--mcp", default=None,
-                   help="MCP channel for the timing reference "
-                        "(default: MCP_DS_0 from the channel map)")
+                   help="MCP channel for the timing reference (default: the one "
+                        "the analysis uses, channels.maps.services.get_mcp_reference)")
     p.add_argument("--outdir", default=here)
     return p.parse_args()
 
@@ -219,7 +219,19 @@ def robust_sigma(x):
     return 0.7413 * (np.percentile(x, 75) - np.percentile(x, 25))
 
 
-def timing_study(W, labels, mcp, profiles_path):
+def led_time(w_flipped, min_amp=500.0, frac=0.5):
+    """process_dynamic_led on a flipped reference channel: 50% crossing, integer."""
+    p = int(w_flipped.argmax())
+    a = w_flipped[p]
+    if a < min_amp:
+        return np.nan
+    i = p
+    while i > 0 and w_flipped[i] > frac * a:
+        i -= 1
+    return float(i + 1)
+
+
+def timing_study(W, labels, mcp, profiles_path, ref_ts, ref_of):
     if not os.path.exists(profiles_path):
         print(f"\n{profiles_path} not found: skipping the timing study "
               f"(run scripts/check_drs_mcp.py --run <run> first).")
@@ -227,6 +239,9 @@ def timing_study(W, labels, mcp, profiles_path):
     prof = ROOT.TFile(profiles_path, "READ")
     nev = W[mcp].shape[0]
     t_mcp, a_mcp = np.array([cfd_time(-W[mcp][e], *SIGNAL_WIN) for e in range(nev)]).T
+    # correct every time by its group reference, as the analysis does: this is
+    # what removes the ~1.3 ns jitter between DRS boards
+    t_mcp = t_mcp - ref_ts[ref_of[mcp]]
     has = (a_mcp > 50) & np.isfinite(t_mcp)
     ev = np.where(has)[0]
     print(f"\nevents with an MCP pulse (>50 ADC): {has.sum()} of {nev}; "
@@ -243,8 +258,9 @@ def timing_study(W, labels, mcp, profiles_path):
         tc, amp = np.array([cfd_time(W[c][e], *SIGNAL_WIN) for e in ev]).T
         tm, edge = zip(*(mf_time(W[c][e], t, pre, *SIGNAL_WIN) for e in ev))
         tm, edge = np.array(tm), np.array(edge)
-        dc = (tc - t_mcp[ev]) * DT_NS
-        dm = (tm - t_mcp[ev]) * DT_NS
+        ref_c = ref_ts[ref_of[c]][ev]
+        dc = (tc - ref_c - t_mcp[ev]) * DT_NS
+        dm = (tm - ref_c - t_mcp[ev]) * DT_NS
         bins = {}
         for lo, hi in AMP_BINS:
             s = (amp >= lo) & (amp < hi) & np.isfinite(dc) & ~edge
@@ -395,14 +411,25 @@ def main():
     with open(args.channels) as f:
         chmap = json.load(f)
     labels = {name: lab for lab, name in chmap.items()}
-    mcp = args.mcp or get_mcp_channels(args.run)["MCP_DS_0"]
-    labels_all = dict(labels); labels_all[mcp] = "MCP_DS_0"
+    mcp_label = get_mcp_reference(args.run)
+    if args.mcp:
+        mcp, mcp_label = args.mcp, args.mcp
+    elif mcp_label is None:
+        sys.exit(f"run {args.run} has no MCP reference; pass --mcp <channel>")
+    else:
+        mcp = get_mcp_channels(args.run)[mcp_label]
+    labels_all = dict(labels); labels_all[mcp] = mcp_label
     start_branches = {c: c.rsplit("_", 1)[0] + "_StartIndexCell" for c in labels}
+    ref_of = {c: c.rsplit("_", 1)[0] + "_Channel8" for c in labels_all}
 
-    cols = list(labels_all) + sorted(set(start_branches.values()))
+    cols = list(labels_all) + sorted(set(start_branches.values()) | set(ref_of.values()))
     data = load_waveforms(args, cols)
     W = {c: baseline_subtract(data[c]) for c in labels_all}
     starts = {c: data[start_branches[c]].astype(int) for c in labels}
+    ref_ts = {}
+    for rb in set(ref_of.values()):
+        Wr = -baseline_subtract(data[rb])                 # reference channels are flipped
+        ref_ts[rb] = np.array([led_time(Wr[e]) for e in range(Wr.shape[0])])
     print(f"run {args.run}: {W[mcp].shape[0]} events, {len(labels)} channels + MCP")
 
     # 1. spectra
@@ -426,7 +453,7 @@ def main():
 
     # 3. timing
     profiles = os.path.join(get_run_paths(args.run)["root"], "drs_profiles.root")
-    timing = timing_study(W, labels, mcp, profiles)
+    timing = timing_study(W, labels, mcp, profiles, ref_ts, ref_of)
     if timing:
         print(f"\n{'channel':16s} " + " ".join(f"{'%d-%d'%b:>21s}" for b in AMP_BINS))
         for lab, r in timing.items():
@@ -449,12 +476,12 @@ def main():
 
     # plots + json
     keep = []
-    plot_psd(freq, spec, "MCP_DS_0", args.outdir, keep)
+    plot_psd(freq, spec, mcp_label, args.outdir, keep)
     plot_cell_pattern(patterns, cellres, labels, args.outdir, keep)
     if timing:
         plot_timing(timing, args.outdir, keep)
     out = {"run": args.run, "nevents": int(W[mcp].shape[0]), "channels": args.channels,
-           "mcp": mcp, "noise": {k: {kk: vv for kk, vv in v.items() if kk != "psd"}
+           "mcp": mcp, "mcp_label": mcp_label, "noise": {k: {kk: vv for kk, vv in v.items() if kk != "psd"}
                                   for k, v in spec.items()},
            "coherence": coh, "cell_pattern": cellres, "timing": timing}
     with open(os.path.join(args.outdir, "results.json"), "w") as f:

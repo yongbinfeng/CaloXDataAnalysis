@@ -2,13 +2,11 @@
 import re
 import json
 import os
-from channels.channel_map import get_mcp_channels, get_pid_channels, get_service_drs_channels
+from channels.channel_map import get_mcp_channels, get_mcp_reference, get_pid_channels, get_service_drs_channels
 from configs.selection_config import get_service_drs_cut
 from utils.utils import get_channel_var
 
 TS_END = 1024
-MCP_REF = "MCP_DS_0"
-MCP_REF = "MCP_1"
 
 # Column naming convention — uppercase prefix = scalar, lowercase prefix = RVec array:
 #   _ref_TS          scalar: LED discriminator crossing time slice of the reference channel (Channel8)
@@ -310,10 +308,10 @@ def process_drs_data(rdf, run_number, drsboards, do_mcp=True,
     drs_branches_to_flip = get_drs_branches_to_flip(
         run_number, drs_channels_ref=drs_channels_ref, drsboards=drsboards)
 
-    # Only correct for MCP timing if the reference MCP channel actually exists
-    # for this run (e.g. runs >= _DRS_BRG_RUN have no MCP channels).
-    mcp_available = MCP_REF in get_mcp_channels(run_number)
-    mcp_det = MCP_REF if (do_mcp and mcp_available) else None
+    # The MCP the timing is referenced to is chosen per run in one place
+    # (channels.maps.services.get_mcp_reference); None when the run has no
+    # usable MCP, in which case _ts_mcp falls back to the group reference.
+    mcp_det = get_mcp_reference(run_number) if do_mcp else None
 
     rdf = subtract_baseline(
         rdf, drs_branches, drs_channels_to_flip=drs_branches_to_flip,

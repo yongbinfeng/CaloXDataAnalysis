@@ -70,9 +70,9 @@ def cleaning_section(cl):
 <h2>4. Cleaning: what it buys and what it cannot</h2>
 <p>Two corrections were applied to the raw waveforms and every pulse feature recomputed on the <em>same</em> events (MCP present, raw amplitude above {cl['min_snr_raw']:.0f}σ and within {cl['in_time_ns']:.0f} ns of where the channel's pulses sit), the cell pattern coming from a disjoint half of the run so it cannot flatter itself. <code>cell</code> subtracts the per-cell offsets; <code>cell+LP</code> adds a zero-phase low-pass at {cl['lowpass_MHz']:.0f} MHz aimed at the amplifier resonance.</p>
 <p>The mean pulse per channel is built exactly as the analysis builds its <code>_VS_ts_mcp</code> profiles — every event, shifted by its group reference channel's 50% crossing — and the analysis's own profile from <code>drs_profiles.root</code> is overlaid as a check. The <code>raw</code> curve lands on it: for <code>Quartz_0</code> the same estimator over all 23 694 events gives 14.5 ADC at bin 434, the profile's value to the decimal. (A first version of this study averaged only bright events; on dim channels those are mostly out-of-time pulses and the mean was a 40 ADC smear. Selections here are on the raw waveform, once, and reused for every treatment.)</p>
-<div class="callout">
-  <div class="h">Found on the way: the run-{cl['run']} "MCP-aligned" profiles are not MCP-aligned</div>
-  <code>variables/drs.py</code> sets <code>MCP_REF = "MCP_DS_0"</code> and on the next line overwrites it with <code>"MCP_1"</code>. Run {cl['run']} has no <code>MCP_1</code>, so <code>mcp_available</code> is false, <code>mcp_det</code> is <code>None</code>, and <code>_ts_mcp</code> silently becomes <code>_ts_ref</code>. Every <code>_VS_ts_mcp</code> profile and <code>_TS_cfd_mcp</code> time for this run is aligned by the group reference channel only. It is good enough to make sharp profiles — the reference removes most of the trigger jitter — but it is not what the name says, and the MCP would do better (0.2 ns against ~0.8 ns).
+<div class="callout ok">
+  <div class="h">Found and fixed on the way: the "MCP-aligned" profiles were not MCP-aligned</div>
+  <code>variables/drs.py</code> used to set <code>MCP_REF = "MCP_DS_0"</code> and overwrite it on the next line with <code>"MCP_1"</code>, an MCP that runs after 1828 do not have — so <code>_ts_mcp</code> silently fell back to the group reference for every tb2026 run (and, for the same reason, the Sep-2024 runs). The choice now lives in one place, <code>channels.maps.services.get_mcp_reference()</code>: <code>MCP_DS_1</code> where the run has it, else <code>MCP_1</code>, else none. With real MCP alignment the profiles are sharper (<code>Multiclad_0</code> FWHM 10 → 7 samples) and lower, because pulses in events without an MCP hit no longer line up — use <code>--mcp-clean</code> to select them.
 </div>
 </div>
 <figure>
@@ -111,7 +111,8 @@ def build(res, cl=None):
     noise, cell, coh = res["noise"], res["cell_pattern"], res["coherence"]
     timing = {k: v for k, v in res["timing"].items() if not k.startswith("_")}
     n_mcp, mcp_spread = res["timing"]["_mcp_events"], res["timing"]["_mcp_spread_ns"]
-    amplified = [k for k in noise if k not in ("MCP_DS_0", "Quartz_1")]
+    mcp_label = res.get("mcp_label", "MCP")
+    amplified = [k for k in noise if k not in (mcp_label, "Quartz_1")]
     share = lambda k: (noise[k]["band_fraction"]["200-400"] + noise[k]["band_fraction"]["400-600"])
     amp_share = sorted(share(k) for k in amplified)
     amp_sigma = sorted(noise[k]["sigma"] for k in amplified)
@@ -156,6 +157,10 @@ def build(res, cl=None):
             and v["bins"]["400-2500"]["cfd"]["core_sigma_ns"] is not None
             and v["bins"]["400-2500"]["cfd"]["core_fraction"] > 0.8}
     cher_lo, cher_hi = min(cher.values()), max(cher.values())
+    scint = [v["bins"]["400-2500"]["cfd"]["core_sigma_ns"] for k, v in timing.items()
+             if "bins" in v and "400-2500" in v["bins"] and k.startswith("Scintillating")
+             and v["bins"]["400-2500"]["cfd"]["core_sigma_ns"] is not None]
+    scint_lo, scint_hi = (min(scint), max(scint)) if scint else (float("nan"), float("nan"))
     skipped = [k for k, v in timing.items() if "bins" not in v]
 
     return f"""<title>Where the DRS Noise Lives</title>
@@ -273,11 +278,11 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
 
 <div class="col">
 <h2>Setup</h2>
-<p>Raw waveforms for the 20 channels in <code>data/channel_maps/testingfibers.json</code> plus <code>MCP_DS_0</code>, {res['nevents']} events of run {res['run']}. Each 1024-sample record is baseline-subtracted per event using the median of samples 20–380. Those same samples — 72 ns before any pulse, the pulses sitting at samples 430–470 — are the noise-only window for parts 1 and 2. Part 3 uses samples 380–990; 990 stops short of the dip in the last DRS cells.</p>
+<p>Raw waveforms for the 20 channels in <code>data/channel_maps/testingfibers.json</code> plus <code>{mcp_label}</code> — the MCP the analysis references its timing to, chosen per run by <code>get_mcp_reference()</code> — {res['nevents']} events of run {res['run']}. Each 1024-sample record is baseline-subtracted per event using the median of samples 20–380. Those same samples — 72 ns before any pulse, the pulses sitting at samples 430–470 — are the noise-only window for parts 1 and 2. Part 3 uses samples 380–990; 990 stops short of the dip in the last DRS cells.</p>
 <p>Two things the DRS4 forces on any spectral analysis. Its cell widths vary by 10–20% around the nominal 200 ps, so an FFT on the nominal grid smears content above a few hundred MHz — fine for what follows, which lives below that. And it is a transient recorder: the noise spectrum has to come from a pulse-free window, windowed (Hann) to stop the baseline step from leaking into every bin.</p>
 
 <h2>1. The noise is the amplifiers'</h2>
-<p>All 19 amplified channels have σ ≈ {amp_sigma[0]:.1f}–{amp_sigma[-1]:.1f} ADC and the same spectral shape: a broad resonance peaking near 300 MHz with a shoulder at 450 MHz, then the analogue roll-off above ~600 MHz. The two channels that differ are the unamplified MCP (σ {noise['MCP_DS_0']['sigma']:.1f}) and <code>Quartz_1</code> (σ {noise['Quartz_1']['sigma']:.1f}) — flatter, with a larger share above 1 GHz, which is the DRS's own white noise. The amplifiers add roughly √(7.8² − 4.4²) ≈ 6.4 ADC of coloured noise on top of that.</p>
+<p>All 19 amplified channels have σ ≈ {amp_sigma[0]:.1f}–{amp_sigma[-1]:.1f} ADC and the same spectral shape: a broad resonance peaking near 300 MHz with a shoulder at 450 MHz, then the analogue roll-off above ~600 MHz. The two channels that differ are the unamplified MCP (σ {noise[mcp_label]['sigma']:.1f}) and <code>Quartz_1</code> (σ {noise['Quartz_1']['sigma']:.1f}) — flatter, with a larger share above 1 GHz, which is the DRS's own white noise. The amplifiers add roughly √(7.8² − 4.4²) ≈ 6.4 ADC of coloured noise on top of that.</p>
 </div>
 <figure>
   <img src="{img('noise_psd.png')}" alt="Left: noise power spectral density of every channel, each normalised to its own maximum, log-log, with the MCP drawn thick and black. Right: stacked bar chart of the fraction of noise variance in six frequency bands per channel.">
@@ -319,7 +324,7 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
 </div>
 
 <h2>3. Timing: CFD is already at the limit</h2>
-<p>For each event with an MCP pulse ({n_mcp} of {res['nevents']}; MCP arrival spread {mcp_spread:.1f} ns against the DRS trigger), the channel time is estimated two ways on the same events: the 20% leading-edge CFD used in the analysis, and a matched filter — cross-correlation with the channel's own MCP-aligned profile from <code>drs_profiles.root</code>, parabolic sub-sample interpolation. Both are referenced to the MCP CFD. Because a robust σ over a mixed population misleads, each amplitude bin reports the <em>core</em> σ (events within ±2 ns of the median) and the <em>fraction</em> of events in that core.</p>
+<p>For each event with an MCP pulse ({n_mcp} of {res['nevents']}; MCP arrival spread {mcp_spread:.1f} ns against the DRS trigger), the channel time is estimated two ways on the same events: the 20% leading-edge CFD used in the analysis, and a matched filter — cross-correlation with the channel's own MCP-aligned profile from <code>drs_profiles.root</code>, parabolic sub-sample interpolation. Both are referenced to the MCP CFD, and every time is first corrected by its DRS group's reference channel exactly as the analysis does. That correction is not optional: without it, channels on a different DRS board from the MCP show ~1.3 ns of extra spread that is board jitter, not detector timing. With it, the resolution is the same whichever MCP is the reference. Because a robust σ over a mixed population misleads, each amplitude bin reports the <em>core</em> σ (events within ±2 ns of the median) and the <em>fraction</em> of events in that core.</p>
 </div>
 <figure>
   <img src="{img('timing_cfd_vs_matched.png')}" alt="Left: core timing sigma versus pulse amplitude for six channels, CFD as filled markers and matched filter as open markers, the two overlapping. Right: fraction of events within 2 ns of the median versus amplitude, rising from near zero below 160 ADC to 0.9 above 400 ADC for Cherenkov fibres.">
@@ -331,7 +336,7 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
 <tbody>{t_timing}</tbody>
 <caption>Core σ in ns with the in-core fraction in grey, for the two amplitude bins where timing is measurable. Amber rows were skipped by the template check.</caption>
 </table></div>
-<p>Above 400 ADC the Cherenkov fibres reach {cher_lo:.2f}–{cher_hi:.2f} ns and the scintillating fibres ~1.3 ns, with 88–96% of events in core; CFD and matched filter agree to within their own scatter. In the 160–400 ADC bin, 40–55% of events are already out of core, and below 160 ADC almost none are in it. That is not an estimator problem — an estimator cannot recover a time from an event that does not contain the template — it is a population question: particles that missed the fibre, or crosstalk from the 2000-ADC scintillator neighbours, are two candidates.</p>
+<p>Above 400 ADC the Cherenkov fibres reach {cher_lo:.2f}–{cher_hi:.2f} ns and the scintillating fibres {scint_lo:.2f}–{scint_hi:.2f} ns, with ~90% of events in core; CFD and matched filter agree to within their own scatter. The one place the matched filter shows something is the 160–400 ADC bin of the scintillating fibres, where it puts about twice as many events in core as the CFD (36–40% against 15–19%) at similar width — it finds moderate pulses the leading-edge CFD mis-times, without improving the ones both find. In the 160–400 ADC bin, 40–55% of events are already out of core, and below 160 ADC almost none are in it. That is not an estimator problem — an estimator cannot recover a time from an event that does not contain the template — it is a population question: particles that missed the fibre, or crosstalk from the 2000-ADC scintillator neighbours, are two candidates.</p>
 <div class="callout">
   <div class="h">An artefact caught, and a guard added</div>
   The first pass claimed a 3.3 ns matched-filter resolution for <code>GradedIndex_1</code> even on pure noise. Its profile has no pulse, so the "template" was noise, the correlation peaked at a constant lag, and the "resolution" was exactly the {mcp_spread:.1f} ns MCP arrival spread. A matched filter fails silently on a bad template. The study now rejects any template whose peak is under 5σ of its own baseline — which excludes {', '.join(f'<code>{k}</code>' for k in skipped)} — and drops events whose correlation peaks at a window edge.
@@ -342,8 +347,8 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
 <ul class="next">
   <li><b>Correct the cell pattern in the pipeline.</b> It is free — no signal cost — and worth ~1 ADC of σ. Measure per channel from pedestal or pre-pulse samples and subtract by cell, or redo the DRS voltage calibration.</li>
   <li><b>Treat the 300 MHz noise as a hardware problem.</b> It cannot be subtracted and sits on the Cherenkov signal band; a low-pass buys 15–25% in peak SNR at the cost of 7–10% of the peak, and nothing in timing. Look at the amplifier's stability and bandwidth.</li>
-  <li><b>Fix <code>MCP_REF</code> in <code>variables/drs.py</code></b> so tb2026 runs actually align to an MCP that exists (<code>MCP_DS_0</code>), then regenerate the timing pages. One line.</li>
-  <li><b>Check <code>Quartz_1</code>'s amplifier.</b> Its noise says it is not there.</li>
+  <li><b>Regenerate the timing pages</b> for the tb2026 and Sep-2024 runs now that they really align to an MCP.</li>
+  <li><b>Check <code>Quartz_1</code>'s amplifier.</b> Its noise says it is not there, and its pulses agree: 20–80 ADC, clean, timing to 0.15 ns — a working channel with no gain.</li>
   <li><b>Understand the out-of-time population</b> before spending more on timing estimators: on the dim channels most bright pulses are 20–80 ns off the MCP. Split it by the scintillator channels' amplitude in the same event.</li>
 </ul>
 

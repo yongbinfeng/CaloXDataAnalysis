@@ -12444,6 +12444,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 500 : auxiliary ===
@@ -12456,6 +12457,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 582 : auxiliary ===
@@ -12468,6 +12470,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 583 : auxiliary ===
@@ -12480,6 +12483,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 600 : auxiliary ===
@@ -12492,6 +12496,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 684 : auxiliary ===
@@ -12504,6 +12509,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 685 : auxiliary ===
@@ -12516,6 +12522,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 700 : auxiliary ===
@@ -12528,6 +12535,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 900 : auxiliary ===
@@ -12540,6 +12548,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1100 : auxiliary ===
@@ -12552,6 +12561,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1169 : auxiliary ===
@@ -12564,6 +12574,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1170 : auxiliary ===
@@ -12576,6 +12587,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1182 : auxiliary ===
@@ -12588,6 +12600,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: []
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {}
   get_pid_channels: {HoleVeto: None, PSD: None, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1183 : auxiliary ===
@@ -12600,6 +12613,7 @@
   get_pre_shower_channel: DRS_Board7_Group1_Channel1
   get_cerenkov_counters: [DRS_Board7_Group1_Channel2, DRS_Board7_Group1_Channel3, DRS_Board7_Group1_Channel4, DRS_Board7_Group1_Channel5]
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {DWC1Left: DRS_Board7_Group0_Channel0, DWC1Right: DRS_Board7_Group0_Channel1, DWC1Up: DRS_Board7_Group0_Channel2, DWC1Down: DRS_Board7_Group0_Channel3, DWC2Left: DRS_Board7_Group0_Channel4, DWC2Right: DRS_Board7_Group0_Channel5, DWC2Up: DRS_Board7_Group0_Channel6, DWC2Down: DRS_Board7_Group0_Channel7, MuonVeto: DRS_Board7_Group1_Channel0, PSD: DRS_Board7_Group1_Channel1, Cer1: DRS_Board7_Group1_Channel2, Cer2: DRS_Board7_Group1_Channel3, Cer3: DRS_Board7_Group1_Channel4, Cer4: DRS_Board7_Group1_Channel5, HoleVeto: DRS_Board7_Group1_Channel6, NC: DRS_Board7_Group1_Channel7}
   get_pid_channels: {HoleVeto: DRS_Board7_Group1_Channel6, PSD: DRS_Board7_Group1_Channel1, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1200 : auxiliary ===
@@ -12612,6 +12626,7 @@
   get_pre_shower_channel: DRS_Board7_Group1_Channel1
   get_cerenkov_counters: [DRS_Board7_Group1_Channel2, DRS_Board7_Group1_Channel3, DRS_Board7_Group1_Channel4, DRS_Board7_Group1_Channel5]
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {DWC1Left: DRS_Board7_Group0_Channel0, DWC1Right: DRS_Board7_Group0_Channel1, DWC1Up: DRS_Board7_Group0_Channel2, DWC1Down: DRS_Board7_Group0_Channel3, DWC2Left: DRS_Board7_Group0_Channel4, DWC2Right: DRS_Board7_Group0_Channel5, DWC2Up: DRS_Board7_Group0_Channel6, DWC2Down: DRS_Board7_Group0_Channel7, MuonVeto: DRS_Board7_Group1_Channel0, PSD: DRS_Board7_Group1_Channel1, Cer1: DRS_Board7_Group1_Channel2, Cer2: DRS_Board7_Group1_Channel3, Cer3: DRS_Board7_Group1_Channel4, Cer4: DRS_Board7_Group1_Channel5, HoleVeto: DRS_Board7_Group1_Channel6, NC: DRS_Board7_Group1_Channel7}
   get_pid_channels: {HoleVeto: DRS_Board7_Group1_Channel6, PSD: DRS_Board7_Group1_Channel1, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1259 : auxiliary ===
@@ -12624,6 +12639,7 @@
   get_pre_shower_channel: DRS_Board7_Group1_Channel1
   get_cerenkov_counters: [DRS_Board7_Group1_Channel2, DRS_Board7_Group1_Channel3, DRS_Board7_Group1_Channel4, DRS_Board7_Group1_Channel5]
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {DWC1Left: DRS_Board7_Group0_Channel0, DWC1Right: DRS_Board7_Group0_Channel1, DWC1Up: DRS_Board7_Group0_Channel2, DWC1Down: DRS_Board7_Group0_Channel3, DWC2Left: DRS_Board7_Group0_Channel4, DWC2Right: DRS_Board7_Group0_Channel5, DWC2Up: DRS_Board7_Group0_Channel6, DWC2Down: DRS_Board7_Group0_Channel7, MuonVeto: DRS_Board7_Group1_Channel0, PSD: DRS_Board7_Group1_Channel1, Cer1: DRS_Board7_Group1_Channel2, Cer2: DRS_Board7_Group1_Channel3, Cer3: DRS_Board7_Group1_Channel4, Cer4: DRS_Board7_Group1_Channel5, HoleVeto: DRS_Board7_Group1_Channel6, NC: DRS_Board7_Group1_Channel7}
   get_pid_channels: {HoleVeto: DRS_Board7_Group1_Channel6, PSD: DRS_Board7_Group1_Channel1, TTUMuonVeto: None, Cer474: None, Cer519: None, Cer537: None, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1260 : auxiliary ===
@@ -12636,6 +12652,7 @@
   get_pre_shower_channel: DRS_Board7_Group1_Channel1
   get_cerenkov_counters: [DRS_Board7_Group2_Channel5, DRS_Board7_Group2_Channel6, DRS_Board7_Group2_Channel7]
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {DWC1Left: DRS_Board7_Group0_Channel0, DWC1Right: DRS_Board7_Group0_Channel1, DWC1Up: DRS_Board7_Group0_Channel2, DWC1Down: DRS_Board7_Group0_Channel3, DWC2Left: DRS_Board7_Group0_Channel4, DWC2Right: DRS_Board7_Group0_Channel5, DWC2Up: DRS_Board7_Group0_Channel6, DWC2Down: DRS_Board7_Group0_Channel7, MuonVeto: DRS_Board7_Group1_Channel0, PSD: DRS_Board7_Group1_Channel1, HoleVeto: DRS_Board7_Group1_Channel6, NC: DRS_Board7_Group1_Channel7, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7}
   get_pid_channels: {HoleVeto: DRS_Board7_Group1_Channel6, PSD: DRS_Board7_Group1_Channel1, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1300 : auxiliary ===
@@ -12648,6 +12665,7 @@
   get_pre_shower_channel: DRS_Board7_Group1_Channel1
   get_cerenkov_counters: [DRS_Board7_Group2_Channel5, DRS_Board7_Group2_Channel6, DRS_Board7_Group2_Channel7]
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {DWC1Left: DRS_Board7_Group0_Channel0, DWC1Right: DRS_Board7_Group0_Channel1, DWC1Up: DRS_Board7_Group0_Channel2, DWC1Down: DRS_Board7_Group0_Channel3, DWC2Left: DRS_Board7_Group0_Channel4, DWC2Right: DRS_Board7_Group0_Channel5, DWC2Up: DRS_Board7_Group0_Channel6, DWC2Down: DRS_Board7_Group0_Channel7, MuonVeto: DRS_Board7_Group1_Channel0, PSD: DRS_Board7_Group1_Channel1, HoleVeto: DRS_Board7_Group1_Channel6, NC: DRS_Board7_Group1_Channel7, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7}
   get_pid_channels: {HoleVeto: DRS_Board7_Group1_Channel6, PSD: DRS_Board7_Group1_Channel1, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1326 : auxiliary ===
@@ -12660,6 +12678,7 @@
   get_pre_shower_channel: DRS_Board7_Group1_Channel1
   get_cerenkov_counters: [DRS_Board7_Group2_Channel5, DRS_Board7_Group2_Channel6, DRS_Board7_Group2_Channel7]
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {DWC1Left: DRS_Board7_Group0_Channel0, DWC1Right: DRS_Board7_Group0_Channel1, DWC1Up: DRS_Board7_Group0_Channel2, DWC1Down: DRS_Board7_Group0_Channel3, DWC2Left: DRS_Board7_Group0_Channel4, DWC2Right: DRS_Board7_Group0_Channel5, DWC2Up: DRS_Board7_Group0_Channel6, DWC2Down: DRS_Board7_Group0_Channel7, MuonVeto: DRS_Board7_Group1_Channel0, PSD: DRS_Board7_Group1_Channel1, HoleVeto: DRS_Board7_Group1_Channel6, NC: DRS_Board7_Group1_Channel7, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7}
   get_pid_channels: {HoleVeto: DRS_Board7_Group1_Channel6, PSD: DRS_Board7_Group1_Channel1, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1327 : auxiliary ===
@@ -12672,6 +12691,7 @@
   get_pre_shower_channel: DRS_Board7_Group1_Channel1
   get_cerenkov_counters: [DRS_Board7_Group2_Channel5, DRS_Board7_Group2_Channel6, DRS_Board7_Group2_Channel7]
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {DWC1Left: DRS_Board7_Group0_Channel0, DWC1Right: DRS_Board7_Group0_Channel1, DWC1Up: DRS_Board7_Group0_Channel2, DWC1Down: DRS_Board7_Group0_Channel3, DWC2Left: DRS_Board7_Group0_Channel4, DWC2Right: DRS_Board7_Group0_Channel5, DWC2Up: DRS_Board7_Group0_Channel6, DWC2Down: DRS_Board7_Group0_Channel7, MuonVeto: DRS_Board7_Group1_Channel0, PSD: DRS_Board7_Group1_Channel1, HoleVeto: DRS_Board7_Group1_Channel6, NC: DRS_Board7_Group1_Channel7, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7}
   get_pid_channels: {HoleVeto: DRS_Board7_Group1_Channel6, PSD: DRS_Board7_Group1_Channel1, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1341 : auxiliary ===
@@ -12684,6 +12704,7 @@
   get_pre_shower_channel: DRS_Board7_Group1_Channel1
   get_cerenkov_counters: [DRS_Board7_Group2_Channel5, DRS_Board7_Group2_Channel6, DRS_Board7_Group2_Channel7]
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {DWC1Left: DRS_Board7_Group0_Channel0, DWC1Right: DRS_Board7_Group0_Channel1, DWC1Up: DRS_Board7_Group0_Channel2, DWC1Down: DRS_Board7_Group0_Channel3, DWC2Left: DRS_Board7_Group0_Channel4, DWC2Right: DRS_Board7_Group0_Channel5, DWC2Up: DRS_Board7_Group0_Channel6, DWC2Down: DRS_Board7_Group0_Channel7, MuonVeto: DRS_Board7_Group1_Channel0, PSD: DRS_Board7_Group1_Channel1, HoleVeto: DRS_Board7_Group1_Channel6, NC: DRS_Board7_Group1_Channel7, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7}
   get_pid_channels: {HoleVeto: DRS_Board7_Group1_Channel6, PSD: DRS_Board7_Group1_Channel1, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1342 : auxiliary ===
@@ -12696,6 +12717,7 @@
   get_pre_shower_channel: DRS_Board7_Group1_Channel1
   get_cerenkov_counters: [DRS_Board7_Group2_Channel5, DRS_Board7_Group2_Channel6, DRS_Board7_Group2_Channel7]
   get_mcp_channels: {MCP_DS_0: DRS_Board0_Group3_Channel6, MCP_DS_1: DRS_Board1_Group3_Channel6, MCP_DS_2: DRS_Board2_Group3_Channel6, MCP_DS_3: DRS_Board3_Group3_Channel6, MCP_US_0: DRS_Board0_Group3_Channel7, MCP_US_1: DRS_Board1_Group3_Channel7, MCP_US_2: DRS_Board2_Group3_Channel7, MCP_US_3: DRS_Board3_Group3_Channel7}
+  get_mcp_reference: MCP_DS_1
   get_service_drs_channels: {DWC1Left: DRS_Board7_Group0_Channel0, DWC1Right: DRS_Board7_Group0_Channel1, DWC1Up: DRS_Board7_Group0_Channel2, DWC1Down: DRS_Board7_Group0_Channel3, DWC2Left: DRS_Board7_Group0_Channel4, DWC2Right: DRS_Board7_Group0_Channel5, DWC2Up: DRS_Board7_Group0_Channel6, DWC2Down: DRS_Board7_Group0_Channel7, MuonVeto: DRS_Board7_Group1_Channel0, PSD: DRS_Board7_Group1_Channel1, HoleVeto: DRS_Board7_Group1_Channel6, NC: DRS_Board7_Group1_Channel7, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7}
   get_pid_channels: {HoleVeto: DRS_Board7_Group1_Channel6, PSD: DRS_Board7_Group1_Channel1, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1400 : auxiliary ===
@@ -12708,6 +12730,7 @@
   get_pre_shower_channel: DRS_Board7_Group1_Channel1
   get_cerenkov_counters: [DRS_Board7_Group2_Channel5, DRS_Board7_Group2_Channel6, DRS_Board7_Group2_Channel7]
   get_mcp_channels: {MCP_DS_0: DRS_Board0_Group3_Channel6, MCP_DS_1: DRS_Board1_Group3_Channel6, MCP_DS_2: DRS_Board2_Group3_Channel6, MCP_DS_3: DRS_Board3_Group3_Channel6, MCP_US_0: DRS_Board0_Group3_Channel7, MCP_US_1: DRS_Board1_Group3_Channel7, MCP_US_2: DRS_Board2_Group3_Channel7, MCP_US_3: DRS_Board3_Group3_Channel7}
+  get_mcp_reference: MCP_DS_1
   get_service_drs_channels: {DWC1Left: DRS_Board7_Group0_Channel0, DWC1Right: DRS_Board7_Group0_Channel1, DWC1Up: DRS_Board7_Group0_Channel2, DWC1Down: DRS_Board7_Group0_Channel3, DWC2Left: DRS_Board7_Group0_Channel4, DWC2Right: DRS_Board7_Group0_Channel5, DWC2Up: DRS_Board7_Group0_Channel6, DWC2Down: DRS_Board7_Group0_Channel7, MuonVeto: DRS_Board7_Group1_Channel0, PSD: DRS_Board7_Group1_Channel1, HoleVeto: DRS_Board7_Group1_Channel6, NC: DRS_Board7_Group1_Channel7, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7}
   get_pid_channels: {HoleVeto: DRS_Board7_Group1_Channel6, PSD: DRS_Board7_Group1_Channel1, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1599 : auxiliary ===
@@ -12720,6 +12743,7 @@
   get_pre_shower_channel: DRS_Board7_Group1_Channel1
   get_cerenkov_counters: [DRS_Board7_Group2_Channel5, DRS_Board7_Group2_Channel6, DRS_Board7_Group2_Channel7]
   get_mcp_channels: {MCP_DS_0: DRS_Board0_Group3_Channel6, MCP_DS_1: DRS_Board1_Group3_Channel6, MCP_DS_2: DRS_Board2_Group3_Channel6, MCP_DS_3: DRS_Board3_Group3_Channel6, MCP_US_0: DRS_Board0_Group3_Channel7, MCP_US_1: DRS_Board1_Group3_Channel7, MCP_US_2: DRS_Board2_Group3_Channel7, MCP_US_3: DRS_Board3_Group3_Channel7}
+  get_mcp_reference: MCP_DS_1
   get_service_drs_channels: {DWC1Left: DRS_Board7_Group0_Channel0, DWC1Right: DRS_Board7_Group0_Channel1, DWC1Up: DRS_Board7_Group0_Channel2, DWC1Down: DRS_Board7_Group0_Channel3, DWC2Left: DRS_Board7_Group0_Channel4, DWC2Right: DRS_Board7_Group0_Channel5, DWC2Up: DRS_Board7_Group0_Channel6, DWC2Down: DRS_Board7_Group0_Channel7, MuonVeto: DRS_Board7_Group1_Channel0, PSD: DRS_Board7_Group1_Channel1, HoleVeto: DRS_Board7_Group1_Channel6, NC: DRS_Board7_Group1_Channel7, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7}
   get_pid_channels: {HoleVeto: DRS_Board7_Group1_Channel6, PSD: DRS_Board7_Group1_Channel1, TTUMuonVeto: DRS_Board7_Group2_Channel4, Cer474: DRS_Board7_Group2_Channel5, Cer519: DRS_Board7_Group2_Channel6, Cer537: DRS_Board7_Group2_Channel7, KT1: DRS_Board7_Group2_Channel2, KT2: DRS_Board7_Group2_Channel3, T3: DRS_Board7_Group2_Channel0, T4: DRS_Board7_Group2_Channel1, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: None}
 === run 1600 : auxiliary ===
@@ -12732,6 +12756,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
+  get_mcp_reference: MCP_DS_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6, ST1: None, ST3: None, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1650 : auxiliary ===
@@ -12744,6 +12769,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
+  get_mcp_reference: MCP_DS_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6, ST1: None, ST3: None, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1699 : auxiliary ===
@@ -12756,6 +12782,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
+  get_mcp_reference: MCP_DS_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6, ST1: None, ST3: None, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1700 : auxiliary ===
@@ -12768,6 +12795,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1701 : auxiliary ===
@@ -12780,6 +12808,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1763 : auxiliary ===
@@ -12792,6 +12821,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {}
+  get_mcp_reference: None
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1764 : auxiliary ===
@@ -12804,6 +12834,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6}
+  get_mcp_reference: MCP_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1800 : auxiliary ===
@@ -12816,6 +12847,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6}
+  get_mcp_reference: MCP_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1823 : auxiliary ===
@@ -12828,6 +12860,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6}
+  get_mcp_reference: MCP_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: None, ST3: None, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1824 : auxiliary ===
@@ -12840,6 +12873,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6}
+  get_mcp_reference: MCP_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1827 : auxiliary ===
@@ -12852,6 +12886,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6}
+  get_mcp_reference: MCP_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: DRS_Brg1_Board0_Group0_Channel5, MCP_2: DRS_Brg1_Board0_Group0_Channel6, MCP_DS_0: None, MCP_US_0: None, MCP_DS_1: None, MCP_US_1: None, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1828 : auxiliary ===
@@ -12864,6 +12899,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
+  get_mcp_reference: MCP_DS_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1850 : auxiliary ===
@@ -12876,6 +12912,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
+  get_mcp_reference: MCP_DS_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1900 : auxiliary ===
@@ -12888,6 +12925,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
+  get_mcp_reference: MCP_DS_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1993 : auxiliary ===
@@ -12900,6 +12938,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
+  get_mcp_reference: MCP_DS_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: DRS_Brg1_Board3_Group3_Channel7, MCP_US_0: DRS_Brg1_Board3_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board3_Group3_Channel7, MCP_US_1: DRS_Brg0_Board3_Group3_Channel6, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 1994 : auxiliary ===
@@ -12912,6 +12951,7 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_DS_0: DRS_Brg0_Board2_Group3_Channel7, MCP_US_0: DRS_Brg0_Board2_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board0_Group3_Channel7, MCP_US_1: DRS_Brg0_Board0_Group3_Channel6}
+  get_mcp_reference: MCP_DS_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, MCP_DS_0: DRS_Brg0_Board2_Group3_Channel7, MCP_US_0: DRS_Brg0_Board2_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board0_Group3_Channel7, MCP_US_1: DRS_Brg0_Board0_Group3_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: DRS_Brg0_Board2_Group3_Channel7, MCP_US_0: DRS_Brg0_Board2_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board0_Group3_Channel7, MCP_US_1: DRS_Brg0_Board0_Group3_Channel6, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}
 === run 2000 : auxiliary ===
@@ -12924,5 +12964,6 @@
   get_pre_shower_channel: None
   get_cerenkov_counters: [DRS_Brg1_Board0_Group0_Channel2, DRS_Brg1_Board0_Group0_Channel3, DRS_Brg1_Board0_Group0_Channel4]
   get_mcp_channels: {MCP_DS_0: DRS_Brg0_Board2_Group3_Channel7, MCP_US_0: DRS_Brg0_Board2_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board0_Group3_Channel7, MCP_US_1: DRS_Brg0_Board0_Group3_Channel6}
+  get_mcp_reference: MCP_DS_1
   get_service_drs_channels: {TailCatcher: DRS_Brg1_Board0_Group0_Channel0, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, HoleVeto: DRS_Brg1_Board0_Group0_Channel7, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, MCP_DS_0: DRS_Brg0_Board2_Group3_Channel7, MCP_US_0: DRS_Brg0_Board2_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board0_Group3_Channel7, MCP_US_1: DRS_Brg0_Board0_Group3_Channel6}
   get_pid_channels: {HoleVeto: DRS_Brg1_Board0_Group0_Channel7, PSD: None, TTUMuonVeto: DRS_Brg1_Board0_Group0_Channel1, Cer474: DRS_Brg1_Board0_Group0_Channel2, Cer519: DRS_Brg1_Board0_Group0_Channel3, Cer537: DRS_Brg1_Board0_Group0_Channel4, KT1: None, KT2: None, T3: None, T4: None, MCP_1: None, MCP_2: None, MCP_DS_0: DRS_Brg0_Board2_Group3_Channel7, MCP_US_0: DRS_Brg0_Board2_Group3_Channel6, MCP_DS_1: DRS_Brg0_Board0_Group3_Channel7, MCP_US_1: DRS_Brg0_Board0_Group3_Channel6, ST1: DRS_Brg1_Board0_Group1_Channel0, ST3: DRS_Brg1_Board0_Group1_Channel1, TailCatcher: DRS_Brg1_Board0_Group0_Channel0}

@@ -12,8 +12,8 @@ on the same events:
 Features per channel: pre-pulse noise sigma, peak amplitude, integral, CFD
 time against the MCP, 10-90% rise time, and the mean pulse. The mean pulse
 is aligned exactly as the analysis aligns its _VS_ts_mcp profiles (group
-reference channel, plus the MCP only when variables.drs.MCP_REF exists for
-the run) and averaged over every event, so the raw curve reproduces the
+reference channel, plus the MCP that get_mcp_reference names for the run,
+if any) and averaged over every event, so the raw curve reproduces the
 profile in drs_profiles.root, which is overlaid as a check. Timing and rise
 time use events with an MCP pulse and an in-time pulse above 5 sigma in the
 raw waveform; peak and integral use every event with an MCP pulse. Each
@@ -35,8 +35,7 @@ import sys
 import numpy as np
 import ROOT
 
-from channels.channel_map import get_mcp_channels
-from variables.drs import MCP_REF
+from channels.channel_map import get_mcp_channels, get_mcp_reference
 from configs.plot_style import PlotStyle
 from core.plot_manager import PlotManager
 from utils.plot_helper import get_run_paths, save_hists_to_file
@@ -188,16 +187,22 @@ def rise_time(w, peak_idx, amp):
     return (below90[-1] - below10[-1]) * DT_NS
 
 
-def features(W, t_mcp, sel):
-    """Per-event features for the selected events. Noise uses every event."""
+def features(W, t_mcp, sel, ref=None):
+    """Per-event features for the selected events. Noise uses every event.
+
+    t_mcp is the MCP time already corrected by its group reference; ref is
+    this channel's group-reference time per event, so dt mirrors the
+    analysis's _TS_cfd_mcp and is free of the jitter between DRS boards."""
     out = {"noise": W[:, NOISE_WIN[0]:NOISE_WIN[1]].std(axis=1)}
+    if ref is None:
+        ref = np.zeros(W.shape[0])
     peak, integ, dt, rise = [], [], [], []
     for e in np.where(sel)[0]:
         t, a, p = cfd_time(W[e], *SIGNAL_WIN)
         lo, hi = max(p + INTEGRAL_WIN[0], 0), min(p + INTEGRAL_WIN[1], 1024)
         peak.append(a)
         integ.append(float(W[e, lo:hi].sum()))
-        dt.append((t - t_mcp[e]) * DT_NS)
+        dt.append((t - ref[e] - t_mcp[e]) * DT_NS)
         rise.append(rise_time(W[e], p, a))
     out.update(peak=np.array(peak), integral=np.array(integ),
                dt=np.array(dt), rise=np.array(rise))
@@ -265,7 +270,7 @@ FEATURES = [  # key, axis title, log y, range rule
     ("noise", "pre-pulse noise #sigma [ADC]", False, (0, 15)),
     ("peak", "peak amplitude [ADC]", True, "p99"),
     ("integral", "integral, -10..+50 samples [ADC]", True, "p99"),
-    ("dt", "t_{CFD} - t_{MCP} [ns]", False, "core"),
+    ("dt", "t_{CFD} - t_{MCP} [ns] (reference-corrected)", False, "core"),
     ("rise", "rise time 10-90% [ns]", False, (0, 8)),
 ]
 
@@ -318,15 +323,20 @@ def main():
     with open(args.channels) as f:
         chmap = json.load(f)
     labels = {name: lab for lab, name in chmap.items()}
-    mcp = args.mcp or get_mcp_channels(args.run)["MCP_DS_0"]
+    mcp_channels = get_mcp_channels(args.run)
+    mcp_name = get_mcp_reference(args.run)       # what the analysis aligns to, if anything
+    mcp_det = mcp_channels.get(mcp_name)
+    if args.mcp:
+        mcp = args.mcp
+    elif mcp_det:
+        mcp = mcp_det
+    else:
+        sys.exit(f"run {args.run} has no MCP reference; pass --mcp <channel>")
     start_branch = {c: c.rsplit("_", 1)[0] + "_StartIndexCell" for c in labels}
     ref_branch = {c: c.rsplit("_", 1)[0] + "_Channel8" for c in list(labels) + [mcp]}
-    mcp_channels = get_mcp_channels(args.run)
-    mcp_det = mcp_channels.get(MCP_REF)          # what the analysis aligns to, if anything
     print(f"analysis alignment for run {args.run}: group reference channel"
-          + (f" + {MCP_REF} ({mcp_det})" if mcp_det else
-             f" only (variables.drs.MCP_REF = '{MCP_REF}' is not an MCP of this run, "
-             f"so the analysis's _ts_mcp is _ts_ref)"))
+          + (f" + {mcp_name} ({mcp_det})" if mcp_det else " only (no MCP reference for this run)"))
+    print(f"timing reference for the features: {mcp}")
 
     cols = list(labels) + [mcp] + sorted(set(start_branch.values()) | set(ref_branch.values()))
     if mcp_det and mcp_det not in cols:
@@ -337,18 +347,20 @@ def main():
     print(f"run {args.run}: {nev} events; cell pattern from the first {half}, "
           f"features from the last {nev - half}")
 
-    # MCP reference for the timing features, from the raw unamplified MCP:
-    # the same numbers for every variant
-    Wm = rebaseline(data[mcp])
-    t_mcp, a_mcp = np.array([cfd_time(-Wm[e], *SIGNAL_WIN)[:2] for e in range(nev)]).T
-    has_mcp = (a_mcp > 50) & np.isfinite(t_mcp)
-    kernel = lowpass_kernel(args.lowpass)
-
-    # the analysis's own alignment, for the mean pulse
+    # group reference times (process_dynamic_led on the flipped Channel8)
     ref_ts = {}
     for rb in set(ref_branch.values()):
         Wr = -rebaseline(data[rb])                      # reference channels are flipped
         ref_ts[rb] = np.array([led_time(Wr[e]) for e in range(nev)])
+
+    # MCP reference for the timing features, from the raw unamplified MCP and
+    # corrected by its own group reference, as the analysis does: the same
+    # numbers for every variant
+    Wm = rebaseline(data[mcp])
+    t_mcp_raw, a_mcp = np.array([cfd_time(-Wm[e], *SIGNAL_WIN)[:2] for e in range(nev)]).T
+    t_mcp = t_mcp_raw - ref_ts[ref_branch[mcp]]
+    has_mcp = (a_mcp > 50) & np.isfinite(t_mcp)
+    kernel = lowpass_kernel(args.lowpass)
     mcp_cfd_ref = None
     if mcp_det:
         Wd = -rebaseline(data[mcp_det])                 # MCPs are flipped for run >= 1839
@@ -371,9 +383,10 @@ def main():
         raw_cfd = np.array([cfd_time(W_raw[e], *SIGNAL_WIN) for e in range(nev)])
         amp_raw, tpk_raw = raw_cfd[:, 1], raw_cfd[:, 2]
         sigma_raw = float(np.median(W_raw[half:, NOISE_WIN[0]:NOISE_WIN[1]].std(axis=1)))
-        sel_mcp = ev_mask & has_mcp                              # peak, integral
+        ref_c = ref_ts[ref_branch[c]]
+        sel_mcp = ev_mask & has_mcp & np.isfinite(ref_c)         # peak, integral
         bright = sel_mcp & (amp_raw > MIN_SNR_RAW * sigma_raw) & (amp_raw < 2500)
-        dt_raw = (tpk_raw - t_mcp) * DT_NS
+        dt_raw = (tpk_raw - ref_c - t_mcp) * DT_NS
         # where this channel's pulses sit relative to the MCP: the mode, so
         # out-of-time pulses on dim channels do not drag it around
         if bright.sum() >= 20:
@@ -382,10 +395,10 @@ def main():
         else:
             centre = float(np.nanmedian(dt_raw[bright])) if bright.any() else 0.0
         sel = bright & (np.abs(dt_raw - centre) < IN_TIME_NS)   # timing, rise, examples
-        feats = {v: features(W, t_mcp, sel) for v, W in variants.items()}
+        feats = {v: features(W, t_mcp, sel, ref_c) for v, W in variants.items()}
         for v, W in variants.items():
             feats[v]["noise"] = feats[v]["noise"][half:]          # evaluation half only
-            f_all = features(W, t_mcp, sel_mcp)                  # every MCP event
+            f_all = features(W, t_mcp, sel_mcp, ref_c)           # every MCP event
             feats[v]["peak"], feats[v]["integral"] = f_all["peak"], f_all["integral"]
 
         gain, f_med, f_iqr = ringing_coherence(W_raw[half:])
@@ -433,7 +446,8 @@ def main():
     with open(os.path.join(paths["root"], "drs_cleaning_summary.json"), "w") as f:
         json.dump({"run": args.run, "nevents": nev, "lowpass_MHz": args.lowpass,
                    "min_snr_raw": MIN_SNR_RAW, "in_time_ns": IN_TIME_NS,
-                   "alignment": "group reference" + (f" + {MCP_REF}" if mcp_det else " only"),
+                   "alignment": "group reference" + (f" + {mcp_name}" if mcp_det else " only"),
+                   "timing_reference": mcp,
                    "channels": summary}, f, indent=1)
 
     # ------------------------------------------------------------ plots

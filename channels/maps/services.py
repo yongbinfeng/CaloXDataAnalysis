@@ -235,6 +235,23 @@ def get_mcp_channels(run_number=1184):
             for name, spec in _for_run(_MCP_CHANNELS, run_number, {}).items()}
 
 
+# Which MCP the DRS timing is referenced to, in order of preference: MCP_DS_1
+# where the run has the four-MCP layout, else the single MCP_1 of the 2025
+# bridge era. Everything that aligns to "the MCP" should go through
+# get_mcp_reference so the choice is made in one place.
+_MCP_REFERENCE_PREFERENCE = ("MCP_DS_1", "MCP_1")
+
+
+def get_mcp_reference(run_number=1184):
+    """Name of the MCP that DRS times are referenced to, or None if the run
+    has no usable MCP (then the DRS timing falls back to the group reference)."""
+    mcps = get_mcp_channels(run_number)
+    for name in _MCP_REFERENCE_PREFERENCE:
+        if name in mcps:
+            return name
+    return None
+
+
 def get_service_drs_channels(run_number=1184):
     """
     Returns a dict of service detector name -> channel branch name.

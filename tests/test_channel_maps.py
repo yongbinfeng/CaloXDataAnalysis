@@ -30,7 +30,7 @@ AUX_ACCESSORS = [
     "build_hodo_pos_channels", "get_hole_veto_channel",
     "get_downstream_muon_channel", "get_downstream_ttu_muon_channel",
     "get_pre_shower_channel", "get_cerenkov_counters", "get_mcp_channels",
-    "get_service_drs_channels", "get_pid_channels",
+    "get_mcp_reference", "get_service_drs_channels", "get_pid_channels",
 ]
 
 
