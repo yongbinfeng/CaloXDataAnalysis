@@ -80,6 +80,16 @@ def load_waveforms(args, cols):
     return out
 
 
+def pipeline_flip_list(run_number):
+    """Channels the analysis inverts (get_drs_branches_to_flip), so the study
+    sees the same polarity the analysis does."""
+    from channels.channel_map import build_drs_boards
+    from variables.drs import get_drs_branches_to_flip
+    boards = build_drs_boards(run_number)
+    refs = [c.get_channel_name() for b in boards.values() for c in b if c.is_reference]
+    return set(get_drs_branches_to_flip(run_number, drs_channels_ref=refs, drsboards=boards))
+
+
 def baseline_subtract(W):
     return W - np.median(W[:, NOISE_WIN[0]:NOISE_WIN[1]], axis=1, keepdims=True)
 
@@ -424,6 +434,11 @@ def main():
 
     cols = list(labels_all) + sorted(set(start_branches.values()) | set(ref_of.values()))
     data = load_waveforms(args, cols)
+    flipped = pipeline_flip_list(args.run)
+    for c in labels:                                  # same polarity as the analysis
+        if c in flipped:
+            data[c] = -data[c]
+            print(f"  {labels[c]}: inverted, as the analysis does (it is in the flip list)")
     W = {c: baseline_subtract(data[c]) for c in labels_all}
     starts = {c: data[start_branches[c]].astype(int) for c in labels}
     ref_ts = {}

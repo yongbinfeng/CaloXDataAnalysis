@@ -57,6 +57,20 @@ def cleaning_section(cl):
     peak_cost = sorted(ch[k]["cell+LP"]["peak_median"] / ch[k]["raw"]["peak_median"] for k in cher)
     integ = sorted(ch[k]["cell+LP"]["integral_median"] / ch[k]["raw"]["integral_median"] for k in cher)
     gain = sorted(ch[k]["ringing_extrapolation_gain"] for k in amp)[len(amp) // 2]
+    with_prof = [k for k in amp if "analysis_profile_peak" in ch[k]]
+    hit_frac = ch[amp[0]]["mcp_clean_fraction"]
+    ratios = sorted((ch[k]["mean_pulse_peak_mcp_clean"] / ch[k]["mean_pulse_peak_all"], k) for k in amp if ch[k]["mean_pulse_peak_all"] > 0)
+    hit_ratio = ratios[len(ratios) // 2][0]
+    ex = "Multiclad_1" if "Multiclad_1" in ch else amp[0]
+    hit_example = f"<code>{ex}</code> {ch[ex]['mean_pulse_peak_all']:.0f} → {ch[ex]['mean_pulse_peak_mcp_clean']:.0f} ADC"
+    matched = [ch[k]["profile_matches"] for k in with_prof]
+    prof_kind = "raw, mcp_clean" if matched.count("raw, mcp_clean") > len(matched) / 2 else "raw"
+    diff_key = "mcp_clean_vs_profile_max_abs_diff" if prof_kind != "raw" else "raw_vs_profile_max_abs_diff"
+    strong = [k for k in with_prof if ch[k]["analysis_profile_peak"] > 10]
+    prof_agree = max(ch[k][diff_key] for k in with_prof) if with_prof else float("nan")
+    holdout = max(abs(ch[k]["cell"]["noise_sigma"] - ch[k]["cell"]["noise_sigma_in_sample"]) for k in amp)
+    prof_sentence = ("was booked with <code>--mcp-clean</code>, and the study's <code>raw</code> curve, computed on those same events, reproduces it"
+                     if prof_kind != "raw" else "was booked over every event, and the study's <code>raw</code> curve reproduces it")
     fiqr = sorted(ch[k]["ringing_fit_iqr_MHz"] for k in amp)[len(amp) // 2]
     rows = "".join(
         f"<tr><th>{k}</th><td>{ch[k]['n_selected']}</td>"
@@ -68,8 +82,9 @@ def cleaning_section(cl):
         for k in ch if ch[k]["n_selected"] >= 30)
     return f"""
 <h2>4. Cleaning: what it buys and what it cannot</h2>
-<p>Two corrections were applied to the raw waveforms and every pulse feature recomputed on the <em>same</em> events (MCP present, raw amplitude above {cl['min_snr_raw']:.0f}σ and within {cl['in_time_ns']:.0f} ns of where the channel's pulses sit), the cell pattern coming from a disjoint half of the run so it cannot flatter itself. <code>cell</code> subtracts the per-cell offsets; <code>cell+LP</code> adds a zero-phase low-pass at {cl['lowpass_MHz']:.0f} MHz aimed at the amplifier resonance.</p>
-<p>The mean pulse per channel is built exactly as the analysis builds its <code>_VS_ts_mcp</code> profiles — every event, shifted by its group reference channel's 50% crossing — and the analysis's own profile from <code>drs_profiles.root</code> is overlaid as a check. The <code>raw</code> curve lands on it: for <code>Quartz_0</code> the same estimator over all 23 694 events gives 14.5 ADC at bin 434, the profile's value to the decimal. (A first version of this study averaged only bright events; on dim channels those are mostly out-of-time pulses and the mean was a 40 ADC smear. Selections here are on the raw waveform, once, and reused for every treatment.)</p>
+<p>Two corrections were applied to the raw waveforms of the whole run and every pulse feature recomputed on the <em>same</em> events (the analysis's <code>mcp_clean</code> selection; timing and rise time additionally need a raw pulse above {cl['min_snr_raw']:.0f}σ within {cl['in_time_ns']:.0f} ns of where the channel's pulses sit). The cell pattern is derived from the first half of the run; the noise σ quoted below is from the held-out second half, and it agrees with the in-sample half to {holdout:.2f} ADC, so the split changes nothing and is kept only as the check. <code>cell</code> subtracts the per-cell offsets; <code>cell+LP</code> adds a zero-phase low-pass at {cl['lowpass_MHz']:.0f} MHz aimed at the amplifier resonance.</p>
+<p>The mean pulse per channel is built exactly as the analysis builds its <code>_VS_ts_mcp</code> profiles — every event, shifted by its group reference channel's 50% crossing and by the MCP's CFD from the same <code>[400, 550)</code> window with the same threshold, the float shift floored as <code>Profile1D</code> bins it — and the analysis's own profile from <code>drs_profiles.root</code> is overlaid as a check. The profile in the file {prof_sentence} to within {prof_agree:.2f} ADC at every bin near the peak, on every channel — same events, same alignment, same estimator, so whatever differs between the other curves and the dashed one is the cleaning and nothing else. Getting there took two corrections to the study: a first version averaged only bright events, which on dim channels are mostly out-of-time pulses, and a second took the MCP CFD over the whole record, where events without an MCP pulse lock onto the last-cell dip and land its shape just after the peak as a spurious undershoot.</p>
+<p>The check exposes what the profile is made of. Only {hit_frac:.0%} of events pass <code>mcp_clean</code>; the rest get a noise time from the CFD window and smear their fibre pulses into a plateau of a few ADC. On the <code>mcp_clean</code> events alone — where the three treatments are compared, so that the panel compares like with like — the same estimator gives a peak {hit_ratio:.1f}× higher — {hit_example} — with the same shape, and no undershoot. The shoulder ~3 ns after the peak is present in both, so it is a feature of the pulse, not of the averaging. <code>--mcp-clean</code> is the analysis switch that keeps only those events.</p>
 <div class="callout ok">
   <div class="h">Found and fixed on the way: the "MCP-aligned" profiles were not MCP-aligned</div>
   <code>variables/drs.py</code> used to set <code>MCP_REF = "MCP_DS_0"</code> and overwrite it on the next line with <code>"MCP_1"</code>, an MCP that runs after 1828 do not have — so <code>_ts_mcp</code> silently fell back to the group reference for every tb2026 run (and, for the same reason, the Sep-2024 runs). The choice now lives in one place, <code>channels.maps.services.get_mcp_reference()</code>: <code>MCP_DS_1</code> where the run has it, else <code>MCP_1</code>, else none. With real MCP alignment the profiles are sharper (<code>Multiclad_0</code> FWHM 10 → 7 samples) and lower, because pulses in events without an MCP hit no longer line up — use <code>--mcp-clean</code> to select them.
@@ -121,7 +136,7 @@ def build(res, cl=None):
     # ---------- tables ----------
     bands = ["0-100", "100-200", "200-400", "400-600", "600-1000", "1000-2500"]
     t_noise = "".join(
-        f"<tr{' class=odd' if k in ('MCP_DS_0', 'Quartz_1') else ''}><th>{k}</th>"
+        f"<tr{' class=odd' if k in (mcp_label, 'Quartz_1') else ''}><th>{k}</th>"
         f"<td>{v['sigma']:.2f}</td>" +
         "".join(f"<td>{pct(v['band_fraction'][b])}</td>" for b in bands) +
         f"<td>{v['peak_MHz']:.0f}</td></tr>"
@@ -282,11 +297,11 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
 <p>Two things the DRS4 forces on any spectral analysis. Its cell widths vary by 10–20% around the nominal 200 ps, so an FFT on the nominal grid smears content above a few hundred MHz — fine for what follows, which lives below that. And it is a transient recorder: the noise spectrum has to come from a pulse-free window, windowed (Hann) to stop the baseline step from leaking into every bin.</p>
 
 <h2>1. The noise is the amplifiers'</h2>
-<p>All 19 amplified channels have σ ≈ {amp_sigma[0]:.1f}–{amp_sigma[-1]:.1f} ADC and the same spectral shape: a broad resonance peaking near 300 MHz with a shoulder at 450 MHz, then the analogue roll-off above ~600 MHz. The two channels that differ are the unamplified MCP (σ {noise[mcp_label]['sigma']:.1f}) and <code>Quartz_1</code> (σ {noise['Quartz_1']['sigma']:.1f}) — flatter, with a larger share above 1 GHz, which is the DRS's own white noise. The amplifiers add roughly √(7.8² − 4.4²) ≈ 6.4 ADC of coloured noise on top of that.</p>
+<p>All 19 amplified channels have σ ≈ {amp_sigma[0]:.1f}–{amp_sigma[-1]:.1f} ADC and the same spectral shape: a broad resonance peaking near 300 MHz with a shoulder at 450 MHz, then the analogue roll-off above ~600 MHz. The two channels that differ are the reference MCP (σ {noise[mcp_label]['sigma']:.1f}) and the entry labelled <code>Quartz_1</code> (σ {noise['Quartz_1']['sigma']:.1f}) — flatter, with a larger share above 1 GHz, which is the DRS's own white noise. <code>Quartz_1</code> looks like an MCP because it is one: see the box below. The amplifiers add roughly √(7.8² − 4.4²) ≈ 6.4 ADC of coloured noise on top of the DRS floor.</p>
 </div>
 <figure>
   <img src="{img('noise_psd.png')}" alt="Left: noise power spectral density of every channel, each normalised to its own maximum, log-log, with the MCP drawn thick and black. Right: stacked bar chart of the fraction of noise variance in six frequency bands per channel.">
-  <figcaption><b>Noise spectra.</b> Left, each channel's PSD scaled to its own maximum; the thick black trace is the unamplified MCP. Right, the share of variance in each band. The amplified channels form one family; <code>Quartz_1</code> and the MCP form another.</figcaption>
+  <figcaption><b>Noise spectra.</b> Left, each channel's PSD scaled to its own maximum; the thick black trace is the reference MCP. Right, the share of variance in each band. The amplified fibre channels form one family; the entry labelled <code>Quartz_1</code> and the MCP form another — because both are MCPs.</figcaption>
 </figure>
 <div class="col">
 <p>An early pass reported "spectral lines at 292 and 458 MHz, 30–80× the floor". That was a metric artefact: the "floor" was the median PSD, which sits in the roll-off region, so a broad bump read as a sharp line. The band table is the honest statement.</p>
@@ -301,8 +316,8 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
 <tbody>{t_coh}</tbody>
 </table></div>
 <div class="callout">
-  <div class="h">Worth a look at the hardware: <code>Quartz_1</code></div>
-  Every fibre channel is meant to be amplified, yet <code>Quartz_1</code> has the unamplified noise signature and the smallest signal of the set (profile peak 3.5 ADC). Its amplifier may be dead or bypassed.
+  <div class="h">The channel listed as <code>Quartz_1</code> is <code>MCP_US_1</code></div>
+  <code>data/channel_maps/testingfibers.json</code> maps <code>Quartz_1</code> to <code>DRS_Brg0_Board0_Group3_Channel6</code>, which the channel map assigns to <code>MCP_US_1</code> for runs from 1994. The data say the channel map is right: its pulses are negative and ~130 ADC where every fibre is positive and ~500, its noise is the MCP's (σ 4.4, no amplifier resonance), the analysis inverts it as an MCP, and its "timing against <code>MCP_DS_1</code>" of 0.15 ns is one MCP against the other. Earlier drafts of this page read those symptoms as a fibre with a dead amplifier; they are the upstream MCP. The <code>Quartz_1</code> entry of the JSON needs correcting — or, if a quartz fibre really was on that channel for some runs, the MCP map does.
 </div>
 
 <h2>2. A fixed pattern in cell space</h2>
@@ -316,7 +331,7 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
 <div class="tbl"><table>
 <thead><tr><th>channel</th><th>σ raw</th><th>pattern RMS</th><th>σ after</th><th>variance removed</th></tr></thead>
 <tbody>{t_cell}</tbody>
-<caption>Subtracting the cell pattern removes 6–28% of the variance in the amplified channels, and 88% in <code>Quartz_1</code>, where the amplifier noise is absent and the pattern is nearly all that is left.</caption>
+<caption>Subtracting the cell pattern removes 6–28% of the variance in the amplified channels, and 88% in the <code>Quartz_1</code> entry — an MCP channel with no amplifier noise, where the cell pattern is nearly all there is.</caption>
 </table></div>
 <div class="callout ok">
   <div class="h">This one is actionable</div>
@@ -348,7 +363,7 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
   <li><b>Correct the cell pattern in the pipeline.</b> It is free — no signal cost — and worth ~1 ADC of σ. Measure per channel from pedestal or pre-pulse samples and subtract by cell, or redo the DRS voltage calibration.</li>
   <li><b>Treat the 300 MHz noise as a hardware problem.</b> It cannot be subtracted and sits on the Cherenkov signal band; a low-pass buys 15–25% in peak SNR at the cost of 7–10% of the peak, and nothing in timing. Look at the amplifier's stability and bandwidth.</li>
   <li><b>Regenerate the timing pages</b> for the tb2026 and Sep-2024 runs now that they really align to an MCP.</li>
-  <li><b>Check <code>Quartz_1</code>'s amplifier.</b> Its noise says it is not there, and its pulses agree: 20–80 ADC, clean, timing to 0.15 ns — a working channel with no gain.</li>
+  <li><b>Fix the <code>Quartz_1</code> entry in <code>testingfibers.json</code></b> — it names the <code>MCP_US_1</code> channel. If a fibre was meant to be there, find where it actually went.</li>
   <li><b>Understand the out-of-time population</b> before spending more on timing estimators: on the dim channels most bright pulses are 20–80 ns off the MCP. Split it by the scintillator channels' amplitude in the same event.</li>
 </ul>
 

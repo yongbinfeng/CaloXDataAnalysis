@@ -19,6 +19,12 @@ time use events with an MCP pulse and an in-time pulse above 5 sigma in the
 raw waveform; peak and integral use every event with an MCP pulse. Each
 selection is made once, on the raw waveform, and reused for every variant.
 
+The whole run is processed, one channel at a time, so the mean pulses are
+over exactly the events the analysis's profiles are over. The cell pattern
+is derived from the first half of the run and applied to all of it; the
+noise-sigma reduction is reported for both halves so the held-out one can
+be checked against the in-sample one.
+
 Outputs follow the analysis conventions:
     results/root/Run<N>/drs_cleaning.root, drs_cleaning_summary.json
     results/plots/Run<N>/DRS_Cleaning/*.png
@@ -36,6 +42,8 @@ import numpy as np
 import ROOT
 
 from channels.channel_map import get_mcp_channels, get_mcp_reference
+from channels.channel_map import get_service_drs_channels
+from configs.selection_config import get_particle_selection, get_service_drs_cut
 from configs.plot_style import PlotStyle
 from core.plot_manager import PlotManager
 from utils.plot_helper import get_run_paths, save_hists_to_file
@@ -80,8 +88,8 @@ def parse_args():
     p.add_argument("--run", type=int, default=run_number)
     p.add_argument("--channels", required=True, metavar="FILE")
     p.add_argument("--json-file", default=jsonFile)
-    p.add_argument("--nevents", type=int, default=6000,
-                   help="first half derives the cell pattern, second half is evaluated")
+    p.add_argument("--nevents", type=int, default=None,
+                   help="process only the first N events (default: the whole run)")
     p.add_argument("--mcp", default=None)
     p.add_argument("--lowpass", type=float, default=500.0, metavar="MHz",
                    help="cut-off of the zero-phase low-pass in the cell+LP variant")
@@ -90,19 +98,67 @@ def parse_args():
 
 
 # ----------------------------------------------------------------- waveforms
-def load_waveforms(args, cols):
-    with open(args.json_file) as f:
-        files = json.load(f)[str(args.run)]
-    files = files if isinstance(files, list) else [files]
-    chain = ROOT.TChain("EventTree")
-    for fn in files:
-        if not os.path.exists(fn):
-            sys.exit(f"ERROR: {fn} not found")
-        chain.Add(fn)
-    raw = ROOT.RDataFrame(chain).Range(args.nevents).AsNumpy(columns=cols)
-    return {c: (np.stack([np.asarray(v, dtype=np.float32) for v in raw[c]])
-                if raw[c].dtype == object else np.asarray(raw[c]))
-            for c in cols}
+class WaveformLoader:
+    """Read one branch of the run at a time: a full run of one DRS channel is
+    ~100 MB as float32, all of them at once is not."""
+
+    def __init__(self, args):
+        with open(args.json_file) as f:
+            files = json.load(f)[str(args.run)]
+        files = files if isinstance(files, list) else [files]
+        self.chain = ROOT.TChain("EventTree")
+        for fn in files:
+            if not os.path.exists(fn):
+                sys.exit(f"ERROR: {fn} not found")
+            self.chain.Add(fn)
+        self.nevents = args.nevents
+        self._cache = {}
+
+    def __call__(self, col, keep=False):
+        if col in self._cache:
+            return self._cache[col]
+        rdf = ROOT.RDataFrame(self.chain)
+        if self.nevents:
+            rdf = rdf.Range(self.nevents)
+        a = rdf.AsNumpy(columns=[col])[col]
+        out = (np.stack([np.asarray(v, dtype=np.float32) for v in a])
+               if a.dtype == object else np.asarray(a))
+        if keep:
+            self._cache[col] = out
+        return out
+
+
+def pipeline_flip_list(run_number):
+    """Channels the analysis inverts (get_drs_branches_to_flip), so the study
+    sees the same polarity the analysis does."""
+    from channels.channel_map import build_drs_boards
+    from variables.drs import get_drs_branches_to_flip
+    boards = build_drs_boards(run_number)
+    refs = [c.get_channel_name() for b in boards.values() for c in b if c.is_reference]
+    return set(get_drs_branches_to_flip(run_number, drs_channels_ref=refs, drsboards=boards))
+
+
+def mcp_clean_mask(load, run_number, flipped):
+    """The analysis's 'mcp_clean' selection, evaluated the way SelectionManager
+    does: for each detector it names, the peak of the (flipped) baseline-
+    subtracted waveform in the detector's window compared with its cut.
+    Returns the mask and a description."""
+    reqs = get_particle_selection("mcp_clean", run_number)
+    channels = get_service_drs_channels(run_number)
+    mask, parts = None, []
+    for det, required in reqs.items():
+        ch = channels[det]
+        ts_min, ts_max, _, _, cut, method = get_service_drs_cut(det, run_number)
+        W = rebaseline(load(ch))
+        if ch in flipped:
+            W = -W
+        seg = W[:, ts_min:ts_max]
+        val = seg.max(axis=1) if method == "PeakValue" else seg.sum(axis=1)
+        fired = val > cut
+        ok = fired if required else ~fired
+        mask = ok if mask is None else (mask & ok)
+        parts.append(f"{det} {'fired' if required else 'vetoed'} ({method} in [{ts_min},{ts_max}) > {cut})")
+    return mask, " and ".join(parts)
 
 
 def rebaseline(W):
@@ -175,6 +231,25 @@ def cfd_time(w, lo, hi):
         return np.nan, a, p + lo
     y0, y1 = seg[i], seg[i + 1]
     return lo + i + ((thr - y0) / (y1 - y0) if y1 != y0 else 0.0), a, p + lo
+
+
+def cfd_pipeline(w, i_start, i_end, min_amp=10.0, frac=CFD_FRACTION):
+    """compute_cfd_integral as the analysis runs it on the MCP: peak searched
+    in [i_start, i_end), min_amplitude 10, walk back stops at i_start, and the
+    crossing is always interpolated between scan_idx and scan_idx+1 -- so a
+    noise peak yields a (garbage) time rather than an invalid one, exactly as
+    the analysis's ts_mcp does for events without an MCP pulse."""
+    seg = w[i_start:i_end]
+    p = int(seg.argmax()) + i_start
+    a = w[p]
+    if a < min_amp:
+        return np.nan, a
+    thr = frac * a
+    i = p
+    while i > i_start and w[i] > thr:
+        i -= 1
+    y0, y1 = w[i], w[i + 1]
+    return (i + (thr - y0) / (y1 - y0)) if y1 != y0 else float(i + 1), a
 
 
 def rise_time(w, peak_idx, amp):
@@ -305,7 +380,7 @@ def mean_pulse(W, shift):
     for w, sh in zip(W, shift):
         if not np.isfinite(sh):
             continue
-        sh = int(round(sh))
+        sh = int(np.floor(sh))                         # Profile1D bins floor(ts_mcp)
         lo, hi = max(0, sh), min(1024, 1024 + sh)      # destination range
         if hi <= lo:
             continue
@@ -338,51 +413,67 @@ def main():
           + (f" + {mcp_name} ({mcp_det})" if mcp_det else " only (no MCP reference for this run)"))
     print(f"timing reference for the features: {mcp}")
 
-    cols = list(labels) + [mcp] + sorted(set(start_branch.values()) | set(ref_branch.values()))
-    if mcp_det and mcp_det not in cols:
-        cols.append(mcp_det); ref_branch[mcp_det] = mcp_det.rsplit("_", 1)[0] + "_Channel8"
-    data = load_waveforms(args, cols)
-    nev = data[mcp].shape[0]
-    half = nev // 2
-    print(f"run {args.run}: {nev} events; cell pattern from the first {half}, "
-          f"features from the last {nev - half}")
+    if mcp_det and mcp_det not in ref_branch:
+        ref_branch[mcp_det] = mcp_det.rsplit("_", 1)[0] + "_Channel8"
+    load = WaveformLoader(args)
+    flipped = pipeline_flip_list(args.run)
 
     # group reference times (process_dynamic_led on the flipped Channel8)
     ref_ts = {}
-    for rb in set(ref_branch.values()):
-        Wr = -rebaseline(data[rb])                      # reference channels are flipped
-        ref_ts[rb] = np.array([led_time(Wr[e]) for e in range(nev)])
+    for rb in sorted(set(ref_branch.values())):
+        Wr = -rebaseline(load(rb))                      # reference channels are flipped
+        ref_ts[rb] = np.array([led_time(Wr[e]) for e in range(Wr.shape[0])])
+        del Wr
+    nev = len(next(iter(ref_ts.values())))
+    half = nev // 2
+    print(f"run {args.run}: {nev} events; cell pattern from the first {half}, "
+          f"everything evaluated on all {nev} (noise sigma also on the held-out half)")
 
     # MCP reference for the timing features, from the raw unamplified MCP and
     # corrected by its own group reference, as the analysis does: the same
     # numbers for every variant
-    Wm = rebaseline(data[mcp])
-    t_mcp_raw, a_mcp = np.array([cfd_time(-Wm[e], *SIGNAL_WIN)[:2] for e in range(nev)]).T
+    Wm = -rebaseline(load(mcp))                          # MCPs are flipped for run >= 1839
+    mcp_win = get_service_drs_cut(mcp_name, args.run)[:2] if mcp_name else SIGNAL_WIN
+    t_mcp_raw, a_mcp = np.array([cfd_pipeline(Wm[e], *mcp_win) for e in range(nev)]).T
+    del Wm
     t_mcp = t_mcp_raw - ref_ts[ref_branch[mcp]]
-    has_mcp = (a_mcp > 50) & np.isfinite(t_mcp)
+    mcp_clean, mcp_clean_desc = mcp_clean_mask(load, args.run, flipped)
+    has_mcp = mcp_clean & np.isfinite(t_mcp)              # the analysis's --mcp-clean events
+    print(f"MCP CFD window {list(mcp_win)}: {int(np.isfinite(t_mcp).sum())} events get a time; "
+          f"mcp_clean [{mcp_clean_desc}] keeps {int(has_mcp.sum())}")
     kernel = lowpass_kernel(args.lowpass)
+    # the analysis's MCP term for ts_mcp: same CFD, same window, garbage times
+    # from noise included, because that is what enters its profiles
     mcp_cfd_ref = None
     if mcp_det:
-        Wd = -rebaseline(data[mcp_det])                 # MCPs are flipped for run >= 1839
-        t = np.array([cfd_time(Wd[e], 0, 1024)[0] for e in range(nev)])
-        mcp_cfd_ref = REF_OFFSET + t - ref_ts[ref_branch[mcp_det]]
+        if mcp_det == mcp:
+            mcp_cfd_ref = REF_OFFSET + t_mcp_raw - ref_ts[ref_branch[mcp_det]]
+        else:
+            Wd = -rebaseline(load(mcp_det))
+            t = np.array([cfd_pipeline(Wd[e], *mcp_win)[0] for e in range(nev)])
+            del Wd
+            mcp_cfd_ref = REF_OFFSET + t - ref_ts[ref_branch[mcp_det]]
     profiles = ROOT.TFile(os.path.join(paths["root"], "drs_profiles.root"), "READ") \
         if os.path.exists(os.path.join(paths["root"], "drs_profiles.root")) else None
 
     hists, summary, examples, pulses = [], {}, {}, {}
-    ev_mask = np.zeros(nev, bool); ev_mask[half:] = True
+    ev_mask = np.ones(nev, bool)
     for c, lab in labels.items():
-        start = data[start_branch[c]].astype(int)
-        W_raw = rebaseline(data[c])
+        start = load(start_branch[c], keep=True).astype(int)
+        W_raw = load(c)
+        if c in flipped:                                  # same polarity as the analysis
+            W_raw = -W_raw
+            print(f"  {lab}: inverted, as the analysis does (it is in the flip list)")
+        W_raw = rebaseline(W_raw)
         pattern = cell_pattern(W_raw[:half], start[:half])
         variants = {"raw": W_raw}
-        variants["cell"] = subtract_pattern(data[c], start, pattern)
+        variants["cell"] = subtract_pattern(W_raw, start, pattern)
         variants["cell+LP"] = rebaseline(lowpass(variants["cell"], kernel))
 
         # selections, on the raw waveform only, applied to every variant
         raw_cfd = np.array([cfd_time(W_raw[e], *SIGNAL_WIN) for e in range(nev)])
         amp_raw, tpk_raw = raw_cfd[:, 1], raw_cfd[:, 2]
-        sigma_raw = float(np.median(W_raw[half:, NOISE_WIN[0]:NOISE_WIN[1]].std(axis=1)))
+        sigma_raw = float(np.median(W_raw[:, NOISE_WIN[0]:NOISE_WIN[1]].std(axis=1)))
         ref_c = ref_ts[ref_branch[c]]
         sel_mcp = ev_mask & has_mcp & np.isfinite(ref_c)         # peak, integral
         bright = sel_mcp & (amp_raw > MIN_SNR_RAW * sigma_raw) & (amp_raw < 2500)
@@ -397,8 +488,10 @@ def main():
         sel = bright & (np.abs(dt_raw - centre) < IN_TIME_NS)   # timing, rise, examples
         feats = {v: features(W, t_mcp, sel, ref_c) for v, W in variants.items()}
         for v, W in variants.items():
-            feats[v]["noise"] = feats[v]["noise"][half:]          # evaluation half only
-            f_all = features(W, t_mcp, sel_mcp, ref_c)           # every MCP event
+            noise_all = feats[v]["noise"]
+            feats[v]["noise_in_sample"] = noise_all[:half]       # pattern derived here
+            feats[v]["noise"] = noise_all[half:]                 # held-out half
+            f_all = features(W, t_mcp, sel_mcp, ref_c)           # every mcp_clean event
             feats[v]["peak"], feats[v]["integral"] = f_all["peak"], f_all["integral"]
 
         gain, f_med, f_iqr = ringing_coherence(W_raw[half:])
@@ -412,6 +505,7 @@ def main():
             cs, cf = core_stats(f["dt"])
             summary[lab][v] = {
                 "noise_sigma": float(np.median(f["noise"])),
+                "noise_sigma_in_sample": float(np.median(f["noise_in_sample"])),
                 "peak_median": float(np.nanmedian(f["peak"])) if len(f["peak"]) else np.nan,
                 "integral_median": float(np.nanmedian(f["integral"])) if len(f["integral"]) else np.nan,
                 "rise_median_ns": float(np.nanmedian(f["rise"])) if len(f["rise"]) else np.nan,
@@ -426,19 +520,40 @@ def main():
                 hists.append(make_hist(f"h_{lab}_{v.replace('+', '_')}_{key}",
                                        f"{lab} {v};{title};events", feats[v][key], lo, hi))
         shift = pipeline_shift(ref_ts[ref_branch[c]], mcp_cfd_ref)
-        pulses[lab] = {v: mean_pulse(W[half:], shift[half:]) for v, W in variants.items()}
+        # The three treatments are compared on the analysis's mcp_clean events
+        # (what check_drs_mcp --mcp-clean books), so the panel compares like
+        # with like. "raw, all events" is kept for reference: it is what a
+        # profile booked without --mcp-clean looks like, diluted by the events
+        # whose MCP time is noise.
+        hit = np.where(has_mcp, shift, np.nan)
+        pulses[lab] = {v: mean_pulse(W, hit) for v, W in variants.items()}
+        raw_all = mean_pulse(W_raw, shift)                # not plotted: only to tell which
+        summary[lab]["mean_pulse_peak_all"] = float(raw_all[0].max())   # profile the file holds
+        summary[lab]["mcp_clean_fraction"] = float(has_mcp.mean())
+        summary[lab]["mean_pulse_peak_mcp_clean"] = float(pulses[lab]["raw"][0].max())
         if profiles:
             hp = profiles.Get(f"prof_{c}_blsub_VS_ts_mcp")
             if hp:
-                pulses[lab]["analysis profile"] = (
-                    np.array([hp.GetBinContent(i) for i in range(1, 1025)]), None)
+                prof_y = np.array([hp.GetBinContent(i) for i in range(1, 1025)])
+                pulses[lab]["analysis profile"] = (prof_y, None)
+                summary[lab]["analysis_profile_peak"] = float(prof_y.max())
+                pk = int(prof_y.argmax())
+                lo_b, hi_b = max(pk - 60, 0), min(pk + 150, 1024)
+                # the profile was booked either over every event or with
+                # --mcp-clean; say which of the study's curves it agrees with
+                d_all = float(np.abs(raw_all[0][lo_b:hi_b] - prof_y[lo_b:hi_b]).max())
+                d_clean = float(np.abs(pulses[lab]["raw"][0][lo_b:hi_b] - prof_y[lo_b:hi_b]).max())
+                summary[lab]["profile_matches"] = "raw, mcp_clean" if d_clean <= d_all else "raw"
+                summary[lab]["raw_vs_profile_max_abs_diff"] = d_all
+                summary[lab]["mcp_clean_vs_profile_max_abs_diff"] = d_clean
         ex = np.where(sel)[0]
         if len(ex):
             e = ex[len(ex) // 2]
             examples[lab] = {v: W[e].copy() for v, W in variants.items()}
-        print(f"  {lab:16s} mcp={sel_mcp.sum():4d} in-time={sel.sum():4d} "
+        print(f"  {lab:16s} mcp_clean={sel_mcp.sum():4d} in-time={sel.sum():4d} "
               f"({summary[lab]['in_time_fraction_of_bright']:.0%} of bright)  noise " +
               " -> ".join(f"{summary[lab][v]['noise_sigma']:.2f}" for v in VARIANTS) +
+              f" (in-sample {summary[lab]['cell']['noise_sigma_in_sample']:.2f})" +
               "   dt core sigma " +
               " -> ".join(f"{summary[lab][v]['dt_core_sigma_ns']:.2f}" for v in VARIANTS))
 
@@ -453,10 +568,11 @@ def main():
     # ------------------------------------------------------------ plots
     pm = PlotManager(paths["root"], paths["plots"], paths["html"], args.run,
                      use_jsroot=args.jsroot,
-                     selection_text=f"**Cleaning study.** Cell pattern from events 0-{half - 1}, "
-                                    f"features from events {half}-{nev - 1}. Peak and integral: "
-                                    f"every event with an MCP pulse. Timing and rise time: events "
-                                    f"with an MCP pulse whose raw pulse is above {MIN_SNR_RAW:.0f} sigma "
+                     selection_text=f"**Cleaning study.** Cell pattern from events 0-{half - 1}; "
+                                    f"noise sigma quoted on the held-out events {half}-{nev - 1}; "
+                                    f"everything else on all {nev} events. Peak and integral: "
+                                    f"every mcp_clean event ({mcp_clean_desc}). Timing and rise time: "
+                                    f"mcp_clean events whose raw pulse is above {MIN_SNR_RAW:.0f} sigma "
                                     f"and within {IN_TIME_NS:.0f} ns of where this channel's pulses "
                                     f"sit. Mean pulse: every event, aligned as the analysis aligns "
                                     f"its _VS_ts_mcp profiles, with that profile overlaid. Selections "
@@ -537,7 +653,28 @@ def main():
         pm.plot_1d(hs, f"example_waveform_{lab}", "sample", (SIGNAL_WIN[0] - 40, SIGNAL_WIN[1] - 250),
                    "ADC (baseline subtracted)", (-0.25 * ymax, ymax),
                    legends=VARIANTS, style=STYLE_WAVE, extra_text=lab)
+    treatments_text = (
+        "\n**What the curves are.** Every plot overlays the same events under three treatments of "
+        "the waveform:\n"
+        f"* **raw** — the waveform as the analysis sees it: baseline subtracted (median of samples "
+        f"{BASELINE_WIN[0]}–{BASELINE_WIN[1] - 1}), polarity as in the analysis. Nothing else.\n"
+        f"* **cell** — raw minus the DRS4 fixed pattern. Each of the 1024 sampling cells has a "
+        f"small constant offset (2–4 ADC RMS) left over from the voltage calibration; the trigger "
+        f"cell (StartIndexCell) moves it around in sample number every event, so it looks like "
+        f"noise unless events are realigned by cell. The per-cell offsets are measured on the "
+        f"pre-pulse samples of the first half of the run, subtracted from every sample according "
+        f"to its cell, and the baseline is re-taken. It removes 10–30% of the noise variance and "
+        f"cannot change the pulse.\n"
+        f"* **cell+LP** — cell, then a zero-phase low-pass filter: a symmetric windowed-sinc FIR "
+        f"({lowpass_kernel.__defaults__[0]} taps, cut-off {args.lowpass:.0f} MHz) aimed at the "
+        f"amplifier noise, which peaks at 200–600 MHz. Symmetric means it adds no time shift. It "
+        f"lowers the noise sigma a further ~12% but also clips the 2 ns Cherenkov pulses, costing "
+        f"6–10% of their peak; the integral and the rise time are unchanged.\n"
+        "* **analysis profile** (mean-pulse panel only) — prof_..._VS_ts_mcp read straight from "
+        "drs_profiles.root. The raw curve reproduces it; anything between raw and the other "
+        "curves is the cleaning.")
     summary_html = pm.generate_html("DRS/DRS_Cleaning.html", plots_per_row=2,
+                                    intro_text=treatments_text,
                                     title=f"DRS noise cleaning, run {args.run}")
 
     # per-channel pages: one row per channel
@@ -562,16 +699,20 @@ def main():
             for b, val in enumerate(pulses[lab][v][0]):
                 h.SetBinContent(b + 1, float(val))
             hs.append(h)
-        ymax = max(h.GetBinContent(pk + 1) for h in hs) * 1.3 or 1
-        pm.plot_1d(hs, f"{lab}_meanpulse", "ts_{mcp} (analysis alignment)", (lo_s, hi_s),
+        ymax = max(h.GetMaximum() for h in hs) * 1.25 or 1
+        ncol = len(curves)
+        colours = (COLOURS + [ROOT.kGray + 2])[:ncol]
+        styles = ([1, 1, 1, 2])[:ncol]
+        pm.plot_1d(hs, f"{lab}_meanpulse", "ts_{mcp} (mcp_clean events)", (lo_s, hi_s),
                    "mean ADC", (-0.2 * ymax, ymax), legends=curves,
                    style=PlotStyle(dology=False, drawoptions="HIST",
-                                   mycolors=COLOURS + [ROOT.kGray + 2], linestyles=[1, 1, 1, 2],
+                                   mycolors=colours, linestyles=styles,
                                    addOverflow=False, addUnderflow=False,
-                                   legendPos=[0.50, 0.66, 0.90, 0.90], legendoptions="L"),
+                                   legendPos=[0.48, 0.62, 0.90, 0.90], legendoptions="L"),
                    extra_text=lab)
         pm.add_newline()
     channels_html = pm.generate_html("DRS/DRS_Cleaning_Channels.html", plots_per_row=6,
+                                     intro_text=treatments_text,
                                      title=f"DRS noise cleaning per channel, run {args.run}")
     print(f"\n{summary_html}\n{channels_html}")
 

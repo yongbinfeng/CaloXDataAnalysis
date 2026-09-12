@@ -798,27 +798,49 @@
    }
   },
   "Quartz_1": {
-   "edge_lock_fraction": 0.037037037037037035,
+   "edge_lock_fraction": 0.0,
    "bins": {
     "20-40": {
-     "n": 249,
+     "n": 195,
      "cfd": {
-      "core_sigma_ns": 0.3107336217391078,
-      "core_fraction": 0.8554216867469879
+      "core_sigma_ns": 0.18320803216374398,
+      "core_fraction": 0.882051282051282
      },
      "mf": {
-      "core_sigma_ns": 0.31318802717552213,
-      "core_fraction": 0.8072289156626506
+      "core_sigma_ns": 0.14287707218877665,
+      "core_fraction": 0.8666666666666667
      }
     },
     "40-80": {
-     "n": 31,
+     "n": 343,
      "cfd": {
-      "core_sigma_ns": 0.15180059981208285,
+      "core_sigma_ns": 0.12015563757574163,
+      "core_fraction": 0.8396501457725948
+     },
+     "mf": {
+      "core_sigma_ns": 0.19813104297978085,
+      "core_fraction": 0.7842565597667639
+     }
+    },
+    "80-160": {
+     "n": 109,
+     "cfd": {
+      "core_sigma_ns": 0.1111971828803407,
+      "core_fraction": 0.9724770642201835
+     },
+     "mf": {
+      "core_sigma_ns": 0.09586572647514853,
+      "core_fraction": 0.981651376146789
+     }
+    },
+    "160-400": {
+     "n": 20,
+     "cfd": {
+      "core_sigma_ns": 0.12190340387711886,
       "core_fraction": 1.0
      },
      "mf": {
-      "core_sigma_ns": 0.15370567818786118,
+      "core_sigma_ns": 0.10277363708488356,
       "core_fraction": 1.0
      }
     }
