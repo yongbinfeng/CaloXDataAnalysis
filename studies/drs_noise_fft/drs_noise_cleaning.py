@@ -10,9 +10,14 @@ on the same events:
     cell+LP   cell, then a zero-phase low-pass at --lowpass MHz
 
 Features per channel: pre-pulse noise sigma, peak amplitude, integral, CFD
-time against the MCP, 10-90% rise time, and the MCP-aligned mean pulse.
-Event selection is made once on the raw waveform and reused for every
-variant, so differences are the cleaning's doing.
+time against the MCP, 10-90% rise time, and the mean pulse. The mean pulse
+is aligned exactly as the analysis aligns its _VS_ts_mcp profiles (group
+reference channel, plus the MCP only when variables.drs.MCP_REF exists for
+the run) and averaged over every event, so the raw curve reproduces the
+profile in drs_profiles.root, which is overlaid as a check. Timing and rise
+time use events with an MCP pulse and an in-time pulse above 5 sigma in the
+raw waveform; peak and integral use every event with an MCP pulse. Each
+selection is made once, on the raw waveform, and reused for every variant.
 
 Outputs follow the analysis conventions:
     results/root/Run<N>/drs_cleaning.root, drs_cleaning_summary.json
@@ -31,6 +36,7 @@ import numpy as np
 import ROOT
 
 from channels.channel_map import get_mcp_channels
+from variables.drs import MCP_REF
 from configs.plot_style import PlotStyle
 from core.plot_manager import PlotManager
 from utils.plot_helper import get_run_paths, save_hists_to_file
@@ -40,12 +46,16 @@ ROOT.gStyle.SetOptStat(0)
 
 DT_NS = 0.2
 FS_GHZ = 5.0
-NOISE_WIN = (20, 380)
+BASELINE_WIN = (0, 200)           # analysis: median of these samples
+NOISE_WIN = (20, 380)             # pre-pulse samples used for the noise sigma
 SIGNAL_WIN = (380, 990)
 CFD_FRACTION = 0.20
 INTEGRAL_WIN = (-10, 50)          # samples around the peak, as in the analysis energy
-MIN_AMP_RAW = 160.0               # timing/shape features need a real pulse
+MIN_SNR_RAW = 5.0                 # timing/shape features need a real pulse: > 5 sigma
+IN_TIME_NS = 4.0                  # ...and it has to sit where this channel's pulses sit
 CORE_NS = 2.0
+REF_MIN_AMP, REF_FRACTION, REF_OFFSET = 500.0, 0.5, 790   # process_dynamic_led + update_ts
+MCP_OFFSET = 500
 VARIANTS = ["raw", "cell", "cell+LP"]
 COLOURS = [1, ROOT.kAzure + 1, ROOT.kRed + 1]
 
@@ -97,7 +107,29 @@ def load_waveforms(args, cols):
 
 
 def rebaseline(W):
-    return W - np.median(W[:, NOISE_WIN[0]:NOISE_WIN[1]], axis=1, keepdims=True)
+    return W - np.median(W[:, BASELINE_WIN[0]:BASELINE_WIN[1]], axis=1, keepdims=True)
+
+
+def led_time(w_flipped):
+    """process_dynamic_led: 50% crossing below the peak, integer slice, or nan."""
+    p = int(w_flipped.argmax())
+    a = w_flipped[p]
+    if a < REF_MIN_AMP:
+        return np.nan
+    i = p
+    while i > 0 and w_flipped[i] > REF_FRACTION * a:
+        i -= 1
+    return float(i + 1)
+
+
+def pipeline_shift(ref_ts, mcp_ts_cfd_ref):
+    """Per-event sample shift that turns a raw sample index into the
+    analysis's ts_mcp: ts - ref_TS + 790, minus the MCP's ref-corrected CFD
+    plus 500 when the analysis has an MCP reference for this run."""
+    shift = REF_OFFSET - ref_ts
+    if mcp_ts_cfd_ref is not None:
+        shift = shift - mcp_ts_cfd_ref + MCP_OFFSET
+    return shift
 
 
 def cell_pattern(W, start):
@@ -260,22 +292,21 @@ def feature_range(rule, raw_values):
     return float(v.min()), float(v.max())
 
 
-def mean_pulse(W, t_mcp, sel, halfwidth=100):
-    """MCP-aligned mean waveform around the median pulse position."""
-    ev = np.where(sel)[0]
-    if len(ev) == 0:
-        return None
-    shift = np.round(t_mcp[ev] - np.median(t_mcp[ev])).astype(int)
-    centre = int(np.median([cfd_time(W[e], *SIGNAL_WIN)[2] for e in ev[:200]]))
-    acc = np.zeros(2 * halfwidth)
-    n = 0
-    for e, s in zip(ev, shift):
-        lo = centre + s - halfwidth
-        if lo < 0 or lo + 2 * halfwidth > 1024:
+def mean_pulse(W, shift):
+    """Mean waveform in the analysis's ts_mcp coordinate, as its TProfile does:
+    every event with a valid reference enters, shifted by its own offset."""
+    acc = np.zeros(1024)
+    cnt = np.zeros(1024)
+    for w, sh in zip(W, shift):
+        if not np.isfinite(sh):
             continue
-        acc += W[e, lo:lo + 2 * halfwidth]
-        n += 1
-    return (acc / max(n, 1), centre - halfwidth)
+        sh = int(round(sh))
+        lo, hi = max(0, sh), min(1024, 1024 + sh)      # destination range
+        if hi <= lo:
+            continue
+        acc[lo:hi] += w[lo - sh:hi - sh]
+        cnt[lo:hi] += 1
+    return np.where(cnt > 0, acc / np.maximum(cnt, 1), 0.0), cnt
 
 
 # ------------------------------------------------------------------------
@@ -289,18 +320,42 @@ def main():
     labels = {name: lab for lab, name in chmap.items()}
     mcp = args.mcp or get_mcp_channels(args.run)["MCP_DS_0"]
     start_branch = {c: c.rsplit("_", 1)[0] + "_StartIndexCell" for c in labels}
+    ref_branch = {c: c.rsplit("_", 1)[0] + "_Channel8" for c in list(labels) + [mcp]}
+    mcp_channels = get_mcp_channels(args.run)
+    mcp_det = mcp_channels.get(MCP_REF)          # what the analysis aligns to, if anything
+    print(f"analysis alignment for run {args.run}: group reference channel"
+          + (f" + {MCP_REF} ({mcp_det})" if mcp_det else
+             f" only (variables.drs.MCP_REF = '{MCP_REF}' is not an MCP of this run, "
+             f"so the analysis's _ts_mcp is _ts_ref)"))
 
-    data = load_waveforms(args, list(labels) + [mcp] + sorted(set(start_branch.values())))
+    cols = list(labels) + [mcp] + sorted(set(start_branch.values()) | set(ref_branch.values()))
+    if mcp_det and mcp_det not in cols:
+        cols.append(mcp_det); ref_branch[mcp_det] = mcp_det.rsplit("_", 1)[0] + "_Channel8"
+    data = load_waveforms(args, cols)
     nev = data[mcp].shape[0]
     half = nev // 2
     print(f"run {args.run}: {nev} events; cell pattern from the first {half}, "
           f"features from the last {nev - half}")
 
-    # MCP reference from the raw, unamplified MCP: same for every variant
+    # MCP reference for the timing features, from the raw unamplified MCP:
+    # the same numbers for every variant
     Wm = rebaseline(data[mcp])
     t_mcp, a_mcp = np.array([cfd_time(-Wm[e], *SIGNAL_WIN)[:2] for e in range(nev)]).T
     has_mcp = (a_mcp > 50) & np.isfinite(t_mcp)
     kernel = lowpass_kernel(args.lowpass)
+
+    # the analysis's own alignment, for the mean pulse
+    ref_ts = {}
+    for rb in set(ref_branch.values()):
+        Wr = -rebaseline(data[rb])                      # reference channels are flipped
+        ref_ts[rb] = np.array([led_time(Wr[e]) for e in range(nev)])
+    mcp_cfd_ref = None
+    if mcp_det:
+        Wd = -rebaseline(data[mcp_det])                 # MCPs are flipped for run >= 1839
+        t = np.array([cfd_time(Wd[e], 0, 1024)[0] for e in range(nev)])
+        mcp_cfd_ref = REF_OFFSET + t - ref_ts[ref_branch[mcp_det]]
+    profiles = ROOT.TFile(os.path.join(paths["root"], "drs_profiles.root"), "READ") \
+        if os.path.exists(os.path.join(paths["root"], "drs_profiles.root")) else None
 
     hists, summary, examples, pulses = [], {}, {}, {}
     ev_mask = np.zeros(nev, bool); ev_mask[half:] = True
@@ -312,15 +367,31 @@ def main():
         variants["cell"] = subtract_pattern(data[c], start, pattern)
         variants["cell+LP"] = rebaseline(lowpass(variants["cell"], kernel))
 
-        # one selection, on the raw waveform, applied to every variant
-        amp_raw = np.array([cfd_time(W_raw[e], *SIGNAL_WIN)[1] for e in range(nev)])
-        sel = ev_mask & has_mcp & (amp_raw > MIN_AMP_RAW) & (amp_raw < 2500)
+        # selections, on the raw waveform only, applied to every variant
+        raw_cfd = np.array([cfd_time(W_raw[e], *SIGNAL_WIN) for e in range(nev)])
+        amp_raw, tpk_raw = raw_cfd[:, 1], raw_cfd[:, 2]
+        sigma_raw = float(np.median(W_raw[half:, NOISE_WIN[0]:NOISE_WIN[1]].std(axis=1)))
+        sel_mcp = ev_mask & has_mcp                              # peak, integral
+        bright = sel_mcp & (amp_raw > MIN_SNR_RAW * sigma_raw) & (amp_raw < 2500)
+        dt_raw = (tpk_raw - t_mcp) * DT_NS
+        # where this channel's pulses sit relative to the MCP: the mode, so
+        # out-of-time pulses on dim channels do not drag it around
+        if bright.sum() >= 20:
+            hcount, edges = np.histogram(dt_raw[bright], bins=np.arange(-60, 60.1, 2.0))
+            centre = 0.5 * (edges[hcount.argmax()] + edges[hcount.argmax() + 1])
+        else:
+            centre = float(np.nanmedian(dt_raw[bright])) if bright.any() else 0.0
+        sel = bright & (np.abs(dt_raw - centre) < IN_TIME_NS)   # timing, rise, examples
         feats = {v: features(W, t_mcp, sel) for v, W in variants.items()}
-        for v in feats:                      # noise only on the evaluation half
-            feats[v]["noise"] = feats[v]["noise"][half:]
+        for v, W in variants.items():
+            feats[v]["noise"] = feats[v]["noise"][half:]          # evaluation half only
+            f_all = features(W, t_mcp, sel_mcp)                  # every MCP event
+            feats[v]["peak"], feats[v]["integral"] = f_all["peak"], f_all["integral"]
 
         gain, f_med, f_iqr = ringing_coherence(W_raw[half:])
-        summary[lab] = {"n_selected": int(sel.sum()),
+        summary[lab] = {"n_selected": int(sel.sum()), "n_mcp": int(sel_mcp.sum()),
+                        "sigma_raw": sigma_raw, "in_time_centre_ns": float(centre),
+                        "in_time_fraction_of_bright": float(sel.sum() / max(bright.sum(), 1)),
                         "ringing_extrapolation_gain": gain,
                         "ringing_fit_MHz": f_med, "ringing_fit_iqr_MHz": f_iqr}
         for v in VARIANTS:
@@ -341,12 +412,19 @@ def main():
             for v in VARIANTS:
                 hists.append(make_hist(f"h_{lab}_{v.replace('+', '_')}_{key}",
                                        f"{lab} {v};{title};events", feats[v][key], lo, hi))
-        pulses[lab] = {v: mean_pulse(W, t_mcp, sel) for v, W in variants.items()}
+        shift = pipeline_shift(ref_ts[ref_branch[c]], mcp_cfd_ref)
+        pulses[lab] = {v: mean_pulse(W[half:], shift[half:]) for v, W in variants.items()}
+        if profiles:
+            hp = profiles.Get(f"prof_{c}_blsub_VS_ts_mcp")
+            if hp:
+                pulses[lab]["analysis profile"] = (
+                    np.array([hp.GetBinContent(i) for i in range(1, 1025)]), None)
         ex = np.where(sel)[0]
         if len(ex):
             e = ex[len(ex) // 2]
             examples[lab] = {v: W[e].copy() for v, W in variants.items()}
-        print(f"  {lab:16s} n={sel.sum():4d}  noise " +
+        print(f"  {lab:16s} mcp={sel_mcp.sum():4d} in-time={sel.sum():4d} "
+              f"({summary[lab]['in_time_fraction_of_bright']:.0%} of bright)  noise " +
               " -> ".join(f"{summary[lab][v]['noise_sigma']:.2f}" for v in VARIANTS) +
               "   dt core sigma " +
               " -> ".join(f"{summary[lab][v]['dt_core_sigma_ns']:.2f}" for v in VARIANTS))
@@ -354,15 +432,21 @@ def main():
     save_hists_to_file(hists, os.path.join(paths["root"], "drs_cleaning.root"))
     with open(os.path.join(paths["root"], "drs_cleaning_summary.json"), "w") as f:
         json.dump({"run": args.run, "nevents": nev, "lowpass_MHz": args.lowpass,
-                   "min_amp_raw": MIN_AMP_RAW, "channels": summary}, f, indent=1)
+                   "min_snr_raw": MIN_SNR_RAW, "in_time_ns": IN_TIME_NS,
+                   "alignment": "group reference" + (f" + {MCP_REF}" if mcp_det else " only"),
+                   "channels": summary}, f, indent=1)
 
     # ------------------------------------------------------------ plots
     pm = PlotManager(paths["root"], paths["plots"], paths["html"], args.run,
                      use_jsroot=args.jsroot,
                      selection_text=f"**Cleaning study.** Cell pattern from events 0-{half - 1}, "
-                                    f"features from events {half}-{nev - 1}. Timing and shape "
-                                    f"features use events with an MCP pulse and raw amplitude "
-                                    f"> {MIN_AMP_RAW:.0f} ADC (the same events for every variant). "
+                                    f"features from events {half}-{nev - 1}. Peak and integral: "
+                                    f"every event with an MCP pulse. Timing and rise time: events "
+                                    f"with an MCP pulse whose raw pulse is above {MIN_SNR_RAW:.0f} sigma "
+                                    f"and within {IN_TIME_NS:.0f} ns of where this channel's pulses "
+                                    f"sit. Mean pulse: every event, aligned as the analysis aligns "
+                                    f"its _VS_ts_mcp profiles, with that profile overlaid. Selections "
+                                    f"are made on the raw waveform and reused for every variant. "
                                     f"Low-pass cut-off {args.lowpass:.0f} MHz.")
     pm.set_output_dir("DRS_Cleaning")
     labs = list(labels.values())
@@ -453,18 +537,25 @@ def main():
             pm.plot_1d(hs, f"{lab}_{key}", title, (lo, hi), "events",
                        (0.5 if logy else 0, ymax), legends=VARIANTS,
                        style=STYLE_LOG if logy else STYLE_LIN, extra_text=lab)
-        # mean pulse
+        # mean pulse in the analysis's ts_mcp coordinate, zoomed on the peak
+        curves = list(VARIANTS) + (["analysis profile"] if "analysis profile" in pulses[lab] else [])
+        ref_curve = pulses[lab]["analysis profile"][0] if "analysis profile" in pulses[lab] else pulses[lab]["raw"][0]
+        pk = int(ref_curve.argmax())
+        lo_s, hi_s = max(pk - 60, 0), min(pk + 140, 1024)
         hs = []
-        for i, v in enumerate(VARIANTS):
-            mp = pulses[lab][v]
-            h = ROOT.TH1D(f"pulse_{lab}_{i}", "", 200, 0, 200); h.SetDirectory(0)
-            if mp is not None:
-                for b, val in enumerate(mp[0]):
-                    h.SetBinContent(b + 1, float(val))
+        for i, v in enumerate(curves):
+            h = ROOT.TH1D(f"pulse_{lab}_{i}", "", 1024, 0, 1024); h.SetDirectory(0)
+            for b, val in enumerate(pulses[lab][v][0]):
+                h.SetBinContent(b + 1, float(val))
             hs.append(h)
-        ymax = max(h.GetMaximum() for h in hs) * 1.2 or 1
-        pm.plot_1d(hs, f"{lab}_meanpulse", "sample (MCP-aligned window)", (0, 200),
-                   "mean ADC", (-0.2 * ymax, ymax), legends=VARIANTS, style=STYLE_LIN, extra_text=lab)
+        ymax = max(h.GetBinContent(pk + 1) for h in hs) * 1.3 or 1
+        pm.plot_1d(hs, f"{lab}_meanpulse", "ts_{mcp} (analysis alignment)", (lo_s, hi_s),
+                   "mean ADC", (-0.2 * ymax, ymax), legends=curves,
+                   style=PlotStyle(dology=False, drawoptions="HIST",
+                                   mycolors=COLOURS + [ROOT.kGray + 2], linestyles=[1, 1, 1, 2],
+                                   addOverflow=False, addUnderflow=False,
+                                   legendPos=[0.50, 0.66, 0.90, 0.90], legendoptions="L"),
+                   extra_text=lab)
         pm.add_newline()
     channels_html = pm.generate_html("DRS/DRS_Cleaning_Channels.html", plots_per_row=6,
                                      title=f"DRS noise cleaning per channel, run {args.run}")

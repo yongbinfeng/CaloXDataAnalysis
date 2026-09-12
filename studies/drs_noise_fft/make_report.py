@@ -68,7 +68,12 @@ def cleaning_section(cl):
         for k in ch if ch[k]["n_selected"] >= 30)
     return f"""
 <h2>4. Cleaning: what it buys and what it cannot</h2>
-<p>Two corrections were applied to the raw waveforms and every pulse feature recomputed on the <em>same</em> events (MCP present, raw amplitude above {cl['min_amp_raw']:.0f} ADC), the cell pattern coming from a disjoint half of the run so it cannot flatter itself. <code>cell</code> subtracts the per-cell offsets; <code>cell+LP</code> adds a zero-phase low-pass at {cl['lowpass_MHz']:.0f} MHz aimed at the amplifier resonance.</p>
+<p>Two corrections were applied to the raw waveforms and every pulse feature recomputed on the <em>same</em> events (MCP present, raw amplitude above {cl['min_snr_raw']:.0f}σ and within {cl['in_time_ns']:.0f} ns of where the channel's pulses sit), the cell pattern coming from a disjoint half of the run so it cannot flatter itself. <code>cell</code> subtracts the per-cell offsets; <code>cell+LP</code> adds a zero-phase low-pass at {cl['lowpass_MHz']:.0f} MHz aimed at the amplifier resonance.</p>
+<p>The mean pulse per channel is built exactly as the analysis builds its <code>_VS_ts_mcp</code> profiles — every event, shifted by its group reference channel's 50% crossing — and the analysis's own profile from <code>drs_profiles.root</code> is overlaid as a check. The <code>raw</code> curve lands on it: for <code>Quartz_0</code> the same estimator over all 23 694 events gives 14.5 ADC at bin 434, the profile's value to the decimal. (A first version of this study averaged only bright events; on dim channels those are mostly out-of-time pulses and the mean was a 40 ADC smear. Selections here are on the raw waveform, once, and reused for every treatment.)</p>
+<div class="callout">
+  <div class="h">Found on the way: the run-{cl['run']} "MCP-aligned" profiles are not MCP-aligned</div>
+  <code>variables/drs.py</code> sets <code>MCP_REF = "MCP_DS_0"</code> and on the next line overwrites it with <code>"MCP_1"</code>. Run {cl['run']} has no <code>MCP_1</code>, so <code>mcp_available</code> is false, <code>mcp_det</code> is <code>None</code>, and <code>_ts_mcp</code> silently becomes <code>_ts_ref</code>. Every <code>_VS_ts_mcp</code> profile and <code>_TS_cfd_mcp</code> time for this run is aligned by the group reference channel only. It is good enough to make sharp profiles — the reference removes most of the trigger jitter — but it is not what the name says, and the MCP would do better (0.2 ns against ~0.8 ns).
+</div>
 </div>
 <figure>
   <img src="{img('cleaning_example_waveform_Sapphire.png')}" alt="One event of the Sapphire channel: raw, cell-corrected and low-passed waveforms overlaid. A 2 ns wide double pulse of 200 ADC sits on a visible 300 MHz ringing of about 15 ADC that continues before and after the pulse.">
@@ -76,7 +81,7 @@ def cleaning_section(cl):
 </figure>
 <div class="col">
 <p>Noise σ falls from {sig[0]:.1f} to {sig[1]:.1f} ADC with the cell correction and to {sig[2]:.1f} with the low-pass (medians over the amplified channels). The cell correction costs nothing. The low-pass costs {100 * (1 - peak_cost[-1]):.0f}–{100 * (1 - peak_cost[0]):.0f}% of the Cherenkov peak amplitude — those pulses have real content at the cut-off — while leaving the integral within {100 * (1 - min(integ)):.0f}% and the rise time unchanged at the 0.2 ns sample granularity. Net, the median peak-to-noise ratio goes {snr[0]:.0f} → {snr[1]:.0f} → {snr[2]:.0f}.</p>
-<p>Timing does not move. With amplitude above {cl['min_amp_raw']:.0f} ADC the core σ against the MCP is the same to two decimals across all three treatments; at these amplitudes the CFD is not noise-limited, and where noise would matter the events are mostly not in-time pulses (part 3).</p>
+<p>Timing does not move. With amplitude above {cl['min_snr_raw']:.0f}σ and within {cl['in_time_ns']:.0f} ns of where the channel's pulses sit the core σ against the MCP is the same to two decimals across all three treatments; at these amplitudes the CFD is not noise-limited, and where noise would matter the events are mostly not in-time pulses (part 3).</p>
 </div>
 <figure>
   <img src="{img('cleaning_summary_peak_snr.png')}" alt="Bar chart per channel of median peak amplitude divided by noise sigma, for raw, cell-corrected and low-passed waveforms; the corrected versions sit 15 to 25 percent above raw for every channel.">
@@ -337,8 +342,9 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
 <ul class="next">
   <li><b>Correct the cell pattern in the pipeline.</b> It is free — no signal cost — and worth ~1 ADC of σ. Measure per channel from pedestal or pre-pulse samples and subtract by cell, or redo the DRS voltage calibration.</li>
   <li><b>Treat the 300 MHz noise as a hardware problem.</b> It cannot be subtracted and sits on the Cherenkov signal band; a low-pass buys 15–25% in peak SNR at the cost of 7–10% of the peak, and nothing in timing. Look at the amplifier's stability and bandwidth.</li>
+  <li><b>Fix <code>MCP_REF</code> in <code>variables/drs.py</code></b> so tb2026 runs actually align to an MCP that exists (<code>MCP_DS_0</code>), then regenerate the timing pages. One line.</li>
   <li><b>Check <code>Quartz_1</code>'s amplifier.</b> Its noise says it is not there.</li>
-  <li><b>Understand the out-of-core population</b> before spending more on timing estimators. Split it by the scintillator channels' amplitude in the same event.</li>
+  <li><b>Understand the out-of-time population</b> before spending more on timing estimators: on the dim channels most bright pulses are 20–80 ns off the MCP. Split it by the scintillator channels' amplitude in the same event.</li>
 </ul>
 
 <h2>Reproduce</h2>
