@@ -1,0 +1,233 @@
+{
+ "run": 1994,
+ "responses": {
+  "DRS_Brg0_Board0": {
+   "from": [
+    "Quartz700_0",
+    "Quartz700_1"
+   ],
+   "control": "Quartz700_2",
+   "fwhm_ns": 1.4000000000000001
+  },
+  "DRS_Brg0_Board2": {
+   "from": [
+    "Multiclad_0",
+    "Multiclad_1",
+    "Multiclad_2",
+    "Singleclad_0"
+   ],
+   "control": "Singleclad_2",
+   "fwhm_ns": 1.4000000000000001
+  }
+ },
+ "channels": {
+  "Scintillating_0": {
+   "kind": "target",
+   "board": "DRS_Brg0_Board0",
+   "peak_adc": 600.8221923335575,
+   "fit": {
+    "t0_ns": -3.5444677098663666,
+    "t0_err": 0.029066275915489142,
+    "tau_rise_ns": 0.5046006154022961,
+    "tau_rise_err": 0.053892111294059415,
+    "tau_decay_ns": 4.175148715880213,
+    "tau_decay_err": 0.06037400364837651,
+    "amplitude": 19261.8995592971,
+    "baseline_adc": 18.5111368894989,
+    "baseline_slope_adc_per_ns": 2.2611304382207127,
+    "chi2": 36.75793528570733,
+    "ndf": 84
+   },
+   "two_components": false,
+   "nnls": {
+    "iterations": 292,
+    "chi2_ndf": 0.998039638714215,
+    "tau_decay_ns": 5.686210336412536,
+    "rms_width_ns": 3.5243901623144125,
+    "fwhm_ns": 5.2
+   }
+  },
+  "Scintillating_1": {
+   "kind": "target",
+   "board": "DRS_Brg0_Board0",
+   "peak_adc": 536.8486213853396,
+   "fit": {
+    "t0_ns": -3.5359158311127645,
+    "t0_err": 0.02489190969472775,
+    "tau_rise_ns": 0.5330329063338285,
+    "tau_rise_err": 0.05052012613257643,
+    "tau_decay_ns": 3.5950331058213765,
+    "tau_decay_err": 0.048237432957127624,
+    "amplitude": 15461.267160069412,
+    "baseline_adc": 18.81209420277263,
+    "baseline_slope_adc_per_ns": 2.314181428867958,
+    "chi2": 34.188698176024026,
+    "ndf": 84
+   },
+   "two_components": false,
+   "nnls": {
+    "iterations": 295,
+    "chi2_ndf": 0.9957314561490872,
+    "tau_decay_ns": 5.680607613413239,
+    "rms_width_ns": 3.488933382192812,
+    "fwhm_ns": 4.6000000000000005
+   }
+  },
+  "Sapphire": {
+   "kind": "target",
+   "board": "DRS_Brg0_Board2",
+   "peak_adc": 28.390585070611973,
+   "fit": {
+    "t0_ns": -2.603624667676145,
+    "t0_err": 0.004358477125127929,
+    "tau_rise_ns": 0.014831544615281451,
+    "tau_rise_err": 0.018063483330224707,
+    "tau_decay_ns": 1.9397930143441546,
+    "tau_decay_err": 0.0464582754488663,
+    "amplitude": 510.40438100910586,
+    "baseline_adc": 0.03220576053701103,
+    "baseline_slope_adc_per_ns": -0.029832389149340756,
+    "chi2": 72.09927905707237,
+    "ndf": 84
+   },
+   "two_components": false,
+   "nnls": {
+    "iterations": 32,
+    "chi2_ndf": 0.9450905268584218,
+    "tau_decay_ns": 2.1185534392904657,
+    "rms_width_ns": 1.8218694175742236,
+    "fwhm_ns": 2.2
+   }
+  },
+  "Quartz700_2": {
+   "kind": "control",
+   "board": "DRS_Brg0_Board0",
+   "peak_adc": 48.04989912575655,
+   "fit": {
+    "t0_ns": -2.2073281366338566,
+    "t0_err": 0.004617056316305193,
+    "tau_rise_ns": 33.39742308232614,
+    "tau_rise_err": 4215.676827670513,
+    "tau_decay_ns": 0.10595240370787391,
+    "tau_decay_err": 0.02355506245510184,
+    "amplitude": 386.33198229994497,
+    "baseline_adc": -0.07646954961262228,
+    "baseline_slope_adc_per_ns": 0.012371947712553927,
+    "chi2": 148.46501005158086,
+    "ndf": 84
+   },
+   "two_components": false,
+   "nnls": {
+    "iterations": 20000,
+    "chi2_ndf": 1.6898625756105239,
+    "tau_decay_ns": NaN,
+    "rms_width_ns": 2.125177814701254,
+    "fwhm_ns": 0.6000000000000001
+   }
+  },
+  "Quartz_0": {
+   "kind": "target",
+   "board": "DRS_Brg0_Board0",
+   "peak_adc": 24.078211163416274,
+   "fit": {
+    "t0_ns": -2.1889814380832884,
+    "t0_err": NaN,
+    "tau_rise_ns": 0.00056779612058841,
+    "tau_rise_err": NaN,
+    "tau_decay_ns": 0.004882998600916808,
+    "tau_decay_err": NaN,
+    "amplitude": 185.85963737456157,
+    "baseline_adc": 0.024694538115655845,
+    "baseline_slope_adc_per_ns": 0.02761916917604297,
+    "chi2": 141.42780639469865,
+    "ndf": 84
+   },
+   "two_components": false,
+   "nnls": {
+    "iterations": 20000,
+    "chi2_ndf": 1.4149277703563414,
+    "tau_decay_ns": NaN,
+    "rms_width_ns": 3.3577750340033377,
+    "fwhm_ns": 0.2
+   }
+  },
+  "Quartz_2": {
+   "kind": "target",
+   "board": "DRS_Brg0_Board2",
+   "peak_adc": 20.704034969737727,
+   "fit": {
+    "t0_ns": -2.0000008621255723,
+    "t0_err": 0.0002080323920776891,
+    "tau_rise_ns": 6.600151551431267,
+    "tau_rise_err": 1666.4908933843597,
+    "tau_decay_ns": 0.015715638397872263,
+    "tau_decay_err": 0.004708103538398467,
+    "amplitude": 173.39191385563646,
+    "baseline_adc": -0.17032428592651644,
+    "baseline_slope_adc_per_ns": -0.013050311889364069,
+    "chi2": 30.910630778799113,
+    "ndf": 84
+   },
+   "two_components": false,
+   "nnls": {
+    "iterations": 355,
+    "chi2_ndf": 0.9998761188908747,
+    "tau_decay_ns": NaN,
+    "rms_width_ns": 0.3234996450305626,
+    "fwhm_ns": 0.8
+   }
+  },
+  "Singleclad_1": {
+   "kind": "target",
+   "board": "DRS_Brg0_Board2",
+   "peak_adc": 37.94122394082044,
+   "fit": {
+    "t0_ns": -2.000000070378869,
+    "t0_err": 0.00013625416149031866,
+    "tau_rise_ns": 1.228059643891502,
+    "tau_rise_err": 0.0,
+    "tau_decay_ns": 0.014571653530444295,
+    "tau_decay_err": 0.0,
+    "amplitude": 322.87439384603334,
+    "baseline_adc": 0.20595235328804712,
+    "baseline_slope_adc_per_ns": 0.02119164612589843,
+    "chi2": 43.28290985041067,
+    "ndf": 84
+   },
+   "two_components": false,
+   "nnls": {
+    "iterations": 406,
+    "chi2_ndf": 0.9993210959644641,
+    "tau_decay_ns": NaN,
+    "rms_width_ns": 1.726134373108047,
+    "fwhm_ns": 0.8
+   }
+  },
+  "Singleclad_2": {
+   "kind": "control",
+   "board": "DRS_Brg0_Board2",
+   "peak_adc": 64.05803631472764,
+   "fit": {
+    "t0_ns": -1.8000037993209521,
+    "t0_err": 9.288324656530684e-05,
+    "tau_rise_ns": 4.9220401981674815,
+    "tau_rise_err": 0.0,
+    "tau_decay_ns": 0.015860669878198962,
+    "tau_decay_err": 0.0,
+    "amplitude": 519.8739151199292,
+    "baseline_adc": -0.0506432756633851,
+    "baseline_slope_adc_per_ns": -0.01918807970622026,
+    "chi2": 171.70334349986993,
+    "ndf": 84
+   },
+   "two_components": false,
+   "nnls": {
+    "iterations": 20000,
+    "chi2_ndf": 1.5209241201687735,
+    "tau_decay_ns": NaN,
+    "rms_width_ns": 0.47415517863279105,
+    "fwhm_ns": 0.2
+   }
+  }
+ }
+}

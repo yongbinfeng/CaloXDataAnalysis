@@ -45,6 +45,83 @@ def harvest_cleaning(run):
         return json.load(f)
 
 
+DECONV_PLOTS = ["response_h", "Scintillating_0_pulse_fit", "Scintillating_0_unfolded",
+                "Sapphire_unfolded", "Singleclad_2_unfolded"]
+
+
+def harvest_deconvolution(run):
+    """Copy the unfolding study's summary and key plots next to this script."""
+    import shutil
+    src = os.path.join("results", "root", f"Run{run}", "drs_deconvolution.json")
+    if not os.path.exists(src):
+        return None
+    shutil.copy(src, os.path.join(HERE, "deconvolution.json"))
+    for name in DECONV_PLOTS:
+        fn = os.path.join("results", "plots", f"Run{run}", "DRS_Deconvolution", f"{name}.png")
+        if os.path.exists(fn):
+            shutil.copy(fn, os.path.join(HERE, f"deconvolution_{name}.png"))
+    with open(src) as f:
+        return json.load(f)
+
+
+def deconvolution_section(dc):
+    if dc is None:
+        return ""
+    ch = dc["channels"]
+    resp = "; ".join(f"<code>{b.replace('DRS_Brg0_', '')}</code> from {', '.join(r['from'])}, control {r['control']}"
+                     for b, r in dc["responses"].items())
+    def num(v, err=None, dp=2):
+        if v is None or v != v:
+            return "–"
+        return f"{v:.{dp}f}" + (f" ± {err:.{dp}f}" if err is not None and err == err and err < 10 else "")
+    rows = ""
+    for lab, r in ch.items():
+        f, n = r["fit"], r["nnls"]
+        spike = n["fwhm_ns"] <= 0.8
+        rows += (f"<tr{' class=odd' if r['kind'] == 'control' else ''}><th>{lab}</th><td>{r['kind']}</td>"
+                 f"<td>{num(f['tau_rise_ns'], f['tau_rise_err']) if not spike else '–'}</td>"
+                 f"<td>{num(f['tau_decay_ns'], f['tau_decay_err']) if not spike else 'spike'}</td>"
+                 f"<td>{f['chi2'] / f['ndf']:.2f}</td><td>{n['fwhm_ns']:.1f}</td>"
+                 f"<td>{num(n['tau_decay_ns'])}</td><td>{n['chi2_ndf']:.2f}</td></tr>")
+    sc = {k: v for k, v in ch.items() if k.startswith("Scintillating")}
+    sa = ch.get("Sapphire")
+    controls = [v for v in ch.values() if v["nnls"]["fwhm_ns"] <= 0.8]
+    floor = max(v["nnls"]["fwhm_ns"] for v in controls) if controls else float("nan")
+    sc_txt = " and ".join(f"<code>{k}</code> {v['fit']['tau_decay_ns']:.2f} ± {v['fit']['tau_decay_err']:.2f} ns"
+                          for k, v in sc.items())
+    return f"""
+<h2>5. Unfolding the light: n(t) from the pulses</h2>
+<p>The measured pulse is the photon arrival profile n(t) convolved with the response h(t) of SiPM, amplifier and DRS. The Cherenkov fibres see prompt light, so their mean pulse <em>is</em> h(t); it was taken from them and used to unfold the others, two ways. <b>fit</b>: a parametric n(t) — exponential rise into an exponential decay — convolved with h(t) and fitted to the profile with χ² on the profile errors (plus a 2% shape systematic, the channel-to-channel spread of h). Nothing is divided, so noise is never amplified. <b>NNLS</b>: n(t) as a free histogram of arrival times constrained only to be non-negative, projected-gradient least squares stopped at χ²/ndf = 1 — non-parametric, so it can show what the exponential misses. Both work in a −6…+12 ns window around the peak, because the bright scintillating pulses droop beyond that (−13% of the peak at +40 ns) in a way the 60 ADC Cherenkov pulses do not. Responses: {resp}; one Cherenkov channel per board is held out and unfolded as a control.</p>
+</div>
+<figure>
+  <img src="{img('deconvolution_Scintillating_0_pulse_fit.png')}" alt="Scintillating_0 mean pulse with the fitted model n(t) convolved with h(t) overlaid; the two agree across the pulse.">
+  <figcaption><b>Forward fit.</b> <code>Scintillating_0</code>'s mcp_clean profile and n(t) ⊛ h(t) with n(t) an exponential rise and decay: χ²/ndf {sc['Scintillating_0']['fit']['chi2'] / sc['Scintillating_0']['fit']['ndf']:.2f}.</figcaption>
+</figure>
+<figure>
+  <img src="{img('deconvolution_Scintillating_0_unfolded.png')}" alt="Unfolded photon arrival profile for Scintillating_0 from the fit model and from NNLS: a fast rise into a roughly 4 ns exponential decay, the two methods agreeing.">
+  <figcaption><b>The light.</b> n(t) for <code>Scintillating_0</code> from the fit (red) and from NNLS (blue): a ~0.5 ns rise into a {sc['Scintillating_0']['fit']['tau_decay_ns']:.1f} ns decay. NNLS also shows a faint bump at +8–10 ns — at the edge of the window, where the droop begins, so not something to read physics into yet.</figcaption>
+</figure>
+<div class="col">
+<div class="tbl"><table>
+<thead><tr><th>channel</th><th>kind</th><th>τ<sub>rise</sub> [ns]</th><th>τ<sub>decay</sub> [ns]</th><th>fit χ²/ndf</th><th>NNLS FWHM [ns]</th><th>NNLS tail τ</th><th>NNLS χ²/ndf</th></tr></thead>
+<tbody>{rows}</tbody>
+<caption>Unfolding results. Controls (amber) are Cherenkov channels held out of h(t); "spike" means the unfolded n(t) is a single peak within the resolution floor. NNLS tail τ is an exponential fit to the unfolded tail and includes the rise, so it sits above the model's τ<sub>decay</sub>.</caption>
+</table></div>
+<p><b>Scintillating fibres.</b> {sc_txt}, with rise times of ~0.5 ns; NNLS agrees on the shape without assuming it. <b>Sapphire</b> is not purely Cherenkov: its unfolded light is {sa['nnls']['fwhm_ns']:.1f} ns wide against ≤{floor:.1f} ns for the pure-Cherenkov controls, and fits a {sa['fit']['tau_decay_ns']:.2f} ± {sa['fit']['tau_decay_err']:.2f} ns decay — a fast luminescence component. <b>Resolution floor</b>: the controls unfold to spikes of {floor:.1f} ns FWHM, which is what the ~0.3 ns alignment jitter and the 0.2 ns sampling allow.</p>
+</div>
+<figure>
+  <img src="{img('deconvolution_Sapphire_unfolded.png')}" alt="Unfolded light profile of the Sapphire channel: a prompt rise and a roughly 2 ns decay, wider than the Cherenkov controls.">
+  <figcaption><b>Sapphire.</b> Prompt, then a ~2 ns tail: a slow component the quartz and clad fibres do not have.</figcaption>
+</figure>
+<div class="col">
+<div class="callout">
+  <div class="h">Three things that had to be right, or nothing fits</div>
+  <b>The response must come from the same DRS board.</b> With h(t) from Board 2 the Board 0 scintillators sat at χ²/ndf 3 and τ<sub>decay</sub> came out 20% short; the residual inter-board jitter after the reference correction (~0.3 ns) is enough to blur a 1.4 ns edge. <b>The pedestal before the pulse must be removed first.</b> The profiles sit 1–5% of the peak above their far baseline in the 10 ns before the pulse; left in, it sets the onset of h(t) instead of the pulse and the fits fail at χ²/ndf ≈ 50. <b>The window must stop before the droop.</b> Beyond +12 ns the bright pulses are not in the regime the Cherenkov response describes. The first two were found the hard way; the script now enforces all three.
+</div>
+<p>What these numbers are and are not: the shape of n(t) in relative units — absolute photon numbers would need the single-photoelectron gain per channel and a SiPM saturation correction. The Cherenkov light is taken as prompt; chromatic dispersion in a metre of fibre spreads it by a few hundred ps, so h(t) is very slightly too wide and τ correspondingly slightly under. The +3 ns shoulder in h(t) is present in every Cherenkov channel on both boards and is treated as instrumental; if it is in fact optical, the scintillator τ moves by a fraction of that.</p>
+"""
+
+
 def cleaning_section(cl):
     if cl is None:
         return ""
@@ -122,7 +199,7 @@ def cleaning_section(cl):
 """
 
 
-def build(res, cl=None):
+def build(res, cl=None, dc=None):
     noise, cell, coh = res["noise"], res["cell_pattern"], res["coherence"]
     timing = {k: v for k, v in res["timing"].items() if not k.startswith("_")}
     n_mcp, mcp_spread = res["timing"]["_mcp_events"], res["timing"]["_mcp_spread_ns"]
@@ -358,12 +435,14 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
 </div>
 
 {cleaning_section(cl)}
+{deconvolution_section(dc)}
 <h2>What to do with this</h2>
 <ul class="next">
   <li><b>Correct the cell pattern in the pipeline.</b> It is free — no signal cost — and worth ~1 ADC of σ. Measure per channel from pedestal or pre-pulse samples and subtract by cell, or redo the DRS voltage calibration.</li>
   <li><b>Treat the 300 MHz noise as a hardware problem.</b> It cannot be subtracted and sits on the Cherenkov signal band; a low-pass buys 15–25% in peak SNR at the cost of 7–10% of the peak, and nothing in timing. Look at the amplifier's stability and bandwidth.</li>
   <li><b>Regenerate the timing pages</b> for the tb2026 and Sep-2024 runs now that they really align to an MCP.</li>
   <li><b>Fix the <code>Quartz_1</code> entry in <code>testingfibers.json</code></b> — it names the <code>MCP_US_1</code> channel. If a fibre was meant to be there, find where it actually went.</li>
+  <li><b>Use the unfolding on the fibre types that still lack signal</b> (GradedIndex, Quartz400) once they have it; the scintillator decay times and Sapphire's slow component are already measurable at the 2% level.</li>
   <li><b>Understand the out-of-time population</b> before spending more on timing estimators: on the dim channels most bright pulses are 20–80 ns off the MCP. Split it by the scintillator channels' amplitude in the same event.</li>
 </ul>
 
@@ -371,6 +450,7 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
 <pre>python3 scripts/check_drs_mcp.py --run {res['run']} --channels {res['channels']}   # profiles as templates
 python3 studies/drs_noise_fft/drs_noise_fft.py --run {res['run']} --channels {res['channels']}
 python3 studies/drs_noise_fft/drs_noise_cleaning.py --run {res['run']} --channels {res['channels']}
+python3 studies/drs_noise_fft/drs_pulse_deconvolution.py --run {res['run']} --channels {res['channels']}
 python3 studies/drs_noise_fft/make_report.py</pre>
 <p>The first step is only needed for part 3; without <code>drs_profiles.root</code> the study writes parts 1 and 2 and says why it stopped. Parts 1–3 come from <code>results.json</code>, part 4 from <code>drs_cleaning_summary.json</code>; the report harvests both.</p>
 </div>
@@ -397,7 +477,7 @@ def main():
     args = p.parse_args()
     with open(os.path.join(HERE, "results.json")) as f:
         res = json.load(f)
-    body = build(res, harvest_cleaning(res["run"]))
+    body = build(res, harvest_cleaning(res["run"]), harvest_deconvolution(res["run"]))
     # the standalone file wants the <title>/<link>/<style> inside <head>
     head_end = body.index("</style>") + len("</style>")
     page = SKELETON.format(body=body[:head_end] + "\n</head>\n<body>" + body[head_end:])
