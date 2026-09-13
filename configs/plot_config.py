@@ -207,8 +207,17 @@ def get_fers_2d_mix_lg_range():
 
 
 def get_drs_cfd_finebins_range(is_cer):
+    """Range [TS] for the fine-binned TS_cfd_mcp histograms.
+
+    The MCP-aligned CFD time sits near 500 TS by construction (+500 offset in
+    variables/drs.py) and drifts by a few tens of TS with detector position, so
+    the window has to be wide enough to hold the whole peak for every run; a
+    peak outside the range is silently clipped and the MPV comes out wrong.
+    Bin width is fixed in analysis/hist_functions.py, not the bin count.
+    """
     #return (410, 450) if is_cer else (420, 490)
-    return (410, 490) if is_cer else (420, 490)
+    #return (410, 490) if is_cer else (420, 490)
+    return (400, 600)
 
 
 def get_drs_time_ns_range():

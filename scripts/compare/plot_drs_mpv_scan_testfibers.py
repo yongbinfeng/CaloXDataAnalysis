@@ -25,8 +25,21 @@ from utils.timing import auto_timer
 from utils.utils import get_channel_var, get_hist_mpv
 auto_timer("Total Execution Time")
 
-SCAN_RUNS = list(range(1998, 2012))
+# Runs with no usable beam signal in the fibres are left out:
+#   2028, 2033  pi+ runs (beam file 94) mixed into the positron scan
+#   2040, 2042  beam mostly missing the table (beam profile issue); 2042 cut short
+SKIP_RUNS = {2028, 2033, 2040, 2041, 2042}
+SCAN_RUNS = [r for r in range(1998, 2043) if r not in SKIP_RUNS]
 REFERENCE_RUN = 1998
+
+# y ranges of the per-fiber summary plots
+SPEED_SUMMARY_RANGE     = (15.0, 22.0)     # cm/ns
+TIME_P0_SUMMARY_RANGE   = (484.0, 495.0)   # TS
+ENERGY_P0_SUMMARY_RANGE = (500.0, 1700.0)  # ADC
+
+# An MPV closer than this to the edge of the fine-binned histogram means the
+# peak was clipped by the histogram window (get_hist_mpv searches +-6 TS).
+MPV_EDGE_TS = 6.0
 
 PLOTDIR = "results/plots/PositionScan"
 HTMLDIR = "results/html/PositionScan"
@@ -70,7 +83,14 @@ def _make_pm(outdir, use_jsroot=False):
 # ---------------------------------------------------------------------------
 
 def _collect_mpv_data(drsboards, run_x):
-    """Read MPV of fine-binned TS_cfd_mcp histogram for each run/channel."""
+    """Read MPV of the TS_cfd_mcp histogram for each run/channel.
+
+    Prefers the fine-binned (0.1 TS) histogram, whose window (see
+    configs/plot_config.py) also keeps out the pile-up spike near 1000 TS that
+    can fool the MPV finder on the coarse 0-1024 TS histogram. If a run was
+    produced with an older, narrower window the peak may be clipped: that shows
+    up as an MPV within one search window of the histogram edge, in which case
+    fall back to the coarse histogram and say so."""
     mpv_data = {}
     for run, x_val in sorted(run_x.items(), key=lambda kv: kv[1]):
         root_path = f"results/root/Run{run}/drs_stats.root"
@@ -83,10 +103,30 @@ def _collect_mpv_data(drsboards, run_x):
                 if chan.is_reference:
                     continue
                 ch = chan.get_channel_name(blsub=False)
-                hist = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
-                if hist and hist.GetEntries() >= 5:
+                hist_fb = infile.Get(f"hist_{ch}_TS_cfd_mcp_finebins")
+                mpv = None
+                if hist_fb and hist_fb.Integral() >= 5:
+                    mpv, mpv_err = get_hist_mpv(hist_fb)
+                    xax = hist_fb.GetXaxis()
+                    if not (xax.GetXmin() + MPV_EDGE_TS <= mpv <= xax.GetXmax() - MPV_EDGE_TS):
+                        print(f"Warning: run {run} {ch}: fine-binned MPV {mpv:.1f} TS "
+                              f"sits at the histogram edge [{xax.GetXmin():.0f}, "
+                              f"{xax.GetXmax():.0f}]; using the coarse histogram")
+                        mpv = None
+                if mpv is None:
+                    hist = infile.Get(f"hist_{ch}_TS_cfd_mcp")
+                    if not hist or hist.GetEntries() < 5:
+                        continue
                     mpv, mpv_err = get_hist_mpv(hist)
-                    mpv_data.setdefault(ch, []).append((x_val, mpv, mpv_err))
+                    if hist_fb and not (hist_fb.GetXaxis().GetXmin() <= mpv
+                                        <= hist_fb.GetXaxis().GetXmax()):
+                        # The coarse finder landed outside the fine window too
+                        # (typically on the pile-up spike near 1000 TS): no
+                        # usable peak in this run, so leave the point out.
+                        print(f"Warning: run {run} {ch}: no usable timing peak "
+                              f"(coarse MPV {mpv:.1f} TS); point dropped")
+                        continue
+                mpv_data.setdefault(ch, []).append((x_val, mpv, mpv_err))
         infile.Close()
     return mpv_data
 
@@ -206,6 +246,19 @@ def _collect_summean(run_x):
     return data
 
 
+def _fit_constant(pts, xmin, xmax):
+    """Hand-written constant (pol0) fit to (x, y) points with x in [xmin, xmax].
+
+    Points carry no errors, so p0 is the plain mean and e0 the standard error
+    of the mean. Falls back to all points if none lie inside the window.
+    Returns (p0, e0, n_used)."""
+    ys = [y for x, y in pts if xmin <= x <= xmax] or [y for _, y in pts]
+    n  = len(ys)
+    p0 = sum(ys) / n
+    e0 = (sum((y - p0) ** 2 for y in ys) / (n - 1)) ** 0.5 / n ** 0.5 if n > 1 else 0.0
+    return p0, e0, n
+
+
 def _plot_energy_channels(channel_order, data, pm, lumi, xmin, xmax, ch_label_map=None):
     """Draw one SumMean-vs-position TGraph per channel with constant fit.
     Returns (p0_map, e0_map, plots_by_type)."""
@@ -226,14 +279,17 @@ def _plot_energy_channels(channel_order, data, pm, lumi, xmin, xmax, ch_label_ma
             gr.SetPoint(i, x, mean)
         gr.SetLineWidth(2)
 
-        # Constant (pol0) fit restricted to [-220, 50] mm
+        # Constant (pol0) fit restricted to [-220, 50] mm, done by hand so it
+        # does not depend on a ROOT minimizer being available.
+        p0, e0, _n = _fit_constant(pts, FIT_XMIN, FIT_XMAX)
+
         fit = ROOT.TF1(f"fit_sum_{ch}", "pol0", FIT_XMIN, FIT_XMAX)
+        fit.SetParameter(0, p0)
+        fit.SetParError(0, e0)
         fit.SetLineColor(ROOT.kRed + 1)
         fit.SetLineWidth(2)
         fit.SetLineStyle(2)
-        gr.Fit(fit, "QR")
-        p0 = fit.GetParameter(0)
-        e0 = fit.GetParError(0)
+        gr.GetListOfFunctions().Add(fit)
         p0_map[ch] = p0
         e0_map[ch] = e0
 
@@ -289,26 +345,18 @@ def _fiber_base_type(label):
     return re.sub(r'_\d+$', '', label)
 
 
-def _plot_speed_summary(ch_label_map, p1_map, e1_map, pm, lumi):
-    """TGraphErrors of speed (cm/ns) per fiber, one color per base fiber type.
+def _plot_fiber_summary(values, ytitle, ymin, ymax, plot_name, pm, lumi):
+    """One point per fiber (label -> (value, error)), one color+marker per base
+    fiber type, with the fiber labels on the x axis.
 
-    Returns the plot name (without extension) so the caller can add it to pm.
+    Returns the plot name (without extension) so the caller can add it to pm,
+    or None if there is nothing to draw.
     """
-    # Compute speed and uncertainty for each labeled channel
-    speed_data = {}   # label -> (speed, e_speed)
-    for ch, label in ch_label_map.items():
-        p1 = p1_map.get(ch)
-        e1 = e1_map.get(ch)
-        if not p1:
-            continue
-        s  = 0.5 / abs(p1)
-        es = s * abs(e1) / abs(p1)
-        speed_data[label] = (s, es)
-    if not speed_data:
+    if not values:
         return None
 
     # Sort by (base type, full label) so same-type channels are adjacent
-    sorted_labels = sorted(speed_data, key=lambda l: (_fiber_base_type(l), l))
+    sorted_labels = sorted(values, key=lambda l: (_fiber_base_type(l), l))
     types_ordered = list(dict.fromkeys(_fiber_base_type(l) for l in sorted_labels))
     type_color    = {t: _SPEED_PALETTE[i % len(_SPEED_PALETTE)]
                      for i, t in enumerate(types_ordered)}
@@ -318,28 +366,25 @@ def _plot_speed_summary(ch_label_map, p1_map, e1_map, pm, lumi):
     # Group points by base type
     pts_by_type = {}
     for i, label in enumerate(sorted_labels):
-        ft = _fiber_base_type(label)
-        s, es = speed_data[label]
-        pts_by_type.setdefault(ft, []).append((i + 1, s, es))
+        v, ev = values[label]
+        pts_by_type.setdefault(_fiber_base_type(label), []).append((i + 1, v, ev))
 
     n = len(sorted_labels)
-    ymin, ymax = 12.0, 24.0
 
-    # Canvas
-    c = ROOT.TCanvas("c_speed_summary", "", 1400, 650)
+    c = ROOT.TCanvas(f"c_{plot_name}", "", 1400, 650)
     c.SetBottomMargin(0.28)
     c.SetLeftMargin(0.09)
     c.SetRightMargin(0.04)
     c.SetTopMargin(0.08)
 
     # Frame histogram — only purpose is to carry x-axis bin labels
-    frame = ROOT.TH1F("h_speed_frame", "", n, 0.5, n + 0.5)
+    frame = ROOT.TH1F(f"h_{plot_name}_frame", "", n, 0.5, n + 0.5)
     for i, label in enumerate(sorted_labels):
         frame.GetXaxis().SetBinLabel(i + 1, label)
     frame.GetXaxis().LabelsOption("v")
     frame.GetXaxis().SetLabelSize(0.042)
     frame.GetXaxis().SetTickLength(0.0)
-    frame.GetYaxis().SetTitle("Speed  v = 1/|p_{1}| [cm/ns]")
+    frame.GetYaxis().SetTitle(ytitle)
     frame.GetYaxis().SetTitleOffset(0.9)
     frame.GetYaxis().SetTitleSize(0.048)
     frame.SetMinimum(ymin)
@@ -359,11 +404,10 @@ def _plot_speed_summary(ch_label_map, p1_map, e1_map, pm, lumi):
         pts = pts_by_type[ft]
         gr  = ROOT.TGraphErrors(len(pts))
         col = type_color[ft]
-        mkr = type_marker[ft]
-        for j, (x, s, es) in enumerate(pts):
-            gr.SetPoint(j, x, s)
-            gr.SetPointError(j, 0.0, es)
-        gr.SetMarkerStyle(mkr)
+        for j, (x, v, ev) in enumerate(pts):
+            gr.SetPoint(j, x, v)
+            gr.SetPointError(j, 0.0, ev)
+        gr.SetMarkerStyle(type_marker[ft])
         gr.SetMarkerSize(1.3)
         gr.SetMarkerColor(col)
         gr.SetLineColor(col)
@@ -381,13 +425,10 @@ def _plot_speed_summary(ch_label_map, p1_map, e1_map, pm, lumi):
     lat.SetTextAlign(31)   # right-align
     lat.DrawLatex(0.96, 0.935, lumi)
 
-    plot_name = "drs_cfd_speed_summary"
-    outdir = pm.get_output_dir()
-
     if pm.use_jsroot:
         pm._canvas_jsons[plot_name] = ROOT.TBufferJSON.ToJSON(c).Data()
     else:
-        c.SaveAs(os.path.join(outdir, f"{plot_name}.png"))
+        c.SaveAs(os.path.join(pm.get_output_dir(), f"{plot_name}.png"))
 
     # Keep objects alive until after SaveAs
     c._keep = [frame, leg, lat] + graphs
@@ -395,102 +436,41 @@ def _plot_speed_summary(ch_label_map, p1_map, e1_map, pm, lumi):
     return plot_name
 
 
+def _plot_speed_summary(ch_label_map, p1_map, e1_map, pm, lumi):
+    """Speed v = 0.5/|p1| [cm/ns] per fiber, from the time-scan slope."""
+    speed_data = {}   # label -> (speed, e_speed)
+    for ch, label in ch_label_map.items():
+        p1 = p1_map.get(ch)
+        e1 = e1_map.get(ch)
+        if not p1:
+            continue
+        s  = 0.5 / abs(p1)
+        speed_data[label] = (s, s * abs(e1) / abs(p1))
+    return _plot_fiber_summary(speed_data, "Speed  v = 1/|p_{1}| [cm/ns]",
+                               SPEED_SUMMARY_RANGE[0], SPEED_SUMMARY_RANGE[1],
+                               "drs_cfd_speed_summary", pm, lumi)
+
+
+def _plot_p0_summary_time(ch_label_map, p0_map, e0_map, pm, lumi):
+    """Time-scan intercept p0 [TS] per fiber (MPV extrapolated to X = 0)."""
+    p0_data = {label: (p0_map[ch], e0_map.get(ch, 0.0))
+               for ch, label in ch_label_map.items() if p0_map.get(ch) is not None}
+    return _plot_fiber_summary(p0_data, "MPV at X = 0  p_{0} [TS]",
+                               TIME_P0_SUMMARY_RANGE[0], TIME_P0_SUMMARY_RANGE[1],
+                               "drs_cfd_p0_summary", pm, lumi)
+
+
 # ---------------------------------------------------------------------------
 # Energy p0 summary plot
 # ---------------------------------------------------------------------------
 
 def _plot_p0_summary_energy(ch_label_map, p0_map, e0_map, pm, lumi):
-    """TGraphErrors of mean DRS Sum p0 per fiber, one color+marker per base type.
-
-    Returns the plot name so the caller can add it to pm.
-    """
-    p0_data = {}
-    for ch, label in ch_label_map.items():
-        p0 = p0_map.get(ch)
-        e0 = e0_map.get(ch)
-        if p0 is None:
-            continue
-        p0_data[label] = (p0, e0 if e0 is not None else 0.0)
-    if not p0_data:
-        return None
-
-    sorted_labels = sorted(p0_data, key=lambda l: (_fiber_base_type(l), l))
-    types_ordered = list(dict.fromkeys(_fiber_base_type(l) for l in sorted_labels))
-    type_color  = {t: _SPEED_PALETTE[i % len(_SPEED_PALETTE)]  for i, t in enumerate(types_ordered)}
-    type_marker = {t: _SPEED_MARKERS[i % len(_SPEED_MARKERS)]  for i, t in enumerate(types_ordered)}
-
-    pts_by_type = {}
-    for i, label in enumerate(sorted_labels):
-        ft = _fiber_base_type(label)
-        p0, e0 = p0_data[label]
-        pts_by_type.setdefault(ft, []).append((i + 1, p0, e0))
-
-    n = len(sorted_labels)
-    ymin, ymax = 500.0, 1700.0
-
-    c = ROOT.TCanvas("c_p0_energy_summary", "", 1400, 650)
-    c.SetBottomMargin(0.28)
-    c.SetLeftMargin(0.09)
-    c.SetRightMargin(0.04)
-    c.SetTopMargin(0.08)
-
-    frame = ROOT.TH1F("h_p0_energy_frame", "", n, 0.5, n + 0.5)
-    for i, label in enumerate(sorted_labels):
-        frame.GetXaxis().SetBinLabel(i + 1, label)
-    frame.GetXaxis().LabelsOption("v")
-    frame.GetXaxis().SetLabelSize(0.042)
-    frame.GetXaxis().SetTickLength(0.0)
-    frame.GetYaxis().SetTitle("Mean DRS Sum  p_{0} [ADC]")
-    frame.GetYaxis().SetTitleOffset(0.9)
-    frame.GetYaxis().SetTitleSize(0.048)
-    frame.SetMinimum(ymin)
-    frame.SetMaximum(ymax)
-    frame.SetStats(0)
-    frame.Draw("AXIS")
-
-    graphs = []
-    leg = ROOT.TLegend(0.10, 0.84, 0.90, 0.90)
-    leg.SetNColumns(min(len(types_ordered), 8))
-    leg.SetBorderSize(0)
-    leg.SetFillStyle(0)
-    leg.SetTextSize(0.036)
-
-    for ft in types_ordered:
-        pts = pts_by_type[ft]
-        gr  = ROOT.TGraphErrors(len(pts))
-        col = type_color[ft]
-        mkr = type_marker[ft]
-        for j, (x, p0, e0) in enumerate(pts):
-            gr.SetPoint(j, x, p0)
-            gr.SetPointError(j, 0.0, e0)
-        gr.SetMarkerStyle(mkr)
-        gr.SetMarkerSize(1.3)
-        gr.SetMarkerColor(col)
-        gr.SetLineColor(col)
-        gr.SetLineWidth(2)
-        gr.Draw("P SAME")
-        leg.AddEntry(gr, ft, "p")
-        graphs.append(gr)
-
-    leg.Draw()
-
-    lat = ROOT.TLatex()
-    lat.SetNDC()
-    lat.SetTextSize(0.038)
-    lat.SetTextFont(42)
-    lat.SetTextAlign(31)
-    lat.DrawLatex(0.96, 0.935, lumi)
-
-    plot_name = "drs_summean_p0_summary"
-    outdir = pm.get_output_dir()
-
-    if pm.use_jsroot:
-        pm._canvas_jsons[plot_name] = ROOT.TBufferJSON.ToJSON(c).Data()
-    else:
-        c.SaveAs(os.path.join(outdir, f"{plot_name}.png"))
-
-    c._keep = [frame, leg, lat] + graphs
-    return plot_name
+    """Mean DRS Sum p0 [ADC] per fiber, from the energy-scan constant fit."""
+    p0_data = {label: (p0_map[ch], e0_map.get(ch) or 0.0)
+               for ch, label in ch_label_map.items() if p0_map.get(ch) is not None}
+    return _plot_fiber_summary(p0_data, "Mean DRS Sum  p_{0} [ADC]",
+                               ENERGY_P0_SUMMARY_RANGE[0], ENERGY_P0_SUMMARY_RANGE[1],
+                               "drs_summean_p0_summary", pm, lumi)
 
 
 # ---------------------------------------------------------------------------
@@ -635,14 +615,17 @@ def run_time_scan(drsboards, run_x, channel_order, lumi, xmin, xmax,
     if single_page:
         all_plots = [name for names in plots_by_type.values() for name in names]
 
-        # Speed summary — drawn first so it appears at the top of the page
-        speed_plot = None
+        # Speed and p0 summaries — drawn first so they appear at the top of the page
+        summary_plots = []
         if ch_label_map and p1_map:
-            speed_plot = _plot_speed_summary(ch_label_map, p1_map, e1_map, pm, lumi)
+            summary_plots.append(_plot_speed_summary(ch_label_map, p1_map, e1_map, pm, lumi))
+            summary_plots.append(_plot_p0_summary_time(ch_label_map, p0_map, e0_map, pm, lumi))
+        summary_plots = [name for name in summary_plots if name]
 
         pm.reset_plots()
-        if speed_plot:
-            pm.add_plot(speed_plot)
+        for name in summary_plots:
+            pm.add_plot(name)
+        if summary_plots:
             pm.add_newline()
         for name in all_plots:
             pm.add_plot(name)

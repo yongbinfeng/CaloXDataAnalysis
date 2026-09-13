@@ -661,10 +661,11 @@ def book_drs_stats(ctx, do_finebins=True):
                 f"{channel_name}_TS_cfd_mcp"))
             if do_finebins:
                 fb_min, fb_max = get_drs_cfd_finebins_range(chan.isCer)
+                fb_nbins = int(round((fb_max - fb_min) / 0.1))  # 0.1 TS bins
                 hists.append(ctx.rdf.Histo1D((
                     f"hist_{channel_name}_TS_cfd_mcp_finebins",
                     "DRS CFD TS (ref+MCP-corrected);TS_cfd_mcp;Counts",
-                    1000, fb_min, fb_max),
+                    fb_nbins, fb_min, fb_max),
                     f"{channel_name}_TS_cfd_mcp"))
             t_lo, t_hi = get_drs_time_ns_range()
             hists.append(ctx.rdf.Histo1D((

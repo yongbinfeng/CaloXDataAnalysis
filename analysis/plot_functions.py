@@ -1352,10 +1352,13 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
                 labels_combo = ([f"{e[2]} {e[1]}" for e in entries]
                                 if group_name == "all" else [e[1] for e in entries])
                 palette = _COLORS_6_FB if group_name == "all" else _COLORS_3_FB
+                fb_range_all = (
+                    min(get_drs_cfd_finebins_range(c)[0] for c in (True, False)),
+                    max(get_drs_cfd_finebins_range(c)[1] for c in (True, False)))
                 pm.plot_1d(
                     hists_combo,
                     f"DRS_Time_FineBins_Combined_{group_name}",
-                    "CFD TS (MCP-corrected)", (410, 490),
+                    "CFD TS (MCP-corrected)", fb_range_all,
                     "Counts", (0.9, None),
                     legends=labels_combo,
                     legendPos=[0.55, 0.70, 0.90, 0.90],
