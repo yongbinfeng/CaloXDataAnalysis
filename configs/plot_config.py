@@ -146,8 +146,20 @@ def get_drs_plot_ranges(subtractMedian=False, is_amplified=False, is6mm=False, i
     return xmin, xmax
 
 
-def get_drs_energy_range(is6mm=False):
-    """DRS CFD energy integral histogram range: (nbins, xmin, xmax)."""
+def get_drs_energy_range(is6mm=False, test_fiber_label=None):
+    """DRS CFD energy integral histogram range: (nbins, xmin, xmax).
+
+    The default ranges are tuned to resolve single-photoelectron peaks in the
+    calorimeter channels. For test-fibre runs (a label from the --channels map
+    is given) the range is widened so that the noise pedestal of the integral,
+    a few hundred ADC, and the real-hit population are both visible: 25 ADC
+    bins up to 14k for the Cherenkov fibres, 200 ADC bins up to 115k for the
+    scintillating ones, which saturate around 1e5.
+    """
+    if test_fiber_label is not None:
+        if "scint" in test_fiber_label.lower():
+            return (600, -5000, 115000)
+        return (600, -1000, 14000)
     if is6mm:
         return (180, -100, 800)
     return (200, -500, 6000)

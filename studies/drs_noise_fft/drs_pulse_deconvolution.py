@@ -42,7 +42,7 @@ DRS_Deconvolution.html, and the overlay pages DRS_Unfolded_overlay.html
 (NNLS) and DRS_Unfolded_fit_overlay.html with absolute and peak = 1 views.
 
     python3 studies/drs_noise_fft/drs_pulse_deconvolution.py --run 1994 \\
-        --channels data/channel_maps/testingfibers.json
+        --channels channels/data/testingfibers.json
 """
 import argparse
 import json

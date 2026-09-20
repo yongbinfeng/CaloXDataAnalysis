@@ -5,6 +5,7 @@
     fers      FERS board layouts and face geometry
     drs       DRS calorimeter maps (frozen JSON, and the from-FERS CSV path)
     services  auxiliary channels: time reference, hodoscope, MCP, service DRS
+    paths     where the tables under channels/data/ are
 
 channels.channel_map re-exports all of this and stays the import site for the
 rest of the code base.

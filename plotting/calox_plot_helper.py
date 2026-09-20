@@ -181,3 +181,144 @@ class BoardPlotHelper:
             zlabel=zlabel, **kwargs
         )
         return self
+
+
+# ---------------------------------------------------------------------------
+# Per-fibre summary plot (one point per test fibre, colour per fibre type)
+# ---------------------------------------------------------------------------
+
+import os
+
+FIBER_PALETTE = [
+    ROOT.kBlue + 1, ROOT.kRed + 1, ROOT.kGreen + 2, ROOT.kOrange + 1,
+    ROOT.kViolet + 2, ROOT.kCyan + 2, ROOT.kMagenta + 1, ROOT.kTeal + 3,
+    ROOT.kAzure + 7, ROOT.kSpring + 6,
+]
+# ROOT marker styles: filled circle, square, triangle-up, diamond, triangle-down,
+# open circle, open square, open triangle-up, star, open diamond
+FIBER_MARKERS = [20, 21, 22, 33, 23, 24, 25, 26, 29, 27]
+# marker used for the secondary series of plot_fiber_summary (a thin "x")
+SECONDARY_MARKER = 5
+
+
+def fiber_base_type(label):
+    """Strip trailing _N suffix: 'Quartz400_1' → 'Quartz400', 'Sapphire' → 'Sapphire'."""
+    import re
+    return re.sub(r'_\d+$', '', label)
+
+
+def plot_fiber_summary(values, ytitle, ymin, ymax, plot_name, pm, lumi,
+                       secondary=None, logy=False, note=None):
+    """One point per fiber (label -> (value, error)), one color+marker per base
+    fiber type, with the fiber labels on the x axis.
+
+    secondary: optional second label -> (value, error) map drawn as "x"
+    markers in the same colours (e.g. out-of-time next to in-time).
+    logy: draw the y axis logarithmic (ymin must then be > 0).
+    note: optional short text drawn top-left, e.g. what the markers mean.
+
+    Returns the plot name (without extension) so the caller can add it to pm,
+    or None if there is nothing to draw.
+    """
+    if not values:
+        return None
+    secondary = secondary or {}
+
+    # Sort by (base type, full label) so same-type channels are adjacent
+    sorted_labels = sorted(values, key=lambda l: (fiber_base_type(l), l))
+    types_ordered = list(dict.fromkeys(fiber_base_type(l) for l in sorted_labels))
+    type_color    = {t: FIBER_PALETTE[i % len(FIBER_PALETTE)]
+                     for i, t in enumerate(types_ordered)}
+    type_marker   = {t: FIBER_MARKERS[i % len(FIBER_MARKERS)]
+                     for i, t in enumerate(types_ordered)}
+
+    # Group points by base type
+    pts_by_type = {}
+    for i, label in enumerate(sorted_labels):
+        v, ev = values[label]
+        pts_by_type.setdefault(fiber_base_type(label), []).append((i + 1, v, ev))
+
+    n = len(sorted_labels)
+
+    c = ROOT.TCanvas(f"c_{plot_name}", "", 1400, 650)
+    c.SetBottomMargin(0.28)
+    c.SetLeftMargin(0.09)
+    c.SetRightMargin(0.04)
+    c.SetTopMargin(0.08)
+    if logy:
+        c.SetLogy(True)
+
+    # Frame histogram — only purpose is to carry x-axis bin labels
+    frame = ROOT.TH1F(f"h_{plot_name}_frame", "", n, 0.5, n + 0.5)
+    for i, label in enumerate(sorted_labels):
+        frame.GetXaxis().SetBinLabel(i + 1, label)
+    frame.GetXaxis().LabelsOption("v")
+    frame.GetXaxis().SetLabelSize(0.042)
+    frame.GetXaxis().SetTickLength(0.0)
+    frame.GetYaxis().SetTitle(ytitle)
+    frame.GetYaxis().SetTitleOffset(0.9)
+    frame.GetYaxis().SetTitleSize(0.048)
+    frame.SetMinimum(ymin)
+    frame.SetMaximum(ymax)
+    frame.SetStats(0)
+    frame.Draw("AXIS")
+
+    # One TGraphErrors per base type
+    graphs = []
+    leg = ROOT.TLegend(0.10, 0.84, 0.90, 0.90)
+    leg.SetNColumns(min(len(types_ordered), 8))
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+    leg.SetTextSize(0.036)
+
+    for ft in types_ordered:
+        pts = pts_by_type[ft]
+        gr  = ROOT.TGraphErrors(len(pts))
+        col = type_color[ft]
+        for j, (x, v, ev) in enumerate(pts):
+            gr.SetPoint(j, x, v)
+            gr.SetPointError(j, 0.0, ev)
+        gr.SetMarkerStyle(type_marker[ft])
+        gr.SetMarkerSize(1.3)
+        gr.SetMarkerColor(col)
+        gr.SetLineColor(col)
+        gr.SetLineWidth(2)
+        gr.Draw("P SAME")
+        leg.AddEntry(gr, ft, "p")
+        graphs.append(gr)
+        pts2 = [(i + 1, *secondary[l]) for i, l in enumerate(sorted_labels)
+                if fiber_base_type(l) == ft and l in secondary]
+        if pts2:
+            gr2 = ROOT.TGraphErrors(len(pts2))
+            for j, (x, v, ev) in enumerate(pts2):
+                gr2.SetPoint(j, x, v)
+                gr2.SetPointError(j, 0.0, ev)
+            gr2.SetMarkerStyle(SECONDARY_MARKER)
+            gr2.SetMarkerSize(1.6)
+            gr2.SetMarkerColor(col)
+            gr2.SetLineColor(col)
+            gr2.SetLineWidth(2)
+            gr2.Draw("P SAME")
+            graphs.append(gr2)
+
+    leg.Draw()
+
+    lat = ROOT.TLatex()
+    lat.SetNDC()
+    lat.SetTextSize(0.038)
+    lat.SetTextFont(42)
+    lat.SetTextAlign(31)   # right-align
+    lat.DrawLatex(0.96, 0.935, lumi)
+    if note:
+        lat.SetTextAlign(11)
+        lat.DrawLatex(0.10, 0.935, note)
+
+    if pm.use_jsroot:
+        pm._canvas_jsons[plot_name] = ROOT.TBufferJSON.ToJSON(c).Data()
+    else:
+        c.SaveAs(os.path.join(pm.get_output_dir(), f"{plot_name}.png"))
+
+    # Keep objects alive until after SaveAs
+    c._keep = [frame, leg, lat] + graphs
+
+    return plot_name

@@ -19,6 +19,14 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
     rel_paths = [os.path.relpath(p, start=html_dir) for p in png_paths]
     path_map = dict(zip(real_png_files, rel_paths))
 
+    def _stamp(rel):
+        """Query string with the file's modification time, so a browser does not
+        show a cached copy of a plot that was regenerated under the same name."""
+        try:
+            return f"?v={int(os.path.getmtime(os.path.join(html_dir, rel)))}"
+        except OSError:
+            return ""
+
     timestamp = datetime.now(ZoneInfo("Europe/Zurich")
                              ).strftime("%B %d, %Y, %I:%M %p %Z")
 
@@ -124,16 +132,16 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
                 pdf_rel = os.path.relpath(os.path.join(png_dir, f"{key}.pdf"), start=html_dir)
                 grid_html += f"""      <div class="plot" data-filename="{key}">
         <div class="filename">{key}<span class="pdf-inline"><a href="{pdf_rel}" target="_blank">&#128196;&nbsp;PDF</a></span></div>
-        <a href="{png_rel}" target="_blank">
-          <img src="{png_rel}" alt="{key}">
+        <a href="{png_rel}{_stamp(png_rel)}" target="_blank">
+          <img src="{png_rel}{_stamp(png_rel)}" alt="{key}">
         </a>
       </div>\n"""
             else:
                 rel_path = path_map[filename]
                 grid_html += f"""      <div class="plot" data-filename="{filename}">
         <div class="filename">{filename}</div>
-        <a href="{rel_path}" target="_blank">
-          <img src="{rel_path}" alt="{filename}">
+        <a href="{rel_path}{_stamp(rel_path)}" target="_blank">
+          <img src="{rel_path}{_stamp(rel_path)}" alt="{filename}">
         </a>
       </div>\n"""
         grid_html += '    </div>\n'
@@ -810,13 +818,39 @@ def generate_plotly_picker_html(spec, output_html="picker.html", title="",
     timestamp = datetime.now(ZoneInfo("Europe/Zurich")).strftime(
         "%B %d, %Y, %I:%M %p %Z")
 
-    rows = ""
-    for i, s in enumerate(spec["series"]):
-        rows += (
-            f'      <label class="pick"><input type="checkbox" data-trace="{i}" '
-            f'checked onchange="applyVisibility()">'
-            f'<span class="swatch" style="background:{s["color"]}"></span>'
-            f'<span class="pick-label">{html_escape(str(s["name"]))}</span></label>\n')
+    variants = spec.get("variants")
+    variant_btns, side_class = "", ""
+    if variants:
+        # one row per label, one checkbox column per variant, all/none per variant
+        side_class = " grouped"
+        idx = {(s["row"], s["variant"]): i for i, s in enumerate(spec["series"])}
+        colour = {s["row"]: s["color"] for s in spec["series"]}
+        head = "".join(f"<th>{html_escape(str(v))}</th>" for v in variants)
+        rows = f'      <table class="pick-table"><thead><tr><th></th>{head}</tr></thead><tbody>\n'
+        for row in spec["rows"]:
+            cells = ""
+            for v in variants:
+                i = idx.get((row, v))
+                cells += (f'<td><input type="checkbox" data-trace="{i}" data-variant="{html_escape(str(v))}" '
+                          f'data-row="{html_escape(str(row))}" '
+                          f'checked onchange="applyVisibility()"></td>' if i is not None else "<td></td>")
+            rows += (f'      <tr><td class="pick-row"><span class="swatch" style="background:{colour[row]}">'
+                     f'</span><span class="pick-label">{html_escape(str(row))}</span></td>{cells}</tr>\n')
+        rows += "      </tbody></table>\n"
+        variant_btns = "".join(
+            f'<span class="grp">{html_escape(str(v))}: '
+            f'<button onclick="setVariant(\'{html_escape(str(v))}\', true)">all</button>'
+            f'<button onclick="setVariant(\'{html_escape(str(v))}\', false)">none</button></span>'
+            for v in variants)
+        variant_btns = f'      <div class="side-btns variant-btns">{variant_btns}</div>\n'
+    else:
+        rows = ""
+        for i, s in enumerate(spec["series"]):
+            rows += (
+                f'      <label class="pick"><input type="checkbox" data-trace="{i}" '
+                f'checked onchange="applyVisibility()">'
+                f'<span class="swatch" style="background:{s["color"]}"></span>'
+                f'<span class="pick-label">{html_escape(str(s["name"]))}</span></label>\n')
 
     data_json = json.dumps(spec, separators=(",", ":")).replace("</script>", "<\\/script>")
     intro_block = (f'  <div class="intro-text">{html_escape(intro_text)}</div>\n'
@@ -828,6 +862,8 @@ def generate_plotly_picker_html(spec, output_html="picker.html", title="",
             ("__TIMESTAMP__", timestamp),
             ("__INTRO__", intro_block),
             ("__ROWS__", rows),
+            ("__VARIANT_BTNS__", variant_btns),
+            ("__SIDE_CLASS__", side_class),
             ("__CDN__", PLOTLY_CDN),
             ("__DATA__", data_json)]:
         page = page.replace(placeholder, value)
@@ -862,6 +898,14 @@ _PLOTLY_PICKER_TEMPLATE = """<!DOCTYPE html>
     .side-btns button { padding: 3px 10px; font-size: 12px; cursor: pointer;
                         border: 1px solid #bbb; border-radius: 3px; background: #f5f5f5; }
     .side-btns button:hover { background: #e0e0e0; }
+    .side.grouped { flex-basis: 340px; }
+    .variant-btns { flex-wrap: wrap; gap: 10px; }
+    .variant-btns .grp { display: flex; align-items: center; gap: 3px; font-size: 12px; }
+    .pick-table { border-collapse: collapse; font-size: 13px; }
+    .pick-table th { font-weight: normal; color: #666; font-size: 11px; padding: 0 6px 4px; }
+    .pick-table td { padding: 1px 6px; text-align: center; }
+    .pick-table td.pick-row { text-align: left; white-space: nowrap; }
+    .pick-table .swatch { display: inline-block; vertical-align: middle; margin-right: 6px; }
     label.pick { display: flex; align-items: center; gap: 6px; font-size: 13px;
                  padding: 2px 0; cursor: pointer; }
     .swatch { width: 12px; height: 12px; border-radius: 2px; flex: 0 0 12px;
@@ -893,7 +937,7 @@ _PLOTLY_PICKER_TEMPLATE = """<!DOCTYPE html>
     <div class="timestamp">__TIMESTAMP__</div>
   </div>
 __INTRO__  <div class="layout">
-    <div class="side">
+    <div class="side__SIDE_CLASS__">
       <h2>Curves</h2>
       <div class="mode">
         <label><input type="radio" name="mode" value="raw" checked
@@ -905,7 +949,7 @@ __INTRO__  <div class="layout">
         <button onclick="setAll(true)">All</button>
         <button onclick="setAll(false)">None</button>
       </div>
-__ROWS__      <div class="opts">
+__VARIANT_BTNS____ROWS__      <div class="opts">
         <label><input type="checkbox" id="autoscale" onchange="applyYRange()">
           Auto-scale Y to selection</label>
       </div>
@@ -940,11 +984,15 @@ const defaultY = () => (mode() === 'norm' ? spec.yrangeNorm : spec.yrange).slice
 const ylabel = () => (mode() === 'norm'
                       ? spec.ylabel + ' (peak = 1)' : spec.ylabel);
 
+// In grouped mode the legend lists each row (e.g. fibre) once, on its first
+// curve; the hover text still names the individual curve.
 const traces = spec.series.map(s => ({
-  type: 'scatter', mode: 'lines', name: s.name,
+  type: 'scatter', mode: 'lines', name: s.row ? s.row : s.name,
+  legendgroup: s.row ? s.row : undefined,
+  showlegend: s.showlegend === undefined ? true : s.showlegend,
   y: s.y, x0: spec.x0, dx: spec.dx,
-  line: { color: s.color, width: 1.5 },
-  hovertemplate: '%{fullData.name}<br>' + spec.xlabel + ' = %{x:.1f}<br>' +
+  line: { color: s.color, width: 1.5, dash: s.dash || 'solid' },
+  hovertemplate: s.name + '<br>' + spec.xlabel + ' = %{x:.1f}<br>' +
                  '%{y:.4g}<extra></extra>'
 }));
 
@@ -969,6 +1017,15 @@ Plotly.newPlot(GD, traces, layout, {
   writeBoxes(spec.xrange, spec.yrange);
   // Route legend clicks through the checkboxes so there is one source of truth
   GD.on('plotly_legendclick', ev => {
+    const s = spec.series[ev.curveNumber];
+    if (s && s.row) {
+      // grouped legend entry: toggle every curve of that row together
+      const boxes = document.querySelectorAll('input[data-trace][data-row="' + s.row + '"]');
+      const anyOn = Array.from(boxes).some(cb => cb.checked);
+      boxes.forEach(cb => { cb.checked = !anyOn; });
+      applyVisibility();
+      return false;
+    }
     const cb = document.querySelector('input[data-trace="' + ev.curveNumber + '"]');
     if (cb) { cb.checked = !cb.checked; applyVisibility(); }
     return false;
@@ -1076,6 +1133,12 @@ function applyVisibility() {
 
 function setAll(state) {
   document.querySelectorAll('input[data-trace]').forEach(cb => { cb.checked = state; });
+  applyVisibility();
+}
+
+function setVariant(variant, state) {
+  document.querySelectorAll('input[data-trace][data-variant="' + variant + '"]')
+          .forEach(cb => { cb.checked = state; });
   applyVisibility();
 }
 </script>

@@ -8,6 +8,7 @@ import json
 
 from collections import OrderedDict
 
+from channels.maps.paths import table_path
 from channels.maps.eras import (_DRS_BRG_RUN, _DRS_FULL_RUN_TB2026,
                                 _DRS_TESTFIBER_RUN_TB2026, _for_run)
 from utils.data_loader import is_scan_run
@@ -20,11 +21,11 @@ def _drs(board, group, ch, brg=None):
     return f"DRS_Board{board}_Group{group}_Channel{ch}"
 
 
-f_triggerdelay = "data/triggerdelay.json"
+f_triggerdelay = table_path("triggerdelay.json")
 with open(f_triggerdelay, 'r') as f:
     triggerdelay = json.load(f)
 
-f_drstriggermap = "data/drstriggermap.json"
+f_drstriggermap = table_path("drstriggermap.json")
 with open(f_drstriggermap, 'r') as f:
     triggermap = json.load(f)
 

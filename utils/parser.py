@@ -33,8 +33,12 @@ def get_args():
     parser.add_argument(
         "--channels", default=None, type=str, metavar="FILE",
         help="JSON file mapping labels to channel names "
-             "(e.g. data/channel_maps/testingfibers.json). "
+             "(e.g. channels/data/testingfibers.json). "
              "When given, only the listed channels are histogrammed.")
+    parser.add_argument(
+        "--intime", action="store_true", default=False,
+        help="After the DRS stats, also run the in-time vs out-of-time test-fibre "
+             "analysis (needs --channels; see analysis/intime_analysis.py).")
     args = parser.parse_args()
 
     print(f"Run number: {args.run}")

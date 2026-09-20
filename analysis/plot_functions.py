@@ -1152,11 +1152,12 @@ def plot_drs_stats(ctx, *, do_peak=False, do_energy=True, do_energy_map=True,
                     pave = _channel_pave(ctx, board, chan, 0.20, 0.80, 0.60, 0.90,
                             with_tower=not chan.is_reference)
                     var = get_channel_var(chan)
+                    fiber_label = (getattr(ctx, "channel_labels", None) or {}).get(ch)
                     pm.plot_1d(
                         hist, f"DRS_Energy_{ch}_{var}",
                         "CFD Energy", get_drs_energy_range(
-                            chan.is6mm)[1:], "Counts", (0.9, None),
-                        style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=var)
+                            chan.is6mm, test_fiber_label=fiber_label)[1:], "Counts", (0.9, None),
+                        style=_STYLE_1D_LOG, extraToDraw=pave, extra_text=fiber_label or var)
             output_htmls.append(pm.generate_html(
                 "DRS/DRS_Sum.html", plots_per_row=9))
 

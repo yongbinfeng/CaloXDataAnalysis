@@ -9,11 +9,11 @@ so it is quick to re-run while iterating on the plot.
 Usage
 -----
   python scripts/make_drs_overlay.py --run 1994 \
-      --channels data/channel_maps/testingfibers.json
+      --channels channels/data/testingfibers.json
 
   # a different histogram from the same file
   python scripts/make_drs_overlay.py --run 1994 \
-      --channels data/channel_maps/testingfibers.json \
+      --channels channels/data/testingfibers.json \
       --hist-pattern "prof_{channel}_blsub_VS_ts" --output DRS/overlay_raw.html
 
 If the ROOT file or the histograms are missing, the run has not been produced

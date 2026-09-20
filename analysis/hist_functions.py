@@ -629,10 +629,12 @@ def book_drs_stats(ctx, do_finebins=True):
                 "DRS peak value;Peak value;Counts",
                 *get_drs_peak_value_range()),
                 f"{channel_name}_peak_value"))
+            # test-fibre runs (--channels map) get a wider energy range, by label
+            fiber_label = (getattr(ctx, "channel_labels", None) or {}).get(channel_name)
             hists.append(ctx.rdf.Histo1D((
                 f"hist_{channel_name}_energy",
                 "DRS CFD energy integral;CFD energy;Counts",
-                *get_drs_energy_range(chan.is6mm)),
+                *get_drs_energy_range(chan.is6mm, test_fiber_label=fiber_label)),
                 f"{channel_name}_energy"))
             hists.append(ctx.rdf.Histo1D((
                 f"hist_{channel_name}_blrms",

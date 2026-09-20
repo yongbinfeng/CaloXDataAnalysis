@@ -9,7 +9,9 @@ Usage
 -----
   python scripts/check_drs_mcp.py                              # default DRS_MCP_SEQUENCES
   python scripts/check_drs_mcp.py --sequences drs_stats drs_cfd_mpv
-  python scripts/check_drs_mcp.py --channels data/channel_maps/testingfibers.json
+  python scripts/check_drs_mcp.py --channels channels/data/testingfibers.json
+  python scripts/check_drs_mcp.py --channels channels/data/testingfibers.json \
+      --mcp-clean --intime          # + in-time vs out-of-time test-fibre pages
 
   --channels FILE  JSON file mapping labels to channel names; only those channels
                    are histogrammed (reference channels are always kept).
@@ -80,6 +82,12 @@ print()
 def main():
     run_hist_phase(sequences, manager)
     run_plot_phase(sequences, manager)
+    if args.intime:
+        # second event loop: needs the timing MPVs that drs_stats.root now holds
+        if not args.channels:
+            raise SystemExit("--intime needs --channels (the test-fibre label map)")
+        from analysis.intime_analysis import run_intime_analysis
+        run_intime_analysis(manager, args)
 
 
 if __name__ == "__main__":

@@ -2,13 +2,14 @@
 
 Runs from _DRS_FULL_RUN_TB2026 on derive their channel positions from the FERS
 map through the DRS->FERS CSVs; earlier eras read a frozen JSON map from
-data/channel_maps/drs/.
+channels/data/drs/. All tables live under channels/data (see channels.maps.paths).
 """
 import csv
 import json
 import os
 import re
 
+from channels.maps.paths import table_path
 from channels.calox_channel import (DRSBoard, DRSChannel,
                                     add_drs_reference_channel)
 from channels.maps.eras import (_DRS_FULL_RUN_TB2026, _DRS_PHASE2_RUN,
@@ -24,17 +25,12 @@ from collections import OrderedDict
 # channel (fers_root_board, Physical-1). Used only for the from-FERS era
 # (run >= _DRS_FULL_RUN_TB2026); earlier runs use the function-based board maps.
 # The mapping was rewired between phases, so the CSV is run-dependent:
-#   1828 <= run < 1896  : DRS_PHASE_1.csv
-#   run >= 1896         : DRS_PHASE_2.csv
-_CHANNEL_MAP_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "data", "channel_maps")
+#   1828 <= run < 1896  : drs_fers_phase1.csv
+#   run >= 1896         : drs_fers_phase2.csv
+_DRS_FERS_CSV_PHASE1 = table_path("drs_fers_phase1.csv")
 
 
-_DRS_FERS_CSV_PHASE1 = os.path.join(_CHANNEL_MAP_DIR, "DRS_PHASE_1.csv")
-
-
-_DRS_FERS_CSV_PHASE2 = os.path.join(_CHANNEL_MAP_DIR, "DRS_PHASE_2.csv")
+_DRS_FERS_CSV_PHASE2 = table_path("drs_fers_phase2.csv")
 
 
 def _drs_fers_csv(run_number):
@@ -140,11 +136,11 @@ def build_drs_boards_from_fers(fersboards, csv_path=_DRS_FERS_CSV_PHASE1):
     return DRSBoards
 
 
-# Per-era DRS maps live as JSON under data/channel_maps/drs/. Ranges are
+# Per-era DRS maps live as JSON under channels/data/drs/. Ranges are
 # [run_min, run_max); run_min None means "everything before run_max". Runs from
 # _DRS_FULL_RUN_TB2026 on are not listed here: those are derived from the FERS
 # map via the DRS->FERS CSVs (build_drs_boards_from_fers).
-_DRS_MAP_DIR = os.path.join(_CHANNEL_MAP_DIR, "drs")
+_DRS_MAP_DIR = table_path("drs")
 
 
 _DRS_LAYOUTS = (

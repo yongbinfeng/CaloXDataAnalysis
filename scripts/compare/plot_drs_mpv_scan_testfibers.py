@@ -11,6 +11,7 @@ Usage
 """
 
 import argparse
+import math
 import os
 import json
 import ROOT
@@ -18,7 +19,7 @@ import ROOT
 from channels.channel_map import build_drs_boards
 from core.plot_manager import PlotManager
 from plotting.my_function import DrawHistos
-from plotting.calox_plot_helper import create_pave_text
+from plotting.calox_plot_helper import create_pave_text, fiber_base_type, plot_fiber_summary
 from utils.data_loader import getRunInfo
 from utils.root_setup import setup_root
 from utils.timing import auto_timer
@@ -43,6 +44,38 @@ MPV_EDGE_TS = 6.0
 
 PLOTDIR = "results/plots/PositionScan"
 HTMLDIR = "results/html/PositionScan"
+
+# beam type spellings in data/Runlist.json -> ROOT latex
+_BTYPES = {"pion": "#pi^{+}", "pions": "#pi^{+}", "pi+": "#pi^{+}",
+           "positron": "e^{+}", "positrons": "e^{+}", "e+": "e^{+}",
+           "mu+": "#mu^{+}"}
+# marker style per beam energy [GeV]: filled circle, open square, open triangle
+ENERGY_MARKERS = {40: 20, 60: 25, 80: 26}
+LEGEND_POS = [0.56, 0.79, 0.88, 0.89]
+X_BEAM = {}   # table position [mm] -> (beam type, beam energy [GeV]); filled in main()
+
+
+def _graphs_by_beam(pts, name, with_errors=True):
+    """Split scan points (x, y[, err]) by beam energy into one graph each, so
+    the runs at different energies get their own marker. Returns
+    (graphs, legend labels, marker styles), lowest energy first."""
+    groups = {}
+    for pt in pts:
+        groups.setdefault(X_BEAM.get(pt[0], ("", 0)), []).append(pt)
+    graphs, labels, markers = [], [], []
+    for (btype, energy), gpts in sorted(groups.items(), key=lambda kv: kv[0][1]):
+        gr = ROOT.TGraphErrors(len(gpts)) if with_errors else ROOT.TGraph(len(gpts))
+        gr.SetName(f"{name}_{energy}GeV")
+        gr.SetTitle("")
+        for i, pt in enumerate(sorted(gpts)):
+            gr.SetPoint(i, pt[0], pt[1])
+            if with_errors:
+                gr.SetPointError(i, 0.0, pt[2])
+        gr.SetLineWidth(2)
+        graphs.append(gr)
+        labels.append(f"{_BTYPES.get(btype.lower(), btype)} {energy} GeV" if energy else "beam unknown")
+        markers.append(ENERGY_MARKERS.get(energy, 21))
+    return graphs, labels, markers
 
 
 
@@ -166,13 +199,8 @@ def _plot_time_channels(channel_order, mpv_data, pm, lumi, xmin, xmax,
         if not pts:
             continue
 
-        gr = ROOT.TGraphErrors(len(pts))
-        gr.SetName(f"gr_mpv_{ch}")
-        gr.SetTitle("")
-        for i, (x, y, ye) in enumerate(pts):
-            gr.SetPoint(i, x, y)
-            gr.SetPointError(i, 0.0, ye)
-        gr.SetLineWidth(2)
+        graphs, labels, markers = _graphs_by_beam(pts, f"gr_mpv_{ch}")
+        gr = graphs[0]
 
         p0, p1, e0, e1 = _fit_channel(pts)
 
@@ -204,14 +232,15 @@ def _plot_time_channels(channel_order, mpv_data, pm, lumi, xmin, xmax,
         plot_name = (f"{label}_drs_cfd_mpv_scan_{ch}" if label
                      else f"drs_cfd_mpv_scan_{ch}_{var}")
         DrawHistos(
-            [gr], [],
+            graphs, labels,
             xmin, xmax, "Table position X [mm]",
             ymid - yhalf, ymid + yhalf, "MPV [TS]",
             plot_name,
             outdir=pm.get_output_dir(),
             drawoptions="EPL",
-            markerstyles=[20],
-            mycolors=[ROOT.kBlue + 1],
+            markerstyles=markers,
+            mycolors=[ROOT.kBlue + 1] * len(graphs),
+            legendPos=LEGEND_POS,
             dology=False,
             usePDF=False,
             lumitext=lumi,
@@ -272,12 +301,8 @@ def _plot_energy_channels(channel_order, data, pm, lumi, xmin, xmax, ch_label_ma
         if not pts:
             continue
 
-        gr = ROOT.TGraph(len(pts))
-        gr.SetName(f"gr_summean_{ch}")
-        gr.SetTitle("")
-        for i, (x, mean) in enumerate(pts):
-            gr.SetPoint(i, x, mean)
-        gr.SetLineWidth(2)
+        graphs, labels, markers = _graphs_by_beam(pts, f"gr_summean_{ch}", with_errors=False)
+        gr = graphs[0]
 
         # Constant (pol0) fit restricted to [-220, 50] mm, done by hand so it
         # does not depend on a ROOT minimizer being available.
@@ -307,14 +332,15 @@ def _plot_energy_channels(channel_order, data, pm, lumi, xmin, xmax, ch_label_ma
         plot_name = (f"{label}_drs_summean_scan_{ch}" if label
                      else f"drs_summean_scan_{ch}_{var}")
         DrawHistos(
-            [gr], [],
+            graphs, labels,
             xmin, xmax, "Table position X [mm]",
             ymid - yhalf, ymid + yhalf, "Mean DRS Sum [ADC]",
             plot_name,
             outdir=pm.get_output_dir(),
             drawoptions="EPL",
-            markerstyles=[20],
-            mycolors=[ROOT.kBlue + 1],
+            markerstyles=markers,
+            mycolors=[ROOT.kBlue + 1] * len(graphs),
+            legendPos=LEGEND_POS,
             dology=False,
             usePDF=False,
             lumitext=lumi,
@@ -329,113 +355,6 @@ def _plot_energy_channels(channel_order, data, pm, lumi, xmin, xmax, ch_label_ma
 # Speed summary plot
 # ---------------------------------------------------------------------------
 
-_SPEED_PALETTE = [
-    ROOT.kBlue + 1, ROOT.kRed + 1, ROOT.kGreen + 2, ROOT.kOrange + 1,
-    ROOT.kViolet + 2, ROOT.kCyan + 2, ROOT.kMagenta + 1, ROOT.kTeal + 3,
-    ROOT.kAzure + 7, ROOT.kSpring + 6,
-]
-# ROOT marker styles: filled circle, square, triangle-up, diamond, triangle-down,
-# open circle, open square, open triangle-up, star, open diamond
-_SPEED_MARKERS = [20, 21, 22, 33, 23, 24, 25, 26, 29, 27]
-
-
-def _fiber_base_type(label):
-    """Strip trailing _N suffix: 'Quartz400_1' → 'Quartz400', 'Sapphire' → 'Sapphire'."""
-    import re
-    return re.sub(r'_\d+$', '', label)
-
-
-def _plot_fiber_summary(values, ytitle, ymin, ymax, plot_name, pm, lumi):
-    """One point per fiber (label -> (value, error)), one color+marker per base
-    fiber type, with the fiber labels on the x axis.
-
-    Returns the plot name (without extension) so the caller can add it to pm,
-    or None if there is nothing to draw.
-    """
-    if not values:
-        return None
-
-    # Sort by (base type, full label) so same-type channels are adjacent
-    sorted_labels = sorted(values, key=lambda l: (_fiber_base_type(l), l))
-    types_ordered = list(dict.fromkeys(_fiber_base_type(l) for l in sorted_labels))
-    type_color    = {t: _SPEED_PALETTE[i % len(_SPEED_PALETTE)]
-                     for i, t in enumerate(types_ordered)}
-    type_marker   = {t: _SPEED_MARKERS[i % len(_SPEED_MARKERS)]
-                     for i, t in enumerate(types_ordered)}
-
-    # Group points by base type
-    pts_by_type = {}
-    for i, label in enumerate(sorted_labels):
-        v, ev = values[label]
-        pts_by_type.setdefault(_fiber_base_type(label), []).append((i + 1, v, ev))
-
-    n = len(sorted_labels)
-
-    c = ROOT.TCanvas(f"c_{plot_name}", "", 1400, 650)
-    c.SetBottomMargin(0.28)
-    c.SetLeftMargin(0.09)
-    c.SetRightMargin(0.04)
-    c.SetTopMargin(0.08)
-
-    # Frame histogram — only purpose is to carry x-axis bin labels
-    frame = ROOT.TH1F(f"h_{plot_name}_frame", "", n, 0.5, n + 0.5)
-    for i, label in enumerate(sorted_labels):
-        frame.GetXaxis().SetBinLabel(i + 1, label)
-    frame.GetXaxis().LabelsOption("v")
-    frame.GetXaxis().SetLabelSize(0.042)
-    frame.GetXaxis().SetTickLength(0.0)
-    frame.GetYaxis().SetTitle(ytitle)
-    frame.GetYaxis().SetTitleOffset(0.9)
-    frame.GetYaxis().SetTitleSize(0.048)
-    frame.SetMinimum(ymin)
-    frame.SetMaximum(ymax)
-    frame.SetStats(0)
-    frame.Draw("AXIS")
-
-    # One TGraphErrors per base type
-    graphs = []
-    leg = ROOT.TLegend(0.10, 0.84, 0.90, 0.90)
-    leg.SetNColumns(min(len(types_ordered), 8))
-    leg.SetBorderSize(0)
-    leg.SetFillStyle(0)
-    leg.SetTextSize(0.036)
-
-    for ft in types_ordered:
-        pts = pts_by_type[ft]
-        gr  = ROOT.TGraphErrors(len(pts))
-        col = type_color[ft]
-        for j, (x, v, ev) in enumerate(pts):
-            gr.SetPoint(j, x, v)
-            gr.SetPointError(j, 0.0, ev)
-        gr.SetMarkerStyle(type_marker[ft])
-        gr.SetMarkerSize(1.3)
-        gr.SetMarkerColor(col)
-        gr.SetLineColor(col)
-        gr.SetLineWidth(2)
-        gr.Draw("P SAME")
-        leg.AddEntry(gr, ft, "p")
-        graphs.append(gr)
-
-    leg.Draw()
-
-    lat = ROOT.TLatex()
-    lat.SetNDC()
-    lat.SetTextSize(0.038)
-    lat.SetTextFont(42)
-    lat.SetTextAlign(31)   # right-align
-    lat.DrawLatex(0.96, 0.935, lumi)
-
-    if pm.use_jsroot:
-        pm._canvas_jsons[plot_name] = ROOT.TBufferJSON.ToJSON(c).Data()
-    else:
-        c.SaveAs(os.path.join(pm.get_output_dir(), f"{plot_name}.png"))
-
-    # Keep objects alive until after SaveAs
-    c._keep = [frame, leg, lat] + graphs
-
-    return plot_name
-
-
 def _plot_speed_summary(ch_label_map, p1_map, e1_map, pm, lumi):
     """Speed v = 0.5/|p1| [cm/ns] per fiber, from the time-scan slope."""
     speed_data = {}   # label -> (speed, e_speed)
@@ -446,7 +365,7 @@ def _plot_speed_summary(ch_label_map, p1_map, e1_map, pm, lumi):
             continue
         s  = 0.5 / abs(p1)
         speed_data[label] = (s, s * abs(e1) / abs(p1))
-    return _plot_fiber_summary(speed_data, "Speed  v = 1/|p_{1}| [cm/ns]",
+    return plot_fiber_summary(speed_data, "Speed  v = 1/|p_{1}| [cm/ns]",
                                SPEED_SUMMARY_RANGE[0], SPEED_SUMMARY_RANGE[1],
                                "drs_cfd_speed_summary", pm, lumi)
 
@@ -455,7 +374,7 @@ def _plot_p0_summary_time(ch_label_map, p0_map, e0_map, pm, lumi):
     """Time-scan intercept p0 [TS] per fiber (MPV extrapolated to X = 0)."""
     p0_data = {label: (p0_map[ch], e0_map.get(ch, 0.0))
                for ch, label in ch_label_map.items() if p0_map.get(ch) is not None}
-    return _plot_fiber_summary(p0_data, "MPV at X = 0  p_{0} [TS]",
+    return plot_fiber_summary(p0_data, "MPV at X = 0  p_{0} [TS]",
                                TIME_P0_SUMMARY_RANGE[0], TIME_P0_SUMMARY_RANGE[1],
                                "drs_cfd_p0_summary", pm, lumi)
 
@@ -468,7 +387,7 @@ def _plot_p0_summary_energy(ch_label_map, p0_map, e0_map, pm, lumi):
     """Mean DRS Sum p0 [ADC] per fiber, from the energy-scan constant fit."""
     p0_data = {label: (p0_map[ch], e0_map.get(ch) or 0.0)
                for ch, label in ch_label_map.items() if p0_map.get(ch) is not None}
-    return _plot_fiber_summary(p0_data, "Mean DRS Sum  p_{0} [ADC]",
+    return plot_fiber_summary(p0_data, "Mean DRS Sum  p_{0} [ADC]",
                                ENERGY_P0_SUMMARY_RANGE[0], ENERGY_P0_SUMMARY_RANGE[1],
                                "drs_summean_p0_summary", pm, lumi)
 
@@ -702,14 +621,316 @@ def run_energy_scan(drsboards, run_x, channel_order, lumi, xmin, xmax,
 # Entry point
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Photoelectron scan — from the per-run in-time analysis (analysis/intime_analysis.py)
+# ---------------------------------------------------------------------------
+
+PE_FIT_XMIN, PE_FIT_XMAX = -220.0, 50.0    # plateau window for the constant fits [mm]
+
+# Exponential attenuation fits, light = A_E * exp(x / lambda): one normalisation
+# A_E per beam energy (the 60 GeV runs give more light) and one common lambda,
+# plus a separate fit per energy. lambda > 0 means more light towards +X, which
+# the timing scan identifies as the readout end. Runs whose in-time fraction is
+# below EDGE_FRACTION of the fibre's plateau value are edge runs where the beam
+# only partly overlaps the fibre; they are drawn but left out of the fits.
+EXP_FIT_KEYS = ("mean_energy_hit", "pe_per_hit")
+EDGE_FRACTION = 0.6
+MIN_FIT_SPAN_MM = 100.0   # a group needs at least this much travel for its own lambda
+# The runs at different beam energies give different amounts of light, so each
+# beam energy gets its own normalisation; the slope within each energy group
+# constrains the common lambda, and each group is also fitted on its own.
+
+
+def _fit_exponential(groups):
+    """groups: {energy: [(x, y, ey)]}. Weighted least squares of ln y = a_g + b x
+    with a common slope b; errors scaled by sqrt(chi2/ndf) when the scatter
+    exceeds the point errors. Returns (b, eb, {g: a_g}, {g: (b_g, eb_g)}) or
+    None if there are too few points."""
+    def _prep(pts):
+        return [(x, math.log(y), (y / ey) ** 2) for x, y, ey in pts if y > 0 and ey > 0]
+    def _regress(sets):
+        """common slope over several groups, each with its own intercept"""
+        sxx = sxy = 0.0
+        stats = []
+        for pts in sets:
+            sw = sum(w for _, _, w in pts)
+            xb = sum(w * x for x, _, w in pts) / sw
+            lb = sum(w * l for _, l, w in pts) / sw
+            sxx += sum(w * (x - xb) ** 2 for x, _, w in pts)
+            sxy += sum(w * (x - xb) * (l - lb) for x, l, w in pts)
+            stats.append((pts, xb, lb))
+        if sxx <= 0:
+            return None
+        b = sxy / sxx
+        chi2 = sum(w * (l - lb - b * (x - xb)) ** 2 for pts, xb, lb in stats for x, l, w in pts)
+        ndf = sum(len(pts) for pts in sets) - len(sets) - 1
+        eb = (1.0 / sxx) ** 0.5 * max(1.0, (chi2 / ndf) ** 0.5 if ndf > 0 else 1.0)
+        intercepts = [lb - b * xb for _, xb, lb in stats]
+        return b, eb, intercepts
+    prepared = {g: _prep(pts) for g, pts in groups.items()}
+    prepared = {g: pts for g, pts in prepared.items() if len(pts) >= 3}
+    if not prepared or sum(len(v) for v in prepared.values()) < 4:
+        return None
+    keys = list(prepared)
+    common = _regress([prepared[g] for g in keys])
+    if common is None:
+        return None
+    b, eb, icpt = common
+    per_group = {}
+    for g in keys:
+        xs = [x for x, _, _ in prepared[g]]
+        if max(xs) - min(xs) < MIN_FIT_SPAN_MM:
+            continue
+        r = _regress([prepared[g]])
+        if r is not None:
+            per_group[g] = (r[0], r[1])
+    return b, eb, dict(zip(keys, icpt)), per_group
+
+
+def _lambda_m(b, eb):
+    """slope of ln(light) per mm -> attenuation length [m] and its error"""
+    if b == 0:
+        return float("inf"), float("inf")
+    return 1.0 / b / 1000.0, eb / b / b / 1000.0
+
+
+def _fmt_lambda(lam, err, unit=" m"):
+    """lambda for a label: 'flat' when the slope is consistent with zero, which
+    would otherwise print as a huge or negative length with a huge error."""
+    if abs(lam) > 20.0 and err > abs(lam):
+        return "flat"
+    return f"{lam:.1f} #pm {err:.1f}{unit}" if abs(lam) >= 1.0 else f"{lam:.2f} #pm {err:.2f}{unit}"
+
+# quantity key in intime_summary.json -> (error key or None, plot suffix, y title, y minimum or None)
+# Per-fibre scan plots use a linear y axis fitted to the data so that the
+# position dependence is visible; a fixed minimum (0) is used where it makes sense.
+# All per-hit quantities are sideband-subtracted (random coincidences removed),
+# see analysis/intime_analysis.py.
+_PE_QUANTITIES = {
+    "mean_energy_hit": ("sem_energy_hit", "drs_energy_hit_scan", "Light per hit [ADC]", None),
+    "mean_energy_in": ("sem_energy_in", "drs_energy_in_scan", "<E> in time, raw [ADC]", None),
+    "pe_per_hit": ("pe_per_hit_err", "drs_pe_scan", "p.e. per hit", None),
+    "hit_fraction": ("hit_fraction_err", "drs_intime_frac_scan", "Hit fraction", 0.0),
+}
+
+
+def _collect_intime(run_x):
+    """label -> quantity -> [(x, value, error)] from each run's intime_summary.json."""
+    data = {}
+    for run, x_val in sorted(run_x.items(), key=lambda kv: kv[1]):
+        path = f"results/plots/Run{run}/DRS_InTime/intime_summary.json"
+        if not os.path.exists(path):
+            print(f"Warning: {path} not found, skipping run {run}")
+            continue
+        with open(path) as f:
+            per_fibre = json.load(f)["per_fibre"]
+        for label, v in per_fibre.items():
+            if v.get("pe_per_hit") is None or not v.get("one_pe_int_adc"):
+                if "mean_energy_hit" not in v:
+                    print(f"Warning: run {run} has no sideband-subtracted values; rerun the in-time analysis")
+                continue
+            d = data.setdefault(label, {k: [] for k in _PE_QUANTITIES})
+            for key, (err_key, _, _, _) in _PE_QUANTITIES.items():
+                d[key].append((x_val, v[key], v[err_key]))
+    return data
+
+
+def _plot_pe_channels(data, pm, lumi, xmin, xmax):
+    """Scan plots per fibre. Returns (plot names in page order, plateau values,
+    exponential-fit results {label: {key: {...}}})."""
+    names, plateau, expfits = [], {}, {}
+    # Edge runs, where the beam only partly overlaps the fibres: the in-time
+    # fraction of the high-yield fibres (plateau fraction >= 0.15, so that it
+    # measures overlap rather than attenuation) is well below its plateau value.
+    ratios = {}
+    for label, d in data.items():
+        frac_pts = sorted(d["hit_fraction"])
+        f_plateau = _fit_constant([(x, y) for x, y, _ in frac_pts], PE_FIT_XMIN, PE_FIT_XMAX)[0]
+        if f_plateau >= 0.15:
+            for x, f, _ in frac_pts:
+                ratios.setdefault(x, []).append(f / f_plateau)
+    edge_x = {x for x, r in ratios.items() if sorted(r)[len(r) // 2] < EDGE_FRACTION}
+    if edge_x:
+        print(f"Exponential fits leave out the edge runs at X = {sorted(edge_x)} mm")
+    for label in sorted(data, key=lambda l: (fiber_base_type(l), l)):
+        plateau[label], expfits[label] = {}, {}
+        for key, (_, suffix, ytitle, y_floor) in _PE_QUANTITIES.items():
+            pts = sorted(data[label][key])
+            if not pts:
+                continue
+            graphs, labels, markers = _graphs_by_beam(pts, f"gr_{suffix}_{label}")
+            gr = graphs[0]
+
+            p0, e0, n_used = _fit_constant([(x, y) for x, y, _ in pts], PE_FIT_XMIN, PE_FIT_XMAX)
+            plateau[label][key] = (p0, e0, n_used)
+            pave_fit = create_pave_text(0.13, 0.71, 0.60, 0.85, size=0.033)
+            if key in EXP_FIT_KEYS:
+                # exponential fit, one normalisation per beam energy, common lambda
+                groups = {}   # beam energy -> points (edge runs left out)
+                for x, y, ey in pts:
+                    if x not in edge_x:
+                        groups.setdefault(X_BEAM.get(x, ("", 0))[1], []).append((x, y, ey))
+                res = _fit_exponential(groups)
+                if res is not None:
+                    b, eb, icpt, per_group = res
+                    lam, elam = _lambda_m(b, eb)
+                    expfits[label][key] = {
+                        "lambda_m": lam, "lambda_err_m": elam, "slope_per_mm": b, "slope_err_per_mm": eb,
+                        "per_energy": {g: dict(zip(("lambda_m", "lambda_err_m"), _lambda_m(*v)))
+                                       for g, v in sorted(per_group.items())},
+                        "n_points": sum(len(v) for v in groups.values()), "edge_runs_x": sorted(edge_x)}
+                    for g, a in sorted(icpt.items()):
+                        xs_g = [x for x, _, _ in groups[g]]
+                        f = ROOT.TF1(f"expfit_{suffix}_{label}_{g}", "[0]*exp([1]*x)",
+                                     min(xs_g) - 15, max(xs_g) + 15)
+                        f.SetParameters(math.exp(a), b)
+                        f.SetLineColor(ROOT.kRed + 1)
+                        f.SetLineWidth(2)
+                        f.SetNpx(200)
+                        # attach to the graph of that energy so it is drawn with it
+                        i_gr = next((i for i, lab in enumerate(labels) if lab.endswith(f"{g} GeV")), 0)
+                        graphs[i_gr].GetListOfFunctions().Add(f)
+                    pave_fit.AddText(f"#lambda = {_fmt_lambda(lam, elam)}  (common)")
+                    pave_fit.AddText("   ".join(f"{g} GeV: {_fmt_lambda(*_lambda_m(*v), unit='')}"
+                                               for g, v in sorted(per_group.items())) + " m")
+                else:
+                    pave_fit.AddText("exponential fit: too few points")
+            else:
+                fit = ROOT.TF1(f"fit_{suffix}_{label}", "pol0", PE_FIT_XMIN, PE_FIT_XMAX)
+                fit.SetParameter(0, p0)
+                fit.SetLineColor(ROOT.kRed + 1)
+                fit.SetLineWidth(2)
+                fit.SetLineStyle(2)
+                gr.GetListOfFunctions().Add(fit)
+                pave_fit.AddText(f"plateau: {p0:.3g} #pm {e0:.2g}")
+            plot_name = f"{label}_{suffix}"
+            lo = min(y - ye for _, y, ye in pts)
+            hi = max(y + ye for _, y, ye in pts)
+            pad = 0.35 * (hi - lo) if hi > lo else 0.2 * abs(hi) + 1.0
+            ymin_p = lo - pad if y_floor is None else y_floor
+            ymax_p = hi + 2.0 * pad     # room for the legend and the fit text above the data
+            DrawHistos(
+                graphs, labels,
+                xmin, xmax, "Table position X [mm]",
+                ymin_p, ymax_p, ytitle,
+                plot_name,
+                outdir=pm.get_output_dir(),
+                drawoptions="EPL",
+                markerstyles=markers,
+                mycolors=[ROOT.kBlue + 1] * len(graphs),
+                legendPos=LEGEND_POS,
+                dology=False,
+                usePDF=False,
+                lumitext=lumi,
+                extra_text=label,
+                extraToDraw=[pave_fit],
+            )
+            names.append(plot_name)
+    return names, plateau, expfits
+
+
+def _print_pe_table(plateau, expfits, outdir):
+    """Plateau values and attenuation lengths per fibre; saves JSON and markdown,
+    returns the HTML table."""
+    cols = [("Fibre", None), ("Type", None), ("light per hit [ADC]", "mean_energy_hit"),
+            ("<E> in, raw [ADC]", "mean_energy_in"), ("p.e. per hit", "pe_per_hit"),
+            ("hit frac.", "hit_fraction"), ("runs", None),
+            ("lambda [m]", None), ("40 GeV", None), ("60 GeV", None)]
+    def lam_str(d):
+        return f"{d['lambda_m']:.2g} &pm; {d['lambda_err_m']:.2g}" if d else ""
+    rows, out = [], {}
+    for label in sorted(plateau, key=lambda l: (fiber_base_type(l), l)):
+        v = plateau[label]
+        if "pe_per_hit" not in v:
+            continue
+        out[label] = {k: {"plateau": round(v[k][0], 4), "err": round(v[k][1], 4), "n_runs": v[k][2]}
+                      for k in v}
+        out[label]["attenuation"] = expfits.get(label, {})
+        e_hit = expfits.get(label, {}).get("mean_energy_hit", {})
+        rows.append([label, fiber_base_type(label)]
+                    + [f"{v[k][0]:.3g} &pm; {v[k][1]:.2g}" for k in
+                       ("mean_energy_hit", "mean_energy_in", "pe_per_hit", "hit_fraction")]
+                    + [str(v["pe_per_hit"][2]), lam_str(e_hit),
+                       lam_str(e_hit.get("per_energy", {}).get(40)), lam_str(e_hit.get("per_energy", {}).get(60))])
+    with open(os.path.join(outdir, "drs_pe_scan_channels.json"), "w") as f:
+        json.dump(out, f, indent=2)
+    md = ["| " + " | ".join(h for h, _ in cols) + " |", "|" + "---|" * len(cols)]
+    md += ["| " + " | ".join(c.replace("&pm;", "+-") for c in r) + " |" for r in rows]
+    with open(os.path.join(outdir, "drs_pe_scan_channels.md"), "w") as f:
+        f.write(f"# Photoelectron scan, plateau {PE_FIT_XMIN:.0f} to {PE_FIT_XMAX:.0f} mm\n\n" + "\n".join(md) + "\n")
+    print("\n".join(md))
+    esc = lambda t: t.replace("<", "&lt;").replace(">", "&gt;")
+    th = "".join(f"<th style='padding:2px 8px;border-bottom:1px solid #999'>{esc(h)}</th>" for h, _ in cols)
+    trs = "".join("<tr>" + "".join(f"<td style='padding:2px 8px;text-align:right'>{c}</td>" for c in r) + "</tr>"
+                  for r in rows)
+    return (f"<p>Per run, from the in-time vs out-of-time analysis (DRS_InTime pages), with the random "
+            f"coincidences inside the in-time window subtracted using the sideband far from the peak: light per "
+            f"hit = (N in &lt;E&gt; in - N random &lt;E&gt; sideband) / (N in - N random), p.e. per hit = that / "
+            f"1 p.e. integral of the fibre, hit fraction = (N in - N random) / N. Plateau = mean over runs with {PE_FIT_XMIN:.0f} &le; X &le; {PE_FIT_XMAX:.0f} mm, "
+            f"error = standard error of that mean. The scintillating fibres saturate in part of their hits, so "
+            f"their p.e. are lower limits. Attenuation: fit of light = A<sub>E</sub> exp(x / lambda) with one "
+            f"normalisation per beam energy and one common lambda, also fitted per energy where the runs span "
+            f"{MIN_FIT_SPAN_MM:.0f} mm; lambda &gt; 0 means "
+            f"more light towards +X, the readout end, and a slope consistent with zero shows up as a very large "
+            f"or negative lambda. Runs whose in-time fraction is below {EDGE_FRACTION:.0%} of the fibre's plateau "
+            f"value (the edge runs) are drawn but not fitted. Errors are scaled by sqrt(chi2/ndf) where the "
+            f"run-to-run scatter exceeds the point errors.</p>"
+            f"<table style='border-collapse:collapse;font-size:13px;margin:10px 0'><thead><tr>{th}</tr></thead>"
+            f"<tbody>{trs}</tbody></table>")
+
+
+def run_pe_scan(run_x, lumi, xmin, xmax, use_jsroot=False):
+    data = _collect_intime(run_x)
+    if not data:
+        print("No intime_summary.json found for any scan run; run check_drs_mcp.py --intime first.")
+        return
+    pm = _make_pm("DRS_PE_Scan", use_jsroot)
+    os.makedirs(pm.get_output_dir(), exist_ok=True)
+
+    names, plateau, expfits = _plot_pe_channels(data, pm, lumi, xmin, xmax)
+    table_html = _print_pe_table(plateau, expfits, pm.get_output_dir())
+
+    # plateau summaries per fibre, one marker per fibre type
+    def _vals(key):
+        return {l: (v[key][0], v[key][1]) for l, v in plateau.items() if key in v}
+    summaries = [
+        plot_fiber_summary(_vals("mean_energy_hit"), "Light per hit [ADC] (plateau)", 10.0, 200000.0,
+                           "drs_energy_hit_summary", pm, lumi, logy=True),
+        plot_fiber_summary(_vals("pe_per_hit"), "p.e. per hit (plateau)", 0.05, 200.0,
+                           "drs_pe_summary", pm, lumi, logy=True),
+        plot_fiber_summary(_vals("hit_fraction"), "Hit fraction (plateau)", 0.0, 1.0,
+                           "drs_intime_frac_summary", pm, lumi),
+        # attenuation as 1/lambda, which stays linear and can be shown with its
+        # error even when the slope is consistent with zero
+        plot_fiber_summary({l: (1000.0 * f["mean_energy_hit"]["slope_per_mm"], 1000.0 * f["mean_energy_hit"]["slope_err_per_mm"])
+                            for l, f in expfits.items() if "mean_energy_hit" in f},
+                           "1 / #lambda [m^{-1}]   (light = A e^{x/#lambda})", -1.0, 5.0,
+                           "drs_attenuation_summary", pm, lumi, note="from the light per hit, randoms subtracted"),
+    ]
+    pm.reset_plots()
+    for name in summaries:
+        if name:
+            pm.add_plot(name)
+    pm.add_newline()
+    for name in names:
+        pm.add_plot(name)
+    pm.generate_html(
+        "DRS_PE_Scan_channels.html",
+        plots_per_row=4,
+        title="DRS photoelectron scan — selected channels",
+        intro_text=table_html,
+    )
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(
         description="DRS MPV / Energy position scan",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "--mode", choices=["time", "energy", "both"], default="both",
-        help="Which scan to run: time (CFD MPV), energy (SumMean), or both",
+        "--mode", choices=["time", "energy", "pe", "both", "all"], default="both",
+        help="Which scan to run: time (CFD MPV), energy (SumMean), pe (photoelectrons "
+             "from the in-time analysis, needs --channels), both (time + energy), or all",
     )
     parser.add_argument(
         "--jsroot", action="store_true",
@@ -718,7 +939,7 @@ def _parse_args():
     parser.add_argument(
         "--channels", default=None, metavar="FILE",
         help="JSON file mapping labels to channel names "
-             "(e.g. data/channel_maps/testingfibers.json). "
+             "(e.g. channels/data/testingfibers.json). "
              "When given, only the listed channels are processed.",
     )
     return parser.parse_args()
@@ -746,6 +967,21 @@ def main():
         print("No table positions found for the scan runs in data/Runlist.json.")
         return
 
+    # beam type and energy per run, keyed by table position for the plots
+    def _beam(run):
+        e = runlist[str(run)]
+        try:
+            energy = int(float(str(e.get("beam energy", "")).replace("GeV", "").strip()))
+        except ValueError:
+            energy = 0
+        return str(e.get("beam type", "")).strip(), energy
+    processed = [r for r in sorted(run_x) if os.path.exists(f"results/root/Run{r}/drs_stats.root")]
+    for r in processed:
+        x = run_x[r]
+        if x in X_BEAM and X_BEAM[x] != _beam(r):
+            print(f"Warning: runs at X = {x} mm have different beams; markers follow the last one")
+        X_BEAM[x] = _beam(r)
+
     drsboards     = build_drs_boards(run_number=REFERENCE_RUN)
     channel_order = _build_channel_order(drsboards)
 
@@ -761,21 +997,22 @@ def main():
     xs_all = list(run_x.values())
     xmin, xmax = min(xs_all) - 20, max(xs_all) + 20
 
-    _btypes = {"pion": "#pi^{+}", "pions": "#pi^{+}", "pi+": "#pi^{+}",
-               "positron": "e^{+}", "positrons": "e^{+}", "e+": "e^{+}",
-               "mu+": "#mu^{+}"}
     btype, benergy = getRunInfo(REFERENCE_RUN)
-    lumi = f"{_btypes.get(btype.lower(), btype.lower())}, {benergy} GeV, 90^{{#circ}}"
+    energies = sorted({e for _, e in X_BEAM.values() if e})
+    lumi = (f"{_BTYPES.get(btype.lower(), btype.lower())}, {benergy} GeV, 90^{{#circ}}" if len(energies) <= 1
+            else f"{_BTYPES.get(btype.lower(), btype.lower())} {'/'.join(str(e) for e in energies)} GeV, 90^{{#circ}}")
 
     single_page = args.channels is not None
-    if args.mode in ("time", "both"):
+    if args.mode in ("time", "both", "all"):
         run_time_scan(drsboards, run_x, channel_order, lumi, xmin, xmax,
                       use_jsroot=args.jsroot, single_page=single_page,
                       ch_label_map=ch_label_map if ch_label_map else None)
-    if args.mode in ("energy", "both"):
+    if args.mode in ("energy", "both", "all"):
         run_energy_scan(drsboards, run_x, channel_order, lumi, xmin, xmax,
                         use_jsroot=args.jsroot, single_page=single_page,
                         ch_label_map=ch_label_map if ch_label_map else None)
+    if args.mode in ("pe", "all"):
+        run_pe_scan(run_x, lumi, xmin, xmax, use_jsroot=args.jsroot)
 
     PlotManager.print_html_summary()
 

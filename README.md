@@ -60,7 +60,7 @@ calox-checkmcp
 ### Repository Structure
 - `scripts/`: Main execution logic for plots and histogram generation.
 - `utils/`: Core utilities including the data loader, fitter, and `html_generator`.
-- `channels/`: Hardware mapping and geometry definitions for FERS and DRS boards.
+- `channels/`: Hardware mapping and geometry definitions for FERS and DRS boards. The tables they read (DRS->FERS CSVs, frozen per-era DRS maps, trigger delay/map, channel selections such as `testingfibers.json`) are in `channels/data/`.
 - `variables/`: Definitions for high-level analysis variables (e.g., energy sums, timing).
 - `configs/`: Global configurations for plot ranges and run parameters.
 - `data/`: JSON maps for run lists, pedestals, and dead channels.

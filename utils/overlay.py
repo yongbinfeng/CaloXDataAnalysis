@@ -21,18 +21,36 @@ OVERLAY_COLOURS = [
 ]
 
 
+# Line styles for the variants of a grouped overlay, in the order given.
+VARIANT_DASHES = ["solid", "dash", "dot", "dashdot", "longdash"]
+
+
 def build_channel_overlay(entries, output_html, xlabel, ylabel, title,
-                          intro_text, filename, y_pad=0.15, xrange=None):
+                          intro_text, filename, y_pad=0.15, xrange=None,
+                          variants=None):
     """Write an overlay page for [(hist, label), ...].
 
     All histograms must share one uniform x binning; the x values are then
     implied by (first bin centre, bin width) and never stored. xrange sets
     the initial x view (default: the full histogram range). Returns the
     path written, or None if there was nothing worth plotting.
+
+    Grouped mode: pass variants=["in", "out", ...] and entries as
+    (hist, row_label, variant). Curves of one row (e.g. one fibre) share a
+    colour and are told apart by line style, one per variant; the picker
+    shows one row per label with a column per variant, and offers
+    select-all / none buttons per variant.
     """
     if len(entries) < 2:
         print(f"Overlay needs at least 2 channels, got {len(entries)}; skipping")
         return None
+
+    grouped = variants is not None
+    if grouped:
+        rows_order = list(dict.fromkeys(e[1] for e in entries))
+        entries = [(h, f"{row} [{var}]", row, var) for h, row, var in entries]
+    else:
+        entries = [(h, label, None, None) for h, label in entries]
 
     ref = entries[0][0]
     nbins = ref.GetNbinsX()
@@ -41,7 +59,7 @@ def build_channel_overlay(entries, output_html, xlabel, ylabel, title,
     series = []
     lo, hi = float("inf"), float("-inf")            # raw
     hi_n, norm_minima = float("-inf"), []           # peak-normalised
-    for i, (hist, label) in enumerate(entries):
+    for i, (hist, label, row, var) in enumerate(entries):
         if hist.GetNbinsX() != nbins:
             print(f"  {label}: {hist.GetNbinsX()} bins, expected {nbins}; skipped")
             continue
@@ -70,8 +88,13 @@ def build_channel_overlay(entries, output_html, xlabel, ylabel, title,
                 norm_minima.append(series_min)
         else:
             print(f"  {label}: peak is ~0, cannot normalise; shown unscaled")
-        series.append({"name": label,
-                       "color": OVERLAY_COLOURS[i % len(OVERLAY_COLOURS)],
+        if grouped:
+            colour = OVERLAY_COLOURS[rows_order.index(row) % len(OVERLAY_COLOURS)]
+            dash = VARIANT_DASHES[variants.index(var) % len(VARIANT_DASHES)]
+        else:
+            colour, dash = OVERLAY_COLOURS[i % len(OVERLAY_COLOURS)], "solid"
+        series.append({"name": label, "color": colour, "dash": dash,
+                       "row": row, "variant": var,
                        "peak": peak if usable else 0.0,
                        "y": ys})
 
@@ -100,6 +123,14 @@ def build_channel_overlay(entries, output_html, xlabel, ylabel, title,
             "yrangeNorm": [lo_n - pad_n, hi_n + pad_n],
             "filename": filename,
             "series": series}
+    if grouped:
+        spec["variants"] = list(variants)
+        spec["rows"] = [r for r in rows_order if any(x["row"] == r for x in series)]
+        # one legend entry per row: the first curve of each row carries it
+        seen = set()
+        for x in series:
+            x["showlegend"] = x["row"] not in seen
+            seen.add(x["row"])
     os.makedirs(os.path.dirname(os.path.abspath(output_html)), exist_ok=True)
     return generate_plotly_picker_html(spec, output_html=output_html,
                                        title=title, intro_text=intro_text)

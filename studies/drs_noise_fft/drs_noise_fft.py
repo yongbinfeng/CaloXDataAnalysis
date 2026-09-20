@@ -15,7 +15,7 @@ Writes PNG plots and results.json next to this script by default, and prints
 the tables. Nothing here changes the analysis; it is a study.
 
     python3 studies/drs_noise_fft/drs_noise_fft.py --run 1994 \
-        --channels data/channel_maps/testingfibers.json
+        --channels channels/data/testingfibers.json
 """
 import argparse
 import json

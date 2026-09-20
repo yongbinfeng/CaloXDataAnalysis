@@ -403,7 +403,7 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
 
 <div class="col">
 <h2>Setup</h2>
-<p>Raw waveforms for the 20 channels in <code>data/channel_maps/testingfibers.json</code> plus <code>{mcp_label}</code> — the MCP the analysis references its timing to, chosen per run by <code>get_mcp_reference()</code> — {res['nevents']} events of run {res['run']}. Each 1024-sample record is baseline-subtracted per event using the median of samples 20–380. Those same samples — 72 ns before any pulse, the pulses sitting at samples 430–470 — are the noise-only window for parts 1 and 2. Part 3 uses samples 380–990; 990 stops short of the dip in the last DRS cells.</p>
+<p>Raw waveforms for the 20 channels in <code>channels/data/testingfibers.json</code> plus <code>{mcp_label}</code> — the MCP the analysis references its timing to, chosen per run by <code>get_mcp_reference()</code> — {res['nevents']} events of run {res['run']}. Each 1024-sample record is baseline-subtracted per event using the median of samples 20–380. Those same samples — 72 ns before any pulse, the pulses sitting at samples 430–470 — are the noise-only window for parts 1 and 2. Part 3 uses samples 380–990; 990 stops short of the dip in the last DRS cells.</p>
 <p>Two things the DRS4 forces on any spectral analysis. Its cell widths vary by 10–20% around the nominal 200 ps, so an FFT on the nominal grid smears content above a few hundred MHz — fine for what follows, which lives below that. And it is a transient recorder: the noise spectrum has to come from a pulse-free window, windowed (Hann) to stop the baseline step from leaking into every bin.</p>
 
 <h2>1. The noise is the amplifiers'</h2>
@@ -427,7 +427,7 @@ a:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
 </table></div>
 <div class="callout">
   <div class="h">The channel listed as <code>Quartz_1</code> is <code>MCP_US_1</code></div>
-  <code>data/channel_maps/testingfibers.json</code> maps <code>Quartz_1</code> to <code>DRS_Brg0_Board0_Group3_Channel6</code>, which the channel map assigns to <code>MCP_US_1</code> for runs from 1994. The data say the channel map is right: its pulses are negative and ~130 ADC where every fibre is positive and ~500, its noise is the MCP's (σ 4.4, no amplifier resonance), the analysis inverts it as an MCP, and its "timing against <code>MCP_DS_1</code>" of 0.15 ns is one MCP against the other. Earlier drafts of this page read those symptoms as a fibre with a dead amplifier; they are the upstream MCP. The <code>Quartz_1</code> entry of the JSON needs correcting — or, if a quartz fibre really was on that channel for some runs, the MCP map does.
+  <code>channels/data/testingfibers.json</code> maps <code>Quartz_1</code> to <code>DRS_Brg0_Board0_Group3_Channel6</code>, which the channel map assigns to <code>MCP_US_1</code> for runs from 1994. The data say the channel map is right: its pulses are negative and ~130 ADC where every fibre is positive and ~500, its noise is the MCP's (σ 4.4, no amplifier resonance), the analysis inverts it as an MCP, and its "timing against <code>MCP_DS_1</code>" of 0.15 ns is one MCP against the other. Earlier drafts of this page read those symptoms as a fibre with a dead amplifier; they are the upstream MCP. The <code>Quartz_1</code> entry of the JSON needs correcting — or, if a quartz fibre really was on that channel for some runs, the MCP map does.
 </div>
 
 <h2>2. A fixed pattern in cell space</h2>

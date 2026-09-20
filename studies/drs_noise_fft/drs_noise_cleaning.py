@@ -31,7 +31,7 @@ Outputs follow the analysis conventions:
     results/html/Run<N>/DRS/DRS_Cleaning.html, DRS_Cleaning_Channels.html
 
     python3 studies/drs_noise_fft/drs_noise_cleaning.py --run 1994 \\
-        --channels data/channel_maps/testingfibers.json [--jsroot]
+        --channels channels/data/testingfibers.json [--jsroot]
 """
 import argparse
 import json
