@@ -263,6 +263,14 @@ def process_drs_channels(rdf, drs_channel_names, mcp_det="MCP_US_0"):
                          f"{channel_name}_CFD.peak_value")
         rdf = rdf.Define(f"{channel_name}_integral_to_peak",
                          f"{channel_name}_CFD.integral_to_peak")
+        # pulse shape per event, from the same peak as the CFD: 20-70 % rise,
+        # 70-20 % fall, FWHM [TS]; edges_ok is false when the top is clipped
+        # (saturated) or a crossing is missing
+        rdf = rdf.Define(f"{channel_name}_rise_ts", f"{channel_name}_CFD.rise_20_70")
+        rdf = rdf.Define(f"{channel_name}_fall_ts", f"{channel_name}_CFD.fall_70_20")
+        rdf = rdf.Define(f"{channel_name}_fwhm_ts", f"{channel_name}_CFD.fwhm")
+        rdf = rdf.Define(f"{channel_name}_edges_ok",
+                         f"{channel_name}_CFD.edges_valid && !{channel_name}_CFD.saturated")
 
         ref_TS = get_ref_ts_name(channel_name, use_peak=False)
         rdf = rdf.Define(f"{channel_name}_TS_cfd_ref",

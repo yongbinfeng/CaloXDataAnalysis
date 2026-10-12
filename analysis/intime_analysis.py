@@ -39,7 +39,7 @@ import ROOT
 from core.plot_manager import PlotManager, PlotStyle
 from utils.data_loader import getRunInfo
 from utils.overlay import build_channel_overlay
-from plotting.calox_plot_helper import fiber_base_type, plot_fiber_summary
+from plotting.calox_plot_helper import create_pave_text, fiber_base_type, plot_fiber_summary
 from utils.plot_helper import get_run_paths
 from utils.utils import get_hist_mpv
 from variables.drs import get_arr_name
@@ -88,6 +88,40 @@ _STYLE_PROF = PlotStyle(dology=False, drawoptions="HIST",
                         addOverflow=False, addUnderflow=False,
                         legendPos=[0.45, 0.68, 0.88, 0.88])
 PROFILE_TS_RANGE = (440.0, 620.0)   # MCP-aligned TS window shown for the mean waveform
+
+# Pulse shape and timing resolution, per in-time hit (saturated pulses and
+# pulses with a missing crossing are left out of the edge measurements)
+TS_NS = 0.2                      # DRS sampling: 0.2 ns per time sample
+EDGE_RANGES = {"rise": (200, 0.0, 20.0), "fall": (400, 0.0, 80.0), "fwhm": (400, 0.0, 80.0)}   # [TS]
+SIGMA_AMP_NBINS = 24             # amplitude bins for sigma(t_CFD) vs amplitude
+SIGMA_MIN_ENTRIES = 40           # per amplitude bin
+_STYLE_EDGES = PlotStyle(dology=True, drawoptions="HIST",
+                         mycolors=[ROOT.kRed + 1, ROOT.kBlue + 1, ROOT.kBlack],
+                         addOverflow=False, addUnderflow=False,
+                         legendPos=[0.45, 0.70, 0.88, 0.88])
+_STYLE_GRAPH = PlotStyle(dology=False, drawoptions="EP", mycolors=[ROOT.kBlue + 1],
+                         addOverflow=False, addUnderflow=False, legendPos=[0.45, 0.78, 0.88, 0.88])
+
+
+def _median(h):
+    """Median of a TH1."""
+    import array
+    q = array.array("d", [0.0])
+    h.GetQuantiles(1, q, array.array("d", [0.5]))
+    return q[0]
+
+
+def _robust_sigma(h):
+    """Half the 16-84 % interquantile range of a TH1, with an approximate
+    standard error (1.2 sigma / sqrt(N), exact for a Gaussian core), and N."""
+    import array
+    n = h.Integral()          # events in range (the histogram may be filled with weights)
+    if n < 10:
+        return 0.0, 0.0, int(n)
+    q = array.array("d", [0.0, 0.0])
+    h.GetQuantiles(2, q, array.array("d", [0.16, 0.84]))
+    sigma = 0.5 * (q[1] - q[0])
+    return sigma, 1.2 * sigma / n ** 0.5, int(n)
 
 
 def _ranges(label):
@@ -176,12 +210,26 @@ def run_intime_analysis(manager, args):
             print(f"Warning: no timing histogram for {label} ({ch}); skipped")
             continue
         win = f"abs({ch}_TS_cfd_mcp - {mpv:.3f}) < {in_time_window(label)}"
-        rdf = rdf.Define(f"{ch}_intime", win)
+        rdf = rdf.Define(f"{ch}_intime", win).Define(f"{ch}_dt", f"{ch}_TS_cfd_mcp - {mpv:.3f}")
         r_in, r_out = rdf.Filter(f"{ch}_intime"), rdf.Filter(f"!{ch}_intime")
+        r_in_ok = r_in.Filter(f"{ch}_edges_ok")       # unsaturated, all crossings found
         e_rng, a_rng = _ranges(label)
+        w = in_time_window(label)
         booked[label] = dict(
             ch=ch, mpv=mpv,
             n_in=r_in.Count(),
+            # pulse shape of the in-time hits
+            n_edges=r_in_ok.Count(),
+            rise=r_in_ok.Histo1D((f"h_rise_in_{ch}", "", *EDGE_RANGES["rise"]), f"{ch}_rise_ts"),
+            fall=r_in_ok.Histo1D((f"h_fall_in_{ch}", "", *EDGE_RANGES["fall"]), f"{ch}_fall_ts"),
+            fwhm=r_in_ok.Histo1D((f"h_fwhm_in_{ch}", "", *EDGE_RANGES["fwhm"]), f"{ch}_fwhm_ts"),
+            rise_mean=r_in_ok.Mean(f"{ch}_rise_ts"), rise_std=r_in_ok.StdDev(f"{ch}_rise_ts"),
+            fall_mean=r_in_ok.Mean(f"{ch}_fall_ts"), fall_std=r_in_ok.StdDev(f"{ch}_fall_ts"),
+            fwhm_mean=r_in_ok.Mean(f"{ch}_fwhm_ts"), fwhm_std=r_in_ok.StdDev(f"{ch}_fwhm_ts"),
+            # timing of the in-time hits against the MCP, and vs pulse amplitude
+            dt_in=r_in.Histo1D((f"h_dt_in_{ch}", "", int(round(2 * w / 0.1)), -w, w), f"{ch}_dt"),
+            dt_vs_amp=r_in.Histo2D((f"h_dt_amp_in_{ch}", "", SIGMA_AMP_NBINS, a_rng[1], a_rng[2],
+                                    int(round(2 * w / 0.1)), -w, w), f"{ch}_peak_value", f"{ch}_dt"),
             n_sb=rdf.Filter(f"abs({ch}_TS_cfd_mcp - {mpv:.3f}) >= {SIDEBAND_TS[0]} && "
                             f"abs({ch}_TS_cfd_mcp - {mpv:.3f}) < {SIDEBAND_TS[1]}").Count(),
             e_sb=rdf.Filter(f"abs({ch}_TS_cfd_mcp - {mpv:.3f}) >= {SIDEBAND_TS[0]} && "
@@ -303,13 +351,65 @@ def run_intime_analysis(manager, args):
             pe_per_hit=round(e_hit / gain_e, 2) if gain_e else None,
             pe_per_hit_err=round(e_hit_err / gain_e, 3) if gain_e else None,
         )
+        # pulse shape (unsaturated in-time hits) and timing resolution
+        n_edges = b["n_edges"].GetValue()
+        shape = {}
+        for k in ("rise", "fall", "fwhm"):
+            mean, std = b[f"{k}_mean"].GetValue(), b[f"{k}_std"].GetValue()
+            shape[k] = (mean, std / n_edges ** 0.5 if n_edges > 1 else 0.0, std)
+        dt_in, dt_vs_amp = b["dt_in"].GetValue(), b["dt_vs_amp"].GetValue()
+        sigma, sigma_err, n_sig = _robust_sigma(dt_in)
+        sigma_vs_amp, walk_vs_amp = [], []
+        # walk-corrected residuals: each amplitude bin shifted by its own median
+        dt_corr = dt_in.Clone(f"h_dt_corr_in_{b['ch']}")
+        dt_corr.Reset()
+        yax = dt_vs_amp.GetYaxis()
+        # amplitude bins plus the overflow column (pulses above the axis range),
+        # so that the largest pulses take part in the correction
+        nbx = dt_vs_amp.GetNbinsX()
+        for ib in range(1, nbx + 2):
+            proj = dt_vs_amp.ProjectionY(f"_py_{b['ch']}_{ib}", ib, ib)
+            if proj.GetEntries() >= SIGMA_MIN_ENTRIES:
+                sg, sge, nn = _robust_sigma(proj)
+                med = _median(proj)
+                amp_c = (dt_vs_amp.GetXaxis().GetBinCenter(ib) if ib <= nbx
+                         else dt_vs_amp.GetXaxis().GetXmax() + 0.5 * dt_vs_amp.GetXaxis().GetBinWidth(1))
+                sigma_vs_amp.append((amp_c, sg, sge, nn))
+                walk_vs_amp.append((amp_c, proj.GetMean(), proj.GetMeanError(), med, nn))
+                for jb in range(1, dt_vs_amp.GetNbinsY() + 1):
+                    c = dt_vs_amp.GetBinContent(ib, jb)
+                    if c > 0:
+                        dt_corr.Fill(yax.GetBinCenter(jb) - med, c)
+        sigma_corr, sigma_corr_err, n_corr = _robust_sigma(dt_corr)
+        walk = (walk_vs_amp[0][3] - walk_vs_amp[-1][3]) if len(walk_vs_amp) >= 2 else None
+        summary[label].update(
+            n_edges=n_edges, saturated_or_invalid_fraction=round(1 - n_edges / n_in, 4) if n_in else None,
+            rise_ts=round(shape["rise"][0], 3), rise_ts_err=round(shape["rise"][1], 3), rise_ts_rms=round(shape["rise"][2], 3),
+            fall_ts=round(shape["fall"][0], 3), fall_ts_err=round(shape["fall"][1], 3), fall_ts_rms=round(shape["fall"][2], 3),
+            fwhm_ts=round(shape["fwhm"][0], 3), fwhm_ts_err=round(shape["fwhm"][1], 3), fwhm_ts_rms=round(shape["fwhm"][2], 3),
+            sigma_cfd_ts=round(sigma, 3), sigma_cfd_ts_err=round(sigma_err, 3), sigma_cfd_ps=round(sigma * TS_NS * 1000, 1),
+            n_sigma=n_sig,
+            sigma_vs_amp=[{"amp": round(a, 1), "sigma_ts": round(sg, 3), "err": round(sge, 3), "n": nn}
+                          for a, sg, sge, nn in sigma_vs_amp],
+            # time walk: residual mean/median per amplitude bin, and the resolution
+            # after shifting every bin by its median
+            walk_vs_amp=[{"amp": round(a, 1), "mean_ts": round(m, 3), "mean_err": round(me, 3),
+                          "median_ts": round(med, 3), "n": nn} for a, m, me, med, nn in walk_vs_amp],
+            walk_ts=round(walk, 3) if walk is not None else None,
+            walk_ps=round(walk * TS_NS * 1000, 1) if walk is not None else None,
+            sigma_cfd_corr_ts=round(sigma_corr, 3), sigma_cfd_corr_ts_err=round(sigma_corr_err, 3),
+            sigma_cfd_corr_ps=round(sigma_corr * TS_NS * 1000, 1), n_sigma_corr=n_corr,
+        )
 
         # keep everything in drs_intime.root and for the overlay pages
         fout.cd()
         for kind, h in (("amp_in", a_in), ("amp_out", a_out), ("energy_in", e_in), ("energy_out", e_out),
                         ("energy_sideband", e_sb),
                         ("amp_out_fine", a_out_fine), ("energy_out_fine", e_out_fine),
-                        ("prof_in", p_in), ("prof_out", p_out), ("prof_all", p_all)):
+                        ("prof_in", p_in), ("prof_out", p_out), ("prof_all", p_all),
+                        ("rise_in", b["rise"].GetValue()), ("fall_in", b["fall"].GetValue()),
+                        ("fwhm_in", b["fwhm"].GetValue()), ("dt_in", dt_in), ("dt_vs_amp_in", dt_vs_amp),
+                        ("dt_corr_in", dt_corr)):
             h.SetName(f"h_{kind}_{b['ch']}")
             h.Write()
         for h in aligned.values():
@@ -334,8 +434,64 @@ def run_intime_analysis(manager, args):
         pm.plot_1d([p_out, p_in, p_all], f"intime_profile_{label}_{b['ch']}",
                    "MCP-aligned TS", PROFILE_TS_RANGE, "Mean ADC (baseline subtracted)", (None, None),
                    legends=legends + ["all events"], style=_STYLE_PROF, extra_text=label, lumitext=lumi)
+        # pulse shape: rise, fall and FWHM distributions of the in-time hits
+        h_rise, h_fall, h_fwhm = b["rise"].GetValue(), b["fall"].GetValue(), b["fwhm"].GetValue()
+        x_edge = 80.0 if is_scint else 30.0
+        pm.plot_1d([h_rise, h_fall, h_fwhm], f"intime_edges_{label}_{b['ch']}",
+                   "Time [TS]", (0.0, x_edge), "In-time hits", (0.5, None),
+                   legends=[f"rise 20-70 %  <{shape['rise'][0]:.2f}> TS", f"fall 70-20 %  <{shape['fall'][0]:.1f}> TS",
+                            f"FWHM  <{shape['fwhm'][0]:.1f}> TS"],
+                   style=_STYLE_EDGES, extra_text=label, lumitext=lumi)
+        # timing of the in-time hits against the MCP
+        pave_t = create_pave_text(0.16, 0.70, 0.55, 0.86, size=0.032)
+        pave_t.AddText(f"#sigma_{{16-84}} = {sigma:.2f} TS = {sigma * TS_NS * 1000:.0f} ps")
+        pave_t.AddText(f"walk-corrected: {sigma_corr:.2f} TS = {sigma_corr * TS_NS * 1000:.0f} ps")
+        pave_t.AddText(f"N = {n_sig}")
+        pm.plot_1d(dt_in, f"intime_timing_{label}_{b['ch']}",
+                   "TS_cfd_mcp - MPV [TS]", (-w, w), "In-time hits", (0.5, None),
+                   style=_STYLE, extraToDraw=pave_t, extra_text=label, lumitext=lumi)
+        # sigma vs amplitude
+        if sigma_vs_amp:
+            gr = ROOT.TGraphErrors(len(sigma_vs_amp))
+            gr.SetName(f"gr_sigma_amp_{b['ch']}")
+            for i, (a, sg, sge, _) in enumerate(sigma_vs_amp):
+                gr.SetPoint(i, a, sg)
+                gr.SetPointError(i, 0.0, sge)
+            gr.SetLineWidth(2)
+            ymax = max(sg + sge for _, sg, sge, _ in sigma_vs_amp) * 1.4
+            a_hi = a_rng[2] + (a_rng[2] - a_rng[1]) / SIGMA_AMP_NBINS   # room for the overflow point
+            pm.plot_1d([gr], f"intime_sigma_vs_amp_{label}_{b['ch']}",
+                       "Peak amplitude [ADC]", (a_rng[1], a_hi), "#sigma(t_{CFD}) [TS]", (0.0, ymax),
+                       style=_STYLE_GRAPH, markerstyles=[20], extra_text=label, lumitext=lumi)
+            sigma_plot = f"intime_sigma_vs_amp_{label}_{b['ch']}"
+        else:
+            sigma_plot = None
+        # time walk: mean and median residual vs amplitude
+        if walk_vs_amp:
+            g_mean, g_med = ROOT.TGraphErrors(len(walk_vs_amp)), ROOT.TGraphErrors(len(walk_vs_amp))
+            g_mean.SetName(f"gr_walk_mean_{b['ch']}"); g_med.SetName(f"gr_walk_median_{b['ch']}")
+            for i, (a, m, me, med, _) in enumerate(walk_vs_amp):
+                g_mean.SetPoint(i, a, m); g_mean.SetPointError(i, 0.0, me)
+                g_med.SetPoint(i, a, med); g_med.SetPointError(i, 0.0, 0.0)
+            g_mean.SetLineWidth(2); g_med.SetLineWidth(1)
+            ys = [m for _, m, _, med, _ in walk_vs_amp] + [med for _, m, _, med, _ in walk_vs_amp]
+            pad = 0.3 * (max(ys) - min(ys)) + 0.2
+            pave_w = create_pave_text(0.16, 0.16, 0.60, 0.24, size=0.032)
+            if walk is not None:
+                pave_w.AddText(f"walk (median, lowest - highest bin) = {walk:.2f} TS = {walk * TS_NS * 1000:.0f} ps")
+            pm.plot_1d([g_mean, g_med], f"intime_walk_{label}_{b['ch']}",
+                       "Peak amplitude [ADC]", (a_rng[1], a_rng[2] + (a_rng[2] - a_rng[1]) / SIGMA_AMP_NBINS),
+                       "<t_{CFD} - MPV> [TS]", (min(ys) - pad, max(ys) + pad),
+                       legends=["mean", "median"], style=_STYLE_GRAPH, mycolors=[ROOT.kBlue + 1, ROOT.kRed + 1],
+                       markerstyles=[20, 5], extraToDraw=pave_w, extra_text=label, lumitext=lumi)
+            walk_plot = f"intime_walk_{label}_{b['ch']}"
+        else:
+            walk_plot = None
+        # two rows of four per fibre
         fibre_plot_names += [f"intime_amp_{label}_{b['ch']}", f"intime_energy_{label}_{b['ch']}",
-                             f"intime_profile_{label}_{b['ch']}"]
+                             f"intime_profile_{label}_{b['ch']}", f"intime_edges_{label}_{b['ch']}",
+                             f"intime_timing_{label}_{b['ch']}"]
+        fibre_plot_names += [x for x in (sigma_plot, walk_plot) if x] + ["NEWLINE"]
     # page order: summary plots first (their own rows), then three plots per fibre
     pm.reset_plots()
 
@@ -352,6 +508,17 @@ def run_intime_analysis(manager, args):
                   if v["mean_energy_hit"] > 0}
     plot_fiber_summary(e_hit_vals, "Light per hit, randoms subtracted [ADC]",
                        10.0, 200000.0, "intime_energy_diff_summary", pm, lumi, logy=True)
+    plot_fiber_summary({l: (v["rise_ts"], v["rise_ts_err"]) for l, v in summary.items() if v["n_edges"] > 10},
+                       "Rise 20-70 % (markers), fall 70-20 % (x) [TS]", 0.5, 100.0,
+                       "intime_edges_summary", pm, lumi, logy=True,
+                       secondary={l: (v["fall_ts"], v["fall_ts_err"]) for l, v in summary.items() if v["n_edges"] > 10},
+                       note="means over the unsaturated in-time hits")
+    plot_fiber_summary({l: (v["sigma_cfd_ts"], v["sigma_cfd_ts_err"]) for l, v in summary.items() if v["n_sigma"] > 10},
+                       "#sigma(t_{CFD} - t_{MCP}), 16-84 % [TS]", 0.0, 12.0,
+                       "intime_sigma_summary", pm, lumi,
+                       secondary={l: (v["sigma_cfd_corr_ts"], v["sigma_cfd_corr_ts_err"])
+                                  for l, v in summary.items() if v["n_sigma_corr"] > 10},
+                       note="markers: raw,  x: walk-corrected   (1 TS = 0.2 ns)")
 
     # ---- correlation between fibres ------------------------------------------
     labels = list(booked)
@@ -381,11 +548,15 @@ def run_intime_analysis(manager, args):
             for i in range(n_fib)]
     _draw_conditional_matrix(corr_labels, cond, outdir, "intime_conditional_matrix", lumi)
     pm.add_plot("intime_conditional_matrix", prepend=True)
-    for name in ("intime_fraction_summary", "intime_energy_summary", "intime_energy_diff_summary"):
+    for name in ("intime_fraction_summary", "intime_energy_summary", "intime_energy_diff_summary",
+                 "intime_edges_summary", "intime_sigma_summary"):
         pm.add_plot(name)
-    pm.add_newline()   # per-fibre rows start fresh: amplitude | energy | profile
+    pm.add_newline()   # per-fibre rows: amp | energy | profile | edges, then timing | sigma(A) | walk
     for name in fibre_plot_names:
-        pm.add_plot(name)
+        if name == "NEWLINE":
+            pm.add_newline()
+        else:
+            pm.add_plot(name)
 
     corr_summary = {}
     if CORR_REFERENCE in corr_labels:
@@ -433,6 +604,11 @@ def run_intime_analysis(manager, args):
     dcols = [("Fibre", "label"), ("Type", "type"), ("light per hit [ADC]", "mean_energy_hit"), ("+-", "sem_energy_hit"),
              ("p.e. per hit", "pe_per_hit"), ("+- ", "pe_per_hit_err"),
              ("<E> in - <E> out [ADC]", "energy_diff"), ("in p.e.", "energy_diff_pe")]
+    pcols = [("Fibre", "label"), ("Type", "type"), ("N hits", "n_edges"), ("rise 20-70 % [TS]", "rise_ts"), ("+-", "rise_ts_err"),
+             ("fall 70-20 % [TS]", "fall_ts"), ("+- ", "fall_ts_err"), ("FWHM [TS]", "fwhm_ts"), ("+-  ", "fwhm_ts_err"),
+             ("sigma t_CFD [TS]", "sigma_cfd_ts"), ("+-   ", "sigma_cfd_ts_err"), ("sigma [ps]", "sigma_cfd_ps"),
+             ("walk [ps]", "walk_ps"), ("sigma walk-corr. [TS]", "sigma_cfd_corr_ts"), ("+-    ", "sigma_cfd_corr_ts_err"),
+             ("walk-corr. [ps]", "sigma_cfd_corr_ps")]
     def row_of(cols_, l):
         out = []
         for _, k in cols_:
@@ -447,6 +623,7 @@ def run_intime_analysis(manager, args):
         return out
     frows = [row_of(fcols, l) for l in sorted(summary, key=lambda l: (fiber_base_type(l), l))]
     erows = [row_of(ecols, l) for l in sorted(summary, key=lambda l: (fiber_base_type(l), l))]
+    prows = [row_of(pcols, l) for l in sorted(summary, key=lambda l: (fiber_base_type(l), l))]
     drows = [row_of(dcols, l) for l in sorted(summary, key=lambda l: (fiber_base_type(l), l))]
     ccols = [("Fibre", "label"), ("P(in)", "p_in"), (f"P(in | {CORR_REFERENCE} in)", "p_in_given_ref_in"),
              (f"P(in | {CORR_REFERENCE} out)", "p_in_given_ref_out"), (f"phi with {CORR_REFERENCE}", "phi_with_ref")]
@@ -474,6 +651,7 @@ def run_intime_analysis(manager, args):
           f"## In-time vs out-of-time fraction by fibre\n\n{md_table(fcols, frows)}\n\n"
           f"## Mean energy by fibre\n\n{md_table(ecols, erows)}\n\n"
           f"## Light per hit, randoms subtracted, by fibre\n\n{md_table(dcols, drows)}\n\n"
+          f"## Pulse shape and timing resolution by fibre\n\n{md_table(pcols, prows)}\n\n"
           f"## Per fibre, full\n\n{md_table(cols, rows)}\n\n"
           f"## Correlation with {CORR_REFERENCE}\n\n{md_table(ccols, crows)}\n\n"
           f"## Number of in-time fibres per event ({n_fib} fibres)\n\n{nfib_md}\n")
@@ -502,11 +680,16 @@ def run_intime_analysis(manager, args):
                "real hit; the last two columns are the older in-minus-out estimate, which over-subtracts the "
                "pedestal for the high-yield fibres; the scintillating fibres saturate in part of their hits, so "
                "their p.e. values are lower limits)</p>" + html_table(dcols, drows)
+             + "<p><b>Pulse shape and timing resolution by fibre</b> (in-time hits; rise, fall and FWHM from "
+               "linear interpolation between samples, unsaturated pulses only; sigma = half the 16-84 % "
+               "interquantile range of t_CFD - t_MCP, 1 TS = 0.2 ns; walk = median residual of the lowest minus "
+               "the highest populated amplitude bin; walk-corrected sigma = the same width after shifting every "
+               "amplitude bin by its median residual)</p>" + html_table(pcols, prows)
              + "<p><b>Per fibre, full</b></p>" + html_table(cols, rows)
              + f"<p>Correlation between fibres: {', '.join(sorted(EXCLUDE_FROM_CORR))} are left out. "
              f"phi is the correlation coefficient of the two in-time flags.</p>"
              + html_table(ccols, crows))
-    html = pm.generate_html(HTML_PAGE, plots_per_row=3,
+    html = pm.generate_html(HTML_PAGE, plots_per_row=4,
                             title=f"Test fibres: in-time vs out-of-time, run {args.run}",
                             intro_text=intro)
     print(f"HTML: {html}")

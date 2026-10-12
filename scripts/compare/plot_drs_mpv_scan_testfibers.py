@@ -641,13 +641,16 @@ MIN_FIT_SPAN_MM = 100.0   # a group needs at least this much travel for its own 
 # constrains the common lambda, and each group is also fitted on its own.
 
 
-def _fit_exponential(groups):
-    """groups: {energy: [(x, y, ey)]}. Weighted least squares of ln y = a_g + b x
-    with a common slope b; errors scaled by sqrt(chi2/ndf) when the scatter
+def _fit_groups(groups, log=True):
+    """groups: {energy: [(x, y, ey)]}. Weighted least squares of f(y) = a_g + b x
+    with a common slope b and one intercept per group, f = ln (exponential fit)
+    or identity (linear fit); errors scaled by sqrt(chi2/ndf) when the scatter
     exceeds the point errors. Returns (b, eb, {g: a_g}, {g: (b_g, eb_g)}) or
     None if there are too few points."""
     def _prep(pts):
-        return [(x, math.log(y), (y / ey) ** 2) for x, y, ey in pts if y > 0 and ey > 0]
+        if log:
+            return [(x, math.log(y), (y / ey) ** 2) for x, y, ey in pts if y > 0 and ey > 0]
+        return [(x, y, 1.0 / ey ** 2) for x, y, ey in pts if ey > 0]
     def _regress(sets):
         """common slope over several groups, each with its own intercept"""
         sxx = sxy = 0.0
@@ -685,6 +688,10 @@ def _fit_exponential(groups):
         if r is not None:
             per_group[g] = (r[0], r[1])
     return b, eb, dict(zip(keys, icpt)), per_group
+
+
+def _fit_exponential(groups):
+    return _fit_groups(groups, log=True)
 
 
 def _lambda_m(b, eb):
@@ -922,15 +929,313 @@ def run_pe_scan(run_x, lumi, xmin, xmax, use_jsroot=False):
     )
 
 
+# ---------------------------------------------------------------------------
+# Pulse-shape scan: rise/fall/FWHM and CFD timing resolution vs position
+# ---------------------------------------------------------------------------
+
+TS_NS = 0.2   # DRS sampling [ns per TS]
+# key in intime_summary.json -> (error key, plot suffix, y title, y floor or None)
+_SHAPE_QUANTITIES = {
+    "rise_ts": ("rise_ts_err", "drs_rise_scan", "Rise 20-70 % [TS]", None),
+    "fall_ts": ("fall_ts_err", "drs_fall_scan", "Fall 70-20 % [TS]", None),
+    "fwhm_ts": ("fwhm_ts_err", "drs_fwhm_scan", "FWHM [TS]", None),
+    "sigma_cfd_ts": ("sigma_cfd_ts_err", "drs_sigma_scan", "#sigma(t_{CFD} - t_{MCP}), 16-84 % [TS]", 0.0),
+    "sigma_cfd_corr_ts": ("sigma_cfd_corr_ts_err", "drs_sigma_corr_scan", "#sigma walk-corrected [TS]", 0.0),
+}
+
+
+def _collect_shape(run_x):
+    """label -> quantity -> [(x, value, error)] from each run's intime_summary.json."""
+    data = {}
+    for run, x_val in sorted(run_x.items(), key=lambda kv: kv[1]):
+        path = f"results/plots/Run{run}/DRS_InTime/intime_summary.json"
+        if not os.path.exists(path):
+            print(f"Warning: {path} not found, skipping run {run}")
+            continue
+        with open(path) as f:
+            per_fibre = json.load(f)["per_fibre"]
+        if not any("rise_ts" in v for v in per_fibre.values()):
+            print(f"Warning: run {run} has no pulse-shape values; rerun the in-time analysis")
+            continue
+        for label, v in per_fibre.items():
+            if "rise_ts" not in v or v.get("n_edges", 0) < 30 or "sigma_cfd_corr_ts" not in v:
+                continue
+            d = data.setdefault(label, {k: [] for k in _SHAPE_QUANTITIES})
+            for key, (err_key, _, _, _) in _SHAPE_QUANTITIES.items():
+                d[key].append((x_val, v[key], v[err_key]))
+        # the hit fraction is needed to recognise the edge runs
+        for label, v in per_fibre.items():
+            if label in data and "hit_fraction" in v:
+                data[label].setdefault("hit_fraction", []).append((x_val, v["hit_fraction"], v["hit_fraction_err"]))
+    return data
+
+
+def _edge_runs(data):
+    """Table positions where the beam only partly overlaps the fibres (see the p.e. scan)."""
+    ratios = {}
+    for label, d in data.items():
+        frac_pts = sorted(d.get("hit_fraction", []))
+        if not frac_pts:
+            continue
+        f_plateau = _fit_constant([(x, y) for x, y, _ in frac_pts], PE_FIT_XMIN, PE_FIT_XMAX)[0]
+        if f_plateau >= 0.15:
+            for x, f, _ in frac_pts:
+                ratios.setdefault(x, []).append(f / f_plateau)
+    return {x for x, r in ratios.items() if sorted(r)[len(r) // 2] < EDGE_FRACTION}
+
+
+def _plot_shape_channels(data, pm, lumi, xmin, xmax):
+    """Four scan plots per fibre with a linear fit per beam energy (common slope).
+    Returns (plot names, plateau values, slopes {label: {key: {...}}})."""
+    names, plateau, slopes = [], {}, {}
+    edge_x = _edge_runs(data)
+    if edge_x:
+        print(f"Linear fits leave out the edge runs at X = {sorted(edge_x)} mm")
+    for label in sorted(data, key=lambda l: (fiber_base_type(l), l)):
+        plateau[label], slopes[label] = {}, {}
+        for key, (_, suffix, ytitle, y_floor) in _SHAPE_QUANTITIES.items():
+            pts = sorted(data[label][key])
+            if not pts:
+                continue
+            graphs, labels, markers = _graphs_by_beam(pts, f"gr_{suffix}_{label}")
+            p0, e0, n_used = _fit_constant([(x, y) for x, y, _ in pts], PE_FIT_XMIN, PE_FIT_XMAX)
+            plateau[label][key] = (p0, e0, n_used)
+            pave_fit = create_pave_text(0.13, 0.71, 0.60, 0.85, size=0.033)
+            groups = {}
+            for x, y, ey in pts:
+                if x not in edge_x:
+                    groups.setdefault(X_BEAM.get(x, ("", 0))[1], []).append((x, y, ey))
+            res = _fit_groups(groups, log=False)
+            if res is not None:
+                b, eb, icpt, per_group = res
+                # slope in TS/mm -> broadening per metre of fibre in ps, positive
+                # when the pulse is wider farther from the readout (+X)
+                to_ps_m = -TS_NS * 1000.0 * 1000.0
+                slopes[label][key] = {
+                    "slope_ts_per_mm": b, "slope_err_ts_per_mm": eb,
+                    "ps_per_m": b * to_ps_m, "ps_per_m_err": eb * abs(to_ps_m),
+                    "per_energy": {g: {"ps_per_m": v[0] * to_ps_m, "ps_per_m_err": v[1] * abs(to_ps_m)}
+                                   for g, v in sorted(per_group.items())},
+                    "n_points": sum(len(v) for v in groups.values())}
+                for g, a in sorted(icpt.items()):
+                    xs_g = [x for x, _, _ in groups[g]]
+                    f = ROOT.TF1(f"linfit_{suffix}_{label}_{g}", "[0]+[1]*x", min(xs_g) - 15, max(xs_g) + 15)
+                    f.SetParameters(a, b)
+                    f.SetLineColor(ROOT.kRed + 1)
+                    f.SetLineWidth(2)
+                    i_gr = next((i for i, lab in enumerate(labels) if lab.endswith(f"{g} GeV")), 0)
+                    graphs[i_gr].GetListOfFunctions().Add(f)
+                pave_fit.AddText(f"{b * to_ps_m:+.0f} #pm {eb * abs(to_ps_m):.0f} ps/m away from readout")
+                pave_fit.AddText("   ".join(f"{g} GeV: {v[0] * to_ps_m:+.0f} #pm {v[1] * abs(to_ps_m):.0f}"
+                                           for g, v in sorted(per_group.items())) + " ps/m")
+            else:
+                pave_fit.AddText("linear fit: too few points")
+            lo = min(y - ye for _, y, ye in pts)
+            hi = max(y + ye for _, y, ye in pts)
+            pad = 0.35 * (hi - lo) if hi > lo else 0.2 * abs(hi) + 0.1
+            plot_name = f"{label}_{suffix}"
+            DrawHistos(
+                graphs, labels,
+                xmin, xmax, "Table position X [mm]",
+                lo - pad if y_floor is None else y_floor, hi + 2.0 * pad, ytitle,
+                plot_name,
+                outdir=pm.get_output_dir(),
+                drawoptions="EPL",
+                markerstyles=markers,
+                mycolors=[ROOT.kBlue + 1] * len(graphs),
+                legendPos=LEGEND_POS,
+                dology=False,
+                usePDF=False,
+                lumitext=lumi,
+                extra_text=label,
+                extraToDraw=[pave_fit],
+            )
+            names.append(plot_name)
+    return names, plateau, slopes
+
+
+# common timing term of the MCP reference, in TS, which cancels between fibres
+# (run 2030, same-chip fibre pair vs fibre-to-MCP width; see the in-time analysis)
+MCP_REFERENCE_SIGMA_TS = 1.10
+# channels without a fibre signal: the digitized MCP copy and the graded-index bundles
+NO_FIBRE_LABELS = {"Quartz_1", "GradedIndex_0", "GradedIndex_1"}
+
+
+def _load_speeds():
+    """label -> (speed [cm/ns], error) from the CFD MPV scan output, if it exists."""
+    path = "results/plots/PositionScan/DRS_CFD_MPV_Scan/drs_cfd_mpv_scan_channels.json"
+    if not os.path.exists(path):
+        return {}
+    with open(path) as f:
+        data = json.load(f)
+    return {l: (v["speed_cmns"], v["e_speed_cmns"]) for l, v in data.items()
+            if v.get("speed_cmns") is not None}
+
+
+def _position_resolution(plateau, speeds):
+    """label -> dict of position resolutions sigma_x = v * sigma_t in mm.
+
+    raw:       v * sigma(t_CFD - t_MCP), i.e. position against an external time reference
+    corr:      same with the walk-corrected width
+    intrinsic: walk-corrected width with the common MCP-reference term removed in
+               quadrature, i.e. what the fibre itself contributes
+    two_ended: intrinsic / sqrt(2), the resolution of x = v (t1 - t2) / 2 from two
+               such fibres read out from opposite ends
+    """
+    out = {}
+    for label, v in plateau.items():
+        if label in NO_FIBRE_LABELS or label not in speeds or "sigma_cfd_ts" not in v:
+            continue
+        speed, e_speed = speeds[label]
+        mm_per_ts = speed * 10.0 * TS_NS  # cm/ns -> mm per TS
+        def conv(sig, err):
+            return (sig * mm_per_ts, mm_per_ts * math.hypot(err, sig * e_speed / speed))
+        raw = conv(*v["sigma_cfd_ts"][:2])
+        corr = conv(*v["sigma_cfd_corr_ts"][:2])
+        sc, ec = v["sigma_cfd_corr_ts"][:2]
+        intr_ts = math.sqrt(max(sc * sc - MCP_REFERENCE_SIGMA_TS ** 2, 0.0))
+        e_intr = sc * ec / intr_ts if intr_ts > 0 else ec
+        intr = conv(intr_ts, e_intr)
+        out[label] = {"raw": raw, "corr": corr, "intrinsic": intr,
+                      "two_ended": (intr[0] / math.sqrt(2.0), intr[1] / math.sqrt(2.0)),
+                      "speed_cmns": speed}
+    return out
+
+
+def _print_shape_table(plateau, slopes, outdir):
+    cols = [("Fibre", None), ("Type", None), ("rise 20-70 % [TS]", "rise_ts"), ("fall 70-20 % [TS]", "fall_ts"),
+            ("FWHM [TS]", "fwhm_ts"), ("sigma t_CFD [TS]", "sigma_cfd_ts"), ("sigma walk-corr. [TS]", "sigma_cfd_corr_ts"),
+            ("runs", None), ("rise broadening [ps/m]", None), ("FWHM broadening [ps/m]", None),
+            ("sigma broadening [ps/m]", None), ("sigma walk-corr. broadening [ps/m]", None)]
+    def sl(d):
+        return f"{d['ps_per_m']:+.0f} &pm; {d['ps_per_m_err']:.0f}" if d else ""
+    rows, out = [], {}
+    for label in sorted(plateau, key=lambda l: (fiber_base_type(l), l)):
+        v = plateau[label]
+        if "rise_ts" not in v:
+            continue
+        out[label] = {k: {"plateau": round(v[k][0], 4), "err": round(v[k][1], 4), "n_runs": v[k][2]} for k in v}
+        out[label]["broadening"] = slopes.get(label, {})
+        rows.append([label, fiber_base_type(label)]
+                    + [f"{v[k][0]:.3g} &pm; {v[k][1]:.2g}" for k in ("rise_ts", "fall_ts", "fwhm_ts", "sigma_cfd_ts", "sigma_cfd_corr_ts")]
+                    + [str(v["rise_ts"][2]), sl(slopes[label].get("rise_ts")), sl(slopes[label].get("fwhm_ts")),
+                       sl(slopes[label].get("sigma_cfd_ts")), sl(slopes[label].get("sigma_cfd_corr_ts"))])
+    with open(os.path.join(outdir, "drs_shape_scan_channels.json"), "w") as f:
+        json.dump(out, f, indent=2)
+    md = ["| " + " | ".join(h for h, _ in cols) + " |", "|" + "---|" * len(cols)]
+    md += ["| " + " | ".join(c.replace("&pm;", "+-") for c in r) + " |" for r in rows]
+    with open(os.path.join(outdir, "drs_shape_scan_channels.md"), "w") as f:
+        f.write(f"# Pulse-shape scan, plateau {PE_FIT_XMIN:.0f} to {PE_FIT_XMAX:.0f} mm\n\n" + "\n".join(md) + "\n")
+    print("\n".join(md))
+    esc = lambda t: t.replace("<", "&lt;").replace(">", "&gt;")
+    th = "".join(f"<th style='padding:2px 8px;border-bottom:1px solid #999'>{esc(h)}</th>" for h, _ in cols)
+    trs = "".join("<tr>" + "".join(f"<td style='padding:2px 8px;text-align:right'>{c}</td>" for c in r) + "</tr>"
+                  for r in rows)
+    return (f"<p>Per run, from the in-time analysis (DRS_InTime pages): means of the 20-70 % rise time, 70-20 % "
+            f"fall time and FWHM of the unsaturated in-time pulses, and the CFD timing resolution against the MCP "
+            f"(half the 16-84 % interquantile range), 1 TS = {TS_NS} ns. Plateau = mean over runs with "
+            f"{PE_FIT_XMIN:.0f} &le; X &le; {PE_FIT_XMAX:.0f} mm. Broadening = slope of a linear fit vs position "
+            f"with one intercept per beam energy and a common slope, converted to ps per metre of fibre, positive "
+            f"when the pulse is wider (or the timing worse) farther from the readout end (+X); the edge runs are "
+            f"left out of the fits and errors are scaled by sqrt(chi2/ndf) where the scatter exceeds the point errors. "
+            f"The channel labelled Quartz_1 is the upstream MCP.</p>"
+            f"<table style='border-collapse:collapse;font-size:13px;margin:10px 0'><thead><tr>{th}</tr></thead>"
+            f"<tbody>{trs}</tbody></table>")
+
+
+def _print_position_table(posres, outdir):
+    cols = ["Fibre", "Type", "v [cm/ns]", "sigma_x raw [mm]", "sigma_x walk-corr. [mm]",
+            "sigma_x intrinsic [mm]", "sigma_x two-ended [mm]"]
+    rows, out = [], {}
+    for label in sorted(posres, key=lambda l: (fiber_base_type(l), l)):
+        r = posres[label]
+        out[label] = {k: [round(r[k][0], 2), round(r[k][1], 2)] for k in ("raw", "corr", "intrinsic", "two_ended")}
+        out[label]["speed_cmns"] = r["speed_cmns"]
+        rows.append([label, fiber_base_type(label), f"{r['speed_cmns']:.2f}"]
+                    + [f"{r[k][0]:.1f} &pm; {r[k][1]:.1f}" for k in ("raw", "corr", "intrinsic", "two_ended")])
+    with open(os.path.join(outdir, "drs_position_resolution_channels.json"), "w") as f:
+        json.dump(out, f, indent=2)
+    md = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
+    md += ["| " + " | ".join(c.replace("&pm;", "+-") for c in r) + " |" for r in rows]
+    with open(os.path.join(outdir, "drs_position_resolution_channels.md"), "w") as f:
+        f.write("# Position resolution from the CFD time, sigma_x = v sigma_t\n\n" + "\n".join(md) + "\n")
+    print("\n".join(md))
+    th = "".join(f"<th style='padding:2px 8px;border-bottom:1px solid #999'>{h}</th>" for h in cols)
+    trs = "".join("<tr>" + "".join(f"<td style='padding:2px 8px;text-align:right'>{c}</td>" for c in r) + "</tr>"
+                  for r in rows)
+    return (f"<p>Position resolution along the fibre if the hit position is taken from the CFD time, "
+            f"&sigma;<sub>x</sub> = v &sigma;<sub>t</sub>, with v the measured propagation speed and "
+            f"&sigma;<sub>t</sub> the plateau timing width ({TS_NS} ns per TS). raw: width of t_CFD - t_MCP, "
+            f"i.e. against an external time reference; walk-corr.: after the time-walk correction; intrinsic: "
+            f"walk-corrected width with the common MCP-reference term of {MCP_REFERENCE_SIGMA_TS} TS removed in "
+            f"quadrature, i.e. the fibre's own contribution; two-ended: intrinsic / &radic;2, the resolution of "
+            f"x = v (t<sub>1</sub> - t<sub>2</sub>) / 2 from two such fibres read out from opposite ends. "
+            f"The MCP copy (Quartz_1) and the graded-index bundles, which have no fibre signal, are left out.</p>"
+            f"<table style='border-collapse:collapse;font-size:13px;margin:10px 0'><thead><tr>{th}</tr></thead>"
+            f"<tbody>{trs}</tbody></table>")
+
+
+def run_shape_scan(run_x, lumi, xmin, xmax, use_jsroot=False):
+    data = _collect_shape(run_x)
+    if not data:
+        print("No pulse-shape values found for any scan run; rerun the in-time analysis first.")
+        return
+    pm = _make_pm("DRS_Shape_Scan", use_jsroot)
+    os.makedirs(pm.get_output_dir(), exist_ok=True)
+    names, plateau, slopes = _plot_shape_channels(data, pm, lumi, xmin, xmax)
+    table_html = _print_shape_table(plateau, slopes, pm.get_output_dir())
+    posres = _position_resolution(plateau, _load_speeds())
+    if posres:
+        table_html += _print_position_table(posres, pm.get_output_dir())
+    else:
+        print("No speeds found (run --mode time first); position resolution skipped.")
+
+    def _vals(key):
+        return {l: (v[key][0], v[key][1]) for l, v in plateau.items() if key in v}
+    def _slopes(key):
+        return {l: (v[key]["ps_per_m"], v[key]["ps_per_m_err"]) for l, v in slopes.items() if key in v}
+    summaries = [
+        plot_fiber_summary(_vals("rise_ts"), "Rise 20-70 % (markers), fall 70-20 % (x) [TS] (plateau)", 0.5, 100.0,
+                           "drs_edges_summary", pm, lumi, logy=True, secondary=_vals("fall_ts")),
+        plot_fiber_summary(_vals("sigma_cfd_ts"), "#sigma(t_{CFD} - t_{MCP}) [TS] (plateau)", 0.0, 8.0,
+                           "drs_sigma_summary", pm, lumi, secondary=_vals("sigma_cfd_corr_ts"),
+                           note="markers: raw,  x: walk-corrected   (1 TS = 0.2 ns)"),
+        plot_fiber_summary(_slopes("rise_ts"), "Broadening away from the readout [ps/m]", -300.0, 600.0,
+                           "drs_broadening_summary", pm, lumi, secondary=_slopes("sigma_cfd_corr_ts"),
+                           note="markers: rise 20-70 %,  x: walk-corrected #sigma(t_{CFD})"),
+    ]
+    if posres:
+        summaries.append(
+            plot_fiber_summary({l: r["corr"] for l, r in posres.items()},
+                               "Position resolution #sigma_{x} = v #sigma_{t} [mm] (plateau)", 0.0, 130.0,
+                               "drs_position_summary", pm, lumi,
+                               secondary={l: r["intrinsic"] for l, r in posres.items()},
+                               note="markers: walk-corrected vs MCP,  x: MCP reference term removed"))
+    pm.reset_plots()
+    for name in summaries:
+        if name:
+            pm.add_plot(name)
+    pm.add_newline()
+    for name in names:
+        pm.add_plot(name)
+    pm.generate_html(
+        "DRS_Shape_Scan_channels.html",
+        plots_per_row=5,
+        title="DRS pulse-shape scan — selected channels",
+        intro_text=table_html,
+    )
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(
         description="DRS MPV / Energy position scan",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "--mode", choices=["time", "energy", "pe", "both", "all"], default="both",
+        "--mode", choices=["time", "energy", "pe", "shape", "both", "all"], default="both",
         help="Which scan to run: time (CFD MPV), energy (SumMean), pe (photoelectrons "
-             "from the in-time analysis, needs --channels), both (time + energy), or all",
+             "from the in-time analysis, needs --channels), shape (rise/fall/FWHM and "
+             "timing resolution from the in-time analysis), both (time + energy), or all",
     )
     parser.add_argument(
         "--jsroot", action="store_true",
@@ -1013,6 +1318,8 @@ def main():
                         ch_label_map=ch_label_map if ch_label_map else None)
     if args.mode in ("pe", "all"):
         run_pe_scan(run_x, lumi, xmin, xmax, use_jsroot=args.jsroot)
+    if args.mode in ("shape", "all"):
+        run_shape_scan(run_x, lumi, xmin, xmax, use_jsroot=args.jsroot)
 
     PlotManager.print_html_summary()
 

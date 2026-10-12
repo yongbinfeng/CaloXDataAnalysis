@@ -57,6 +57,9 @@ calox-servicedrs
 calox-checkmcp
 ```
 
+### Test-fibre analysis
+See [README_testfibers.md](README_testfibers.md) for the per-run and position-scan workflow of the SPS 2026 test fibres.
+
 ### Repository Structure
 - `scripts/`: Main execution logic for plots and histogram generation.
 - `utils/`: Core utilities including the data loader, fitter, and `html_generator`.

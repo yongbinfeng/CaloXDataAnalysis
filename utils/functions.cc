@@ -252,19 +252,31 @@ struct CaloHit
     int peak_position;
     float integral_to_peak;
     bool is_valid;
+    // pulse shape, from the same peak: linear interpolation between samples
+    float rise_20_70;   // TS from the 20 % to the 70 % crossing on the rising edge
+    float fall_70_20;   // TS from the 70 % to the 20 % crossing on the falling edge
+    float fwhm;         // TS between the two 50 % crossings
+    bool saturated;     // peak at or above sat_level: the top is clipped, edges unreliable
+    bool edges_valid;   // every crossing found inside the record
 };
+
+// Fractional crossing of `thr` between samples i and i+1 with values v0 -> v1.
+static inline float edge_interp(int i, float v0, float v1, float thr)
+{
+    return (v1 != v0) ? i + (thr - v0) / (v1 - v0) : static_cast<float>(i);
+}
 
 // =================================================================
 // Constant Fraction Discriminator (CFD) for Physics Pulses
 // =================================================================
 CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive = true, const float min_amplitude = 5.0f,
                              size_t i_start = 0, size_t i_end = static_cast<size_t>(-1),
-                             int window_pre = 5, int window_post = 45)
+                             int window_pre = 5, int window_post = 45, const float sat_level = 2200.0f)
 {
     constexpr float kInvalidTime = -9999.0f;
     constexpr float kCfdFraction = 0.20f;
 
-    CaloHit hit = {0.0f, kInvalidTime, 0.0f, -1, 0.0f, false};
+    CaloHit hit = {0.0f, kInvalidTime, 0.0f, -1, 0.0f, false, -1.0f, -1.0f, -1.0f, false, false};
     if (waveform.size() < static_cast<size_t>(window_pre + window_post))
         return hit;
 
@@ -318,5 +330,33 @@ CaloHit compute_cfd_integral(const ROOT::RVec<float> &waveform, bool is_positive
     hit.energy = sign * raw_sum;
     hit.integral_to_peak = (hit.peak_value > 0.0f) ? hit.energy / hit.peak_value : 0.0f;
     hit.is_valid = true;
+
+    // --- 6. Pulse shape from the same peak: 20/50/70 % crossings on both edges ---
+    hit.saturated = (peak_amplitude >= sat_level);
+    const int n = static_cast<int>(waveform.size());
+    auto v = [&](int i) { return sign * waveform[i]; };   // pulse made positive
+    bool ok = true;
+    auto left_cross = [&](float thr) -> float {          // walk left until at or below thr
+        int i = peak_idx;
+        while (i > 0 && v(i) > thr)
+            --i;
+        if (v(i) > thr) { ok = false; return static_cast<float>(i); }
+        return edge_interp(i, v(i), v(i + 1), thr);
+    };
+    auto right_cross = [&](float thr) -> float {         // walk right until at or below thr
+        int i = peak_idx;
+        while (i < n - 1 && v(i) > thr)
+            ++i;
+        if (v(i) > thr) { ok = false; return static_cast<float>(i); }
+        return edge_interp(i - 1, v(i - 1), v(i), thr);
+    };
+    const float r20 = left_cross(0.2f * peak_amplitude), r50 = left_cross(0.5f * peak_amplitude),
+                r70 = left_cross(0.7f * peak_amplitude);
+    const float f70 = right_cross(0.7f * peak_amplitude), f50 = right_cross(0.5f * peak_amplitude),
+                f20 = right_cross(0.2f * peak_amplitude);
+    hit.rise_20_70 = r70 - r20;
+    hit.fall_70_20 = f20 - f70;
+    hit.fwhm = f50 - r50;
+    hit.edges_valid = ok;
     return hit;
 }
