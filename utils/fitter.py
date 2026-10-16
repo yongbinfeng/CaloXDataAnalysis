@@ -259,6 +259,312 @@ def channel_fit(hist, outdir, outname, npe_max=3, is3mm=False, run_number=None):
     return mu_ped.getVal(), dpe.getVal()
 
 
+def fit_pe_spectrum(hist, outdir, outname, npe_max=8, run_number=None,
+                    x_range=None, fit_range=None, plot_range=None,
+                    mu0_guess=None, dpe_guess=None, sigma_guess=None,
+                    min_peak_gap=50.0, title=""):
+    """Multi-peak RooCrystalBall fit for an ADC-integral photoelectron spectrum.
+
+    Same model as channel_fit (pedestal + N p.e. peaks sharing one set of
+    Crystal Ball tail parameters, sigma scaling as sqrt(i+1) for photon
+    counting statistics) but generalized to the ADC-integral scale - peak
+    spacing here is O(100-1000) ADC rather than the amplitude-based O(50-100)
+    ADC channel_fit was tuned for - and to auto-detected initial guesses
+    (via TSpectrum) instead of hardcoded 3 mm/6 mm constants, since the
+    ADC-integral gain varies channel to channel.
+
+    Returns a dict with the fitted pedestal/gain/tail parameters, the mean and
+    uncertainty of each p.e. peak, and the actual drawn RooCurve points for
+    each component (as plotted, i.e. already scaled by that component's fitted
+    fraction) so a downstream step can find where consecutive peaks cross.
+    """
+    axis = hist.GetXaxis()
+    if x_range is None:
+        x_range = (axis.GetXmin(), axis.GetXmax())
+    xmin, xmax = x_range
+
+    # --------------------------
+    # 1. Auto-detect pedestal position and p.e. spacing
+    # --------------------------
+    if mu0_guess is None or dpe_guess is None:
+        hclone = hist.Clone(outname + "_speccopy")
+        hclone.SetDirectory(0)
+        hclone.GetXaxis().SetRangeUser(xmin, xmax)
+        spectrum = ROOT.TSpectrum(npe_max + 2)
+        nfound = spectrum.Search(hclone, 2, "nobackground", 0.02)
+        pos_x, pos_y = spectrum.GetPositionX(), spectrum.GetPositionY()
+        found = sorted(
+            (float(pos_x[i]), float(pos_y[i])) for i in range(nfound)
+            if xmin <= pos_x[i] <= xmax
+        )
+        if mu0_guess is None:
+            # The tallest peak, not the leftmost one, is the more robust
+            # pedestal guess: a spurious low-amplitude bump from noise or
+            # undershoot can sit to the left of the true 0 p.e. peak, and the
+            # pedestal is (for a threshold-free integral) almost always the
+            # most populated bin.
+            mu0_guess = max(found, key=lambda p: p[1])[0] if found else 0.0
+        if dpe_guess is None:
+            after_pedestal = [
+                px for px, _ in found if px - mu0_guess > min_peak_gap
+            ]
+            if after_pedestal:
+                dpe_guess = min(after_pedestal) - mu0_guess
+            else:
+                dpe_guess = (xmax - mu0_guess) / max(1, npe_max)
+
+    if sigma_guess is None:
+        sigma_guess = max(5.0, 0.18 * dpe_guess)
+
+    if fit_range is None:
+        # Keep the fit range tight around the peak-bearing region. The
+        # histogram's stored axis is often auto-widened to mean +/- 8 RMS
+        # (Step 1), which is mostly empty space; handing that whole span to an
+        # 8-component Crystal Ball model makes RooFit evaluate the widest
+        # component's power-law tail over a huge, near-empty range, which
+        # overflows internally and segfaults the fit.
+        fit_lo = max(xmin, mu0_guess - 5.0 * sigma_guess)
+        fit_hi = min(xmax, mu0_guess + (npe_max + 0.5) * dpe_guess)
+        fit_range = (fit_lo, fit_hi)
+
+    if plot_range is None:
+        # Default the visible crop to the fit region plus headroom, rather
+        # than the full (often auto-widened) histogram axis, so the peaks
+        # are not squeezed into a sliver of the plot.
+        pad = 0.15 * (fit_range[1] - fit_range[0])
+        plot_range = (max(xmin, fit_range[0] - pad), min(xmax, fit_range[1] + pad))
+
+    print(
+        f"Auto-init [{outname}]: mu0 ~ {mu0_guess:.1f}, dpe ~ {dpe_guess:.1f}, "
+        f"sigma ~ {sigma_guess:.1f}, npe_max = {npe_max}, "
+        f"fit range = [{fit_range[0]:.1f}, {fit_range[1]:.1f}]"
+    )
+
+    # --------------------------
+    # 2. Define Observable
+    # --------------------------
+    x = ROOT.RooRealVar("x_" + outname, "ADC integral [ADC]", xmin, xmax)
+    x.setRange("fitrange", *fit_range)
+    x.setRange("plotrange", *plot_range)
+    data_hist = ROOT.RooDataHist(
+        "data_hist_" + outname, "PE spectrum", ROOT.RooArgList(x), hist)
+
+    mu_pe_guess = 1.0
+    p_xt_guess = 0.05
+
+    # --------------------------
+    # 3. Shared pedestal/gain/tail parameters
+    # --------------------------
+    mu_ped = ROOT.RooRealVar(
+        "mu_ped_" + outname, "Pedestal mean", mu0_guess,
+        mu0_guess - 3 * sigma_guess, mu0_guess + 3 * sigma_guess)
+    dpe = ROOT.RooRealVar(
+        "dpe_" + outname, "1 p.e. spacing", dpe_guess,
+        0.4 * dpe_guess, 1.8 * dpe_guess)
+    sigmaL = ROOT.RooRealVar(
+        "sigmaL_" + outname, "Single p.e. sigma", sigma_guess,
+        0.2 * sigma_guess, 3.0 * sigma_guess)
+    sigmaR = ROOT.RooRealVar(
+        "sigmaR_" + outname, "Single p.e. sigma right", sigma_guess,
+        0.2 * sigma_guess, 3.0 * sigma_guess)
+
+    alphaL = ROOT.RooRealVar("alphaL_" + outname, "Left tail alpha", 1.5, 0.3, 6.0)
+    nL = ROOT.RooRealVar("nL_" + outname, "Left tail n", 5.0, 0.5, 80.0)
+    alphaR = ROOT.RooRealVar("alphaR_" + outname, "Right tail alpha", 1.5, 0.3, 6.0)
+    nR = ROOT.RooRealVar("nR_" + outname, "Right tail n", 5.0, 0.5, 80.0)
+
+    # --------------------------
+    # 4. Build Multi-Peak Crystal Ball Model
+    # --------------------------
+    pdf_list = ROOT.RooArgList()
+    coef_list = ROOT.RooArgList()
+    # RooCrystalBall stores raw pointers to its mu/sigma server args rather
+    # than owning them, so every RooFormulaVar built inside the loop below
+    # must be kept alive in Python too - otherwise it is garbage-collected as
+    # soon as the loop variable is reassigned, leaving cb_i with a dangling
+    # pointer that segfaults (or throws a bogus std::length_error) the moment
+    # fitTo evaluates it.
+    mu_list, sigma_list, cb_list, coef_refs = [], [], [], []
+
+    poisson_weights = []
+    total_weight = 0.0
+    for i in range(npe_max):
+        weight = (mu_pe_guess ** i / math.factorial(i)) * \
+            math.exp(-mu_pe_guess) * ((1 + p_xt_guess) ** i)
+        poisson_weights.append(weight)
+        total_weight += weight
+    poisson_weights = [w / total_weight for w in poisson_weights]
+
+    for i in range(npe_max):
+        mu_i = ROOT.RooFormulaVar(
+            f"mu_{i}_{outname}", f"@0 + {i}*@1", ROOT.RooArgList(mu_ped, dpe))
+        sigma_L_i = ROOT.RooFormulaVar(
+            f"sigma_L_{i}_{outname}", f"sqrt({i+1})*@0", ROOT.RooArgList(sigmaL))
+        sigma_R_i = ROOT.RooFormulaVar(
+            f"sigma_R_{i}_{outname}", f"sqrt({i+1})*@0", ROOT.RooArgList(sigmaR))
+
+        cb_i = ROOT.RooCrystalBall(
+            f"cb_{i}_{outname}", f"CB {i} p.e.", x, mu_i, sigma_L_i, sigma_R_i,
+            alphaL, nL, alphaR, nR)
+
+        mu_list.append(mu_i)
+        sigma_list.append(sigma_L_i)
+        sigma_list.append(sigma_R_i)
+        cb_list.append(cb_i)
+        pdf_list.add(cb_i)
+
+        if i < npe_max - 1:
+            coef_i = ROOT.RooRealVar(
+                f"coef_{i}_{outname}", f"Fraction {i}", poisson_weights[i], 0.0, 1.0)
+            coef_list.add(coef_i)
+            coef_refs.append(coef_i)
+
+    total_pdf = ROOT.RooAddPdf(
+        "total_pdf_" + outname, "PE spectrum model", pdf_list, coef_list, True)
+    final_pdf = total_pdf
+
+    # --------------------------
+    # 5. Fit
+    # --------------------------
+    for opts in (
+        (ROOT.RooFit.Strategy(0),),
+        (ROOT.RooFit.Minimizer("Minuit2", "scan"), ROOT.RooFit.Strategy(2),
+         ROOT.RooFit.PrintLevel(-1)),
+        (ROOT.RooFit.Minimizer("Minuit2", "improve"), ROOT.RooFit.Strategy(1),
+         ROOT.RooFit.PrintLevel(-1)),
+        (ROOT.RooFit.Minimizer("Minuit2", "minimize"), ROOT.RooFit.Strategy(1),
+         ROOT.RooFit.PrintLevel(-1)),
+    ):
+        fit_result = final_pdf.fitTo(
+            data_hist, ROOT.RooFit.Save(), ROOT.RooFit.Range("fitrange"), *opts)
+    fit_result.Print()
+
+    # --------------------------
+    # 6. Plot
+    # --------------------------
+    setTDRStyle()
+    frame = x.frame(ROOT.RooFit.Range(*plot_range))
+    frame.SetTitle("")
+    frame.GetXaxis().SetTitle("ADC integral [ADC]")
+    frame.GetYaxis().SetTitle("Events")
+    # RooAbsData::plotOn (unlike RooAbsPdf::plotOn) does not accept a Range
+    # command in this ROOT version; the frame's own axis (set from
+    # plot_range above) already crops the visible window.
+    data_hist.plotOn(frame, ROOT.RooFit.Name("data_hist_" + outname))
+    final_pdf.plotOn(frame, ROOT.RooFit.Name("final_pdf_" + outname),
+                     ROOT.RooFit.Range("plotrange"), ROOT.RooFit.NormRange("fitrange"))
+
+    for i in range(npe_max):
+        style = ROOT.kDotted if i == 0 else ROOT.kDashed
+        color = ROOT.kGreen + 2 if i == 0 else (i % 9) + 2
+        final_pdf.plotOn(frame,
+                         ROOT.RooFit.Components(f"cb_{i}_{outname}"),
+                         ROOT.RooFit.LineStyle(style),
+                         ROOT.RooFit.LineColor(color),
+                         ROOT.RooFit.Name(f"cb_{i}_{outname}"),
+                         ROOT.RooFit.Range("plotrange"),
+                         ROOT.RooFit.NormRange("fitrange"))
+
+    legend = ROOT.TLegend(0.62, 0.68, 0.92, 0.90)
+    legend.SetBorderSize(0)
+    legend.SetFillStyle(0)
+    legend.SetTextSize(0.028)
+    legend.AddEntry(frame.findObject("data_hist_" + outname), "Data", "ep")
+    legend.AddEntry(frame.findObject("final_pdf_" + outname), "Fit", "l")
+    legend.AddEntry(frame.findObject(f"cb_0_{outname}"), "Pedestal (0 p.e.)", "l")
+    if npe_max > 1:
+        legend.AddEntry(frame.findObject(f"cb_1_{outname}"), "1 p.e., 2 p.e., ...", "l")
+    frame.addObject(legend)
+
+    c = ROOT.TCanvas("c_" + outname, "PE fit", 900, 700)
+    c.SetLogy()
+    frame.Draw()
+
+    CMS_lumi.lumi_sqrtS = ""
+    CMS_lumi.rel_pos_x = 0.25
+    CMS_lumi.extra_text = ""
+    if run_number is not None:
+        CMS_lumi.lumi_13TeV = f"Run {run_number}"
+    CMS_lumi.CMS_lumi(c, 4, 0)
+
+    latex = ROOT.TLatex()
+    latex.SetNDC()
+    latex.SetTextColor(1)
+    latex.SetTextSize(0.032)
+    latex.SetTextFont(42)
+    latex.DrawLatexNDC(0.16, 0.86, title)
+    latex.DrawLatexNDC(0.62, 0.63, "Pedestal = %.1f #pm %.1f" %
+                       (mu_ped.getVal(), mu_ped.getError()))
+    latex.DrawLatexNDC(0.62, 0.59, "Gain = %.1f #pm %.1f" %
+                       (dpe.getVal(), dpe.getError()))
+
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+    outputname = f"{outdir}/{outname}.png"
+    c.SaveAs(outputname)
+
+    # --------------------------
+    # 7. Extract per-peak means/errors via error propagation through the
+    #    fit's covariance matrix (mu_i = mu_ped + i*dpe).
+    # --------------------------
+    float_pars = fit_result.floatParsFinal()
+    names = [float_pars.at(k).GetName() for k in range(float_pars.getSize())]
+    cov = fit_result.covarianceMatrix()
+
+    def _index(name):
+        return names.index(name) if name in names else None
+
+    i_ped = _index("mu_ped_" + outname)
+    i_dpe = _index("dpe_" + outname)
+    var_ped = cov[i_ped][i_ped] if i_ped is not None else mu_ped.getError() ** 2
+    var_dpe = cov[i_dpe][i_dpe] if i_dpe is not None else dpe.getError() ** 2
+    cov_ped_dpe = (
+        cov[i_ped][i_dpe] if i_ped is not None and i_dpe is not None else 0.0
+    )
+
+    peaks = []
+    for i in range(npe_max):
+        mu_val = mu_ped.getVal() + i * dpe.getVal()
+        mu_err = math.sqrt(max(0.0, var_ped + i * i * var_dpe + 2 * i * cov_ped_dpe))
+        coef_val = (
+            coef_refs[i].getVal() if i < len(coef_refs)
+            else max(0.0, 1.0 - sum(c.getVal() for c in coef_refs))
+        )
+        peaks.append({
+            "i": i,
+            "mu": mu_val,
+            "mu_err": mu_err,
+            "sigma_L": math.sqrt(i + 1) * sigmaL.getVal(),
+            "sigma_R": math.sqrt(i + 1) * sigmaR.getVal(),
+            "coef": coef_val,
+        })
+
+    curves = {}
+    for i in range(npe_max):
+        curve = frame.findObject(f"cb_{i}_{outname}")
+        if curve is None:
+            continue
+        n = curve.GetN()
+        xs_arr, ys_arr = curve.GetX(), curve.GetY()
+        curves[str(i)] = [[float(xs_arr[k]), float(ys_arr[k])] for k in range(n)]
+
+    return {
+        "outname": outname,
+        "png": outputname,
+        "mu_ped": mu_ped.getVal(), "mu_ped_err": mu_ped.getError(),
+        "dpe": dpe.getVal(), "dpe_err": dpe.getError(),
+        "sigmaL": sigmaL.getVal(), "sigmaR": sigmaR.getVal(),
+        "alphaL": alphaL.getVal(), "nL": nL.getVal(),
+        "alphaR": alphaR.getVal(), "nR": nR.getVal(),
+        "npe_max": npe_max,
+        "fit_range": list(fit_range),
+        "plot_range": list(plot_range),
+        "chi2_over_ndf": frame.chiSquare(int(len(names))),
+        "peaks": peaks,
+        "curves": curves,
+    }
+
+
 def eventFit(h, suffix, outdir="plots/fits", addMIP=False, addHE=False, xlabel="Energy [ADCCount]",
              xmin=0, xmax=1000,
              xfitmin=0, xfitmax=450,

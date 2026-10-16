@@ -21,15 +21,21 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
                              ).strftime("%B %d, %Y, %I:%M %p %Z")
 
     # --- Intro Text Processing (Bold and Bullets) ---
-    # 1. Bold text: **word** -> <b>word</b>
-    processed_intro = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', intro_text)
-
-    # 2. Bullet points: Lines starting with * or -
-    lines = processed_intro.split('\n')
+    # Classify on the raw line, then bold it. Doing the **->b substitution
+    # first makes a line that merely *starts* with bold text look like a raw
+    # HTML line, and such lines are emitted without a trailing <br> -- which
+    # silently ran every "**Label:** value" line together into one paragraph.
+    lines = intro_text.split('\n')
     formatted_lines = []
     in_list = False
 
-    for line in lines:
+    def _bold(text):
+        return re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+
+    for raw_line in lines:
+        raw_stripped = raw_line.strip()
+        is_raw_html = raw_stripped.startswith('<')
+        line = _bold(raw_line)
         stripped = line.strip()
         if stripped.startswith(('* ', '- ')):
             if not in_list:
@@ -43,7 +49,7 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
             if in_list:
                 formatted_lines.append('</ul>')
                 in_list = False
-            if stripped.startswith('<'):
+            if is_raw_html:
                 formatted_lines.append(stripped)  # raw HTML block, no <br>
             else:
                 formatted_lines.append(line + "<br>")
@@ -52,6 +58,11 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
         formatted_lines.append('</ul>')
 
     formatted_intro = "".join(formatted_lines)
+
+    # Narrow screens drop to 2 columns, but never *gain* columns: a
+    # single-column gallery stayed single-column, whereas the old fixed
+    # repeat(2, 1fr) turned one wide plot per row into two cramped ones.
+    narrow_cols = min(plots_per_row, 2)
 
     html_header = f"""<!DOCTYPE html>
 <html>
@@ -79,7 +90,7 @@ def generate_html(png_files, png_dir, plots_per_row=4, output_html="view_plots.h
     .pdf-inline a {{ color: #0066cc; text-decoration: none; }}
     .pdf-inline a:hover {{ text-decoration: underline; }}
     button {{ padding: 4px 12px; cursor: pointer; font-size: 13px; }}
-    @media (max-width: 1100px) {{ .grid {{ grid-template-columns: repeat(2, 1fr); }} }}
+    @media (max-width: 1100px) {{ .grid {{ grid-template-columns: repeat({narrow_cols}, 1fr); }} }}
     @media (max-width: 800px) {{ .top-bar {{ flex-direction: column; align-items: flex-start; gap: 10px; }} }}
   </style>
 </head>
@@ -220,11 +231,17 @@ def generate_jsroot_html(canvas_keys, canvas_jsons, plots_per_row=4, output_html
 
     timestamp = datetime.now(ZoneInfo("Europe/Zurich")).strftime("%B %d, %Y, %I:%M %p %Z")
 
-    processed_intro = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', intro_text)
-    lines = processed_intro.split('\n')
+    # See the note in generate_html: classify on the raw line, bold afterwards.
+    lines = intro_text.split('\n')
     formatted_lines = []
     in_list = False
-    for line in lines:
+
+    def _bold(text):
+        return re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+
+    for raw_line in lines:
+        is_raw_html = raw_line.strip().startswith('<')
+        line = _bold(raw_line)
         stripped = line.strip()
         if stripped.startswith(('* ', '- ')):
             if not in_list:
@@ -235,7 +252,7 @@ def generate_jsroot_html(canvas_keys, canvas_jsons, plots_per_row=4, output_html
             if in_list:
                 formatted_lines.append('</ul>')
                 in_list = False
-            if stripped.startswith('<'):
+            if is_raw_html:
                 formatted_lines.append(stripped)
             else:
                 formatted_lines.append(line + "<br>")
