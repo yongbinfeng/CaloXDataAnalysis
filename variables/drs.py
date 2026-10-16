@@ -286,6 +286,125 @@ def process_drs_channels(rdf, drs_channel_names, mcp_det="MCP_US_0"):
     return rdf
 
 
+def add_fixed_window_energy(rdf, drs_channel_names, anchor_offset=-336,
+                            window_pre=4, window_post=35,
+                            baseline_pre_lo=80, baseline_pre_hi=20,
+                            suffix="fixed"):
+    """Define {ch}_energy_{suffix} from a reference-anchored fixed window.
+
+    Alternative to {ch}_energy (compute_cfd_integral) for low-amplitude
+    channels - in tb2026 that is the 6 mm fibers, whose 16-24 ADC pulses sit
+    too close to the CFD's 5 ADC threshold for the per-event anchor to be
+    reliable, and whose Brg1 boards drift enough that the global
+    median(0, 200) baseline biases the sum.
+
+    The window is placed at {group}_ref_TS + anchor_offset, i.e. on the group
+    Channel8 LED crossing, which is a 500+ ADC pulse and therefore stable. The
+    default offset of -336 slices puts the window on the 6 mm pulse, which sits
+    ~340 slices before the reference crossing in run 1917; check it against
+    your own runs before trusting it. The baseline comes from
+    [anchor-baseline_pre_lo, anchor-baseline_pre_hi), immediately ahead of the
+    pulse.
+
+    No amplitude threshold is applied, so events with no light land in a
+    pedestal peak at zero instead of being forced to exactly 0.
+    """
+    existing = [str(c) for c in rdf.GetColumnNames()]
+    for channel_name in drs_channel_names:
+        channel_blsub = channel_name + "_blsub"
+        if channel_blsub not in existing:
+            continue
+        ref_TS = get_ref_ts_name(channel_name, use_peak=False)
+        if ref_TS not in existing:
+            continue
+        hit = f"{channel_name}_FIXED_{suffix}"
+        rdf = rdf.Define(
+            hit,
+            f"compute_fixed_window_integral({channel_blsub}, "
+            f"{ref_TS} + ({anchor_offset}), {window_pre}, {window_post}, "
+            f"{baseline_pre_lo}, {baseline_pre_hi})")
+        rdf = rdf.Define(f"{channel_name}_energy_{suffix}", f"{hit}.energy")
+        rdf = rdf.Define(f"{channel_name}_baseline_{suffix}", f"{hit}.baseline")
+        rdf = rdf.Define(f"{channel_name}_peak_{suffix}", f"{hit}.peak_value")
+    return rdf
+
+
+def add_cfd_to_baseline_energy(rdf, drs_channel_names, anchor_offset=-330,
+                               search_half=60, cfd_fraction=0.20,
+                               stop_fraction=0.05, stop_abs=4.0,
+                               stop_consecutive=3, max_width=250,
+                               baseline_pre_lo=80, baseline_pre_hi=20,
+                               min_amplitude=0.0, smooth_half=3,
+                               min_width=40, suffix="adaptive"):
+    """Define {ch}_energy_{suffix}: CFD start, baseline-crossing end.
+
+    The window length is set by the pulse rather than fixed, which is what the
+    6 mm fibers need - their pulse is ~42-45 slices wide against ~13 for the
+    3 mm, so neither a 50- nor a 39-slice window suits both.
+
+    The peak search is restricted to {group}_ref_TS + anchor_offset +/-
+    search_half. Searching the whole record is what lets the plain CFD latch
+    onto noise on these low-amplitude channels; anchoring the search on the
+    group Channel8 crossing (a 500+ ADC pulse) removes that failure while
+    still letting the CFD set the window start per event.
+    """
+    existing = [str(c) for c in rdf.GetColumnNames()]
+    for channel_name in drs_channel_names:
+        channel_blsub = channel_name + "_blsub"
+        if channel_blsub not in existing:
+            continue
+        ref_TS = get_ref_ts_name(channel_name, use_peak=False)
+        if ref_TS not in existing:
+            continue
+        hit = f"{channel_name}_ADAPT_{suffix}"
+        rdf = rdf.Define(
+            hit,
+            f"compute_cfd_to_baseline_integral({channel_blsub}, "
+            f"{ref_TS} + ({anchor_offset}), {search_half}, {cfd_fraction}, "
+            f"{stop_fraction}, {stop_abs}, {stop_consecutive}, {max_width}, "
+            f"{baseline_pre_lo}, {baseline_pre_hi}, {min_amplitude}, "
+            f"{smooth_half}, {min_width})")
+        rdf = rdf.Define(f"{channel_name}_energy_{suffix}", f"{hit}.energy")
+        rdf = rdf.Define(f"{channel_name}_width_{suffix}", f"{hit}.width")
+        rdf = rdf.Define(f"{channel_name}_start_{suffix}", f"{hit}.start_idx")
+        rdf = rdf.Define(f"{channel_name}_end_{suffix}", f"{hit}.end_idx")
+        rdf = rdf.Define(f"{channel_name}_baseline_{suffix}", f"{hit}.baseline")
+        rdf = rdf.Define(f"{channel_name}_peak_{suffix}", f"{hit}.peak_value")
+        rdf = rdf.Define(f"{channel_name}_tscfd_{suffix}", f"{hit}.time_slice")
+        rdf = rdf.Define(f"{channel_name}_maxw_{suffix}", f"{hit}.hit_max_width")
+    return rdf
+
+
+def add_rise_time(rdf, drs_channel_names, anchor_offset=-330, search_half=60,
+                  frac_lo=0.20, frac_hi=0.90, baseline_pre_lo=80,
+                  baseline_pre_hi=20, min_amplitude=0.0, suffix="adaptive"):
+    """Define {ch}_risetime_{suffix}: leading-edge frac_lo -> frac_hi time [TS].
+
+    Same anchor (group Channel8 reference crossing + anchor_offset) and local
+    pre-pulse baseline as add_cfd_to_baseline_energy, so a channel's rise time
+    and its CFD-to-baseline integral come from the same peak. Use the same
+    anchor_offset passed to add_cfd_to_baseline_energy to keep the two
+    consistent.
+    """
+    existing = [str(c) for c in rdf.GetColumnNames()]
+    for channel_name in drs_channel_names:
+        channel_blsub = channel_name + "_blsub"
+        if channel_blsub not in existing:
+            continue
+        ref_TS = get_ref_ts_name(channel_name, use_peak=False)
+        if ref_TS not in existing:
+            continue
+        hit = f"{channel_name}_RISE_{suffix}"
+        rdf = rdf.Define(
+            hit,
+            f"compute_rise_time({channel_blsub}, "
+            f"{ref_TS} + ({anchor_offset}), {search_half}, {frac_lo}, "
+            f"{frac_hi}, {baseline_pre_lo}, {baseline_pre_hi}, {min_amplitude})")
+        rdf = rdf.Define(f"{channel_name}_risetime_{suffix}", f"{hit}.rise_time * {_TS_TO_NS}")
+        rdf = rdf.Define(f"{channel_name}_risetime_valid_{suffix}", f"{hit}.is_valid")
+    return rdf
+
+
 def get_psd_energy_deposit(rdf, run_number, TS_start=100, TS_end=400):
     channel_name = get_service_drs_channels(run_number).get("PSD")
     if channel_name is None:
