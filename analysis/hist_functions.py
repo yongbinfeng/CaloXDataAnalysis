@@ -677,10 +677,11 @@ def book_drs_stats(ctx, do_finebins=True):
                 f"{channel_name}_Time_cfd_mcp"))
             if do_finebins:
                 tfb_lo, tfb_hi = get_drs_time_ns_finebins_range(chan.isCer)
+                tfb_nbins = int(round((tfb_hi - tfb_lo) / 0.02))  # 0.02 ns bins
                 hists.append(ctx.rdf.Histo1D((
                     f"hist_{channel_name}_Time_cfd_mcp_finebins",
                     "DRS CFD time (MCP-corrected);Time_cfd_mcp [ns];Counts",
-                    500, tfb_lo, tfb_hi),
+                    tfb_nbins, tfb_lo, tfb_hi),
                     f"{channel_name}_Time_cfd_mcp"))
 
     # Per-event DRS energy sum by fiber category: var x size (6 histograms).

@@ -255,6 +255,10 @@ def process_drs_channels(rdf, drs_channel_names, mcp_det="MCP_US_0"):
                          f"compute_cfd_integral({channelName_blsub})")
         rdf = rdf.Define(f"{channel_name}_energy",
                          f"{channel_name}_CFD.energy")
+        # 15-sample integral around the positive lobe, for photoelectron counting
+        # (Cherenkov fibres); _energy keeps the long window (total charge, scintillation)
+        rdf = rdf.Define(f"{channel_name}_energy_short",
+                         f"{channel_name}_CFD.energy_short")
         rdf = rdf.Define(f"{channel_name}_TS_cfd",
                          f"{channel_name}_CFD.time_slice")
         rdf = rdf.Define(f"{channel_name}_TS_peak",

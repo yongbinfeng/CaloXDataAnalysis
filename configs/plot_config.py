@@ -233,13 +233,20 @@ def get_drs_cfd_finebins_range(is_cer):
 
 
 def get_drs_time_ns_range():
-    """Broad range [ns] for scalar time_mcp / time_cfd_mcp timing histograms."""
-    return (0, 20)
+    """Broad range [ns] for scalar time_mcp / time_cfd_mcp timing histograms.
+
+    Time_cfd_mcp = (TS_cfd_mcp - group reference) * 0.2 ns, with the references in
+    data/drs/drs_cfd_mpv_at_1500mm_by_group.json (382-400 TS). With the current
+    MCP alignment the in-time peak sits at ~500-520 TS, i.e. 22-29 ns.
+    """
+    return (0, 40)
 
 
 def get_drs_time_ns_finebins_range(is_cer):
-    """Fine-binned range [ns] for time_cfd_mcp_finebins histograms."""
-    return (6.5, 16.5) if is_cer else (7.5, 16.5)
+    """Fine-binned range [ns] for time_cfd_mcp_finebins histograms (0.02 ns bins,
+    set in analysis/hist_functions.py). Holds the 22-29 ns in-time peaks of all
+    channel types; see get_drs_time_ns_range."""
+    return (15.0, 35.0)
 
 
 def get_drs_time_arr_ns_range():

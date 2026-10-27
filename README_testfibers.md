@@ -122,6 +122,37 @@ attenuation lengths), `drs_shape_scan_channels.json` (shape, timing, dispersion)
 - Plateau values average the runs with −220 ≤ X ≤ 50 mm (`PE_FIT_XMIN`, `PE_FIT_XMAX`).
   The edge runs at −375 and −395 mm are left out of the fits.
 
+## Single-p.e. pulse linearity (any DRS channels)
+
+```bash
+python3 scripts/check_drs_pe_linearity.py --run 2030 \
+    --channels channels/data/testingfibers.json --mcp-clean
+python3 scripts/check_drs_pe_linearity.py --combine 2026 2027 2029-2032 2034-2039 \
+    --channels channels/data/testingfibers.json --classes charge   # from the per-run caches
+```
+
+Cache many runs first, one at a time (the disk is the bottleneck), with `--dump-only`.
+Options: `--sample in|out|both` (default `in`: in time with the beam), `--nmax` (default 8),
+`--classes resolved|charge`. `resolved` (default) requires amplitude and integral to match n
+for the peaks resolved in every run, which keeps synchronous photoelectrons, and uses charge bins
+above. `charge` uses charge bins, n ± 0.5 p.e. of integral, for every n, the same definition at all n.
+Combined pages go to `results/html/PE_Linearity/Runs<a>-<b>_<sample>_<classes>/`.
+
+- Two integrals are available per DRS channel. `<ch>_energy` sums 50 samples, from 5 before to 45 after
+  the first sample above the 20 % CFD threshold, and measures the total charge, including scintillation tails.
+  `<ch>_energy_short` sums a fixed 15 samples, from 4 before to 11 after that sample, which covers the positive
+  lobe of the single-p.e. pulse. It has the same noise for every pulse and resolves the p.e. peaks far better.
+  Use it to count photoelectrons in the Cherenkov fibres.
+- Pulses are sorted into p.e. classes using the amplitude and the 15-sample integral.
+  The averaged waveforms per class are compared with n times the 1 p.e. pulse, aligned at the
+  20 % CFD time and at the peak. Out-of-time pulses (dark counts and crosstalk) and in-time pulses are kept apart.
+- A linear-pulse test adds n times the 1 p.e. shape to real noise-only waveforms and runs the same chain,
+  to separate method bias from real non-linearity.
+- The first call reads the raw data once (about a minute) and caches the pulses in
+  `results/root/Run<N>/drs_pe_pulses.npz`. Later calls reuse it; `--redo` re-reads.
+- Page: `results/html/Run<N>/DRS/DRS_PE_Linearity.html` (combined runs: `results/html/PE_Linearity/Runs<a>-<b>/`).
+  Tables: `pe_linearity_summary.{json,md}` in the plot directory. `--channels` accepts any label-to-channel map.
+
 ## Typical full refresh
 
 ```bash
