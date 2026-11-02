@@ -115,17 +115,21 @@ class CaloXAnalysisManager:
         return self.rdf_org.Filter(f"event_n >= {first_event} && event_n < {last_event}")
 
     def prepare(self, do_drs=True, do_fers=True, do_hodo=True, do_mcp=True,
-                linear_baseline=False):
+                linear_baseline=False, drs_intime=False):
         """Initializes standard baseline subtractions and vectorization.
 
         linear_baseline=True switches DRS baseline subtraction to the two-anchor
         linear method (removes post-pulse pedestal droop); default is the
         constant median(0,200) baseline.
+
+        drs_intime=True adds in-time DRS columns (_energy_it, _energy_short_it,
+        ...): pulse searched only in the in-time region, not the whole record.
+        Recommended for channels with few photoelectrons in time.
         """
         if do_drs and "drs_init" not in self._steps_applied:
             self.rdf = process_drs_data(
                 self.rdf, self.run_number, drsboards=self.drsboards,
-                do_mcp=do_mcp, linear_baseline=linear_baseline)
+                do_mcp=do_mcp, linear_baseline=linear_baseline, intime=drs_intime)
             if do_mcp:
                 self.rdf = get_psd_energy_deposit(self.rdf, self.run_number)
             self._steps_applied.add("drs_init")

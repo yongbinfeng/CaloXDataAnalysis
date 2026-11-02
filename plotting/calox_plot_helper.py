@@ -207,10 +207,20 @@ def fiber_base_type(label):
     return re.sub(r'_\d+$', '', label)
 
 
+def _summary_graph(pts):
+    """(x, value, error) or (x, value, error_low, error_high) -> TGraphAsymmErrors"""
+    gr = ROOT.TGraphAsymmErrors(len(pts))
+    for j, (x, v, *e) in enumerate(pts):
+        gr.SetPoint(j, x, v)
+        gr.SetPointError(j, 0.0, 0.0, e[0], e[-1])
+    return gr
+
+
 def plot_fiber_summary(values, ytitle, ymin, ymax, plot_name, pm, lumi,
                        secondary=None, logy=False, note=None):
-    """One point per fiber (label -> (value, error)), one color+marker per base
-    fiber type, with the fiber labels on the x axis.
+    """One point per fiber (label -> (value, error) or (value, error_low,
+    error_high)), one color+marker per base fiber type, with the fiber labels
+    on the x axis.
 
     secondary: optional second label -> (value, error) map drawn as "x"
     markers in the same colours (e.g. out-of-time next to in-time).
@@ -235,8 +245,7 @@ def plot_fiber_summary(values, ytitle, ymin, ymax, plot_name, pm, lumi,
     # Group points by base type
     pts_by_type = {}
     for i, label in enumerate(sorted_labels):
-        v, ev = values[label]
-        pts_by_type.setdefault(fiber_base_type(label), []).append((i + 1, v, ev))
+        pts_by_type.setdefault(fiber_base_type(label), []).append((i + 1, *values[label]))
 
     n = len(sorted_labels)
 
@@ -273,11 +282,8 @@ def plot_fiber_summary(values, ytitle, ymin, ymax, plot_name, pm, lumi,
 
     for ft in types_ordered:
         pts = pts_by_type[ft]
-        gr  = ROOT.TGraphErrors(len(pts))
+        gr  = _summary_graph(pts)
         col = type_color[ft]
-        for j, (x, v, ev) in enumerate(pts):
-            gr.SetPoint(j, x, v)
-            gr.SetPointError(j, 0.0, ev)
         gr.SetMarkerStyle(type_marker[ft])
         gr.SetMarkerSize(1.3)
         gr.SetMarkerColor(col)
@@ -289,10 +295,7 @@ def plot_fiber_summary(values, ytitle, ymin, ymax, plot_name, pm, lumi,
         pts2 = [(i + 1, *secondary[l]) for i, l in enumerate(sorted_labels)
                 if fiber_base_type(l) == ft and l in secondary]
         if pts2:
-            gr2 = ROOT.TGraphErrors(len(pts2))
-            for j, (x, v, ev) in enumerate(pts2):
-                gr2.SetPoint(j, x, v)
-                gr2.SetPointError(j, 0.0, ev)
+            gr2 = _summary_graph(pts2)
             gr2.SetMarkerStyle(SECONDARY_MARKER)
             gr2.SetMarkerSize(1.6)
             gr2.SetMarkerColor(col)

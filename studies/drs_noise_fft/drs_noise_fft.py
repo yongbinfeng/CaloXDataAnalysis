@@ -230,7 +230,7 @@ def robust_sigma(x):
 
 
 def led_time(w_flipped, min_amp=500.0, frac=0.5):
-    """process_dynamic_led on a flipped reference channel: 50% crossing, integer."""
+    """process_dynamic_led on a flipped reference channel: 50% crossing, interpolated between samples."""
     p = int(w_flipped.argmax())
     a = w_flipped[p]
     if a < min_amp:
@@ -238,7 +238,8 @@ def led_time(w_flipped, min_amp=500.0, frac=0.5):
     i = p
     while i > 0 and w_flipped[i] > frac * a:
         i -= 1
-    return float(i + 1)
+    lo, hi = w_flipped[i], w_flipped[i + 1]
+    return float(i + (frac * a - lo) / (hi - lo)) if lo <= frac * a and hi > lo else float(i + 1)
 
 
 def timing_study(W, labels, mcp, profiles_path, ref_ts, ref_of):
@@ -418,8 +419,8 @@ def plot_timing(timing, outdir, keep):
 def main():
     args = parse_args()
     os.makedirs(args.outdir, exist_ok=True)
-    with open(args.channels) as f:
-        chmap = json.load(f)
+    from channels.maps.paths import load_channel_map
+    chmap = load_channel_map(args.channels)
     labels = {name: lab for lab, name in chmap.items()}
     mcp_label = get_mcp_reference(args.run)
     if args.mcp:

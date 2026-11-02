@@ -35,7 +35,6 @@ PLOTDIR = "results/plots/PositionScan"
 HTMLDIR = "results/html/PositionScan"
 
 FIT_SHARED_SLOPE = True
-SAVE_T0_JSON = True
 
 Y1500_EVAL  = 1500
 Y1500_SHIFT = 300
@@ -303,8 +302,11 @@ def _plot_fit_params_page(drsboards, p0_map, p1_map, channel_order, lumi, use_js
 
 
 def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
-                      x_eval=Y1500_EVAL, shift=Y1500_SHIFT, use_jsroot=False):
-    """Board maps + 1D distribution of MPV evaluated at x_eval mm."""
+                      x_eval=Y1500_EVAL, shift=Y1500_SHIFT, use_jsroot=False, save_refs=False):
+    """Board maps + 1D distribution of MPV evaluated at x_eval mm.
+
+    The group MPVs are written to data/drs/ only when save_refs is set.
+    """
     y_map = {ch: p0_map[ch] + p1_map[ch] * x_eval - shift for ch in p0_map}
 
     pm_y = _make_pm("DRS_CFD_MPV_Scan", use_jsroot)
@@ -423,7 +425,7 @@ def _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi,
         cer_labels.append(f"3mm CerQuartz B5 (MPV = {mpv_b5_cer:.1f})")
         cer_cols.append(ROOT.kViolet + 1)
 
-    if group_mpv_cer:
+    if group_mpv_cer and save_refs:
         out_path_cer = f"data/drs/drs_cfd_mpv_at_{x_eval}mm_by_group.json"
         os.makedirs(os.path.dirname(out_path_cer), exist_ok=True)
         with open(out_path_cer, "w") as f:
@@ -633,7 +635,7 @@ def _plot_energy_channels(channel_order, data, pm, xmin, xmax):
 # Top-level scan runners
 # ---------------------------------------------------------------------------
 
-def run_time_scan(drsboards, run_x, channel_order, lumi, xmin, xmax, use_jsroot=False):
+def run_time_scan(drsboards, run_x, channel_order, lumi, xmin, xmax, use_jsroot=False, save_refs=False):
     mpv_data   = _collect_mpv_data(drsboards, run_x)
     shared_fit = _compute_shared_slopes(channel_order, mpv_data) if FIT_SHARED_SLOPE else {}
 
@@ -654,8 +656,8 @@ def run_time_scan(drsboards, run_x, channel_order, lumi, xmin, xmax, use_jsroot=
         )
 
     if p0_map and p1_map:
-        _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi, use_jsroot=use_jsroot)
-        if SAVE_T0_JSON:
+        _plot_y_at_x_page(drsboards, p0_map, p1_map, channel_order, lumi, use_jsroot=use_jsroot, save_refs=save_refs)
+        if save_refs:
             _save_t0_json(p0_map, p1_map)
         _plot_fit_params_page(drsboards, p0_map, p1_map, channel_order, lumi, use_jsroot=use_jsroot)
         _plot_p0_corrected2_page(drsboards, p0_map, p1_map, channel_order, lumi, use_jsroot=use_jsroot)
@@ -705,6 +707,11 @@ def _parse_args():
         "--jsroot", action="store_true",
         help="Embed interactive JSROOT canvases in HTML output",
     )
+    parser.add_argument(
+        "--save-refs", action="store_true",
+        help="Overwrite the timing references data/drs/drs_cfd_t0.json and "
+             "data/drs/drs_cfd_mpv_at_<X>mm_by_group.json from this scan",
+    )
     return parser.parse_args()
 
 
@@ -737,7 +744,8 @@ def main():
     lumi = f"{_btypes.get(btype.lower(), btype.lower())}, {benergy} GeV, 90^{{#circ}}"
 
     if args.mode in ("time", "both"):
-        run_time_scan(drsboards, run_x, channel_order, lumi, xmin, xmax, use_jsroot=args.jsroot)
+        run_time_scan(drsboards, run_x, channel_order, lumi, xmin, xmax, use_jsroot=args.jsroot,
+                      save_refs=args.save_refs)
     if args.mode in ("energy", "both"):
         run_energy_scan(drsboards, run_x, channel_order, lumi, xmin, xmax, use_jsroot=args.jsroot)
 

@@ -67,8 +67,8 @@ def _channel_labels(args, infile):
         if not os.path.exists(args.channels):
             print(f"ERROR: channel list not found: {args.channels}")
             return None
-        with open(args.channels) as f:
-            ch_map = json.load(f)
+        from channels.maps.paths import load_channel_map
+        ch_map = load_channel_map(args.channels)
         return [(name, label) for label, name in ch_map.items()]
 
     # no channel list: take whatever the file holds, in file order

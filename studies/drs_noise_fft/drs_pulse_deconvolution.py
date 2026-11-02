@@ -317,8 +317,8 @@ def main():
     paths = get_run_paths(args.run)
     for p in paths.values():
         os.makedirs(p, exist_ok=True)
-    with open(args.channels) as f:
-        chmap = json.load(f)
+    from channels.maps.paths import load_channel_map
+    chmap = load_channel_map(args.channels)
     fpath = os.path.join(paths["root"], "drs_profiles.root")
     if not os.path.exists(fpath):
         sys.exit(f"ERROR: {fpath} not found; run scripts/check_drs_mcp.py --run {args.run} "

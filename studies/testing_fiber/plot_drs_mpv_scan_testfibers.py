@@ -53,6 +53,10 @@ _BTYPES = {"pion": "#pi^{+}", "pions": "#pi^{+}", "pi+": "#pi^{+}",
 ENERGY_MARKERS = {40: 20, 60: 25, 80: 26}
 LEGEND_POS = [0.56, 0.79, 0.88, 0.89]
 X_BEAM = {}   # table position [mm] -> (beam type, beam energy [GeV]); filled in main()
+# table position [mm] -> continuous stretch of the scan ("40 GeV", "40 GeV, holder moved", "60 GeV"); filled in main().
+# The attenuation fits take one normalisation per stretch: moving the holder, and the metal blocks of the detector
+# surface, change how the shower meets the fibres (steps in the light and the hit fraction), which is not attenuation.
+X_STRETCH = {}
 
 
 def _graphs_by_beam(pts, name, with_errors=True):
@@ -633,8 +637,19 @@ PE_FIT_XMIN, PE_FIT_XMAX = -220.0, 50.0    # plateau window for the constant fit
 # the timing scan identifies as the readout end. Runs whose in-time fraction is
 # below EDGE_FRACTION of the fibre's plateau value are edge runs where the beam
 # only partly overlaps the fibre; they are drawn but left out of the fits.
-EXP_FIT_KEYS = ("mean_energy_hit", "pe_per_hit")
+# Attenuation measurement: mu, the mean number of p.e. per crossing of the bundle by the shower, from the p.e. per hit
+# (a hit = at least one p.e.: p.e. per hit = mu / (1 - exp(-mu)) for Poisson statistics). The bundles are small, so most
+# events without a hit are events in which no shower particle crossed them (geometry), not lost photons: the light per
+# event follows the geometry and overstates the attenuation (kept as an upper limit); the light per hit misses the
+# crossings with zero p.e. (kept for comparison).
+# The correction is applied as the factor (1 - exp(-mu)) to the light per hit in ADC ("light per crossing"): mu itself, in
+# p.e., carries the run-to-run scatter of the single-p.e. calibration.
+EXP_FIT_KEYS = ("light_per_crossing", "mean_energy_hit", "pe_per_hit", "light_per_event")
 EDGE_FRACTION = 0.6
+# attenuation fits: runs where the scintillating bundles (about 40 p.e. per hit, so their hit fraction measures the overlap
+# of the shower with the bundles) are hit less than OVERLAP_FRACTION of their plateau are left out (edges of the holder, metal
+# blocks of the detector surface)
+OVERLAP_FRACTION = 0.9
 MIN_FIT_SPAN_MM = 100.0   # a group needs at least this much travel for its own lambda
 # The runs at different beam energies give different amounts of light, so each
 # beam energy gets its own normalisation; the slope within each energy group
@@ -718,7 +733,32 @@ _PE_QUANTITIES = {
     "mean_energy_in": ("sem_energy_in", "drs_energy_in_scan", "<E> in time, raw [ADC]", None),
     "pe_per_hit": ("pe_per_hit_err", "drs_pe_scan", "p.e. per hit", None),
     "hit_fraction": ("hit_fraction_err", "drs_intime_frac_scan", "Hit fraction", 0.0),
+    "light_per_event": ("light_per_event_err", "drs_energy_event_scan", "Light per event [ADC]", None),
+    "pe_per_crossing": ("pe_per_crossing_err", "drs_pe_crossing_scan", "p.e. per crossing #mu", None),
+    "light_per_crossing": ("light_per_crossing_err", "drs_energy_crossing_scan", "Light per crossing [ADC]", None),
 }
+
+
+def _mu_from_pe_per_hit(m, em):
+    """mu with mu / (1 - exp(-mu)) = m (mean of a zero-truncated Poisson) and its error; None for m <= 1"""
+    if m is None or m <= 1.001:
+        return None, None
+    lo, hi = 1e-6, max(2.0 * m, 1.0)
+    for _ in range(100):
+        mid = 0.5 * (lo + hi)
+        if mid / (1.0 - math.exp(-mid)) < m:
+            lo = mid
+        else:
+            hi = mid
+    mu = 0.5 * (lo + hi); q = math.exp(-mu)
+    dm_dmu = (1.0 - q - mu * q) / (1.0 - q) ** 2
+    return mu, (em / dm_dmu if dm_dmu > 0 else None)
+
+
+def _per_event(v, key, err_key):
+    """per-hit value x hit fraction (events without a hit count as zero) and its propagated error"""
+    f, ef = v["hit_fraction"], v["hit_fraction_err"]
+    return v[key] * f, math.hypot(v[err_key] * f, v[key] * ef)
 
 
 def _collect_intime(run_x):
@@ -736,9 +776,16 @@ def _collect_intime(run_x):
                 if "mean_energy_hit" not in v:
                     print(f"Warning: run {run} has no sideband-subtracted values; rerun the in-time analysis")
                 continue
+            v = dict(v)
+            v["light_per_event"], v["light_per_event_err"] = _per_event(v, "mean_energy_hit", "sem_energy_hit")
+            v["pe_per_crossing"], v["pe_per_crossing_err"] = _mu_from_pe_per_hit(v["pe_per_hit"], v["pe_per_hit_err"])
+            if v["pe_per_crossing"] is not None:
+                p_hit = 1.0 - math.exp(-v["pe_per_crossing"])        # probability of at least one p.e. per crossing
+                v["light_per_crossing"], v["light_per_crossing_err"] = v["mean_energy_hit"] * p_hit, v["sem_energy_hit"] * p_hit
             d = data.setdefault(label, {k: [] for k in _PE_QUANTITIES})
             for key, (err_key, _, _, _) in _PE_QUANTITIES.items():
-                d[key].append((x_val, v[key], v[err_key]))
+                if v.get(key) is not None and v.get(err_key) is not None:
+                    d[key].append((x_val, v[key], v[err_key]))
     return data
 
 
@@ -749,16 +796,19 @@ def _plot_pe_channels(data, pm, lumi, xmin, xmax):
     # Edge runs, where the beam only partly overlaps the fibres: the in-time
     # fraction of the high-yield fibres (plateau fraction >= 0.15, so that it
     # measures overlap rather than attenuation) is well below its plateau value.
+    # Overlap monitor: the scintillating bundles (falls back to all high-yield fibres and EDGE_FRACTION without them).
+    monitor = [l for l in data if "scint" in l.lower()]
     ratios = {}
-    for label, d in data.items():
-        frac_pts = sorted(d["hit_fraction"])
+    for label in (monitor or list(data)):
+        frac_pts = sorted(data[label]["hit_fraction"])
         f_plateau = _fit_constant([(x, y) for x, y, _ in frac_pts], PE_FIT_XMIN, PE_FIT_XMAX)[0]
         if f_plateau >= 0.15:
             for x, f, _ in frac_pts:
                 ratios.setdefault(x, []).append(f / f_plateau)
-    edge_x = {x for x, r in ratios.items() if sorted(r)[len(r) // 2] < EDGE_FRACTION}
+    cut = OVERLAP_FRACTION if monitor else EDGE_FRACTION
+    edge_x = {x for x, r in ratios.items() if sorted(r)[len(r) // 2] < cut}
     if edge_x:
-        print(f"Exponential fits leave out the edge runs at X = {sorted(edge_x)} mm")
+        print(f"Exponential fits leave out the runs with partial overlap at X = {sorted(edge_x)} mm")
     for label in sorted(data, key=lambda l: (fiber_base_type(l), l)):
         plateau[label], expfits[label] = {}, {}
         for key, (_, suffix, ytitle, y_floor) in _PE_QUANTITIES.items():
@@ -773,10 +823,10 @@ def _plot_pe_channels(data, pm, lumi, xmin, xmax):
             pave_fit = create_pave_text(0.13, 0.71, 0.60, 0.85, size=0.033)
             if key in EXP_FIT_KEYS:
                 # exponential fit, one normalisation per beam energy, common lambda
-                groups = {}   # beam energy -> points (edge runs left out)
+                groups = {}   # continuous stretch of the scan -> points (runs with partial overlap left out)
                 for x, y, ey in pts:
                     if x not in edge_x:
-                        groups.setdefault(X_BEAM.get(x, ("", 0))[1], []).append((x, y, ey))
+                        groups.setdefault(X_STRETCH.get(x, f"{X_BEAM.get(x, ('', 0))[1]} GeV"), []).append((x, y, ey))
                 res = _fit_exponential(groups)
                 if res is not None:
                     b, eb, icpt, per_group = res
@@ -788,17 +838,17 @@ def _plot_pe_channels(data, pm, lumi, xmin, xmax):
                         "n_points": sum(len(v) for v in groups.values()), "edge_runs_x": sorted(edge_x)}
                     for g, a in sorted(icpt.items()):
                         xs_g = [x for x, _, _ in groups[g]]
-                        f = ROOT.TF1(f"expfit_{suffix}_{label}_{g}", "[0]*exp([1]*x)",
+                        f = ROOT.TF1(f"expfit_{suffix}_{label}_{g}".replace(" ", "_").replace(",", ""), "[0]*exp([1]*x)",
                                      min(xs_g) - 15, max(xs_g) + 15)
                         f.SetParameters(math.exp(a), b)
                         f.SetLineColor(ROOT.kRed + 1)
                         f.SetLineWidth(2)
                         f.SetNpx(200)
                         # attach to the graph of that energy so it is drawn with it
-                        i_gr = next((i for i, lab in enumerate(labels) if lab.endswith(f"{g} GeV")), 0)
+                        i_gr = next((i for i, lab in enumerate(labels) if lab.endswith(f"{g.split()[0]} GeV")), 0)
                         graphs[i_gr].GetListOfFunctions().Add(f)
                     pave_fit.AddText(f"#lambda = {_fmt_lambda(lam, elam)}  (common)")
-                    pave_fit.AddText("   ".join(f"{g} GeV: {_fmt_lambda(*_lambda_m(*v), unit='')}"
+                    pave_fit.AddText("   ".join(f"{g}: {_fmt_lambda(*_lambda_m(*v), unit='')}"
                                                for g, v in sorted(per_group.items())) + " m")
                 else:
                     pave_fit.AddText("exponential fit: too few points")
@@ -839,10 +889,10 @@ def _plot_pe_channels(data, pm, lumi, xmin, xmax):
 def _print_pe_table(plateau, expfits, outdir):
     """Plateau values and attenuation lengths per fibre; saves JSON and markdown,
     returns the HTML table."""
-    cols = [("Fibre", None), ("Type", None), ("light per hit [ADC]", "mean_energy_hit"),
-            ("<E> in, raw [ADC]", "mean_energy_in"), ("p.e. per hit", "pe_per_hit"),
-            ("hit frac.", "hit_fraction"), ("runs", None),
-            ("lambda [m]", None), ("40 GeV", None), ("60 GeV", None)]
+    cols = [("Fibre", None), ("Type", None), ("light per hit [ADC]", "mean_energy_hit"), ("p.e. per hit", "pe_per_hit"),
+            ("mu, p.e. per crossing", "pe_per_crossing"), ("hit frac.", "hit_fraction"), ("runs", None),
+            ("lambda [m]", None), ("40 GeV", None), ("60 GeV", None), ("from light per hit [m]", None),
+            ("from light per event [m] (too short)", None)]
     def lam_str(d):
         return f"{d['lambda_m']:.2g} &pm; {d['lambda_err_m']:.2g}" if d else ""
     rows, out = [], {}
@@ -853,12 +903,15 @@ def _print_pe_table(plateau, expfits, outdir):
         out[label] = {k: {"plateau": round(v[k][0], 4), "err": round(v[k][1], 4), "n_runs": v[k][2]}
                       for k in v}
         out[label]["attenuation"] = expfits.get(label, {})
+        e_mu = expfits.get(label, {}).get("light_per_crossing", {})
         e_hit = expfits.get(label, {}).get("mean_energy_hit", {})
+        e_ev = expfits.get(label, {}).get("light_per_event", {})
         rows.append([label, fiber_base_type(label)]
-                    + [f"{v[k][0]:.3g} &pm; {v[k][1]:.2g}" for k in
-                       ("mean_energy_hit", "mean_energy_in", "pe_per_hit", "hit_fraction")]
-                    + [str(v["pe_per_hit"][2]), lam_str(e_hit),
-                       lam_str(e_hit.get("per_energy", {}).get(40)), lam_str(e_hit.get("per_energy", {}).get(60))])
+                    + [f"{v[k][0]:.3g} &pm; {v[k][1]:.2g}" if k in v else "" for k in
+                       ("mean_energy_hit", "pe_per_hit", "pe_per_crossing", "hit_fraction")]
+                    + [str(v["pe_per_hit"][2]), lam_str(e_mu),
+                       lam_str(e_mu.get("per_energy", {}).get("40 GeV")), lam_str(e_mu.get("per_energy", {}).get("60 GeV")),
+                       lam_str(e_hit), lam_str(e_ev)])
     with open(os.path.join(outdir, "drs_pe_scan_channels.json"), "w") as f:
         json.dump(out, f, indent=2)
     md = ["| " + " | ".join(h for h, _ in cols) + " |", "|" + "---|" * len(cols)]
@@ -873,10 +926,16 @@ def _print_pe_table(plateau, expfits, outdir):
     return (f"<p>Per run, from the in-time vs out-of-time analysis (DRS_InTime pages), with the random "
             f"coincidences inside the in-time window subtracted using the sideband far from the peak: light per "
             f"hit = (N in &lt;E&gt; in - N random &lt;E&gt; sideband) / (N in - N random), p.e. per hit = that / "
-            f"1 p.e. integral of the fibre, hit fraction = (N in - N random) / N. Plateau = mean over runs with {PE_FIT_XMIN:.0f} &le; X &le; {PE_FIT_XMAX:.0f} mm, "
+            f"1 p.e. integral of the fibre, hit fraction = (N in - N random) / N, mu = mean p.e. per crossing of the bundle "
+            f"(p.e. per hit = mu / (1 - e<sup>-mu</sup>), a hit being at least one p.e.), light per event = light per hit "
+            f"&times; hit fraction. Plateau = mean over runs with {PE_FIT_XMIN:.0f} &le; X &le; {PE_FIT_XMAX:.0f} mm, "
             f"error = standard error of that mean. The scintillating fibres saturate in part of their hits, so "
-            f"their p.e. are lower limits. Attenuation: fit of light = A<sub>E</sub> exp(x / lambda) with one "
-            f"normalisation per beam energy and one common lambda, also fitted per energy where the runs span "
+            f"their p.e. are lower limits. Attenuation: from the light per crossing = light per hit &times; (1 - e<sup>-mu</sup>) (light per hit misses the crossings with zero p.e. and gives "
+            f"a slightly too long lambda; light per event also follows how often the shower crosses the small bundle, which "
+            f"changes along the scan, and gives too short a lambda: both shown for comparison): fit of A<sub>s</sub> "
+            f"exp(x / lambda) with one normalisation per continuous stretch of the scan (40 GeV, 40 GeV after the holder "
+            f"was moved, 60 GeV: moving the holder and the metal blocks of the detector surface change how the shower meets "
+            f"the fibres) and one common lambda, also fitted per stretch where the runs span "
             f"{MIN_FIT_SPAN_MM:.0f} mm; lambda &gt; 0 means "
             f"more light towards +X, the readout end, and a slope consistent with zero shows up as a very large "
             f"or negative lambda. Runs whose in-time fraction is below {EDGE_FRACTION:.0%} of the fibre's plateau "
@@ -909,10 +968,18 @@ def run_pe_scan(run_x, lumi, xmin, xmax, use_jsroot=False):
                            "drs_intime_frac_summary", pm, lumi),
         # attenuation as 1/lambda, which stays linear and can be shown with its
         # error even when the slope is consistent with zero
+        plot_fiber_summary({l: (1000.0 * f["light_per_crossing"]["slope_per_mm"], 1000.0 * f["light_per_crossing"]["slope_err_per_mm"])
+                            for l, f in expfits.items() if "light_per_crossing" in f},
+                           "1 / #lambda [m^{-1}]   (light = A e^{x/#lambda})", -1.0, 5.0,
+                           "drs_attenuation_summary", pm, lumi, note="light per crossing, per-stretch normalisation"),
+        plot_fiber_summary({l: (1000.0 * f["light_per_event"]["slope_per_mm"], 1000.0 * f["light_per_event"]["slope_err_per_mm"])
+                            for l, f in expfits.items() if "light_per_event" in f},
+                           "1 / #lambda [m^{-1}]   (light = A e^{x/#lambda})", -1.0, 5.0,
+                           "drs_attenuation_summary_per_event", pm, lumi, note="from the light per event (geometry included)"),
         plot_fiber_summary({l: (1000.0 * f["mean_energy_hit"]["slope_per_mm"], 1000.0 * f["mean_energy_hit"]["slope_err_per_mm"])
                             for l, f in expfits.items() if "mean_energy_hit" in f},
                            "1 / #lambda [m^{-1}]   (light = A e^{x/#lambda})", -1.0, 5.0,
-                           "drs_attenuation_summary", pm, lumi, note="from the light per hit, randoms subtracted"),
+                           "drs_attenuation_summary_per_hit", pm, lumi, note="from the light per hit (too flat for few p.e.)"),
     ]
     pm.reset_plots()
     for name in summaries:
@@ -1286,14 +1353,20 @@ def main():
         if x in X_BEAM and X_BEAM[x] != _beam(r):
             print(f"Warning: runs at X = {x} mm have different beams; markers follow the last one")
         X_BEAM[x] = _beam(r)
+    # continuous stretches: beam energy, and whether the holder had been moved (runs from _X_OFFSET_FROM_RUN on)
+    moved_e = {_beam(r)[1] for r in processed if r >= _X_OFFSET_FROM_RUN}
+    before_e = {_beam(r)[1] for r in processed if r < _X_OFFSET_FROM_RUN}
+    for r in processed:
+        e = _beam(r)[1]
+        X_STRETCH[run_x[r]] = f"{e} GeV" + (", holder moved" if r >= _X_OFFSET_FROM_RUN and e in before_e else "")
 
     drsboards     = build_drs_boards(run_number=REFERENCE_RUN)
     channel_order = _build_channel_order(drsboards)
 
     ch_label_map = {}  # channel_name -> label (populated when --channels is used)
     if args.channels:
-        with open(args.channels) as f:
-            ch_map = json.load(f)
+        from channels.maps.paths import load_channel_map
+        ch_map = load_channel_map(args.channels)
         ch_label_map = {v: k for k, v in ch_map.items()}
         allowed = set(ch_map.values())
         channel_order = [e for e in channel_order if e[0] in allowed]

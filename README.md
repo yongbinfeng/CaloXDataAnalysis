@@ -58,7 +58,22 @@ calox-checkmcp
 ```
 
 ### Test-fibre analysis
-See [README_testfibers.md](README_testfibers.md) for the per-run and position-scan workflow of the SPS 2026 test fibres.
+See [studies/testing_fiber/README.md](studies/testing_fiber/README.md) for the per-run and position-scan workflow of the SPS 2026 test fibres.
+
+### DRS integrals
+Default (`variables/drs.py`): constant baseline (median of samples 0-200), largest pulse in the **whole** record, 20% CFD crossing,
+`<ch>_energy` (50 samples) and `<ch>_energy_short` (15 samples).
+
+`prepare(drs_intime=True)` adds `<ch>_energy_it`, `<ch>_energy_short_it`, `<ch>_peak_value_it`, `<ch>_TS_cfd_mcp_it`: the same for
+the largest pulse in raw samples 380-620 only. Recommendations (`studies/zscan`):
+- Few-photoelectron channels: never use the all-event mean (dark counts and noise dominate). Hits: in time (6 TS, 20 TS
+  scintillating) **and** peak > ~40 ADC (half a p.e.); subtract randoms from sidebands (inside 380-620 for the in-time columns,
+  where every event has a noise "pulse"). Quote light per hit and hit fraction.
+- With these cuts the default and in-time columns give the same results; the in-time ones are a convenience.
+- Long integral (10 ns) for scintillating fibres: the short one (3 ns) holds a single-p.e. pulse but only ~40% of a
+  scintillation pulse and is not proportional to the light. Short only for prompt (Cherenkov, single-p.e.) pulses.
+- Baseline drifts ~1-2 ADC along the record: harmless for ratios and slopes; for absolute light subtract the average baseline shape.
+- Saturation: drop whole channels with >1% of events above ~1500 ADC, never single events.
 
 ### Repository Structure
 - `scripts/`: Main execution logic for plots and histogram generation.

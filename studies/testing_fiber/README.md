@@ -8,7 +8,7 @@ The analysis has two steps:
 1. **Per run:** histograms, timing and energy, plus the in-time / out-of-time analysis,
    with `scripts/check_drs_mcp.py`.
 2. **Across runs:** the position scan (speed, light yield, attenuation, pulse shape,
-   timing and position resolution) with `scripts/compare/plot_drs_mpv_scan_testfibers.py`.
+   timing and position resolution) with `studies/testing_fiber/plot_drs_mpv_scan_testfibers.py`.
 
 Run every command from the repository root.
 
@@ -22,8 +22,9 @@ Run every command from the repository root.
   (currently `data/datafiles_local.json`), or pass `--json-file`.
 - Beam energy and table position of each run come from `data/Runlist.json`.
 - The fibre label to DRS channel map is `channels/data/testingfibers.json`.
-  The channel labelled `Quartz_1` actually carries a split copy of the upstream MCP,
-  and the two `GradedIndex` bundles have no signal.
+  Lines starting with `//` are comments (`channels.maps.paths.load_channel_map`): the `Quartz_1` entry
+  (`DRS_Brg0_Board0_Group3_Channel6`) is commented out, because that channel carries a split copy of the upstream MCP
+  (MCP_US_1). The two `GradedIndex` bundles have no signal.
 
 ## Step 1: per-run analysis
 
@@ -45,9 +46,9 @@ keep both in one call.
 ### Many runs
 
 ```bash
-scripts/batch_check_drs_mcp.sh 1994-2042            # ranges and single runs, any mix
-EXTRA_ARGS="--mcp-clean --intime" scripts/batch_check_drs_mcp.sh 1998-2039
-DRY_RUN=1 scripts/batch_check_drs_mcp.sh 2030       # print the commands only
+studies/testing_fiber/batch_check_drs_mcp.sh 1994-2042            # ranges and single runs, any mix
+EXTRA_ARGS="--mcp-clean --intime" studies/testing_fiber/batch_check_drs_mcp.sh 1998-2039
+DRY_RUN=1 studies/testing_fiber/batch_check_drs_mcp.sh 2030       # print the commands only
 ```
 
 - Logs go to `results/logs/check_drs_mcp/run<N>.log`, with one line per run in `status.txt`.
@@ -81,7 +82,7 @@ DRY_RUN=1 scripts/batch_check_drs_mcp.sh 2030       # print the commands only
 ## Step 2: position scan over runs
 
 ```bash
-python3 scripts/compare/plot_drs_mpv_scan_testfibers.py --mode all \
+python3 studies/testing_fiber/plot_drs_mpv_scan_testfibers.py --mode all \
     --channels channels/data/testingfibers.json
 ```
 
@@ -89,7 +90,7 @@ python3 scripts/compare/plot_drs_mpv_scan_testfibers.py --mode all \
 |---|---|---|
 | `time` | `drs_stats.root` | CFD MPV vs X per fibre, propagation speed and intercept |
 | `energy` | `drs_energy_stats.json` | Mean integral vs X |
-| `pe` | `intime_summary.json` | Light per hit, p.e. per hit, hit fraction vs X; exponential attenuation fits |
+| `pe` | `intime_summary.json` | Light per hit, p.e., hit fraction, light per crossing, light per event vs X; exponential attenuation fits of the light per crossing = light per hit × (1 − e^−μ), μ = p.e. per crossing of the bundle from the p.e. per hit (corrects the crossings with zero p.e.), one normalisation per continuous stretch of the scan (40 GeV, 40 GeV after the holder move, 60 GeV), runs with partial overlap (scintillating hit fraction below 90% of its plateau) left out. Light per hit and light per event (which also follows how often the shower crosses the small bundle) fitted for comparison |
 | `shape` | `intime_summary.json`, and the `time` output for the speeds | Rise, fall, FWHM, timing width vs X; dispersion in ps/m; position resolution σx = v σt |
 | `both` | | `time` + `energy` (default) |
 | `all` | | All four |
@@ -156,8 +157,8 @@ Combined pages go to `results/html/PE_Linearity/Runs<a>-<b>_<sample>_<classes>/`
 ## Typical full refresh
 
 ```bash
-EXTRA_ARGS="--mcp-clean --intime" scripts/batch_check_drs_mcp.sh 1998-2042
-python3 scripts/compare/plot_drs_mpv_scan_testfibers.py --mode all \
+EXTRA_ARGS="--mcp-clean --intime" studies/testing_fiber/batch_check_drs_mcp.sh 1998-2042
+python3 studies/testing_fiber/plot_drs_mpv_scan_testfibers.py --mode all \
     --channels channels/data/testingfibers.json
 ```
 

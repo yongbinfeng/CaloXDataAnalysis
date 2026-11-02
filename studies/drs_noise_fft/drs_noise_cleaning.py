@@ -166,7 +166,7 @@ def rebaseline(W):
 
 
 def led_time(w_flipped):
-    """process_dynamic_led: 50% crossing below the peak, integer slice, or nan."""
+    """process_dynamic_led: 50% crossing below the peak, interpolated between samples, or nan."""
     p = int(w_flipped.argmax())
     a = w_flipped[p]
     if a < REF_MIN_AMP:
@@ -174,7 +174,8 @@ def led_time(w_flipped):
     i = p
     while i > 0 and w_flipped[i] > REF_FRACTION * a:
         i -= 1
-    return float(i + 1)
+    th, lo, hi = REF_FRACTION * a, w_flipped[i], w_flipped[i + 1]
+    return float(i + (th - lo) / (hi - lo)) if lo <= th and hi > lo else float(i + 1)
 
 
 def pipeline_shift(ref_ts, mcp_ts_cfd_ref):
@@ -395,8 +396,8 @@ def main():
     paths = get_run_paths(args.run)
     for p in paths.values():
         os.makedirs(p, exist_ok=True)
-    with open(args.channels) as f:
-        chmap = json.load(f)
+    from channels.maps.paths import load_channel_map
+    chmap = load_channel_map(args.channels)
     labels = {name: lab for lab, name in chmap.items()}
     mcp_channels = get_mcp_channels(args.run)
     mcp_name = get_mcp_reference(args.run)       # what the analysis aligns to, if anything

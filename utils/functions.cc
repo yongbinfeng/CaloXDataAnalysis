@@ -238,8 +238,14 @@ RefHit process_dynamic_led(const ROOT::RVec<float> &waveform, bool is_positive =
     while (scan_idx > 0 && sign * waveform[scan_idx] > sign * dynamic_threshold)
         scan_idx--;
 
-    // --- 4. Anchor to nearest integer slice ---
-    hit.time_slice = static_cast<float>(scan_idx + 1);
+    // --- 4. Sub-sample crossing: linear interpolation between the last sample at or below the threshold and the next one ---
+    // The reference edge rises over ~10 samples, so the crossing is always sampled; the integer slice (scan_idx + 1) added
+    // 0.2 ns / sqrt(12) = 58 ps of quantization per group to every time aligned through two groups.
+    const float lo = sign * waveform[scan_idx], hi = sign * waveform[scan_idx + 1];
+    if (lo <= sign * dynamic_threshold && hi > lo)
+        hit.time_slice = scan_idx + (sign * dynamic_threshold - lo) / (hi - lo);
+    else
+        hit.time_slice = static_cast<float>(scan_idx + 1);   // no sample below the threshold before the peak
     hit.is_valid = true;
     return hit;
 }

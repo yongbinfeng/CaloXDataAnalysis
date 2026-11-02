@@ -4,7 +4,7 @@ In-time vs out-of-time energy and amplitude distributions for the test fibres
 
 Usage
 -----
-  python scripts/compare/plot_drs_intime_energy_testfibers.py --run 2030 \
+  python studies/testing_fiber/plot_drs_intime_energy_testfibers.py --run 2030 \
       --channels channels/data/testingfibers.json --mcp-clean
 
 The same analysis runs as part of scripts/check_drs_mcp.py with --intime,
@@ -35,7 +35,8 @@ def main():
                          f"(or use check_drs_mcp.py --intime to do both)")
 
     manager = CaloXAnalysisManager(args)
-    ch_map = json.load(open(args.channels))
+    from channels.maps.paths import load_channel_map
+    ch_map = load_channel_map(args.channels)
     allowed = set(ch_map.values())
     for board in manager.drsboards.values():
         board.channels = [c for c in board.channels

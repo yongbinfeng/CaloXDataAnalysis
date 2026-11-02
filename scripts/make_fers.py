@@ -41,12 +41,14 @@ args = get_args()
 # ------------------------------------------------------------------
 # Build RDataFrame: FERS calibration + physics variables for all gains
 # ------------------------------------------------------------------
+# Particle selection filters all sequences; hole veto is flag-only (too costly for pions).
+# Selections must precede define_physics_variables, or the physics columns are lost.
 manager = (
     CaloXAnalysisManager(args)
     .prepare()
     .calibrate_fers()
     .apply_hole_veto(flag_only=True)
-    #.apply_beam_pid_selection(particle=args.particle or None)
+    .apply_beam_pid_selection(particle=args.particle or None)
     .define_physics_variables(gain="HG",  calib=False, pdsub=True)
     .define_physics_variables(gain="LG",  calib=False, pdsub=True)
     .define_physics_variables(gain="Mix", calib=True,  pdsub=True)

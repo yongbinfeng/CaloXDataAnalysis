@@ -8,11 +8,19 @@ from utils.utils import get_channel_var
 
 TS_END = 1024
 
+# Raw-sample window of the optional in-time integrals (prepare(drs_intime=True)); beam pulses sit at
+# about 400-580 in all periods. The default chain searches the whole record instead.
+DRS_INTIME_SEARCH = (380, 620)
+
+
+def get_drs_intime_search(run_number=None):
+    """(start, end) raw-sample window of the in-time pulse search (same for all periods)."""
+    return DRS_INTIME_SEARCH
+
 # Column naming convention — uppercase prefix = scalar, lowercase prefix = RVec array:
-#   _ref_TS          scalar: LED discriminator crossing time slice of the reference channel (Channel8)
+#   _ref_TS          scalar: 50% crossing of the reference channel (Channel8), interpolated between samples [TS]
 #   _ref_TS_peak     scalar: peak position time slice of the reference channel
-#   _TS_cfd          scalar float: CFD crossing ti
-# me slice from compute_cfd_integral
+#   _TS_cfd          scalar float: CFD crossing time slice from compute_cfd_integral
 #   _TS_peak         scalar float: peak position time slice from compute_cfd_integral
 #   _TS_cfd_ref      scalar: _TS_cfd corrected for the reference channel timing
 #   _TS_peak_ref     scalar: _TS_peak corrected for the reference channel timing
@@ -22,6 +30,8 @@ TS_END = 1024
 #   _ts_mcp          RVec:   per-event TS array shifted by reference + MCP time slice
 #   _Time_cfd_mcp    scalar: _TS_cfd_mcp group-MPV-corrected, converted to ns
 #   _time_mcp        RVec:   _ts_mcp group-MPV-corrected, converted to ns
+# Optional (intime=True), for the largest pulse inside DRS_INTIME_SEARCH only:
+#   _energy_it, _energy_short_it, _peak_value_it, _TS_cfd_it, _TS_cfd_mcp_it   as the default columns
 
 
 def get_drs_branches(rdf):
@@ -244,8 +254,11 @@ def update_ts(rdf, drs_channels_ref, mcp_det="MCP_US_0"):
     return rdf
 
 
-def process_drs_channels(rdf, drs_channel_names, mcp_det="MCP_US_0"):
-    """Define _TS_cfd, _TS_peak, and their ref/mcp-corrected variants for each DRS channel."""
+def process_drs_channels(rdf, drs_channel_names, mcp_det="MCP_US_0", intime_search=None):
+    """Define _TS_cfd, _TS_peak, and their ref/mcp-corrected variants for each DRS channel.
+
+    intime_search=(start, end): also define the in-time columns (define_intime_integrals).
+    """
     for channel_name in drs_channel_names:
         channelName_blsub = channel_name + "_blsub"
 
@@ -293,6 +306,28 @@ def process_drs_channels(rdf, drs_channel_names, mcp_det="MCP_US_0"):
                              f"{channel_name}_TS_cfd_ref")
             rdf = rdf.Define(f"{channel_name}_TS_peak_mcp",
                              f"{channel_name}_TS_peak_ref")
+
+        if intime_search is not None:
+            rdf = define_intime_integrals(rdf, channel_name, intime_search, mcp_det)
+    return rdf
+
+
+def define_intime_integrals(rdf, channel_name, intime_search, mcp_det=None):
+    """Default-chain CFD quantities for the largest pulse within raw samples [start, end) only.
+    No pulse above 5 ADC there: energy 0, time -9999."""
+    start, end = intime_search
+    blsub = f"{channel_name}_blsub"
+    rdf = rdf.Define(f"{channel_name}_CFD_it",
+                     f"compute_cfd_integral({blsub}, true, 5.0f, {start}, {end})")
+    rdf = rdf.Define(f"{channel_name}_energy_it", f"{channel_name}_CFD_it.energy")
+    rdf = rdf.Define(f"{channel_name}_energy_short_it", f"{channel_name}_CFD_it.energy_short")
+    rdf = rdf.Define(f"{channel_name}_peak_value_it", f"{channel_name}_CFD_it.peak_value")
+    rdf = rdf.Define(f"{channel_name}_TS_cfd_it", f"{channel_name}_CFD_it.time_slice")
+    ref_TS = get_ref_ts_name(channel_name, use_peak=False)
+    ts_ref = f"(790 + {channel_name}_TS_cfd_it - {ref_TS})"
+    ts_mcp = f"{ts_ref} - {mcp_det}_TS_cfd_ref + 500" if mcp_det is not None else ts_ref
+    rdf = rdf.Define(f"{channel_name}_TS_cfd_mcp_it",
+                     f"{channel_name}_CFD_it.is_valid ? (float)({ts_mcp}) : -9999.0f")
     return rdf
 
 
@@ -314,7 +349,10 @@ def get_psd_energy_deposit(rdf, run_number, TS_start=100, TS_end=400):
 def process_drs_data(rdf, run_number, drsboards, do_mcp=True,
                      linear_baseline=False,
                      baseline_pre_window=(0, 120),
-                     baseline_post_window=(800, 1000)):
+                     baseline_post_window=(800, 1000),
+                     intime=False):
+    """Baseline subtraction, reference / MCP / PID channels, per-channel CFD quantities.
+    intime=True adds the in-time columns (define_intime_integrals)."""
     drs_branches = get_drs_branches(rdf)
     drs_channels_ref = [ch for ch in drs_branches if ch.endswith("Channel8")]
     drs_branches_to_flip = get_drs_branches_to_flip(
@@ -336,7 +374,8 @@ def process_drs_data(rdf, run_number, drsboards, do_mcp=True,
     rdf = update_ts(rdf, drs_channels_ref, mcp_det=mcp_det)
     drs_channels_physics = [
         ch for ch in drs_branches if not ch.endswith("Channel8")]
-    rdf = process_drs_channels(rdf, drs_channels_physics, mcp_det=mcp_det)
+    rdf = process_drs_channels(rdf, drs_channels_physics, mcp_det=mcp_det,
+                               intime_search=get_drs_intime_search(run_number) if intime else None)
     rdf = define_time_ns(rdf, drsboards)
     return rdf
 

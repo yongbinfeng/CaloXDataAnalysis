@@ -14,7 +14,7 @@ single-photoelectron calibration of every fibre.
 Entry points:
   run_intime_analysis(manager, args)   from scripts/check_drs_mcp.py --intime,
                                        after the DRS stats have been written
-  scripts/compare/plot_drs_intime_energy_testfibers.py   standalone, same args
+  studies/testing_fiber/plot_drs_intime_energy_testfibers.py   standalone, same args
 
 Outputs, per run (results/{root,plots,html}/Run{run}/):
   root/drs_intime.root             in/out/all histograms and profiles per channel
@@ -193,7 +193,8 @@ def _draw_conditional_matrix(labels, cond, outdir, name, lumi):
 def run_intime_analysis(manager, args):
     """Run the analysis on manager.rdf (DRS columns defined, selections applied)
     and write the per-run outputs. Returns the path of the static HTML page."""
-    ch_map = json.load(open(args.channels))
+    from channels.maps.paths import load_channel_map
+    ch_map = load_channel_map(args.channels)
     rdf = manager.rdf
 
     stats_path = f"results/root/Run{args.run}/drs_stats.root"

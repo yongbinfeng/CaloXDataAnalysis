@@ -49,8 +49,8 @@ args.jsroot = True  # default to JSROOT for this script; pass --no-jsroot is not
 manager = CaloXAnalysisManager(args)
 
 if args.channels:
-    with open(args.channels) as f:
-        ch_map = json.load(f)
+    from channels.maps.paths import load_channel_map
+    ch_map = load_channel_map(args.channels)
     allowed = set(ch_map.values())
     for board in manager.drsboards.values():
         board.channels = [
